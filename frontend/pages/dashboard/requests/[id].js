@@ -304,6 +304,16 @@ export default function RequestStatusPage() {
                                         </div>
                                     </div>
 
+                                    {['barangay_clearance', 'certificate_of_indigency', 'barangay_residency'].includes(request.certificate_type) && (
+                                        <div className="flex items-start gap-3">
+                                            <FileText className="w-4 h-4 text-gray-400 mt-0.5" />
+                                            <div>
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Purpose of Request</p>
+                                                <p className="text-[12px] font-bold text-gray-700 uppercase tracking-tight">{request.purpose || 'NOT SPECIFIED'}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {request.email && (
                                         <div className="flex items-start gap-3">
                                             <Mail className="w-4 h-4 text-gray-400 mt-0.5" />

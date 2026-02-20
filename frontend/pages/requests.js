@@ -1608,6 +1608,26 @@ function RequestDetailsModal({ request, onClose, onAction, onUpdate, setSelected
                         </p>
                       )}
                     </div>
+
+                    {['barangay_clearance', 'certificate_of_indigency', 'barangay_residency'].includes(request.certificate_type) && (
+                      <div className="col-span-full md:col-span-2">
+                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5">Purpose of Request</p>
+                        {isEditing ? (
+                          <textarea
+                            name="purpose"
+                            value={editFormData.purpose}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            rows="2"
+                            placeholder="ENTER PURPOSE HERE..."
+                          />
+                        ) : (
+                          <p className="font-bold text-gray-800 text-[13px] uppercase leading-relaxed truncate" title={request.purpose}>
+                            {request.purpose || 'NOT SPECIFIED'}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

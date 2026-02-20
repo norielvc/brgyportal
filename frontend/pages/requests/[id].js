@@ -211,8 +211,8 @@ export default function PublicRequestStatusPage() {
                                         history.slice().reverse().map((step, index) => (
                                             <div key={index} className="flex gap-8 relative group">
                                                 <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center shrink-0 border-4 border-white shadow-xl relative z-10 transition-transform group-hover:scale-110 ${step.action === 'approve' ? 'bg-emerald-500 text-white' :
-                                                        step.action === 'reject' ? 'bg-rose-500 text-white' :
-                                                            'bg-blue-500 text-white'
+                                                    step.action === 'reject' ? 'bg-rose-500 text-white' :
+                                                        'bg-blue-500 text-white'
                                                     }`}>
                                                     {step.action === 'approve' ? <CheckCircle className="w-5 h-5" /> :
                                                         step.action === 'reject' ? <AlertCircle className="w-5 h-5" /> :
@@ -281,13 +281,23 @@ export default function PublicRequestStatusPage() {
                                                 <p className="text-xs font-black text-gray-900 font-mono tracking-tighter">{request.contact_number}</p>
                                             </div>
                                         </div>
+
+                                        {['barangay_clearance', 'certificate_of_indigency', 'barangay_residency'].includes(request.certificate_type) && (
+                                            <div className="flex items-start gap-4">
+                                                <FileText className="w-5 h-5 text-gray-300 shrink-0" />
+                                                <div>
+                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Purpose of Request</p>
+                                                    <p className="text-xs font-black text-gray-900 uppercase tracking-tight">{request.purpose || 'NOT SPECIFIED'}</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
                             <div className={`p-8 rounded-[2.5rem] border-4 shadow-2xl transition-all duration-500 ${request.status === 'ready' || request.status === 'ready_for_pickup'
-                                    ? 'bg-emerald-600 text-white border-white shadow-emerald-200'
-                                    : 'bg-indigo-600 text-white border-white shadow-indigo-200'
+                                ? 'bg-emerald-600 text-white border-white shadow-emerald-200'
+                                : 'bg-indigo-600 text-white border-white shadow-indigo-200'
                                 }`}>
                                 <h3 className="text-[11px] font-black text-white/70 uppercase tracking-[0.2em] mb-6">Government Guidance</h3>
 
