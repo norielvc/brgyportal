@@ -5,21 +5,11 @@ const createTransporter = () => {
   const pass = process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/\s+/g, '') : '';
 
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: 587,
-    secure: false, // Use STARTTLS
+    service: 'gmail',
     auth: {
       user: process.env.SMTP_USER,
       pass: pass
     },
-    tls: {
-      rejectUnauthorized: false, // Bypass some network handshake issues
-      minVersion: 'TLSv1.2'
-    },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 30000,
-    pool: true,               // Use pool to keep connection open
     logger: true,
     debug: true
   });
