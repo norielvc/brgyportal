@@ -37,9 +37,14 @@ export default function MobileQRScannerPage() {
       const data = await response.json();
       if (data.success) {
         setStats(data.stats);
+      } else {
+        setError(`❌ Stats Error\n\nHTTP ${response.status}: ${data.error || 'Failed to load stats'}\nURL: ${API_URL}/qr-scans/stats`);
       }
     } catch (err) {
       console.error('Error loading stats:', err);
+      if (err.name === 'TypeError') {
+        setError(`❌ Connection Error\n\nCannot connect to server at ${API_URL}. Please check your connection.`);
+      }
     }
   };
 
