@@ -9,7 +9,7 @@ import {
 import { getAuthToken, getUserData } from '@/lib/auth';
 
 // API Configuration
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 export default function SignatureSettings() {
   const router = useRouter();
@@ -226,10 +226,10 @@ export default function SignatureSettings() {
         {/* Notification */}
         {notification && (
           <div className={`mb-6 p-4 rounded-lg border ${notification.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : notification.type === 'error'
-                ? 'bg-red-50 border-red-200 text-red-800'
-                : 'bg-blue-50 border-blue-200 text-blue-800'
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : notification.type === 'error'
+              ? 'bg-red-50 border-red-200 text-red-800'
+              : 'bg-blue-50 border-blue-200 text-blue-800'
             }`}>
             <div className="flex items-center gap-2">
               {notification.type === 'success' && <CheckCircle className="w-5 h-5" />}
@@ -287,8 +287,8 @@ export default function SignatureSettings() {
                 <div
                   key={signature.id}
                   className={`border rounded-lg p-4 ${signature.id === defaultSignatureId
-                      ? 'border-blue-200 bg-blue-50'
-                      : 'border-gray-200'
+                    ? 'border-blue-200 bg-blue-50'
+                    : 'border-gray-200'
                     }`}
                 >
                   <div className="flex items-center justify-between">

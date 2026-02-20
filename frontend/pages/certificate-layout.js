@@ -3,7 +3,7 @@ import Layout from '@/components/Layout/Layout';
 import { Save, FileText, Globe, MapPin, Building, Shield, Palette, Image, Type, Upload, Trash2, AlertCircle, CheckCircle, Phone, UserCog, Mail, Eye } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 const defaultOfficials = {
     // We need the full structure to avoid breaking things, even if we don't edit names here

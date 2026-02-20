@@ -9,7 +9,7 @@ export default function TestOfficials() {
     const fetchOfficials = async () => {
       try {
         console.log('🔍 Testing officials API...');
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+        const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
         console.log('🔍 API URL:', API_URL);
 
         const response = await fetch(`${API_URL}/officials`);

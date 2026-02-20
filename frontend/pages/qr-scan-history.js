@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { isAuthenticated, getAuthToken } from '@/lib/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 // Helper to parse complex QR scan data
 const parseQRData = (qrData) => {

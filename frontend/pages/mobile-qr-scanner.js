@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { isAuthenticated, getAuthToken } from '@/lib/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 export default function MobileQRScannerPage() {
   const router = useRouter();
@@ -422,8 +422,8 @@ export default function MobileQRScannerPage() {
               {!processing ? (
                 <div className="p-4 text-center">
                   <div className={`w-24 h-24 mx-auto rounded-2xl flex items-center justify-center mb-3 border-4 border-dashed ${awaitingAcknowledgment
-                      ? 'bg-gray-100 border-gray-300'
-                      : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300'
+                    ? 'bg-gray-100 border-gray-300'
+                    : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300'
                     }`}>
                     <Camera className={`w-10 h-10 ${awaitingAcknowledgment ? 'text-gray-400' : 'text-blue-400'
                       }`} />
@@ -445,8 +445,8 @@ export default function MobileQRScannerPage() {
                     onClick={triggerCamera}
                     disabled={awaitingAcknowledgment}
                     className={`w-full py-3 px-6 rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 ${awaitingAcknowledgment
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white active:scale-95'
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white active:scale-95'
                       }`}
                   >
                     <Camera className="w-4 h-4" />
