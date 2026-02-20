@@ -9,7 +9,7 @@ const notifyNextStepApprovers = async (certificateType, referenceNumber, applica
   try {
     // 1. Send confirmation to applicant if email is provided
     if (applicantEmail) {
-      await sendProcessNotification({
+      const result = await sendProcessNotification({
         recipientEmail: applicantEmail,
         recipientName: applicantName,
         eventType: 'RECEIVED',
@@ -18,7 +18,12 @@ const notifyNextStepApprovers = async (certificateType, referenceNumber, applica
         applicantName,
         requestId
       });
-      console.log(`✅ Confirmation email sent to applicant: ${applicantEmail}`);
+
+      if (result.success) {
+        console.log(`✅ Confirmation email sent to applicant: ${applicantEmail}`);
+      } else {
+        console.error(`❌ Failed to send confirmation email to ${applicantEmail}:`, result.error);
+      }
     }
 
     // 2. Notify staff approvers

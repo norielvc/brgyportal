@@ -6,15 +6,19 @@ const createTransporter = () => {
 
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false, // Use STARTTLS
     auth: {
       user: process.env.SMTP_USER,
       pass: pass
     },
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000,   // 10 seconds
-    socketTimeout: 20000,     // 20 seconds
+    tls: {
+      rejectUnauthorized: false, // Bypass some network handshake issues
+      minVersion: 'TLSv1.2'
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 30000,
     pool: true,               // Use pool to keep connection open
     logger: true,
     debug: true
