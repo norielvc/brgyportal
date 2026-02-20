@@ -6,14 +6,18 @@ const createTransporter = () => {
 
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: 465, // Use SSL port 465 for better reliability on cloud hosting
-    secure: true, // true for 465, false for other ports
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.SMTP_USER,
       pass: pass
     },
-    logger: true, // Log to console
-    debug: true   // Include debug info
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,   // 10 seconds
+    socketTimeout: 20000,     // 20 seconds
+    pool: true,               // Use pool to keep connection open
+    logger: true,
+    debug: true
   });
 };
 
@@ -113,6 +117,8 @@ const sendProcessNotification = async ({
       console.warn('⚠️ SMTP credentials not configured. Email will not be sent.');
       return { success: false, error: 'SMTP credentials missing' };
     }
+
+    console.log(`📧 Attempting to send email: ${eventType} to ${recipientEmail} from ${process.env.SMTP_USER}`);
 
     const template = eventTemplates[eventType] || eventTemplates.SUBMITTED;
     const transporter = createTransporter();
@@ -233,7 +239,7 @@ const sendProcessNotification = async ({
     `;
 
     const mailOptions = {
-      from: `"Brgy. Iba O' Este" <${process.env.SMTP_USER}>`,
+      from: `"Barangay Iba O Este" <${process.env.SMTP_USER}>`,
       to: recipientEmail,
       subject: template.subject,
       html
