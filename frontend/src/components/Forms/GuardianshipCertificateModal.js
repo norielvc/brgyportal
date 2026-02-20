@@ -3,7 +3,7 @@ import { X, FileText, Eye, Send, Printer, CheckCircle, AlertCircle, Info, Downlo
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 
 // API Configuration
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 // Default officials data (fallback)
 const defaultOfficials = {

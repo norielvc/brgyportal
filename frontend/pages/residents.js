@@ -34,7 +34,7 @@ export default function Residents() {
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+    const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
     const [residents, setResidents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);

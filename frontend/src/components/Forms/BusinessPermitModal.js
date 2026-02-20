@@ -80,7 +80,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
     setSubmitStatus(null);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+      const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
       // Generate reference number
       const currentYear = new Date().getFullYear();

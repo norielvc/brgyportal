@@ -29,7 +29,7 @@ export default function Settings() {
   const [isExporting, setIsExporting] = useState(false);
 
   // API Configuration
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+  const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
   const [settings, setSettings] = useState({
     // General

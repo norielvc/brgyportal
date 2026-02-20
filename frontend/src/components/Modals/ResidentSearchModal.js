@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, X, User, MapPin, Calendar, Phone, Check, AlertCircle, Database } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 export default function ResidentSearchModal({ isOpen, onClose, onSelect }) {
     const [searchTerm, setSearchTerm] = useState('');

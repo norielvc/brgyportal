@@ -46,7 +46,7 @@ export default function Dashboard() {
 
   const fetchStats = async (token) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
       const response = await fetch(`${apiUrl}/dashboard/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`,
