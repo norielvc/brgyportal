@@ -301,7 +301,7 @@ export default function BarangayPortal() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
         console.log('Fetching events from:', `${API_URL}/events`);
         const response = await fetch(`${API_URL}/events`);
         console.log('Events API response status:', response.status);
@@ -333,7 +333,7 @@ export default function BarangayPortal() {
   useEffect(() => {
     const fetchFacilities = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
         console.log('Fetching facilities from:', `${API_URL}/facilities`);
         const response = await fetch(`${API_URL}/facilities`);
         console.log('Facilities API response status:', response.status);
@@ -370,7 +370,7 @@ export default function BarangayPortal() {
   useEffect(() => {
     const fetchOfficials = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
         console.log('🔍 Fetching officials from:', `${API_URL}/officials`);
         const response = await fetch(`${API_URL}/officials`);
         console.log('📊 Officials API response status:', response.status);
@@ -403,7 +403,7 @@ export default function BarangayPortal() {
     // Fetch Hero Settings
     const fetchSettings = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
         const res = await fetch(`${API_URL}/officials/config`);
         const data = await res.json();
         if (data.success && data.data.heroSection) {
