@@ -354,7 +354,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
           }
 
           if (recipientEmail) {
-            await sendProcessNotification({
+            sendProcessNotification({
               recipientEmail: recipientEmail,
               recipientName: recipientName,
               eventType: action === 'reject' ? 'REJECTED' : 'RETURNED',
@@ -363,7 +363,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
               applicantName: applicantName,
               comments: comment,
               requestId: certReq.id
-            });
+            }).catch(err => console.error('Background email error:', err));
           }
         }
 
@@ -382,7 +382,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
                 name: `${u.first_name} ${u.last_name}`
               }));
 
-              await sendWorkflowNotifications({
+              sendWorkflowNotifications({
                 recipients,
                 eventType: 'APPROVED_STEP',
                 certificateType: certType,
@@ -390,7 +390,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
                 applicantName: applicantName,
                 requestId: certReq.id,
                 comments: `Moved to ${nextStep.name}`
-              });
+              }).catch(err => console.error('Background email error:', err));
             }
           }
         }
@@ -415,7 +415,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
           }
 
           if (recipientEmail) {
-            await sendProcessNotification({
+            sendProcessNotification({
               recipientEmail: recipientEmail,
               recipientName: recipientName,
               eventType: 'READY_FOR_PICKUP',
@@ -423,7 +423,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
               referenceNumber: refNum,
               applicantName: applicantName,
               requestId: certReq.id
-            });
+            }).catch(err => console.error('Background email error:', err));
           }
         }
       } catch (err) {

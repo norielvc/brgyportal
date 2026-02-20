@@ -534,7 +534,7 @@ router.post('/indigency', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('certificate_of_indigency', refNumber, fullName, data.id, req.body.email);
+    notifyNextStepApprovers('certificate_of_indigency', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -800,7 +800,7 @@ router.post('/natural-death', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('natural_death', refNumber, fullName, data.id, req.body.email);
+    notifyNextStepApprovers('natural_death', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -928,7 +928,7 @@ router.post('/medico-legal', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('medico_legal', refNumber, fullName, data.id, req.body.email);
+    notifyNextStepApprovers('medico_legal', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -1057,7 +1057,7 @@ router.post('/guardianship', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('barangay_guardianship', refNumber, fullName, data.id, req.body.email);
+    notifyNextStepApprovers('barangay_guardianship', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -1193,7 +1193,7 @@ router.post('/cohabitation', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('barangay_cohabitation', refNumber, fullName, data.id, req.body.email);
+    notifyNextStepApprovers('barangay_cohabitation', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -1700,7 +1700,7 @@ router.post('/create', async (req, res) => {
         new_status: 'staff_review'
       }]);
 
-      notifyNextStepApprovers('certification_same_person', refNumber, full_name, data.id, req.body.email);
+      notifyNextStepApprovers('certification_same_person', refNumber, full_name, data.id, req.body.email).catch(err => console.error('Background email error:', err));
 
       return res.status(201).json({
         success: true,
