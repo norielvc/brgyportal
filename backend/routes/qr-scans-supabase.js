@@ -12,9 +12,11 @@ const createQRScansTable = async () => {
       .select('count(*)')
       .limit(1);
 
-    if (error && error.code === 'PGRST116') {
+    if (error && (error.code === 'PGRST116' || error.code === '42P01')) {
       console.log('📝 QR scans table does not exist, it needs to be created in Supabase dashboard');
       console.log('ℹ️  Please create the table manually or the API will not work');
+    } else if (error) {
+      console.error('❌ Error checking QR scans table:', error);
     } else {
       console.log('✅ QR scans table exists and is ready');
     }
