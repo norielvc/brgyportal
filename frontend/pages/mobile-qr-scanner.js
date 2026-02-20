@@ -230,9 +230,9 @@ export default function MobileQRScannerPage() {
           setError('❌ Server Error\n\nDatabase connection failed. Please try again later.');
           return false;
         } else if (response.status === 409) {
-          // Handle duplicate - this will be processed below
+          // Handle duplicate - this will be processed below (result.isDuplicate)
         } else {
-          setError(`❌ Network Error\n\nHTTP ${response.status}: Failed to connect to server.`);
+          setError(`❌ Network Error\n\nHTTP ${response.status}: Failed to connect to server.\nURL: ${API_URL}/qr-scans`);
           return false;
         }
       }
