@@ -379,7 +379,7 @@ router.post('/clearance', async (req, res) => {
     }]);
 
     // Send email notifications to next step approvers
-    notifyNextStepApprovers('barangay_clearance', refNumber, fullName, data.id, req.body.email);
+    await notifyNextStepApprovers('barangay_clearance', refNumber, fullName, data.id, req.body.email);
 
     res.status(201).json({
       success: true,
@@ -674,7 +674,7 @@ router.post('/residency', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('barangay_residency', refNumber, fullName, data.id, req.body.email);
+    await notifyNextStepApprovers('barangay_residency', refNumber, fullName, data.id, req.body.email);
 
     res.status(201).json({
       success: true,

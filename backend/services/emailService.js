@@ -1,15 +1,19 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter
 const createTransporter = () => {
+  // Remove spaces from app password if present
+  const pass = process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/\s+/g, '') : '';
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT) || 587,
     secure: false, // true for 465, false for other ports
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
+      pass: pass
+    },
+    logger: true, // Log to console
+    debug: true   // Include debug info
   });
 };
 
