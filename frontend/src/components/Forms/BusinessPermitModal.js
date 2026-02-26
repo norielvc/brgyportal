@@ -218,7 +218,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Registered Business Name <span className="text-red-500">*</span></label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Registered Business Name / Rehistradong Pangalan ng Negosyo <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       name="businessName"
@@ -229,7 +229,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
                     />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Industry Classification <span className="text-red-500">*</span></label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Industry Classification / Uri ng Industriya <span className="text-red-500">*</span></label>
                     <select
                       name="businessType"
                       value={formData.businessType}
@@ -245,7 +245,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Commercial Address <span className="text-red-500">*</span></label>
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Commercial Address / Address ng Negosyo <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <input
                       type="text"
@@ -261,11 +261,11 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Business Telephone/Mobile</label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Business Telephone/Mobile / Telepono o Mobile ng Negosyo</label>
                     <input type="tel" name="businessPhone" value={formData.businessPhone} onChange={handleInputChange} placeholder="09XX XXX XXXX..." className="w-full px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none" />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Business Email Address (Optional)</label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Business Email Address (Optional) / Email ng Negosyo (Opsyonal)</label>
                     <input type="email" name="businessEmail" value={formData.businessEmail} onChange={handleInputChange} placeholder="username@example.com" className="w-full px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-[#2d5a3d] font-normal text-emerald-900 outline-none" />
                   </div>
                 </div>
@@ -283,27 +283,27 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">First Name <span className="text-red-500">*</span></label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">First Name / Pangalan <span className="text-red-500">*</span></label>
                     <input type="text" name="ownerFirstName" value={formData.ownerFirstName} onChange={handleInputChange} placeholder="OWNER GIVEN NAME..." className={`w-full px-6 py-4 bg-white border-2 ${errors.ownerFirstName ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none uppercase shadow-sm`} />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Last Name <span className="text-red-500">*</span></label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Last Name / Apelyido <span className="text-red-500">*</span></label>
                     <input type="text" name="ownerLastName" value={formData.ownerLastName} onChange={handleInputChange} placeholder="OWNER SURNAME..." className={`w-full px-6 py-4 bg-white border-2 ${errors.ownerLastName ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none uppercase shadow-sm`} />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Owner Residential Address <span className="text-red-500">*</span></label>
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Owner Residential Address / Tirahan ng May-ari <span className="text-red-500">*</span></label>
                   <input type="text" name="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} placeholder="COMPLETE HOME ADDRESS..." className={`w-full px-6 py-4 bg-white border-2 ${errors.ownerAddress ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none uppercase shadow-sm`} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Owner Mobile Number <span className="text-red-500">*</span></label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Owner Mobile Number / Numero ng Mobile ng May-ari <span className="text-red-500">*</span></label>
                     <input type="tel" name="ownerPhone" value={formData.ownerPhone} onChange={handleInputChange} placeholder="09XX XXX XXXX..." className={`w-full px-6 py-4 ${errors.ownerPhone ? 'bg-red-50 border-red-500' : 'bg-emerald-50/20 border-emerald-100'} border-2 rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none shadow-sm`} />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Owner Email (Optional)</label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Owner Email (Optional) / Email ng May-ari (Opsyonal)</label>
                     <input type="email" name="ownerEmail" value={formData.ownerEmail} onChange={handleInputChange} placeholder="username@example.com" className="w-full px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-[#2d5a3d] font-normal text-emerald-900 outline-none" />
                   </div>
                 </div>
@@ -320,7 +320,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Detailed Nature of Operations <span className="text-red-500">*</span></label>
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Detailed Nature of Operations / Detalyadong Uri ng Operasyon <span className="text-red-500">*</span></label>
                   <textarea
                     name="natureOfBusiness"
                     value={formData.natureOfBusiness}
@@ -333,14 +333,14 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Capital Investment (Est. PHP)</label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Capital Investment (Est. PHP) / Puhunan (Est. PHP)</label>
                     <div className="relative">
                       <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-emerald-900 opacity-40">₱</span>
                       <input type="number" name="capitalInvestment" value={formData.capitalInvestment} onChange={handleInputChange} placeholder="0.00" className={`w-full pl-12 pr-6 py-4 bg-white border-2 ${errors.capitalInvestment ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none`} />
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Force size (Employees)</label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Force size (Employees) / Bilang ng Empleyado</label>
                     <div className="relative">
                       <input type="number" name="numberOfEmployees" value={formData.numberOfEmployees} onChange={handleInputChange} placeholder="0" className="w-full px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none" />
                       <User className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
@@ -349,7 +349,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Application Intent <span className="text-red-500">*</span></label>
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Application Intent / Layunin ng Aplikasyon <span className="text-red-500">*</span></label>
                   <select
                     name="purpose"
                     value={formData.purpose}

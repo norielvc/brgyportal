@@ -309,11 +309,11 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
                         <input type="number" name="age" value={formData.age} readOnly disabled className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-gray-600 font-bold focus:outline-none" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sex</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sex / Kasarian</label>
                         <input type="text" value={formData.sex || 'N/A'} readOnly disabled className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-gray-600 font-bold uppercase focus:outline-none" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Civil Status</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Civil Status / Katayuang Sibil</label>
                         <input type="text" value={formData.civilStatus || 'N/A'} readOnly disabled className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-gray-600 font-bold uppercase focus:outline-none" />
                       </div>
                     </div>
@@ -334,7 +334,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black text-[#2d5a3d] uppercase tracking-widest ml-1 block">Date of Death <span className="text-red-500">*</span></label>
+                          <label className="text-[10px] font-black text-[#2d5a3d] uppercase tracking-widest ml-1 block">Date of Death / Petsa ng Kamatayan <span className="text-red-500">*</span></label>
                           <input type="date" name="dateOfDeath" value={formData.dateOfDeath} onChange={handleInputChange} className={`w-full px-5 py-3.5 bg-white border-2 ${errors.dateOfDeath ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-xl text-gray-900 font-bold focus:outline-none focus:border-[#2d5a3d]`} />
                         </div>
                         <div className="space-y-2">
@@ -347,7 +347,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
                       </div>
 
                       <div className="space-y-2 relative">
-                        <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Cause of Death <span className="text-red-500">*</span></label>
+                        <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Cause of Death / Sanhi ng Kamatayan <span className="text-red-500">*</span></label>
                         <input type="text" name="causeOfDeath" value={formData.causeOfDeath} onChange={handleInputChange} placeholder="E.G. HEART ATTACK (MILD STROKE)" className={`w-full px-6 py-5 bg-white border-2 ${errors.causeOfDeath ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 transition-all outline-none uppercase font-extrabold text-gray-800 shadow-sm`} />
                       </div>
                     </div>
@@ -375,7 +375,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
                 <div className="flex gap-3 w-full sm:w-auto">
                   <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-[#112e1f] to-[#2d5a3d] hover:from-[#2d5a3d] hover:to-[#112e1f] text-white rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-1 transition-all duration-300 group">
                     <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    Submit Application
+                    Submit Application / Ipadala ang Aplikasyon
                   </button>
                 </div>
               </div>

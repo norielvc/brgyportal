@@ -264,7 +264,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                           onClick={() => setIsResidentModalOpen(true)}
                           className={`w-full px-4 py-3 md:px-6 md:py-4.5 bg-white border-2 ${errors.firstName ? 'border-red-500 bg-red-50' : (formData.firstName ? 'border-emerald-200 ring-2 ring-emerald-50 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-2xl transition-all duration-300 font-black text-base md:text-lg cursor-pointer hover:border-emerald-300 shadow-sm text-center`}
                         />
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center block">First Name</span>
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center block">First Name / Pangalan</span>
                       </div>
                       <div className="space-y-2">
                         <input type="text" value={formData.middleName} readOnly disabled className="w-full px-4 py-3 md:px-6 md:py-4.5 bg-gray-50/50 border-2 border-gray-100 rounded-2xl text-gray-500 font-bold text-center italic" />
@@ -272,7 +272,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                       </div>
                       <div className="space-y-2">
                         <input type="text" value={formData.lastName} readOnly disabled className="w-full px-4 py-3 md:px-6 md:py-4.5 bg-gray-50/50 border-2 border-gray-100 rounded-2xl text-gray-500 font-bold text-center italic" />
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center block">Last Name</span>
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center block">Last Name / Apelyido</span>
                       </div>
                     </div>
                   </div>
@@ -284,11 +284,11 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                     <input type="number" value={formData.age} readOnly disabled className="w-full px-4 py-3 md:px-5 md:py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-gray-600 font-black focus:outline-none shadow-inner" />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sex</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sex / Kasarian</label>
                     <input type="text" value={formData.gender || 'N/A'} readOnly disabled className="w-full px-4 py-3 md:px-5 md:py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-gray-600 font-black uppercase focus:outline-none shadow-inner" />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Civil Status</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Civil Status / Katayuang Sibil</label>
                     <input type="text" value={formData.civilStatus || 'N/A'} readOnly disabled className="w-full px-4 py-3 md:px-5 md:py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-gray-600 font-black uppercase focus:outline-none shadow-inner" />
                   </div>
                 </div>
@@ -306,7 +306,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3 relative group">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Email Address (Optional)</label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none border-r pr-3 border-gray-100">
                         <Pen className="w-4 h-4 text-emerald-600/50" />

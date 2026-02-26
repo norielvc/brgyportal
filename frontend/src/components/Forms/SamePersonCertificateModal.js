@@ -295,7 +295,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-blue-900 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">1</div>
                                                 <div>
-                                                    <h3 className="text-xl font-bold text-gray-900">Personal Information</h3>
+                                                    <h3 className="text-xl font-bold text-gray-900">Personal Information / Impormasyong Personal</h3>
                                                     <p className="text-sm text-gray-500 font-medium tracking-tight">Auto-filled via community database</p>
                                                 </div>
                                             </div>
@@ -322,7 +322,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                                                 <input type="number" name="age" value={formData.age} readOnly className="w-full px-5 py-3.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 font-bold focus:outline-none cursor-not-allowed" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sex</label>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sex / Kasarian</label>
                                                 <select name="sex" value={formData.sex} disabled className="w-full px-5 py-3.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 font-bold uppercase focus:outline-none cursor-not-allowed appearance-none">
                                                     <option value="">Select Sex</option>
                                                     <option value="Male">Male</option>
@@ -330,7 +330,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                                                 </select>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Civil Status</label>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Civil Status / Katayuang Sibil</label>
                                                 <select name="civilStatus" value={formData.civilStatus} disabled className="w-full px-5 py-3.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 font-bold uppercase focus:outline-none cursor-not-allowed appearance-none">
                                                     <option value="">Select Status</option>
                                                     <option value="Single">Single</option>
@@ -362,7 +362,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                                                 <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full px-4 py-3 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-blue-100'} rounded-xl focus:border-blue-500 transition-all shadow-sm`} />
                                             </div>
                                             <div className="space-y-6">
-                                                <label className="text-xs font-bold text-blue-900 uppercase tracking-widest ml-1 block">Email Address (Optional)</label>
+                                                <label className="text-xs font-bold text-blue-900 uppercase tracking-widest ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
                                                 <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="username@example.com" className={`w-full px-4 py-3 bg-white border-2 border-blue-100 rounded-xl focus:border-blue-500 transition-all shadow-sm font-normal`} />
                                             </div>
                                         </div>
@@ -375,7 +375,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                                 <div className="flex gap-3 w-full sm:w-auto">
                                     <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-indigo-900 hover:to-blue-900 text-white rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl hover:shadow-blue-900/20 transform hover:-translate-y-1 transition-all group">
                                         <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                        Submit Application
+                                        Submit Application / Ipadala ang Aplikasyon
                                     </button>
                                 </div>
                             </div>

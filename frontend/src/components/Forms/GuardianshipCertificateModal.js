@@ -265,11 +265,11 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                             <input type="text" value={formData.fullName} readOnly onClick={() => { setSearchType('ward'); setIsResidentModalOpen(true); }} placeholder="TAP SEARCH BUTTON TO SELECT WARD..." className={`w-full px-5 py-4 bg-white border-2 ${errors.fullName ? 'border-red-500 bg-red-50' : (formData.fullName ? 'border-emerald-200 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-xl font-bold cursor-pointer transition-all hover:border-emerald-300 shadow-sm`} />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-center block">Age</label>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-center block">Age / Edad</label>
                                             <input type="text" value={formData.age} readOnly disabled className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 font-bold text-center" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-center block">Sex</label>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-center block">Sex / Kasarian</label>
                                             <input type="text" value={formData.sex} readOnly disabled className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 font-bold text-center" />
                                         </div>
                                     </div>
@@ -330,7 +330,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                             <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full px-5 py-4 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-xl focus:border-[#112117] outline-none font-extrabold text-gray-800 shadow-sm`} />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-[#112117] uppercase tracking-widest ml-1 block">Email Address (Optional)</label>
+                                            <label className="text-xs font-bold text-[#112117] uppercase tracking-widest ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
                                             <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="username@example.com" className="w-full px-5 py-4 bg-white border-2 border-gray-100 rounded-xl focus:border-[#112117] outline-none font-normal text-gray-800 shadow-sm" />
                                         </div>
                                     </div>
@@ -371,7 +371,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                             <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print">
                                 <button onClick={() => setShowConfirmationPopup(false)} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50">Go Back & Edit</button>
                                 <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-8 py-3.5 bg-gradient-to-r from-[#112e1f] to-[#2d5a3d] hover:from-[#2d5a3d] hover:to-[#112e1f] text-white rounded-2xl font-extrabold flex items-center justify-center gap-3 shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-75">
-                                    {isSubmitting ? 'Processing...' : 'Confirm & Submit Application'}
+                                    {isSubmitting ? 'Processing...' : 'Confirm & Submit Application / Ipadala ang Aplikasyon'}
                                 </button>
                             </div>
                         </div>

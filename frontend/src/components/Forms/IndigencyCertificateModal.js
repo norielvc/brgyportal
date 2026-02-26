@@ -278,7 +278,7 @@ export default function IndigencyCertificateModal({ isOpen, onClose }) {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-[#112e1f] text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">1</div>
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">Personal Information</h3>
+                          <h3 className="text-xl font-bold text-gray-900">Personal Information / Impormasyong Personal</h3>
                           <p className="text-sm text-gray-500 font-medium tracking-wide">Verify your registered details</p>
                         </div>
                       </div>
@@ -289,7 +289,7 @@ export default function IndigencyCertificateModal({ isOpen, onClose }) {
                     </div>
 
                     <div className="relative group">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Resident Full Name</label>
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Resident Full Name / Buong Pangalan ng Residente</label>
                       <input type="text" name="fullName" value={formData.fullName} readOnly onClick={() => setIsResidentModalOpen(true)} placeholder="TAP HERE TO SELECT FROM RESIDENT DIRECTORY..." className={`w-full px-6 py-5 bg-white border-2 ${errors.fullName ? 'border-red-500 bg-red-50' : (formData.fullName ? 'border-emerald-200 ring-2 ring-emerald-50 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-2xl transition-all duration-300 font-extrabold text-lg cursor-pointer hover:border-emerald-300 text-center tracking-wide shadow-sm`} />
                     </div>
 
@@ -300,7 +300,7 @@ export default function IndigencyCertificateModal({ isOpen, onClose }) {
                           <input type="number" name="age" value={formData.age} readOnly disabled className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-gray-600 font-bold focus:outline-none" />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sex</label>
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sex / Kasarian</label>
                           <input type="text" value={formData.gender || 'N/A'} readOnly disabled className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-gray-600 font-bold uppercase focus:outline-none" />
                         </div>
                       </div>
@@ -314,14 +314,14 @@ export default function IndigencyCertificateModal({ isOpen, onClose }) {
                       <div className="flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 bg-[#2d5a3d] text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">2</div>
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">Notification & Contact</h3>
+                          <h3 className="text-xl font-bold text-gray-900">Notification & Contact / Notipikasyon at Contact</h3>
                           <p className="text-sm text-gray-500 font-medium tracking-wide">Where to receive your updates</p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-2 relative group">
-                          <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Email Address (Optional)</label>
+                          <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
                           <div className="relative">
                             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none border-r pr-3 border-gray-100">
                               <Mail className="w-5 h-5 text-[#2d5a3d]/50" />
@@ -332,7 +332,7 @@ export default function IndigencyCertificateModal({ isOpen, onClose }) {
                         </div>
 
                         <div className="space-y-2 relative group">
-                          <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Contact Number <span className="text-red-500">*</span></label>
+                          <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Contact Number / Numero ng Telepono <span className="text-red-500">*</span></label>
                           <div className="relative">
                             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none border-r pr-3 border-gray-100">
                               <Phone className="w-5 h-5 text-[#2d5a3d]/50" />
@@ -347,7 +347,7 @@ export default function IndigencyCertificateModal({ isOpen, onClose }) {
                       <div className="flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 bg-[#112117] text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">3</div>
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">Application Intent</h3>
+                          <h3 className="text-xl font-bold text-gray-900">Application Intent / Layunin ng Aplikasyon</h3>
                         </div>
                       </div>
                       <div className="space-y-2 relative">
@@ -364,7 +364,7 @@ export default function IndigencyCertificateModal({ isOpen, onClose }) {
                 <div className="flex gap-3 w-full sm:w-auto">
                   <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-[#112e1f] to-[#2d5a3d] hover:from-[#2d5a3d] hover:to-[#112e1f] text-white rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-1 transition-all group">
                     <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    Submit Application
+                    Submit Application / Ipadala ang Aplikasyon
                   </button>
                 </div>
               </div>

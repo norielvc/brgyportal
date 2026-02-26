@@ -249,11 +249,11 @@ export default function MedicoLegalModal({ isOpen, onClose }) {
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1">
-                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Age</label>
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Age / Edad</label>
                                                 <input type="text" value={formData.age} readOnly className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 font-bold" />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Sex</label>
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Sex / Kasarian</label>
                                                 <input type="text" value={formData.sex} readOnly className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 font-bold" />
                                             </div>
                                         </div>
@@ -261,7 +261,7 @@ export default function MedicoLegalModal({ isOpen, onClose }) {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-1">
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Residential Address</label>
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Residential Address / Tirahan</label>
                                             <input type="text" value={formData.address} readOnly className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 font-bold uppercase" />
                                         </div>
                                         <div className="space-y-1">
@@ -331,7 +331,7 @@ export default function MedicoLegalModal({ isOpen, onClose }) {
                                             </div>
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-bold text-blue-700 uppercase tracking-widest ml-1">Email Address (Optional)</label>
+                                            <label className="text-xs font-bold text-blue-700 uppercase tracking-widest ml-1">Email Address (Optional) / Email (Opsyonal)</label>
                                             <div className="relative">
                                                 <Info className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                                 <input
@@ -360,7 +360,7 @@ export default function MedicoLegalModal({ isOpen, onClose }) {
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Verify all information before starting the approval workflow</p>
                             <div className="flex gap-3 w-full sm:w-auto">
                                 <button onClick={onClose} className="flex-1 sm:flex-none px-6 py-3 text-gray-500 font-bold hover:text-gray-700 transition-colors uppercase tracking-widest text-xs">Cancel</button>
-                                <button onClick={handleSubmit} className="flex-1 sm:flex-none px-10 py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg transform hover:-translate-y-0.5 transition-all">Submit Application</button>
+                                <button onClick={handleSubmit} className="flex-1 sm:flex-none px-10 py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg transform hover:-translate-y-0.5 transition-all">Submit Application / Ipadala ang Aplikasyon</button>
                             </div>
                         </div>
                     </div>

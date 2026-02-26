@@ -241,7 +241,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Age</label>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Age / Edad</label>
                                             <input type="number" value={formData.age} readOnly className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600 font-bold" />
                                         </div>
                                         <div className="space-y-2">
@@ -263,7 +263,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="md:col-span-2 space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Partner Full Name</label>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Partner Full Name / Buong Pangalan ng Kapareha</label>
                                             <div className="flex gap-2">
                                                 <input
                                                     type="text"
@@ -280,7 +280,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Age</label>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Age / Edad</label>
                                             <input type="number" value={formData.partnerAge} readOnly className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600 font-bold" />
                                         </div>
                                         <div className="space-y-2">
@@ -377,7 +377,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                             <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} className={`w-full px-5 py-4 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl font-bold text-gray-900 focus:border-rose-500 outline-none`} placeholder="09XX XXX XXXX" />
                                         </div>
                                         <div className="space-y-2 text-sm">
-                                            <label className="text-xs font-bold text-rose-800 uppercase tracking-widest ml-1 block">Email Address (Optional)</label>
+                                            <label className="text-xs font-bold text-rose-800 uppercase tracking-widest ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
                                             <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="username@example.com" className="w-full px-5 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-rose-500 outline-none font-normal text-gray-900 transition-all shadow-sm" />
                                         </div>
                                     </div>
@@ -536,12 +536,12 @@ const CohabitationPreview = React.memo(({ formData, currentDate, officials, refe
                                         <span className="font-bold text-[18.5px] uppercase">{formData.fullName || '____________________'}</span>
                                     </div>
                                     <div className="grid grid-cols-[160px_20px_1fr] items-baseline">
-                                        <span>Age</span>
+                                        <span>Age / Edad</span>
                                         <span>:</span>
                                         <span>{formData.age || '_______'}</span>
                                     </div>
                                     <div className="grid grid-cols-[160px_20px_1fr] items-baseline">
-                                        <span>Sex</span>
+                                        <span>Sex / Kasarian</span>
                                         <span>:</span>
                                         <span>{formData.gender || '_______'}</span>
                                     </div>
@@ -560,12 +560,12 @@ const CohabitationPreview = React.memo(({ formData, currentDate, officials, refe
                                         <span className="font-bold text-[18.5px] uppercase">{formData.partnerFullName || '____________________'}</span>
                                     </div>
                                     <div className="grid grid-cols-[160px_20px_1fr] items-baseline">
-                                        <span>Age</span>
+                                        <span>Age / Edad</span>
                                         <span>:</span>
                                         <span>{formData.partnerAge || '_______'}</span>
                                     </div>
                                     <div className="grid grid-cols-[160px_20px_1fr] items-baseline">
-                                        <span>Sex</span>
+                                        <span>Sex / Kasarian</span>
                                         <span>:</span>
                                         <span>{formData.partnerGender || '_______'}</span>
                                     </div>
