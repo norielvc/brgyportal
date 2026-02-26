@@ -245,11 +245,11 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
 
                             {notification && <div className="px-6 pt-4"><Notification {...notification} onClose={() => setNotification(null)} /></div>}
 
-                            <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                            <div className="flex-1 overflow-y-auto p-8 space-y-4 md:space-y-6">
                                 {/* Ward Information */}
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
                                             <div className="w-8 h-8 bg-[#112e1f] text-white rounded-lg flex items-center justify-center font-bold shadow-md">1</div>
                                             <h3 className="text-lg font-bold text-gray-900 tracking-tight">Person Under Guardianship (Ward)</h3>
                                         </div>
@@ -278,7 +278,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                 {/* Guardian Information */}
                                 <div className="space-y-6 pt-4 border-t border-gray-100">
                                     <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
                                             <div className="w-8 h-8 bg-[#2d5a3d] text-white rounded-lg flex items-center justify-center font-bold shadow-md">2</div>
                                             <h3 className="text-lg font-bold text-gray-900 tracking-tight">Guardian Information</h3>
                                         </div>
@@ -320,7 +320,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
 
                                 {/* Final step - Contact Info */}
                                 <div className="space-y-6 pt-4 border-t border-gray-100">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
                                         <div className="w-8 h-8 bg-[#112117] text-white rounded-lg flex items-center justify-center font-bold shadow-md">3</div>
                                         <h3 className="text-lg font-bold text-gray-900 tracking-tight">Contact Information</h3>
                                     </div>
@@ -340,7 +340,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                             <div className="border-t bg-gray-50/80 backdrop-blur-md px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print pb-12 sm:pb-6">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest hidden sm:block">Please verify all information before submission</p>
                                 <div className="flex gap-3 w-full sm:w-auto">
-                                    <button type="button" onClick={handleSubmit} className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-[#112e1f] to-[#2d5a3d] hover:from-[#2d5a3d] hover:to-[#112e1f] text-white rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl transform hover:-translate-y-1 transition-all duration-300 group">
+                                    <button type="button" onClick={handleSubmit} className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl transform hover:-translate-y-1 transition-all duration-300 group">
                                         <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                         Review & Submit
                                     </button>
@@ -370,7 +370,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                             </div>
                             <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print">
                                 <button onClick={() => setShowConfirmationPopup(false)} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50">Go Back & Edit</button>
-                                <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-8 py-3.5 bg-gradient-to-r from-[#112e1f] to-[#2d5a3d] hover:from-[#2d5a3d] hover:to-[#112e1f] text-white rounded-2xl font-extrabold flex items-center justify-center gap-3 shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-75">
+                                <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-8 py-3.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-extrabold flex items-center justify-center gap-3 shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-75">
                                     {isSubmitting ? 'Processing...' : 'Confirm & Submit Application / Ipadala ang Aplikasyon'}
                                 </button>
                             </div>
@@ -481,7 +481,7 @@ const GuardianshipPreview = React.memo(({ formData, referenceNumber, currentDate
                         <div className="relative z-10 flex flex-col items-center">
                             <h2 className="text-[26px] font-bold mb-12 border-b-4 border-black inline-block pb-1 px-6 uppercase text-[#1e40af] tracking-tight">BARANGAY CERTIFICATION FOR GUARDIANSHIP</h2>
 
-                            <div className="w-full space-y-8 text-[16px] text-black">
+                            <div className="w-full space-y-4 md:space-y-6 text-[16px] text-black">
                                 <p className="font-bold text-lg mb-8">TO WHOM IT MAY CONCERN:</p>
 
                                 <p className="mb-10 leading-relaxed text-justify">

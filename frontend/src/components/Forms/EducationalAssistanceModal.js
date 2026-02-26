@@ -184,7 +184,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
               <h2 className="text-lg md:text-2xl font-black text-white leading-none tracking-tight">Educational Assistance</h2>
               <div className="flex items-center gap-2 mt-1.5">
                 <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                <p className="text-green-100/80 text-[10px] md:text-sm font-bold uppercase tracking-widest leading-none">Scholarship Filing Portal</p>
+                <p className="text-white text-[10px] md:text-xs font-black uppercase tracking-widest px-4 py-1.5 bg-red-600 rounded-l-full rounded-tr-md rounded-br-md shadow-md mt-2 block">Scholarship Filing Portal</p>
               </div>
             </div>
           </div>
@@ -229,13 +229,13 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
 
             <form className="space-y-12">
               {/* Step 1: Personal Profile */}
-              <div className="space-y-8 animate-fade-in-up">
+              <div className="space-y-4 md:space-y-6 animate-fade-in-up">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-5">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#112e1f] text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-xl ring-4 ring-emerald-50">1</div>
+                    <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">1</div>
                     <div>
-                      <h3 className="text-xl font-black text-gray-900 tracking-tight">Personal Profile</h3>
-                      <p className="text-sm text-gray-500 font-bold uppercase tracking-widest opacity-60">Verified Community Identity</p>
+                      <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Personal Profile</h3>
+                      <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Verified Community Identity</p>
                     </div>
                   </div>
 
@@ -295,12 +295,12 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
               </div>
 
               {/* Step 2: Contact & Identification */}
-              <div className="space-y-8 animate-fade-in-up [animation-delay:0.1s]">
-                <div className="flex items-center gap-4 border-b border-gray-100 pb-5">
-                  <div className="w-12 h-12 bg-emerald-700 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-xl ring-4 ring-emerald-50">2</div>
+              <div className="space-y-4 md:space-y-6 animate-fade-in-up [animation-delay:0.1s]">
+                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+<div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">2</div>
                   <div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Notification & Residency</h3>
-                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest opacity-60">Where to receive your updates</p>
+                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Notification & Residency</h3>
+                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Where to receive your updates</p>
                   </div>
                 </div>
 
@@ -374,12 +374,12 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
               </div>
 
               {/* Step 3: Academic Information */}
-              <div className="space-y-8 animate-fade-in-up [animation-delay:0.2s]">
-                <div className="flex items-center gap-4 border-b border-gray-100 pb-5">
-                  <div className="w-12 h-12 bg-emerald-900 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-xl ring-4 ring-emerald-50">3</div>
+              <div className="space-y-4 md:space-y-6 animate-fade-in-up [animation-delay:0.2s]">
+                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+<div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">3</div>
                   <div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Academic Profile</h3>
-                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest opacity-60">Educational Status & performance</p>
+                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Academic Profile</h3>
+                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Educational Status & performance</p>
                   </div>
                 </div>
 
@@ -440,12 +440,12 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
               </div>
 
               {/* Step 4: Digital Verification */}
-              <div className="space-y-8 animate-fade-in-up [animation-delay:0.3s]">
-                <div className="flex items-center gap-4 border-b border-gray-100 pb-5">
-                  <div className="w-12 h-12 bg-[#2d5a3d] text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-xl ring-4 ring-emerald-50">4</div>
+              <div className="space-y-4 md:space-y-6 animate-fade-in-up [animation-delay:0.3s]">
+                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+<div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">4</div>
                   <div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Identity Validation</h3>
-                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest opacity-60">Digital Signature & Contact</p>
+                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Identity Validation</h3>
+                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Digital Signature & Contact</p>
                   </div>
                 </div>
 
@@ -505,7 +505,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
         </div>
 
         {/* Premium Footer */}
-        <div className="border-t bg-gray-50/80 backdrop-blur-md px-4 py-4 md:px-8 md:py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print pb-6 md:pb-6 flex-shrink-0 safe-pb">
+        <div className="border-t bg-gray-50/80 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 flex flex-col sm:flex-row gap-4 justify-between items-center no-print pb-6 md:pb-6 flex-shrink-0 safe-pb">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hidden sm:block">Verify information before final filing</p>
 
           <div className="flex gap-4 w-full sm:w-auto">
@@ -519,7 +519,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none px-12 py-4 bg-gradient-to-r from-[#112e1f] to-[#2d5a3d] hover:from-[#2d5a3d] hover:to-[#112e1f] text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-2xl hover:shadow-emerald-900/40 transform hover:-translate-y-1 transition-all duration-500 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed group"
+              className="flex-1 sm:flex-none px-12 py-4 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-2xl hover:shadow-emerald-900/40 transform hover:-translate-y-1 transition-all duration-500 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed group"
             >
               {isSubmitting ? (
                 <>
@@ -554,7 +554,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
             </div>
 
             {/* Success Details */}
-            <div className="p-8 text-center space-y-8">
+            <div className="p-8 text-center space-y-4 md:space-y-6">
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-[2rem] p-8 shadow-inner relative group">
                 <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
                 <p className="text-[10px] font-black text-emerald-800 uppercase tracking-[0.3em] mb-4 opacity-50">Reference ID</p>

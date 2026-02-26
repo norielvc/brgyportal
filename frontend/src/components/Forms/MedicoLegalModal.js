@@ -212,7 +212,7 @@ export default function MedicoLegalModal({ isOpen, onClose }) {
                         {notification && <div className="px-8 pt-4"><Notification type={notification.type} title={notification.title} message={notification.message} onClose={() => setNotification(null)} /></div>}
 
                         <div className="flex-1 overflow-y-auto px-8 py-6">
-                            <form onSubmit={handleSubmit} className="space-y-8">
+                            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
                                 {/* Notice */}
                                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
                                     <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />

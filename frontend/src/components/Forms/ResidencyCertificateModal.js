@@ -243,7 +243,7 @@ export default function ResidencyCertificateModal({ isOpen, onClose }) {
             <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
 
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden animate-fade-in no-scrollbar">
-              <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-4 py-4 md:px-8 md:py-6 flex items-center justify-between border-b border-white/10 relative overflow-hidden flex-shrink-0">
+              <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-4 py-3 md:px-6 md:py-4 flex items-center justify-between border-b border-white/10 relative overflow-hidden flex-shrink-0">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
                 <div className="flex items-center gap-3 md:gap-5 relative z-10">
                   <div className="bg-white/20 backdrop-blur-md p-2 md:p-3.5 rounded-xl md:rounded-2xl border border-white/30 shadow-xl"><FileText className="w-6 h-6 md:w-8 md:h-8 text-white shadow-sm" /></div>
@@ -251,7 +251,7 @@ export default function ResidencyCertificateModal({ isOpen, onClose }) {
                     <h2 className="text-lg md:text-2xl font-extrabold text-white tracking-tight drop-shadow-md">Barangay Residency</h2>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
-                      <p className="text-emerald-50/90 text-[10px] md:text-xs font-bold uppercase tracking-widest px-2 py-0.5 bg-white/10 rounded-full border border-white/5">{referenceNumber || 'New Residency Request'}</p>
+                      <p className="text-white text-[10px] md:text-xs font-black uppercase tracking-widest px-4 py-1.5 bg-red-600 rounded-l-full rounded-tr-md rounded-br-md shadow-md">{referenceNumber || 'New Residency Request'}</p>
                     </div>
                   </div>
                 </div>
@@ -261,7 +261,7 @@ export default function ResidencyCertificateModal({ isOpen, onClose }) {
               {notification && <div className="px-6 pt-4"><Notification type={notification.type} title={notification.title} message={notification.message} onClose={() => setNotification(null)} /></div>}
 
               <div className="flex-1 overflow-y-auto">
-                <form onSubmit={handleSubmit} className="p-8 space-y-10">
+                <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6">
                   <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
                     <div className="flex items-start gap-4 relative z-10">
                       <div className="bg-emerald-100 p-3 rounded-xl border border-emerald-200 shadow-sm"><Info className="w-6 h-6 text-emerald-600" /></div>
@@ -272,12 +272,12 @@ export default function ResidencyCertificateModal({ isOpen, onClose }) {
                     </div>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-4 md:space-y-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#112e1f] text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">1</div>
+                      <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+                        <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">1</div>
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">Personal Information / Impormasyong Personal</h3>
+                          <h3 className="text-lg md:text-xl font-bold text-white">Personal Information / Impormasyong Personal</h3>
                           <p className="text-sm text-gray-500 font-medium tracking-tight">Auto-filled via community database</p>
                         </div>
                       </div>
@@ -309,11 +309,11 @@ export default function ResidencyCertificateModal({ isOpen, onClose }) {
                     </div>
 
                     <div className="pt-6 border-t border-gray-100">
-                      <div className="flex items-center gap-3 mb-8">
-                        <div className="w-10 h-10 bg-[#2d5a3d] text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">2</div>
+                      <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+                        <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">2</div>
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">Notification & Contact / Notipikasyon at Contact</h3>
-                          <p className="text-sm text-gray-500 font-medium tracking-wide">Where to receive your updates</p>
+                          <h3 className="text-lg md:text-xl font-bold text-white">Notification & Contact / Notipikasyon at Contact</h3>
+                          <p className="text-xs text-white/90 font-medium tracking-wide">Where to receive your updates</p>
                         </div>
                       </div>
 
@@ -342,10 +342,10 @@ export default function ResidencyCertificateModal({ isOpen, onClose }) {
                     </div>
 
                     <div className="pt-6 border-t border-gray-100">
-                      <div className="flex items-center gap-3 mb-8">
-                        <div className="w-10 h-10 bg-[#112117] text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">3</div>
+                      <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+                        <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">3</div>
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">Application Intent / Layunin ng Aplikasyon</h3>
+                          <h3 className="text-lg md:text-xl font-bold text-white">Application Intent / Layunin ng Aplikasyon</h3>
                         </div>
                       </div>
                       <div className="space-y-2 relative">
@@ -360,7 +360,7 @@ export default function ResidencyCertificateModal({ isOpen, onClose }) {
               <div className="border-t bg-gray-50/80 backdrop-blur-md px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print pb-12 sm:pb-6">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest hidden sm:block">Please check all entries before final submission</p>
                 <div className="flex gap-3 w-full sm:w-auto">
-                  <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-[#112e1f] to-[#2d5a3d] hover:from-[#2d5a3d] hover:to-[#112e1f] text-white rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-1 transition-all group">
+                  <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-1 transition-all group">
                     <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     Submit Application / Ipadala ang Aplikasyon
                   </button>
@@ -390,7 +390,7 @@ export default function ResidencyCertificateModal({ isOpen, onClose }) {
               </div>
               <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print">
                 <button onClick={handleCustomizeForm} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-2xl font-bold flex items-center justify-center gap-2 outline-none"><Eye className="w-5 h-5" />Go Back & Edit</button>
-                <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-8 py-3.5 bg-gradient-to-r from-[#112e1f] to-[#2d5a3d] hover:from-[#2d5a3d] hover:to-[#112e1f] text-white rounded-2xl font-extrabold flex items-center justify-center gap-3 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all">
+                <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-8 py-3.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-extrabold flex items-center justify-center gap-3 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all">
                   {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
                 </button>
               </div>

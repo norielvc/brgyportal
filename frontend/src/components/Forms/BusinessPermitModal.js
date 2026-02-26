@@ -148,7 +148,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
       <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden animate-fade-in my-auto border border-white/20">
 
         {/* Premium Nature Header */}
-        <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-4 py-4 md:px-8 md:py-7 flex items-center justify-between border-b border-white/10 relative overflow-hidden flex-shrink-0">
+        <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-4 py-3 md:px-6 md:py-4 flex items-center justify-between border-b border-white/10 relative overflow-hidden flex-shrink-0">
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
 
           <div className="flex items-center gap-3 md:gap-5 relative z-10">
@@ -159,7 +159,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
               <h2 className="text-lg md:text-2xl font-black text-white tracking-tight leading-none">Business Clearance</h2>
               <div className="flex items-center gap-2 mt-1.5">
                 <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                <p className="text-green-100/80 text-[10px] md:text-sm font-bold uppercase tracking-widest leading-none">Commercial Permit Portal</p>
+                <p className="text-white text-[10px] md:text-xs font-black uppercase tracking-widest px-4 py-1.5 bg-red-600 rounded-l-full rounded-tr-md rounded-br-md shadow-md mt-2 block">Commercial Permit Portal</p>
               </div>
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
         {/* Optimized Form Body */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="p-8 space-y-10">
+          <div className="p-4 md:p-6 space-y-6">
 
             {/* Status Notice */}
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
@@ -207,12 +207,12 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
             <form onSubmit={handleSubmit} className="space-y-12">
 
               {/* Step 1: Business Profile */}
-              <div className="space-y-8">
-                <div className="flex items-center gap-4 border-b border-gray-100 pb-5">
-                  <div className="w-12 h-12 bg-[#112e1f] text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-xl ring-4 ring-emerald-50">1</div>
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+<div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">1</div>
                   <div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Business Enterprise Information</h3>
-                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest opacity-60">Legal Entity Identification</p>
+                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Business Enterprise Information</h3>
+                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Legal Entity Identification</p>
                   </div>
                 </div>
 
@@ -272,12 +272,12 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
               </div>
 
               {/* Step 2: Owner Profile */}
-              <div className="space-y-8">
-                <div className="flex items-center gap-4 border-b border-gray-100 pb-5">
-                  <div className="w-12 h-12 bg-emerald-700 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-xl ring-4 ring-emerald-50">2</div>
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+<div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">2</div>
                   <div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Proprietor Information</h3>
-                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest opacity-60">Owner Identity details</p>
+                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Proprietor Information</h3>
+                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Owner Identity details</p>
                   </div>
                 </div>
 
@@ -310,12 +310,12 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
               </div>
 
               {/* Step 3: Operational Details */}
-              <div className="space-y-8">
-                <div className="flex items-center gap-4 border-b border-gray-100 pb-5">
-                  <div className="w-12 h-12 bg-emerald-900 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-xl ring-4 ring-emerald-50">3</div>
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+<div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">3</div>
                   <div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Operational Profile</h3>
-                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest opacity-60">Commercial scale & Purpose</p>
+                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Operational Profile</h3>
+                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Commercial scale & Purpose</p>
                   </div>
                 </div>
 
@@ -383,7 +383,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none px-12 py-4 bg-gradient-to-r from-[#112e1f] to-[#2d5a3d] hover:from-[#2d5a3d] hover:to-[#112e1f] text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-2xl hover:shadow-emerald-900/40 transform hover:-translate-y-1 transition-all duration-500 disabled:opacity-50 group"
+              className="flex-1 sm:flex-none px-12 py-4 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-2xl hover:shadow-emerald-900/40 transform hover:-translate-y-1 transition-all duration-500 disabled:opacity-50 group"
             >
               {isSubmitting ? (
                 <>
@@ -418,7 +418,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
             </div>
 
             {/* Success Details */}
-            <div className="p-8 text-center space-y-8">
+            <div className="p-8 text-center space-y-4 md:space-y-6">
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-[2rem] p-8 shadow-inner relative group">
                 <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
                 <p className="text-[10px] font-black text-emerald-800 uppercase tracking-[0.3em] mb-4 opacity-50">Reference ID</p>

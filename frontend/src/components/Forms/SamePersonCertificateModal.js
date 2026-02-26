@@ -261,7 +261,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
 
                         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden animate-fade-in">
-                            <div className="bg-gradient-to-r from-blue-900 to-indigo-900 px-4 py-4 md:px-8 md:py-6 flex items-center justify-between border-b border-white/10 relative overflow-hidden flex-shrink-0">
+                            <div className="bg-gradient-to-r from-blue-900 to-indigo-900 px-4 py-3 md:px-6 md:py-4 flex items-center justify-between border-b border-white/10 relative overflow-hidden flex-shrink-0">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
                                 <div className="flex items-center gap-3 md:gap-5 relative z-10">
                                     <div className="bg-white/20 backdrop-blur-md p-2 md:p-3.5 rounded-xl md:rounded-2xl border border-white/30 shadow-xl"><FileText className="w-6 h-6 md:w-8 md:h-8 text-white shadow-sm" /></div>
@@ -279,7 +279,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                             {notification && <div className="px-6 pt-4"><Notification type={notification.type} title={notification.title} message={notification.message} onClose={() => setNotification(null)} /></div>}
 
                             <div className="flex-1 overflow-y-auto">
-                                <form onSubmit={handleSubmit} className="p-8 space-y-10">
+                                <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6">
                                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
                                         <div className="flex items-start gap-4 relative z-10">
                                             <div className="bg-blue-100 p-3 rounded-xl border border-blue-200 shadow-sm"><Info className="w-6 h-6 text-blue-600" /></div>
@@ -290,12 +290,12 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-8">
+                                    <div className="space-y-4 md:space-y-6">
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-blue-900 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">1</div>
+                                            <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+                                                <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">1</div>
                                                 <div>
-                                                    <h3 className="text-xl font-bold text-gray-900">Personal Information / Impormasyong Personal</h3>
+                                                    <h3 className="text-lg md:text-xl font-bold text-white">Personal Information / Impormasyong Personal</h3>
                                                     <p className="text-sm text-gray-500 font-medium tracking-tight">Auto-filled via community database</p>
                                                 </div>
                                             </div>
