@@ -176,23 +176,27 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
           <div className="p-4 md:p-6 space-y-6">
 
             {/* Status Notice */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-              <div className="flex items-start gap-4 relative z-10">
-                <div className="bg-emerald-100 p-3 rounded-xl border border-emerald-200 shadow-sm flex-shrink-0">
-                  <Info className="w-6 h-6 text-emerald-600" />
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-sm font-black text-emerald-900 uppercase tracking-widest flex items-center gap-2">
-                    Commercial Registry Notice
-                  </h4>
-                  <p className="text-emerald-800/90 leading-relaxed text-sm font-medium">
-                    Owner must be a registered resident in the <span className="font-bold underline italic text-emerald-950">latest barangay census</span>.
-                    Non-resident business owners please visit the Barangay Hall for manual verification.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <div className="bg-amber-50 border-l-[6px] border-amber-500 rounded-r-2xl p-5 shadow-sm relative overflow-hidden mb-6 flex-shrink-0">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                      <div className="flex items-start gap-4 relative z-10">
+                        <div className="bg-gradient-to-br from-amber-400 to-amber-600 p-2.5 rounded-full shadow-md mt-1 shrink-0">
+                          <Info className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="space-y-2.5 flex-1">
+                          <div>
+                            <h4 className="font-extrabold text-amber-900 uppercase tracking-widest text-[11px] flex items-center gap-2 mb-1">
+                              Registration Notice / Paunawa
+                            </h4>
+                            <p className="text-amber-800 text-xs font-bold leading-relaxed mb-1">
+                              If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
+                            </p>
+                            <p className="text-amber-800/80 text-[11px] font-bold leading-relaxed">
+                              Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
             {submitStatus?.type === 'error' && (
               <div className="bg-rose-50 border border-rose-100 rounded-2xl p-5 flex items-center gap-4 animate-shake">

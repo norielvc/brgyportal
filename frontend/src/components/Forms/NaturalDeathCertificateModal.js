@@ -273,15 +273,27 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
 
               <div className="flex-1 overflow-y-auto">
                 <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6">
-                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
-                    <div className="flex items-start gap-4 relative z-10">
-                      <div className="bg-emerald-100 p-3 rounded-xl border border-emerald-200 shadow-sm"><Info className="w-6 h-6 text-emerald-600" /></div>
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-bold text-emerald-900 uppercase tracking-widest flex items-center gap-2">Official Requirement Notice</h4>
-                        <p className="text-emerald-800/90 leading-relaxed text-sm">This certification is issued upon the request of the deceased's relatives for legal purposes. The deceased must be a bona fide resident of this barangay.</p>
+                  <div className="bg-amber-50 border-l-[6px] border-amber-500 rounded-r-2xl p-5 shadow-sm relative overflow-hidden mb-6 flex-shrink-0">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                      <div className="flex items-start gap-4 relative z-10">
+                        <div className="bg-gradient-to-br from-amber-400 to-amber-600 p-2.5 rounded-full shadow-md mt-1 shrink-0">
+                          <Info className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="space-y-2.5 flex-1">
+                          <div>
+                            <h4 className="font-extrabold text-amber-900 uppercase tracking-widest text-[11px] flex items-center gap-2 mb-1">
+                              Registration Notice / Paunawa
+                            </h4>
+                            <p className="text-amber-800 text-xs font-bold leading-relaxed mb-1">
+                              If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
+                            </p>
+                            <p className="text-amber-800/80 text-[11px] font-bold leading-relaxed">
+                              Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
                   <div className="space-y-4 md:space-y-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
