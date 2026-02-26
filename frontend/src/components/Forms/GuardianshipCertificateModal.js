@@ -259,7 +259,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                         </button>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="md:col-span-2 space-y-2">
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
                                             <input type="text" value={formData.fullName} readOnly onClick={() => { setSearchType('ward'); setIsResidentModalOpen(true); }} placeholder="TAP SEARCH BUTTON TO SELECT WARD..." className={`w-full px-5 py-4 bg-white border-2 ${errors.fullName ? 'border-red-500 bg-red-50' : (formData.fullName ? 'border-emerald-200 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-xl font-bold cursor-pointer transition-all hover:border-emerald-300 shadow-sm`} />
@@ -288,7 +288,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                         </button>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="md:col-span-2 space-y-2">
                                             <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Guardian's Full Name <span className="text-red-500">*</span></label>
                                             <input type="text" name="guardianName" value={formData.guardianName} readOnly onClick={() => { setSearchType('guardian'); setIsResidentModalOpen(true); }} placeholder="TAP SEARCH BUTTON TO SELECT GUARDIAN..." className={`w-full px-5 py-4 bg-white border-2 ${errors.guardianName ? 'border-red-500 bg-red-50' : (formData.guardianName ? 'border-emerald-200 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-xl font-bold cursor-pointer transition-all hover:border-emerald-300 shadow-sm`} />
@@ -324,7 +324,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                         <div className="w-8 h-8 bg-[#112117] text-white rounded-lg flex items-center justify-center font-bold shadow-md">3</div>
                                         <h3 className="text-lg font-bold text-gray-900 tracking-tight">Contact Information</h3>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-[#112117] uppercase tracking-widest ml-1 block">Requestor's Contact Number <span className="text-red-500">*</span></label>
                                             <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full px-5 py-4 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-xl focus:border-[#112117] outline-none font-extrabold text-gray-800 shadow-sm`} />

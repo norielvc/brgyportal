@@ -293,23 +293,13 @@ export default function IndigencyCertificateModal({ isOpen, onClose }) {
                       <input type="text" name="fullName" value={formData.fullName} readOnly onClick={() => setIsResidentModalOpen(true)} placeholder="TAP HERE TO SELECT FROM RESIDENT DIRECTORY..." className={`w-full px-6 py-5 bg-white border-2 ${errors.fullName ? 'border-red-500 bg-red-50' : (formData.fullName ? 'border-emerald-200 ring-2 ring-emerald-50 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-2xl transition-all duration-300 font-extrabold text-lg cursor-pointer hover:border-emerald-300 text-center tracking-wide shadow-sm`} />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Current Age</label>
-                          <input type="number" name="age" value={formData.age} readOnly disabled className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-gray-600 font-bold focus:outline-none" />
+                    
+                    {formData.fullName && (
+                        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mt-4 flex items-center justify-center gap-2 text-emerald-700 shadow-inner">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            <span className="text-xs font-black uppercase tracking-widest italic">Personal Data Protected Under Data Privacy Act</span>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sex / Kasarian</label>
-                          <input type="text" value={formData.gender || 'N/A'} readOnly disabled className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-gray-600 font-bold uppercase focus:outline-none" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Registered Residential Address</label>
-                        <input type="text" value={formData.address || 'N/A'} readOnly disabled className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-gray-600 font-bold uppercase focus:outline-none" />
-                      </div>
-                    </div>
-
+                    )}
                     <div className="pt-6 border-t border-gray-100">
                       <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
                         <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">2</div>

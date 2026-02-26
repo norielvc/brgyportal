@@ -234,7 +234,7 @@ export default function MedicoLegalModal({ isOpen, onClose }) {
                                         </button>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
                                             <input
@@ -259,7 +259,7 @@ export default function MedicoLegalModal({ isOpen, onClose }) {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Residential Address / Tirahan</label>
                                             <input type="text" value={formData.address} readOnly className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 font-bold uppercase" />

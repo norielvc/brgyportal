@@ -305,7 +305,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                                             </button>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                             <div className="relative group">
                                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Name (1) - Primary Record</label>
                                                 <input type="text" name="fullName1" value={formData.fullName1} readOnly onClick={() => setIsResidentModalOpen(true)} placeholder="TAP HERE TO SELECT FROM RESIDENT DIRECTORY..." className={`w-full px-6 py-5 bg-white border-2 ${errors.fullName1 ? 'border-red-500 bg-red-50' : (formData.fullName1 ? 'border-blue-200 ring-2 ring-blue-50 text-blue-900' : 'border-gray-100 text-gray-400 italic')} rounded-2xl transition-all duration-300 font-extrabold text-lg cursor-pointer hover:border-blue-300 text-center tracking-wide shadow-sm uppercase`} />
@@ -341,18 +341,14 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Date of Birth</label>
-                                                <input type="date" name="dateOfBirth" value={formData.dateOfBirth} readOnly className="w-full px-5 py-3.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 font-bold focus:outline-none cursor-not-allowed" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Registered Address</label>
-                                                <input type="text" name="address" value={formData.address} readOnly className="w-full px-5 py-3.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 font-bold uppercase focus:outline-none cursor-not-allowed" />
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-6 border-t border-gray-100">
+                                        
+                    {formData.fullName && (
+                        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mt-4 flex items-center justify-center gap-2 text-emerald-700 shadow-inner">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            <span className="text-xs font-black uppercase tracking-widest italic">Personal Data Protected Under Data Privacy Act</span>
+                        </div>
+                    )}
+                    <div className="pt-6 border-t border-gray-100">
 
                                         </div>
 

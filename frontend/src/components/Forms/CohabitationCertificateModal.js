@@ -222,7 +222,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="md:col-span-2 space-y-2">
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Full Name</label>
                                             <div className="flex gap-2">
@@ -261,7 +261,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="md:col-span-2 space-y-2">
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Partner Full Name / Buong Pangalan ng Kapareha</label>
                                             <div className="flex gap-2">
@@ -300,7 +300,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="md:col-span-2 space-y-3">
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1">
                                                 <label className="text-xs font-black text-rose-800 uppercase tracking-widest ml-1 block">Common Residential Address</label>
