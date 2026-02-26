@@ -1751,12 +1751,12 @@ export default function BarangayPortal() {
       {/* Barangay Officials Section - Optimized */}
       <section id="officials" className="bg-gradient-to-br from-[#112e1f] via-[#1a3d29] to-[#0d1f14] relative overflow-hidden">
         {/* Header with modern aesthetic */}
-        <div className="text-center pt-20 pb-12 relative z-10">
-          <div className="inline-flex items-center gap-3 px-5 py-2 bg-white/10 border border-white/20 rounded-full mb-6">
-            <span className="text-green-300 font-bold text-xs tracking-[0.2em] uppercase">Executive Governance</span>
+        <div className="text-center pt-10 pb-6 md:pt-14 md:pb-8 relative z-10">
+          <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/10 border border-white/20 rounded-full mb-4">
+            <span className="text-green-300 font-bold text-[10px] tracking-[0.2em] uppercase">Executive Governance</span>
           </div>
 
-          <h3 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 tracking-tighter uppercase">
+          <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-3 tracking-tighter uppercase">
             {heroSettings?.title && heroSettings.title.includes('OFFICIALS') ? (
               <>Barangay <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">Officials</span></>
             ) : (
@@ -1778,7 +1778,7 @@ export default function BarangayPortal() {
           <img
             src={heroSettings?.image || '/images/barangay-officials.jpg'}
             alt={heroSettings?.title || "Barangay Officials"}
-            className="w-full h-auto md:h-[600px] lg:h-[800px] xl:h-[900px] md:object-cover bg-gray-800"
+            className="w-full h-auto md:h-[400px] lg:h-[500px] xl:h-[600px] md:object-cover bg-gray-800"
             onError={(e) => {
               e.target.src = '/background.jpg';
             }}
@@ -1788,26 +1788,26 @@ export default function BarangayPortal() {
         </div>
 
         {/* Text Section - Professional Leadership Introduction */}
-        <div className="bg-gradient-to-br from-[#112117] via-[#2d5a3d] to-[#112e1f] py-16 px-4">
+        <div className="bg-gradient-to-br from-[#112117] via-[#2d5a3d] to-[#112e1f] py-8 md:py-10 px-4">
           <div className="max-w-6xl mx-auto">
             {/* Leadership Header */}
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full mb-6">
-                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                <span className="text-green-200 font-semibold text-sm tracking-wide uppercase">Leadership Team</span>
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full mb-4">
+                <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
+                <span className="text-green-200 font-semibold text-[10px] tracking-wide uppercase">Leadership Team</span>
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
               </div>
 
-              <h4 className="text-4xl md:text-5xl lg:text-7xl font-black text-white mb-6 leading-none uppercase tracking-tight">
+              <h4 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 leading-none uppercase tracking-tight">
                 Barangay Iba O' Este
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-emerald-400 to-green-300">
                   Leadership Team
                 </span>
               </h4>
 
-              <div className="w-32 h-1 bg-gradient-to-r from-green-600 via-emerald-500 to-green-400 mx-auto mb-6 rounded-full"></div>
+              <div className="w-24 h-1 bg-gradient-to-r from-green-600 via-emerald-500 to-green-400 mx-auto mb-4 rounded-full"></div>
 
-              <p className="text-xl md:text-2xl text-green-100 font-light leading-relaxed max-w-3xl mx-auto">
+              <p className="text-lg md:text-xl text-green-100 font-light leading-relaxed max-w-2xl mx-auto">
                 Working together for our community's progress and development
               </p>
             </div>
@@ -1815,7 +1815,7 @@ export default function BarangayPortal() {
         </div>
 
         {/* Officials Details Section */}
-        <div className="bg-gradient-to-br from-gray-50 to-green-50 py-8 md:py-16 px-4">
+        <div className="bg-gradient-to-br from-gray-50 to-green-50 py-6 md:py-10 px-4">
           <div className="max-w-6xl mx-auto">
             {/* Section Header */}
             <div className="text-center mb-12">
