@@ -582,16 +582,16 @@ export default function BarangayPortal() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Large Portal Header with Date/Time and Weather */}
-      <div className="bg-gradient-to-r from-[#004700] to-[#001a00] py-4">
-        <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-8">
+      <div className="bg-gradient-to-r from-[#004700] to-[#001a00] py-2 md:py-3">
+        <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6">
           {/* Left Side - Logo and Title */}
-          <div className="flex items-center gap-4 md:gap-6">
-            <img src="/logo.png" alt="Iba O' Este Logo" className="h-20 w-20 md:h-24 md:w-24 object-contain drop-shadow-2xl" />
+          <div className="flex items-center gap-3 md:gap-4">
+            <img src="/logo.png" alt="Iba O' Este Logo" className="h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 object-contain drop-shadow-2xl" />
             <div className="text-center md:text-left">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg">
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">
                 IBA O' ESTE PORTAL
               </h1>
-              <p className="text-lg md:text-xl text-green-100 font-medium mt-1">
+              <p className="text-xs md:text-sm lg:text-base text-green-100 font-medium mt-0.5">
                 Calumpit, Bulacan
               </p>
             </div>
@@ -691,7 +691,7 @@ export default function BarangayPortal() {
       </nav>
 
       {/* Hero Section with News Carousel */}
-      <section id="news" className="relative h-[500px] md:h-[800px] overflow-hidden animate-on-scroll">
+      <section id="news" className="relative h-[400px] md:h-[450px] lg:h-[500px] xl:h-[600px] 2xl:h-[700px] overflow-hidden animate-on-scroll">
         {newsItems.map((item, index) => (
           <div
             key={index}
@@ -752,7 +752,7 @@ export default function BarangayPortal() {
       </section>
 
       {/* Available Forms Section - Modern Design with Responsive Background */}
-      <section id="forms" className="py-12 md:py-20 relative overflow-hidden animate-on-scroll">
+      <section id="forms" className="py-6 md:py-8 relative overflow-hidden animate-on-scroll">
         {/* Responsive Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-no-repeat hidden md:block"
@@ -779,28 +779,28 @@ export default function BarangayPortal() {
 
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Section Header */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-6">
             {/* Enhanced Online Services Badge */}
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#2d5a3d]/90 backdrop-blur-sm border border-[#4b6c56]/50 text-white rounded-full text-sm font-semibold mb-6 shadow-lg">
-              <div className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full">
-                <FileText className="w-4 h-4 text-white" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#2d5a3d]/90 backdrop-blur-sm border border-[#4b6c56]/50 text-white rounded-full text-xs font-semibold mb-4 shadow-lg">
+              <div className="flex items-center justify-center w-6 h-6 bg-white/20 rounded-full">
+                <FileText className="w-3 h-3 text-white" />
               </div>
               <span className="tracking-wide">ONLINE SERVICES</span>
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                <span className="text-xs text-green-300 font-bold">LIVE</span>
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                <span className="text-[10px] text-green-300 font-bold">LIVE</span>
               </div>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-800 drop-shadow-2xl mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 drop-shadow-2xl mb-2">
               Available Barangay <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2d5a3d] to-[#112117] drop-shadow-lg">Forms</span>
             </h2>
-            <p className="text-gray-700 drop-shadow-lg max-w-2xl mx-auto text-lg font-medium">
+            <p className="text-gray-700 drop-shadow-lg max-w-2xl mx-auto text-base font-medium">
               Request official documents and certificates online. Fast, easy, and convenient.
             </p>
           </div>
 
           {/* Forms Carousel */}
-          <div className="relative mb-16">
+          <div className="relative mb-8">
             {(() => {
               const colorClasses = {
                 blue: {
@@ -1044,7 +1044,7 @@ export default function BarangayPortal() {
 
 
       {/* Educational Assistance Program Section - SK Project - Trimmed for single screen */}
-      <section id="educational-assistance" className="py-8 md:py-12 bg-gradient-to-br from-emerald-900 via-green-900 to-teal-900 relative overflow-hidden min-h-screen flex items-center animate-on-scroll">
+      <section id="educational-assistance" className="py-4 md:py-6 bg-gradient-to-br from-emerald-900 via-green-900 to-teal-900 relative overflow-hidden flex items-center animate-on-scroll">
         {/* Background Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-48 h-48 md:w-96 md:h-96 bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
@@ -1183,7 +1183,7 @@ export default function BarangayPortal() {
       </section>
 
       {/* Senior Citizen Assistance Section */}
-      <section id="senior-citizen-assistance" className="py-8 md:py-12 bg-gradient-to-br from-[#4d2c00] via-[#8c5100] to-[#331c00] relative overflow-hidden min-h-screen flex items-center animate-on-scroll">
+      <section id="senior-citizen-assistance" className="py-4 md:py-6 bg-gradient-to-br from-[#4d2c00] via-[#8c5100] to-[#331c00] relative overflow-hidden flex items-center animate-on-scroll">
         {/* Background Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-48 h-48 md:w-96 md:h-96 bg-white rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
@@ -1486,7 +1486,7 @@ export default function BarangayPortal() {
       </section>
 
       {/* Facilities Section - Enhanced Modern Design */}
-      <section id="directory" className="py-16 md:py-24 bg-gradient-to-br from-[#112117] via-[#2d5a3d] to-[#112e1f] relative overflow-hidden animate-on-scroll">
+      <section id="directory" className="py-8 md:py-10 bg-gradient-to-br from-[#112117] via-[#2d5a3d] to-[#112e1f] relative overflow-hidden animate-on-scroll">
         {/* Enhanced Background Pattern */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 right-0 w-72 h-72 md:w-96 md:h-96 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
@@ -1504,18 +1504,18 @@ export default function BarangayPortal() {
 
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Enhanced Section Header */}
-          <div className="text-center mb-16 md:mb-20">
-            <div className="flex justify-center mb-6">
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-full text-sm font-semibold border border-white/20 shadow-lg">
-                <div className="w-8 h-8 bg-gradient-to-br from-[#2d5a3d] to-[#112e1f] rounded-full flex items-center justify-center">
-                  <Building2 className="w-4 h-4 text-white" />
+          <div className="text-center mb-8 md:mb-10">
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full text-xs font-semibold border border-white/20 shadow-lg">
+                <div className="w-6 h-6 bg-gradient-to-br from-[#2d5a3d] to-[#112e1f] rounded-full flex items-center justify-center">
+                  <Building2 className="w-3 h-3 text-white" />
                 </div>
                 <span className="tracking-wide">COMMUNITY SERVICES</span>
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
               </div>
             </div>
 
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
               Barangay <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400">Facilities</span>
             </h2>
 
@@ -1528,8 +1528,8 @@ export default function BarangayPortal() {
             </p>
           </div>
 
-          {/* Enhanced Facility Showcase - Bigger Photos */}
-          <div className="relative mb-16 md:mb-20">
+          {/* Enhanced Facility Showcase - Smaller Photos to fit screen */}
+          <div className="relative mb-8 md:mb-10">
             {(() => {
               const currentFacilityIndex = facilityImageSlides['main'] || 0;
               const facility = facilities[currentFacilityIndex];
@@ -1580,13 +1580,13 @@ export default function BarangayPortal() {
               const colorSet = colors[facility.color] || colors['bg-blue-500'];
 
               return (
-                <div className="group relative">
+                <div className="group relative max-w-6xl mx-auto">
                   {/* Main Facility Card - Bigger Photos */}
                   <div className={`relative w-full bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border-2 ${colorSet.border} hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2`}>
 
-                    {/* Image Section - Much Bigger */}
+                    {/* Image Section - Adjusted for Screen Fit */}
                     <div
-                      className="relative h-[300px] md:h-[600px] lg:h-[700px] overflow-hidden"
+                      className="relative h-[300px] md:h-[450px] lg:h-[500px] overflow-hidden"
                       onTouchStart={handleTouchStart}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
@@ -1609,11 +1609,6 @@ export default function BarangayPortal() {
 
                       {/* Enhanced Gradient Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-
-                      {/* Floating Icon Badge */}
-                      <div className={`absolute top-6 left-6 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br ${colorSet.bg} rounded-2xl flex items-center justify-center shadow-2xl ${colorSet.glow} backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300`}>
-                        <Icon className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                      </div>
 
                       {/* Integrated Thumbnail Gallery Overlay */}
                       {facility.images.length > 1 && (
@@ -1646,22 +1641,22 @@ export default function BarangayPortal() {
                     </div>
 
                     {/* Enhanced Content Section */}
-                    <div className={`bg-gradient-to-br ${colorSet.light} backdrop-blur-sm p-4 md:p-5 border-t border-white/20`}>
+                    <div className={`bg-gradient-to-br ${colorSet.light} backdrop-blur-sm p-3 md:p-4 border-t border-white/20`}>
                       <div className="mb-2">
-                        <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                        <h3 className="text-xl md:text-2xl font-bold text-white mb-1">
                           {facility.name}
                         </h3>
-                        <p className="text-green-100 text-base md:text-lg leading-relaxed">
+                        <p className="text-green-100 text-sm md:text-base leading-relaxed">
                           {facility.description}
                         </p>
                       </div>
 
                       {/* Enhanced Features */}
-                      <div className="flex flex-wrap gap-2 md:gap-3 mb-2">
+                      <div className="flex flex-wrap gap-2 mb-1">
                         {facility.features.map((feature, fIndex) => (
                           <span
                             key={fIndex}
-                            className={`px-4 py-2 bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-full border border-white/30 shadow-sm hover:shadow-md transition-shadow`}
+                            className={`px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-full border border-white/30 shadow-sm transition-shadow`}
                           >
                             {feature}
                           </span>
@@ -2019,7 +2014,7 @@ export default function BarangayPortal() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-16 bg-[#112117]">
+      <section id="contact" className="py-8 bg-[#112117]">
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-2">Feel free to contact us</h2>
