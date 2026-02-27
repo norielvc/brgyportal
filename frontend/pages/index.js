@@ -4,7 +4,7 @@ import {
   Menu, X, ChevronRight, ChevronLeft, Plus, Send, Phone, MapPin, Mail,
   Clock, Sun, Moon, Cloud, CloudRain, Users, FileText, Award, Building2, Heart, Baby,
   AlertTriangle, Shield, Home, Calendar, TrendingUp, CheckCircle, GraduationCap, User,
-  Store, Briefcase, Stethoscope, Fingerprint, UserPlus, Flower2, Search
+  Store, Briefcase, Stethoscope, Fingerprint, UserPlus, Flower2, Search, Star, Leaf, Laptop
 } from 'lucide-react';
 import BarangayClearanceModal from '@/components/Forms/BarangayClearanceModal';
 import IndigencyCertificateModal from '@/components/Forms/IndigencyCertificateModal';
@@ -635,8 +635,8 @@ export default function BarangayPortal() {
               <a href="#educational-assistance" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
                 Educational Assistance
               </a>
-              <a href="#senior-citizen-assistance" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
-                Senior Citizen Services
+              <a href="#achievements" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
+                Achievements & Awards
               </a>
               <a href="#directory" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
                 Facilities
@@ -677,8 +677,8 @@ export default function BarangayPortal() {
             <a href="#educational-assistance" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
               Educational Assistance
             </a>
-            <a href="#senior-citizen-assistance" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
-              Senior Citizen Services
+            <a href="#achievements" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
+              Achievements & Awards
             </a>
             <a href="#directory" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
               Facilities
@@ -1278,302 +1278,120 @@ export default function BarangayPortal() {
         </div>
       </section>
 
-      {/* Senior Citizen Assistance Section */}
-      <section id="senior-citizen-assistance" className="py-4 md:py-6 bg-gradient-to-br from-[#4d2c00] via-[#8c5100] to-[#331c00] relative overflow-hidden flex items-center animate-on-scroll">
+      {/* Barangay Achievement and Awards Section */}
+      <section id="achievements" className="py-16 md:py-24 bg-gradient-to-br from-[#1e1b4b] via-[#312e81] to-[#1e1b4b] relative overflow-hidden flex items-center animate-on-scroll">
         {/* Background Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-48 h-48 md:w-96 md:h-96 bg-white rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 md:w-96 md:h-96 bg-white rounded-full blur-3xl -translate-x-1/2 translate-y-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 md:w-96 md:h-96 bg-indigo-400 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2"></div>
         </div>
 
-        {/* Filipino Senior Citizens Background Image */}
-        <div className="absolute inset-0 opacity-40 pointer-events-none">
+        {/* Elegant Abstract Background Image */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
           <div
             className="w-full h-full bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: 'url(/images/seniorcitizens.jpg)',
-              filter: 'brightness(0.7) contrast(1.2) sepia(0.2)',
+              backgroundImage: 'url(/background.jpg)',
+              filter: 'grayscale(1) contrast(1.5)',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#FFA500]/10 via-transparent to-[#FFA500]/10"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1e1b4b] via-transparent to-[#1e1b4b]"></div>
         </div>
 
         <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
-          <div className="max-w-[1800px] mx-auto">
+          <div className="max-w-[1400px] mx-auto">
 
             {/* Section Header */}
-            <div className="text-center mb-8 md:mb-12">
+            <div className="text-center mb-12 md:mb-16">
               <div className="flex justify-center mb-4 md:mb-6">
-                <div className="inline-flex items-center gap-3 md:gap-4 px-6 md:px-8 py-3 md:py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full">
-                  <Heart className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                  <span className="text-white font-bold text-lg md:text-xl lg:text-2xl tracking-wide">SENIOR CITIZEN SERVICES</span>
-                  <div className="w-2 h-2 md:w-3 md:h-3 bg-[#FFA500] rounded-full animate-pulse shadow-[0_0_8px_rgba(255,165,0,0.6)]"></div>
+                <div className="inline-flex items-center gap-3 px-6 py-2.5 bg-indigo-900/40 backdrop-blur-sm border border-indigo-500/30 rounded-full shadow-lg">
+                  <Award className="w-5 h-5 md:w-6 md:h-6 text-yellow-400" />
+                  <span className="text-indigo-100 font-semibold text-sm md:text-base tracking-widest uppercase">Honors & Recognitions</span>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div>
                 </div>
               </div>
 
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 leading-tight">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffd89b] via-[#FFA500] to-[#996300]">
-                  SENIOR CITIZEN ASSISTANCE PROGRAM
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight font-serif tracking-tight">
+                BARANGAY{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-500">
+                  ACHIEVEMENTS
                 </span>
+                <br className="hidden md:block" /> & AWARDS
               </h2>
 
-              <div className="flex justify-center mb-4 md:mb-6">
-                <div className="w-24 md:w-32 h-1 bg-gradient-to-r from-[#ffd89b]/20 via-[#FFA500] to-[#ffd89b]/20 rounded-full"></div>
+              <div className="flex justify-center mb-6">
+                <div className="w-24 md:w-32 h-1.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent rounded-full opacity-70"></div>
               </div>
 
-              <p className="text-lg md:text-xl lg:text-2xl text-orange-100 font-light leading-relaxed max-w-4xl mx-auto px-4 md:px-0">
-                Honoring our elders with comprehensive care and support services
-              </p>
-              <p className="text-base md:text-lg text-[#FFA500] font-bold max-w-3xl mx-auto px-4 md:px-0 uppercase tracking-wide">
-                Dedicated programs for the health, welfare, and dignity of our senior citizens
+              <p className="text-lg md:text-xl text-indigo-200 font-light leading-relaxed max-w-3xl mx-auto">
+                Celebrating our shared milestones, exemplary performance, and outstanding service to the community.
               </p>
             </div>
 
-            {/* Services Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-8 md:mb-12">
+            {/* Achievements Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16">
 
-              {/* Healthcare Services */}
-              <div className="bg-orange-950/15 backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-[#FFA500]/20 hover:bg-orange-900/40 hover:border-[#FFA500]/40 transition-all duration-300 group shadow-2xl">
-                <div className="flex items-center mb-4 md:mb-6">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-[#996300] to-[#FFA500] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-[#FFA500]/20 group-hover:scale-110 transition-all duration-300">
-                    <Heart className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg md:text-xl font-bold text-white">Healthcare Services</h3>
-                    <p className="text-orange-200/80 text-sm md:text-base font-medium">Medical Care & Support</p>
+              {/* Outstanding Barangay Award */}
+              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl p-8 border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-yellow-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-2">
+                <div className="flex items-center mb-6">
+                  <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-yellow-600 to-yellow-400 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(250,204,21,0.3)] group-hover:scale-110 transition-transform duration-300 transform rotate-3 group-hover:rotate-0">
+                    <Star className="w-8 h-8 text-white" fill="currentColor" />
                   </div>
                 </div>
-                <ul className="space-y-2 md:space-y-3 text-white text-sm md:text-base">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Free medical check-ups and consultations</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Medicine assistance and subsidies</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Health monitoring and wellness programs</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Referral services to specialists</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Financial Assistance */}
-              <div className="bg-orange-950/15 backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-[#FFA500]/20 hover:bg-orange-900/40 hover:border-[#FFA500]/40 transition-all duration-300 group shadow-2xl">
-                <div className="flex items-center mb-4 md:mb-6">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-[#FFA500] to-[#ffd89b] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-[#FFA500]/20 group-hover:scale-110 transition-all duration-300">
-                    <Award className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg md:text-xl font-bold text-white">Financial Assistance</h3>
-                    <p className="text-orange-200/80 text-sm md:text-base font-medium">Economic Support</p>
-                  </div>
-                </div>
-                <ul className="space-y-2 md:space-y-3 text-white text-sm md:text-base">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Senior citizen pension assistance</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Emergency financial aid</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Burial and funeral assistance</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Utility bill subsidies</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Social Services */}
-              <div className="bg-orange-950/15 backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-[#FFA500]/20 hover:bg-orange-900/40 hover:border-[#FFA500]/40 transition-all duration-300 group shadow-2xl">
-                <div className="flex items-center mb-4 md:mb-6">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-[#8c5100] to-[#FFA500] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-[#FFA500]/20 group-hover:scale-110 transition-all duration-300">
-                    <Users className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg md:text-xl font-bold text-white">Social Services</h3>
-                    <p className="text-orange-200/80 text-sm md:text-base font-medium">Community & Recreation</p>
-                  </div>
-                </div>
-                <ul className="space-y-2 md:space-y-3 text-white text-sm md:text-base">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Senior citizen activities and events</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Transportation assistance</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Recreational and wellness programs</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Social interaction and support groups</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Legal Assistance */}
-              <div className="bg-orange-950/15 backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-[#FFA500]/20 hover:bg-orange-900/40 hover:border-[#FFA500]/40 transition-all duration-300 group shadow-2xl">
-                <div className="flex items-center mb-4 md:mb-6">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-[#664200] to-[#996300] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-[#FFA500]/20 group-hover:scale-110 transition-all duration-300">
-                    <Shield className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg md:text-xl font-bold text-white">Legal Assistance</h3>
-                    <p className="text-orange-200/80 text-sm md:text-base font-medium">Rights & Protection</p>
-                  </div>
-                </div>
-                <ul className="space-y-2 md:space-y-3 text-white text-sm md:text-base">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Senior citizen ID processing</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Legal counseling and advice</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Document assistance and notarization</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Advocacy and rights protection</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Food & Nutrition */}
-              <div className="bg-orange-950/15 backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-[#FFA500]/20 hover:bg-orange-900/40 hover:border-[#FFA500]/40 transition-all duration-300 group shadow-2xl">
-                <div className="flex items-center mb-4 md:mb-6">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-[#FFA500] to-[#cc8400] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-[#FFA500]/20 group-hover:scale-110 transition-all duration-300">
-                    <Baby className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg md:text-xl font-bold text-white">Food & Nutrition</h3>
-                    <p className="text-orange-200/80 text-sm md:text-base font-medium">Nutritional Support</p>
-                  </div>
-                </div>
-                <ul className="space-y-2 md:space-y-3 text-white text-sm md:text-base">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Nutritional meals and food packs</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Dietary counseling and guidance</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Special dietary requirements support</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Community feeding programs</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Home Care Services */}
-              <div className="bg-orange-950/15 backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-[#FFA500]/20 hover:bg-orange-900/40 hover:border-[#FFA500]/40 transition-all duration-300 group shadow-2xl">
-                <div className="flex items-center mb-4 md:mb-6">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-[#cc8400] to-[#ffd89b] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-[#FFA500]/20 group-hover:scale-110 transition-all duration-300">
-                    <Home className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg md:text-xl font-bold text-white">Home Care Services</h3>
-                    <p className="text-orange-200/80 text-sm md:text-base font-medium">In-Home Support</p>
-                  </div>
-                </div>
-                <ul className="space-y-2 md:space-y-3 text-white text-sm md:text-base">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Home visits and wellness checks</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Personal care assistance</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Household maintenance support</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                    <span>Emergency response services</span>
-                  </li>
-                </ul>
-              </div>
-
-            </div>
-
-            {/* Call to Action */}
-            <div className="text-center mb-8 md:mb-12">
-              <div className="bg-orange-950/20 backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-[#FFA500]/20 shadow-xl max-w-4xl mx-auto">
-                <h3 className="text-2xl md:text-3xl font-bold text-white mb-4 md:mb-6">Need Assistance?</h3>
-                <p className="text-orange-100/90 text-base md:text-lg mb-6 md:mb-8 leading-relaxed font-medium">
-                  Our dedicated team is here to help our senior citizens access the services and support they deserve.
-                  Contact us today to learn more about available programs and how to apply.
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-yellow-400 transition-colors">Most Outstanding Barangay</h3>
+                <p className="text-indigo-200 text-sm font-semibold tracking-wider mb-4 uppercase">City-level Recognition • 2025</p>
+                <p className="text-indigo-100/80 leading-relaxed text-sm md:text-base">
+                  Awarded for exhibiting exemplary performance in local governance, community engagement, and rapid public service delivery across all metrics.
                 </p>
-
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
-                  <div className="flex items-center gap-3 bg-white/10 rounded-full px-6 py-3 border border-white/20">
-                    <Phone className="w-5 h-5 text-[#FFA500]" />
-                    <span className="text-white font-medium">(044) 123-4567</span>
-                  </div>
-                  <div className="flex items-center gap-3 bg-white/10 rounded-full px-6 py-3 border border-white/20">
-                    <Mail className="w-5 h-5 text-[#FFA500]" />
-                    <span className="text-white font-medium">seniors@ibaoeste.gov.ph</span>
-                  </div>
-                  <div className="flex items-center gap-3 bg-white/10 rounded-full px-6 py-3 border border-white/20">
-                    <Clock className="w-5 h-5 text-[#FFA500]" />
-                    <span className="text-white font-medium">Mon-Fri 8AM-5PM</span>
-                  </div>
-                </div>
-
-                {/* Message Us Here Button */}
-                <div className="mt-6">
-                  <a
-                    href="#contact"
-                    className="inline-flex items-center gap-3 bg-gradient-to-r from-[#996300] to-[#FFA500] hover:from-[#FFA500] hover:to-[#ffd89b] text-white px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-[#FFA500]/20 transition-all duration-300 transform hover:scale-105"
-                  >
-                    <Send className="w-5 h-5" />
-                    Message Us Here
-                  </a>
-                </div>
               </div>
+
+              {/* Cleanest & Greenest */}
+              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl p-8 border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-emerald-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-2">
+                <div className="flex items-center mb-6">
+                  <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-emerald-600 to-emerald-400 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.3)] group-hover:scale-110 transition-transform duration-300 transform -rotate-3 group-hover:rotate-0">
+                    <Leaf className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-emerald-400 transition-colors">Cleanest & Greenest</h3>
+                <p className="text-indigo-200 text-sm font-semibold tracking-wider mb-4 uppercase">Environmental Award • 2024</p>
+                <p className="text-indigo-100/80 leading-relaxed text-sm md:text-base">
+                  Recognized for initiating the Brgy. Green Building Code and maintaining a zero-waste policy within the immediate public vicinity.
+                </p>
+              </div>
+
+              {/* Best in Digital Innovation */}
+              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl p-8 border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-blue-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-2">
+                <div className="flex items-center mb-6">
+                  <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-blue-600 to-blue-400 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(96,165,250,0.3)] group-hover:scale-110 transition-transform duration-300 transform rotate-3 group-hover:rotate-0">
+                    <Laptop className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">Digital Innovation Pioneer</h3>
+                <p className="text-indigo-200 text-sm font-semibold tracking-wider mb-4 uppercase">Special Citation • 2026</p>
+                <p className="text-indigo-100/80 leading-relaxed text-sm md:text-base">
+                  Acknowledged for launching the comprehensive E-Services portal, ensuring 100% online availability of forms and digital records.
+                </p>
+              </div>
+
             </div>
 
-            {/* Statistics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              <div className="text-center bg-orange-950/20 backdrop-blur-xl rounded-xl p-4 md:p-6 border border-[#FFA500]/10 hover:border-[#FFA500]/30 transition-all duration-300 group shadow-lg">
-                <div className="text-2xl md:text-3xl font-bold text-white mb-2">1,200+</div>
-                <div className="text-orange-100/80 text-sm md:text-base font-bold uppercase tracking-wider">Senior Citizens Served</div>
+            {/* Statistics Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-12 bg-indigo-900/20 backdrop-blur-sm p-6 md:p-8 rounded-3xl border border-indigo-500/20">
+              <div className="text-center p-4">
+                <div className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-500 mb-2">12+</div>
+                <div className="text-indigo-200 text-xs md:text-sm font-bold uppercase tracking-widest">Major Awards</div>
               </div>
-              <div className="text-center bg-orange-950/20 backdrop-blur-xl rounded-xl p-4 md:p-6 border border-[#FFA500]/10 hover:border-[#FFA500]/30 transition-all duration-300 group shadow-lg">
-                <div className="text-2xl md:text-3xl font-bold text-white mb-2">₱5M+</div>
-                <div className="text-orange-100/80 text-sm md:text-base font-bold uppercase tracking-wider">Total Assistance Provided</div>
+              <div className="text-center p-4 border-l border-indigo-500/20">
+                <div className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-500 mb-2">100%</div>
+                <div className="text-indigo-200 text-xs md:text-sm font-bold uppercase tracking-widest">Transparency</div>
               </div>
-              <div className="text-center bg-orange-950/20 backdrop-blur-xl rounded-xl p-4 md:p-6 border border-[#FFA500]/10 hover:border-[#FFA500]/30 transition-all duration-300 group shadow-lg">
-                <div className="text-2xl md:text-3xl font-bold text-white mb-2">15</div>
-                <div className="text-orange-100/80 text-sm md:text-base font-bold uppercase tracking-wider">Active Programs</div>
+              <div className="text-center p-4 border-t md:border-t-0 md:border-l border-indigo-500/20">
+                <div className="text-3xl md:text-4xl font-extrabold text-white mb-2">Top 5</div>
+                <div className="text-indigo-200 text-xs md:text-sm font-bold uppercase tracking-widest">City Ranking</div>
               </div>
-              <div className="text-center bg-orange-950/20 backdrop-blur-xl rounded-xl p-4 md:p-6 border border-[#FFA500]/10 hover:border-[#FFA500]/30 transition-all duration-300 group shadow-lg">
-                <div className="text-2xl md:text-3xl font-bold text-white mb-2">98%</div>
-                <div className="text-orange-100/80 text-sm md:text-base font-bold uppercase tracking-wider">Satisfaction Rate</div>
+              <div className="text-center p-4 border-l border-t md:border-t-0 border-indigo-500/20">
+                <div className="text-3xl md:text-4xl font-extrabold text-white mb-2">A+</div>
+                <div className="text-indigo-200 text-xs md:text-sm font-bold uppercase tracking-widest">Audit Rating</div>
               </div>
             </div>
 
