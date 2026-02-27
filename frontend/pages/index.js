@@ -1068,49 +1068,49 @@ export default function BarangayPortal() {
                 category: "HEALTH & WELLNESS",
                 title: "Free Medical Mission 2026",
                 description: "Comprehensive health check-ups, free medicines, and basic dental services for all registered residents of our barangay.",
-                image: "/background.jpg"
+                image: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800"
               },
               {
                 category: "LIVELIHOOD",
                 title: "Pangkabuhayang Iba O' Este",
                 description: "Empowering residents with practical skills in culinary arts, tailoring, and automotive mechanics.",
-                image: "/background.jpg"
+                image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=800"
               },
               {
                 category: "INFRASTRUCTURE",
                 title: "Brgy. Green Building Initiative",
                 description: "Launching sustainable practices and installing solar-powered streetlights across major puroks.",
-                image: "/background.jpg"
+                image: "https://images.unsplash.com/photo-1503694978374-8a2fa686963a?auto=format&fit=crop&q=80&w=800"
               },
               {
                 category: "EDUCATION",
                 title: "Scholarship Grants Awarding",
                 description: "Distributing financial assistance to deserving local youth to support their higher education journeys.",
-                image: "/background.jpg"
+                image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=800"
               },
               {
                 category: "YOUTH & SPORTS",
                 title: "Inter-Purok Basketball League",
                 description: "Fostering sportsmanship and camaraderie among our youth through the annual basketball championship.",
-                image: "/background.jpg"
+                image: "https://images.unsplash.com/photo-1518063319782-9694b281bf2d?auto=format&fit=crop&q=80&w=800"
               },
               {
                 category: "ENVIRONMENT",
                 title: "Monthly Coastal Clean-up",
                 description: "Preserving our shores and marine life with the help of community volunteers and local groups.",
-                image: "/background.jpg"
+                image: "https://images.unsplash.com/photo-1618477461853-cf6ed80fbfc5?auto=format&fit=crop&q=80&w=800"
               },
               {
                 category: "SENIOR CITIZENS",
                 title: "Elders Wellness & Social Day",
                 description: "A special day dedicated to our elders featuring health seminars, games, and free wellness packages.",
-                image: "/background.jpg"
+                image: "https://images.unsplash.com/photo-1457195740896-ac0d4370fde8?auto=format&fit=crop&q=80&w=800"
               },
               {
                 category: "DIGITAL TRANSFORMATION",
                 title: "Barangay E-Services Launch",
                 description: "Experience faster transaction times and online document requests through our brand new web portal.",
-                image: "/background.jpg"
+                image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800"
               }
             ].map((program, idx) => (
               <div key={idx} className="flex flex-col group cursor-pointer h-full">
