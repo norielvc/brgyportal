@@ -632,14 +632,11 @@ export default function BarangayPortal() {
               <a href="#forms" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
                 Barangay Forms
               </a>
-              <a href="#educational-assistance" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
-                Educational Assistance
+              <a href="#directory" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
+                Facilities
               </a>
               <a href="#achievements" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
                 Achievements & Awards
-              </a>
-              <a href="#directory" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
-                Facilities
               </a>
               <a href="#officials" className="text-gray-700 hover:text-[#008000] font-semibold transition-colors py-3 border-b-2 border-transparent hover:border-[#008000]">
                 Barangay Officials
@@ -674,14 +671,11 @@ export default function BarangayPortal() {
             <a href="#forms" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
               Barangay Forms
             </a>
-            <a href="#educational-assistance" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
-              Educational Assistance
+            <a href="#directory" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
+              Facilities
             </a>
             <a href="#achievements" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
               Achievements & Awards
-            </a>
-            <a href="#directory" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
-              Facilities
             </a>
             <a href="#officials" className="block py-2 text-gray-700 hover:text-green-600 font-medium">
               Barangay Officials
@@ -1139,144 +1133,228 @@ export default function BarangayPortal() {
         </div>
       </section>
 
-      {/* Educational Assistance Program Section - SK Project - Trimmed for single screen */}
-      <section id="educational-assistance" className="py-4 md:py-6 bg-gradient-to-br from-emerald-900 via-green-900 to-teal-900 relative overflow-hidden flex items-center animate-on-scroll">
-        {/* Background Elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-48 h-48 md:w-96 md:h-96 bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-48 h-48 md:w-96 md:h-96 bg-white rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+      {/* Facilities Section - Enhanced Modern Design */}
+      <section id="directory" className="py-8 md:py-10 bg-gradient-to-br from-[#112117] via-[#2d5a3d] to-[#112e1f] relative overflow-hidden animate-on-scroll">
+        {/* Enhanced Background Pattern */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 right-0 w-72 h-72 md:w-96 md:h-96 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-72 h-72 md:w-96 md:h-96 bg-gradient-to-br from-teal-400 to-green-500 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+          <div className="absolute top-1/2 left-1/2 w-48 h-48 md:w-64 md:h-64 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
         </div>
 
-        {/* SK Chairman Background Image - Responsive */}
-        <div className="absolute left-0 top-0 bottom-0 w-full md:w-1/2 opacity-20 md:opacity-30 pointer-events-none hidden md:block">
-          <div
-            className="w-full h-full bg-cover bg-no-repeat bg-center md:bg-left-top"
-            style={{
-              backgroundImage: 'url(/images/sk-chairman.png)',
-              filter: 'brightness(0.9) contrast(1.1)',
-              backgroundPosition: 'center 20%'
-            }}
-          />
+        {/* Floating Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-4 h-4 bg-green-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute top-40 right-20 w-3 h-3 bg-emerald-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-32 left-20 w-5 h-5 bg-teal-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute bottom-20 right-10 w-3 h-3 bg-green-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '0.5s' }}></div>
         </div>
 
-        <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
-          {/* Responsive Container */}
-          <div className="max-w-[1800px] mx-auto">
-            {/* Mobile-first layout, then desktop alignment */}
-            <div className="w-full md:flex md:justify-end">
-              <div className="w-full md:max-w-4xl lg:max-w-5xl md:pr-8 lg:pr-16">
-
-                {/* Section Header - Responsive */}
-                <div className="text-center md:text-right mb-6 md:mb-8">
-                  <div className="flex justify-center md:justify-end mb-3 md:mb-4">
-                    <div className="inline-flex items-center gap-2 md:gap-4 px-4 md:px-8 py-2 md:py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full">
-                      <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                      <span className="text-white font-bold text-sm md:text-xl lg:text-2xl tracking-wide">SANGUNIANG KABATAAN PROJECT</span>
-                      <div className="w-2 h-2 md:w-3 md:h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    </div>
-                  </div>
-
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-3 leading-tight text-center md:text-right">
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400">
-                      𝐄𝐃𝐔𝐂𝐀𝐓𝐈𝐎𝐍𝐀𝐋 𝐀𝐒𝐒𝐈𝐒𝐓𝐀𝐍𝐂𝐄 𝐏𝐑𝐎𝐆𝐑𝐀𝐌
-                    </span>
-                  </h2>
-
-                  <div className="flex justify-center md:justify-end mb-3">
-                    <div className="w-20 md:w-28 h-1 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 rounded-full"></div>
-                  </div>
-
-                  <p className="text-base md:text-lg lg:text-xl text-green-100 font-light leading-relaxed text-center md:text-right px-4 md:px-0">
-                    Empowering the youth of Iba O' Este through quality education
-                  </p>
-                  <p className="text-sm md:text-base text-cyan-200 font-medium text-center md:text-right px-4 md:px-0">
-                    A Sanguniang Kabataan Initiative for Educational Excellence
-                  </p>
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Enhanced Section Header */}
+          <div className="text-center mb-8 md:mb-10">
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full text-xs font-semibold border border-white/20 shadow-lg">
+                <div className="w-6 h-6 bg-gradient-to-br from-[#2d5a3d] to-[#112e1f] rounded-full flex items-center justify-center">
+                  <Building2 className="w-3 h-3 text-white" />
                 </div>
-
-                {/* Compact Requirements Info - Responsive */}
-                <div className="mb-4 md:mb-6">
-                  <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-2 md:gap-4 text-center px-2 md:px-0">
-                    {/* Eligibility - Compact */}
-                    <div className="flex items-center justify-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 md:px-4 py-2 border border-white/30 text-center">
-                      <Users className="w-3 h-3 md:w-4 md:h-4 text-green-300 flex-shrink-0" />
-                      <span className="text-white text-xs md:text-xs font-medium">ELIGIBILITY: GRADE 7 TO 4TH/5TH YEAR COLLEGE</span>
-                    </div>
-
-                    {/* Selection - Compact */}
-                    <div className="flex items-center justify-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 md:px-4 py-2 border border-white/30 text-center">
-                      <Clock className="w-3 h-3 md:w-4 md:h-4 text-green-300 flex-shrink-0" />
-                      <span className="text-white text-xs md:text-xs font-medium">SELECTION: FIRST COME, FIRST SERVE!</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Application Form Section - Responsive */}
-                <div className="mb-4 md:mb-6">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 md:p-8 border border-white/20 shadow-xl mx-2 md:mx-0">
-                    <div className="text-center mb-4 md:mb-6">
-                      <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-3 md:mb-4 text-center">Ready to Apply?</h3>
-                      <p className="text-green-200 text-sm md:text-base mb-4 md:mb-6 text-center leading-relaxed max-w-3xl mx-auto px-2 md:px-0">
-                        Take the first step towards your educational goals. Fill out our comprehensive application form and join hundreds of students who have benefited from this program.
-                      </p>
-
-                      <div className="flex justify-center mb-4 md:mb-6">
-                        <button
-                          onClick={() => setShowEducationalAssistanceModal(true)}
-                          className="group bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 hover:from-yellow-600 hover:via-orange-600 hover:to-red-600 text-white px-8 md:px-16 py-3 md:py-4 rounded-xl font-bold text-lg md:text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-orange-500/25 flex items-center gap-2 md:gap-4"
-                        >
-                          <GraduationCap className="w-6 h-6 md:w-8 md:h-8 group-hover:rotate-12 transition-transform" />
-                          APPLY NOW
-                          <ChevronRight className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                      </div>
-
-                      {/* Requirements Preview - Responsive Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
-                        <div className="bg-white/15 rounded-lg p-3 md:p-4 text-center flex flex-col items-center justify-center min-h-[70px] md:min-h-[80px]">
-                          <User className="w-6 h-6 md:w-8 md:h-8 text-green-300 mx-auto mb-1 md:mb-2" />
-                          <p className="text-white text-xs md:text-sm font-medium">Personal Info</p>
-                        </div>
-                        <div className="bg-white/15 rounded-lg p-3 md:p-4 text-center flex flex-col items-center justify-center min-h-[70px] md:min-h-[80px]">
-                          <MapPin className="w-6 h-6 md:w-8 md:h-8 text-green-300 mx-auto mb-1 md:mb-2" />
-                          <p className="text-white text-xs md:text-sm font-medium">Address</p>
-                        </div>
-                        <div className="bg-white/15 rounded-lg p-3 md:p-4 text-center flex flex-col items-center justify-center min-h-[70px] md:min-h-[80px]">
-                          <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-purple-300 mx-auto mb-1 md:mb-2" />
-                          <p className="text-white text-xs md:text-sm font-medium">Academic</p>
-                        </div>
-                        <div className="bg-white/15 rounded-lg p-3 md:p-4 text-center flex flex-col items-center justify-center min-h-[70px] md:min-h-[80px]">
-                          <Award className="w-6 h-6 md:w-8 md:h-8 text-yellow-300 mx-auto mb-1 md:mb-2" />
-                          <p className="text-white text-xs md:text-sm font-medium">Awards</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Statistics Section - Responsive */}
-                <div className="px-2 md:px-0">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6">
-                    <div className="text-center bg-white/5 rounded-lg p-3 md:p-4 border border-white/10">
-                      <div className="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">500+</div>
-                      <div className="text-green-200 text-xs md:text-sm font-medium">Students Helped</div>
-                    </div>
-                    <div className="text-center bg-white/5 rounded-lg p-3 md:p-4 border border-white/10">
-                      <div className="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">₱2M+</div>
-                      <div className="text-green-200 text-xs md:text-sm font-medium">Total Assistance</div>
-                    </div>
-                    <div className="text-center bg-white/5 rounded-lg p-3 md:p-4 border border-white/10">
-                      <div className="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">95%</div>
-                      <div className="text-green-200 text-xs md:text-sm font-medium">Success Rate</div>
-                    </div>
-                  </div>
-                </div>
-
+                <span className="tracking-wide">COMMUNITY SERVICES</span>
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
               </div>
             </div>
+
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
+              Barangay <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400">Facilities</span>
+            </h2>
+
+            <div className="flex justify-center mb-6">
+              <div className="w-24 md:w-32 h-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-full"></div>
+            </div>
+
+            <p className="text-green-100 max-w-3xl mx-auto text-lg md:text-xl leading-relaxed">
+              Discover our state-of-the-art community facilities designed to serve and enhance the lives of Iba O' Este residents
+            </p>
           </div>
+
+          {/* Enhanced Facility Showcase - Smaller Photos to fit screen */}
+          <div className="relative mb-8 md:mb-10">
+            {(() => {
+              const currentFacilityIndex = facilityImageSlides['main'] || 0;
+              const facility = facilities[currentFacilityIndex];
+              const Icon = facility.icon;
+              const currentImageIndex = facilityImageSlides[currentFacilityIndex] || 0;
+              const colors = {
+                'bg-red-500': {
+                  bg: 'from-red-500 to-rose-600',
+                  light: 'from-red-50/10 to-rose-100/10',
+                  text: 'text-red-300',
+                  border: 'border-red-400/30',
+                  shadow: 'shadow-red-500/25',
+                  glow: 'shadow-red-500/40'
+                },
+                'bg-blue-500': {
+                  bg: 'from-blue-500 to-indigo-600',
+                  light: 'from-blue-50/10 to-indigo-100/10',
+                  text: 'text-blue-300',
+                  border: 'border-blue-400/30',
+                  shadow: 'shadow-blue-500/25',
+                  glow: 'shadow-blue-500/40'
+                },
+                'bg-pink-500': {
+                  bg: 'from-pink-500 to-rose-600',
+                  light: 'from-pink-50/10 to-rose-100/10',
+                  text: 'text-pink-300',
+                  border: 'border-pink-400/30',
+                  shadow: 'shadow-pink-500/25',
+                  glow: 'shadow-pink-500/40'
+                },
+                'bg-green-500': {
+                  bg: 'from-green-500 to-emerald-600',
+                  light: 'from-green-50/10 to-emerald-100/10',
+                  text: 'text-green-300',
+                  border: 'border-green-400/30',
+                  shadow: 'shadow-green-500/25',
+                  glow: 'shadow-green-500/40'
+                },
+                'bg-orange-500': {
+                  bg: 'from-orange-500 to-amber-600',
+                  light: 'from-orange-50/10 to-amber-100/10',
+                  text: 'text-orange-300',
+                  border: 'border-orange-400/30',
+                  shadow: 'shadow-orange-500/25',
+                  glow: 'shadow-orange-500/40'
+                }
+              };
+              const colorSet = colors[facility.color] || colors['bg-blue-500'];
+
+              return (
+                <div className="group relative max-w-6xl mx-auto">
+                  {/* Main Facility Card - Bigger Photos */}
+                  <div className={`relative w-full bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border-2 ${colorSet.border} hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2`}>
+
+                    {/* Image Section - Adjusted for Screen Fit */}
+                    <div
+                      className="relative h-[300px] md:h-[450px] lg:h-[500px] overflow-hidden"
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                    >
+                      {facility.images.map((image, imgIndex) => (
+                        <div
+                          key={imgIndex}
+                          className={`absolute inset-0 transition-all duration-700 ease-in-out ${currentImageIndex === imgIndex
+                            ? 'opacity-100 scale-100'
+                            : 'opacity-0 scale-105'
+                            }`}
+                        >
+                          <img
+                            src={image}
+                            alt={`${facility.name} ${imgIndex + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+
+                      {/* Enhanced Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+
+                      {/* Integrated Thumbnail Gallery Overlay */}
+                      {facility.images.length > 1 && (
+                        <div className="absolute bottom-6 left-0 right-0 z-20 px-4">
+                          <div className="flex justify-center gap-3">
+                            {facility.images.map((image, imgIndex) => (
+                              <button
+                                key={imgIndex}
+                                onClick={() => {
+                                  setFacilityImageSlides(prev => ({ ...prev, [currentFacilityIndex]: imgIndex }));
+                                }}
+                                className={`group/thumb relative w-16 h-12 md:w-20 md:h-16 rounded-xl overflow-hidden transition-all duration-300 ${currentImageIndex === imgIndex
+                                  ? 'ring-4 ring-[#648a6a] ring-offset-2 ring-offset-[#112117] scale-110 shadow-2xl'
+                                  : 'ring-2 ring-white/20 hover:ring-white/50 opacity-60 hover:opacity-100'
+                                  }`}
+                              >
+                                <img
+                                  src={image}
+                                  alt={`${facility.name} thumbnail ${imgIndex + 1}`}
+                                  className="w-full h-full object-cover transition-transform group-hover/thumb:scale-110"
+                                />
+                                {currentImageIndex === imgIndex && (
+                                  <div className="absolute inset-0 bg-[#648a6a]/10" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Enhanced Content Section */}
+                    <div className={`bg-gradient-to-br ${colorSet.light} backdrop-blur-sm p-3 md:p-4 border-t border-white/20`}>
+                      <div className="mb-2">
+                        <h3 className="text-xl md:text-2xl font-bold text-white mb-1">
+                          {facility.name}
+                        </h3>
+                        <p className="text-green-100 text-sm md:text-base leading-relaxed">
+                          {facility.description}
+                        </p>
+                      </div>
+
+                      {/* Enhanced Features */}
+                      <div className="flex flex-wrap gap-2 mb-1">
+                        {facility.features.map((feature, fIndex) => (
+                          <span
+                            key={fIndex}
+                            className={`px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-full border border-white/30 shadow-sm transition-shadow`}
+                          >
+                            {feature}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+
+
+          {/* Enhanced Facility Navigation */}
+          <div className="flex justify-start md:justify-center gap-3 md:gap-4 mb-16 md:mb-20 overflow-x-auto pb-4 px-4 scrollbar-hide">
+            {facilities.map((facility, index) => {
+              const Icon = facility.icon;
+              const isActive = (facilityImageSlides['main'] || 0) === index;
+              const colors = {
+                'bg-red-500': 'from-red-500 to-rose-600',
+                'bg-blue-500': 'from-blue-500 to-indigo-600',
+                'bg-pink-500': 'from-pink-500 to-rose-600',
+                'bg-green-500': 'from-green-500 to-emerald-600',
+                'bg-orange-500': 'from-orange-500 to-amber-600'
+              };
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => setFacilityImageSlides(prev => ({ ...prev, main: index }))}
+                  className={`flex flex-col items-center gap-3 p-4 md:p-6 rounded-2xl transition-all duration-300 min-w-[100px] md:min-w-[120px] ${isActive
+                    ? 'bg-white/20 backdrop-blur-sm shadow-xl scale-110 border-2 border-[#648a6a] transform -translate-y-2'
+                    : 'bg-white/10 backdrop-blur-sm hover:bg-white/20 hover:shadow-lg border-2 border-transparent hover:scale-105'
+                    }`}
+                >
+                  <div className={`w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br ${colors[facility.color]} rounded-2xl flex items-center justify-center shadow-lg ${isActive ? 'shadow-xl' : ''}`}>
+                    <Icon className="w-7 h-7 md:w-8 md:h-8 text-white" />
+                  </div>
+                  <span className={`text-xs md:text-sm font-semibold text-center leading-tight ${isActive ? 'text-[#bdcdc0]' : 'text-green-200'}`}>
+                    {facility.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
         </div>
       </section>
+
 
       {/* Barangay Achievement and Awards Section */}
       <section id="achievements" className="py-16 md:py-24 bg-gradient-to-br from-[#1e1b4b] via-[#312e81] to-[#1e1b4b] relative overflow-hidden flex items-center animate-on-scroll">
@@ -1566,229 +1644,6 @@ export default function BarangayPortal() {
           </div>
         </div>
       </section>
-
-      {/* Facilities Section - Enhanced Modern Design */}
-      <section id="directory" className="py-8 md:py-10 bg-gradient-to-br from-[#112117] via-[#2d5a3d] to-[#112e1f] relative overflow-hidden animate-on-scroll">
-        {/* Enhanced Background Pattern */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 right-0 w-72 h-72 md:w-96 md:h-96 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-72 h-72 md:w-96 md:h-96 bg-gradient-to-br from-teal-400 to-green-500 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-          <div className="absolute top-1/2 left-1/2 w-48 h-48 md:w-64 md:h-64 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-        </div>
-
-        {/* Floating Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-4 h-4 bg-green-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '0s' }}></div>
-          <div className="absolute top-40 right-20 w-3 h-3 bg-emerald-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute bottom-32 left-20 w-5 h-5 bg-teal-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute bottom-20 right-10 w-3 h-3 bg-green-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '0.5s' }}></div>
-        </div>
-
-        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          {/* Enhanced Section Header */}
-          <div className="text-center mb-8 md:mb-10">
-            <div className="flex justify-center mb-4">
-              <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full text-xs font-semibold border border-white/20 shadow-lg">
-                <div className="w-6 h-6 bg-gradient-to-br from-[#2d5a3d] to-[#112e1f] rounded-full flex items-center justify-center">
-                  <Building2 className="w-3 h-3 text-white" />
-                </div>
-                <span className="tracking-wide">COMMUNITY SERVICES</span>
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-              </div>
-            </div>
-
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
-              Barangay <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400">Facilities</span>
-            </h2>
-
-            <div className="flex justify-center mb-6">
-              <div className="w-24 md:w-32 h-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-full"></div>
-            </div>
-
-            <p className="text-green-100 max-w-3xl mx-auto text-lg md:text-xl leading-relaxed">
-              Discover our state-of-the-art community facilities designed to serve and enhance the lives of Iba O' Este residents
-            </p>
-          </div>
-
-          {/* Enhanced Facility Showcase - Smaller Photos to fit screen */}
-          <div className="relative mb-8 md:mb-10">
-            {(() => {
-              const currentFacilityIndex = facilityImageSlides['main'] || 0;
-              const facility = facilities[currentFacilityIndex];
-              const Icon = facility.icon;
-              const currentImageIndex = facilityImageSlides[currentFacilityIndex] || 0;
-              const colors = {
-                'bg-red-500': {
-                  bg: 'from-red-500 to-rose-600',
-                  light: 'from-red-50/10 to-rose-100/10',
-                  text: 'text-red-300',
-                  border: 'border-red-400/30',
-                  shadow: 'shadow-red-500/25',
-                  glow: 'shadow-red-500/40'
-                },
-                'bg-blue-500': {
-                  bg: 'from-blue-500 to-indigo-600',
-                  light: 'from-blue-50/10 to-indigo-100/10',
-                  text: 'text-blue-300',
-                  border: 'border-blue-400/30',
-                  shadow: 'shadow-blue-500/25',
-                  glow: 'shadow-blue-500/40'
-                },
-                'bg-pink-500': {
-                  bg: 'from-pink-500 to-rose-600',
-                  light: 'from-pink-50/10 to-rose-100/10',
-                  text: 'text-pink-300',
-                  border: 'border-pink-400/30',
-                  shadow: 'shadow-pink-500/25',
-                  glow: 'shadow-pink-500/40'
-                },
-                'bg-green-500': {
-                  bg: 'from-green-500 to-emerald-600',
-                  light: 'from-green-50/10 to-emerald-100/10',
-                  text: 'text-green-300',
-                  border: 'border-green-400/30',
-                  shadow: 'shadow-green-500/25',
-                  glow: 'shadow-green-500/40'
-                },
-                'bg-orange-500': {
-                  bg: 'from-orange-500 to-amber-600',
-                  light: 'from-orange-50/10 to-amber-100/10',
-                  text: 'text-orange-300',
-                  border: 'border-orange-400/30',
-                  shadow: 'shadow-orange-500/25',
-                  glow: 'shadow-orange-500/40'
-                }
-              };
-              const colorSet = colors[facility.color] || colors['bg-blue-500'];
-
-              return (
-                <div className="group relative max-w-6xl mx-auto">
-                  {/* Main Facility Card - Bigger Photos */}
-                  <div className={`relative w-full bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border-2 ${colorSet.border} hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2`}>
-
-                    {/* Image Section - Adjusted for Screen Fit */}
-                    <div
-                      className="relative h-[300px] md:h-[450px] lg:h-[500px] overflow-hidden"
-                      onTouchStart={handleTouchStart}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
-                    >
-                      {facility.images.map((image, imgIndex) => (
-                        <div
-                          key={imgIndex}
-                          className={`absolute inset-0 transition-all duration-700 ease-in-out ${currentImageIndex === imgIndex
-                            ? 'opacity-100 scale-100'
-                            : 'opacity-0 scale-105'
-                            }`}
-                        >
-                          <img
-                            src={image}
-                            alt={`${facility.name} ${imgIndex + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-
-                      {/* Enhanced Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-
-                      {/* Integrated Thumbnail Gallery Overlay */}
-                      {facility.images.length > 1 && (
-                        <div className="absolute bottom-6 left-0 right-0 z-20 px-4">
-                          <div className="flex justify-center gap-3">
-                            {facility.images.map((image, imgIndex) => (
-                              <button
-                                key={imgIndex}
-                                onClick={() => {
-                                  setFacilityImageSlides(prev => ({ ...prev, [currentFacilityIndex]: imgIndex }));
-                                }}
-                                className={`group/thumb relative w-16 h-12 md:w-20 md:h-16 rounded-xl overflow-hidden transition-all duration-300 ${currentImageIndex === imgIndex
-                                  ? 'ring-4 ring-[#648a6a] ring-offset-2 ring-offset-[#112117] scale-110 shadow-2xl'
-                                  : 'ring-2 ring-white/20 hover:ring-white/50 opacity-60 hover:opacity-100'
-                                  }`}
-                              >
-                                <img
-                                  src={image}
-                                  alt={`${facility.name} thumbnail ${imgIndex + 1}`}
-                                  className="w-full h-full object-cover transition-transform group-hover/thumb:scale-110"
-                                />
-                                {currentImageIndex === imgIndex && (
-                                  <div className="absolute inset-0 bg-[#648a6a]/10" />
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Enhanced Content Section */}
-                    <div className={`bg-gradient-to-br ${colorSet.light} backdrop-blur-sm p-3 md:p-4 border-t border-white/20`}>
-                      <div className="mb-2">
-                        <h3 className="text-xl md:text-2xl font-bold text-white mb-1">
-                          {facility.name}
-                        </h3>
-                        <p className="text-green-100 text-sm md:text-base leading-relaxed">
-                          {facility.description}
-                        </p>
-                      </div>
-
-                      {/* Enhanced Features */}
-                      <div className="flex flex-wrap gap-2 mb-1">
-                        {facility.features.map((feature, fIndex) => (
-                          <span
-                            key={fIndex}
-                            className={`px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-full border border-white/30 shadow-sm transition-shadow`}
-                          >
-                            {feature}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-
-
-
-          {/* Enhanced Facility Navigation */}
-          <div className="flex justify-start md:justify-center gap-3 md:gap-4 mb-16 md:mb-20 overflow-x-auto pb-4 px-4 scrollbar-hide">
-            {facilities.map((facility, index) => {
-              const Icon = facility.icon;
-              const isActive = (facilityImageSlides['main'] || 0) === index;
-              const colors = {
-                'bg-red-500': 'from-red-500 to-rose-600',
-                'bg-blue-500': 'from-blue-500 to-indigo-600',
-                'bg-pink-500': 'from-pink-500 to-rose-600',
-                'bg-green-500': 'from-green-500 to-emerald-600',
-                'bg-orange-500': 'from-orange-500 to-amber-600'
-              };
-
-              return (
-                <button
-                  key={index}
-                  onClick={() => setFacilityImageSlides(prev => ({ ...prev, main: index }))}
-                  className={`flex flex-col items-center gap-3 p-4 md:p-6 rounded-2xl transition-all duration-300 min-w-[100px] md:min-w-[120px] ${isActive
-                    ? 'bg-white/20 backdrop-blur-sm shadow-xl scale-110 border-2 border-[#648a6a] transform -translate-y-2'
-                    : 'bg-white/10 backdrop-blur-sm hover:bg-white/20 hover:shadow-lg border-2 border-transparent hover:scale-105'
-                    }`}
-                >
-                  <div className={`w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br ${colors[facility.color]} rounded-2xl flex items-center justify-center shadow-lg ${isActive ? 'shadow-xl' : ''}`}>
-                    <Icon className="w-7 h-7 md:w-8 md:h-8 text-white" />
-                  </div>
-                  <span className={`text-xs md:text-sm font-semibold text-center leading-tight ${isActive ? 'text-[#bdcdc0]' : 'text-green-200'}`}>
-                    {facility.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-        </div>
-      </section>
-
 
       {/* Barangay Clearance Modal */}
       <BarangayClearanceModal
