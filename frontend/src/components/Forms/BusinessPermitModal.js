@@ -374,7 +374,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
         {/* Premium Footer */}
         <div className="border-t bg-gray-50/80 backdrop-blur-md px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print pb-12 sm:pb-6 flex-shrink-0">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hidden sm:block">Please verify all data for commercial accuracy</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hidden sm:block">Please verify all data for commercial accuracy / Pakisuri ang lahat ng datos para sa katumpakan</p>
 
           <div className="flex gap-4 w-full sm:w-auto">
             <button

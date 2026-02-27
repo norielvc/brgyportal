@@ -300,7 +300,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
                       <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
                         <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">1</div>
                         <div>
-                          <h3 className="text-lg md:text-xl font-bold text-white">Deceased Information</h3>
+                          <h3 className="text-lg md:text-xl font-bold text-white">Deceased Information / Impormasyon ng Namatay</h3>
                           <p className="text-sm text-gray-500 font-medium">Please provide accurate details of the deceased</p>
                         </div>
                       </div>
@@ -363,7 +363,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
               </div>
 
               <div className="border-t bg-gray-50/80 backdrop-blur-md px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print pb-12 sm:pb-6">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest hidden sm:block">Please verify all information before submission</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest hidden sm:block">Please verify all information before submission / Pakisuri ang lahat ng impormasyon bago isumite</p>
                 <div className="flex gap-3 w-full sm:w-auto">
                   <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-1 transition-all duration-300 group">
                     <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -403,7 +403,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
                 </div>
               </div>
               <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print">
-                <button onClick={handleCustomizeForm} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all outline-none disabled:opacity-50"><Eye className="w-5 h-5" />Go Back & Edit</button>
+                <button onClick={handleCustomizeForm} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all outline-none disabled:opacity-50"><Eye className="w-5 h-5" />Go Back & Edit / Bumalik sa Pag-edit</button>
                 <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-8 py-3.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-extrabold flex items-center justify-center gap-3 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all disabled:opacity-75">
                   {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
                 </button>

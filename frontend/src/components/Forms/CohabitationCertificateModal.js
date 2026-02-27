@@ -217,8 +217,8 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                     <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
                                         <div className="w-10 h-10 bg-rose-100 text-rose-700 rounded-xl flex items-center justify-center font-black text-lg shadow-sm">1</div>
                                         <div>
-                                            <h3 className="text-lg md:text-xl font-bold text-white">First Person Details</h3>
-                                            <p className="text-sm text-gray-500 font-medium">Primary resident making the request</p>
+                                            <h3 className="text-lg md:text-xl font-bold text-white">First Person Details / Detalye ng Unang Tao</h3>
+                                            <p className="text-sm text-gray-500 font-medium">Primary resident making the request / Pangunahing residente na nagre-request</p>
                                         </div>
                                     </div>
 
@@ -233,7 +233,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                                     readOnly
                                                     onClick={() => { setSelectingFor('person1'); setIsResidentModalOpen(true); }}
                                                     className={`flex-1 px-5 py-4 bg-gray-50 border-2 ${errors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl font-bold text-gray-900 cursor-pointer hover:bg-white transition-all`}
-                                                    placeholder="Select from directory..."
+                                                    placeholder="Select from directory... / Pumili mula sa direktoryo..."
                                                 />
                                                 <button type="button" onClick={() => { setSelectingFor('person1'); setIsResidentModalOpen(true); }} className="px-5 py-4 bg-rose-600 text-white rounded-2xl font-black hover:bg-rose-700 transition-colors shadow-lg shadow-rose-900/10 flex items-center gap-2">
                                                     <Search className="w-5 h-5" />
@@ -249,7 +249,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                     <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
                                         <div className="w-10 h-10 bg-rose-100 text-rose-700 rounded-xl flex items-center justify-center font-black text-lg shadow-sm">2</div>
                                         <div>
-                                            <h3 className="text-lg md:text-xl font-bold text-white">Partner Details</h3>
+                                            <h3 className="text-lg md:text-xl font-bold text-white">Partner Details / Detalye ng Kapareha</h3>
                                             <p className="text-sm text-gray-500 font-medium">Second person in the common-law partnership</p>
                                         </div>
                                     </div>
@@ -265,7 +265,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                                     readOnly
                                                     onClick={() => { setSelectingFor('person2'); setIsResidentModalOpen(true); }}
                                                     className={`flex-1 px-5 py-4 bg-gray-50 border-2 ${errors.partnerFullName ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl font-bold text-gray-900 cursor-pointer hover:bg-white transition-all`}
-                                                    placeholder="Select from directory..."
+                                                    placeholder="Select from directory... / Pumili mula sa direktoryo..."
                                                 />
                                                 <button type="button" onClick={() => { setSelectingFor('person2'); setIsResidentModalOpen(true); }} className="px-5 py-4 bg-rose-600 text-white rounded-2xl font-black hover:bg-rose-700 transition-colors shadow-lg shadow-rose-900/10 flex items-center gap-2">
                                                     <Search className="w-5 h-5" />
@@ -345,7 +345,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Number of Children</label>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 block">Number of Children / Bilang ng Anak</label>
                                             <input type="number" name="noOfChildren" value={formData.noOfChildren} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-white border border-gray-100 rounded-xl font-bold focus:border-rose-500 outline-none" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
@@ -359,7 +359,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-rose-800 uppercase tracking-widest ml-1 block">SMS Contact Number</label>
+                                            <label className="text-xs font-bold text-rose-800 uppercase tracking-widest ml-1 block">SMS Contact Number / Numero para sa SMS</label>
                                             <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} className={`w-full px-5 py-4 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl font-bold text-gray-900 focus:border-rose-500 outline-none`} placeholder="09XX XXX XXXX" />
                                         </div>
                                         <div className="space-y-2 text-sm">
@@ -389,7 +389,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowConfirmationPopup(false)} />
                         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden animate-fade-in text-gray-800">
                             <div className="bg-[#5c0b16] px-8 py-4 flex items-center justify-between">
-                                <h2 className="text-white font-black uppercase tracking-widest">Preview Certificate Format</h2>
+                                <h2 className="text-white font-black uppercase tracking-widest">Preview Certificate Format / Pormat ng Katibayan</h2>
                                 <button onClick={() => setShowConfirmationPopup(false)} className="text-white/60 hover:text-white"><X /></button>
                             </div>
                             <div className="flex-1 overflow-y-auto px-6 py-8 bg-gray-50/80">
@@ -408,7 +408,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                                 </div>
                             </div>
                             <div className="border-t bg-gray-50 px-8 py-5 flex justify-between gap-4">
-                                <button onClick={() => setShowConfirmationPopup(false)} className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-bold uppercase transition-all">Go Back</button>
+                                <button onClick={() => setShowConfirmationPopup(false)} className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-bold uppercase transition-all">Go Back / Bumalik</button>
                                 <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-10 py-3 bg-[#5c0b16] text-white rounded-xl font-black uppercase tracking-widest shadow-lg flex items-center gap-3">
                                     {isSubmitting ? 'Submitting...' : 'Confirm Submission'}
                                 </button>
@@ -428,7 +428,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose }) {
                             </div>
                             <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-2">Application Sent!</h2>
                             <div className="bg-rose-50 border border-rose-100 rounded-2xl p-5 mb-8">
-                                <span className="text-[10px] font-black text-rose-400 uppercase tracking-[0.2em] block mb-1">Reference Number</span>
+                                <span className="text-[10px] font-black text-rose-400 uppercase tracking-[0.2em] block mb-1">Reference Number / Numero ng Sanggunian</span>
                                 <span className="text-2xl font-black text-rose-900 font-mono tracking-widest">{submittedReferenceNumber}</span>
                             </div>
                             <p className="text-sm text-gray-500 font-medium leading-relaxed mb-8">
@@ -542,7 +542,7 @@ const CohabitationPreview = React.memo(({ formData, currentDate, officials, refe
                                         <span>{formData.gender || '_______'}</span>
                                     </div>
                                     <div className="grid grid-cols-[160px_20px_1fr] items-baseline">
-                                        <span>Date of Birth</span>
+                                        <span>Date of Birth / Petsa ng Kapanganakan</span>
                                         <span>:</span>
                                         <span>{formatBday(formData.dateOfBirth)}</span>
                                     </div>
@@ -566,7 +566,7 @@ const CohabitationPreview = React.memo(({ formData, currentDate, officials, refe
                                         <span>{formData.partnerGender || '_______'}</span>
                                     </div>
                                     <div className="grid grid-cols-[160px_20px_1fr] items-baseline">
-                                        <span>Date of Birth</span>
+                                        <span>Date of Birth / Petsa ng Kapanganakan</span>
                                         <span>:</span>
                                         <span>{formatBday(formData.partnerDateOfBirth)}</span>
                                     </div>

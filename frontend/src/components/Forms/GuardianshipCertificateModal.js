@@ -251,17 +251,17 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                     <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                                         <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
                                             <div className="w-8 h-8 bg-[#112e1f] text-white rounded-lg flex items-center justify-center font-bold shadow-md">1</div>
-                                            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Person Under Guardianship (Ward)</h3>
+                                            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Person Under Guardianship (Ward) / Taong Nasa Ilalim ng Pangangalaga</h3>
                                         </div>
                                         <button type="button" onClick={() => { setSearchType('ward'); setIsResidentModalOpen(true); }} className="inline-flex items-center gap-2 px-4 py-2 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d] hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm group">
                                             <Search className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                            Search Ward
+                                            Search Ward / Hanap Ward
                                         </button>
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
-                                        <input type="text" value={formData.fullName} readOnly onClick={() => { setSearchType('ward'); setIsResidentModalOpen(true); }} placeholder="TAP SEARCH BUTTON TO SELECT WARD..." className={`w-full px-5 py-4 bg-white border-2 ${errors.fullName ? 'border-red-500 bg-red-50' : (formData.fullName ? 'border-emerald-200 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-xl font-bold cursor-pointer transition-all hover:border-emerald-300 shadow-sm`} />
+                                        <input type="text" value={formData.fullName} readOnly onClick={() => { setSearchType('ward'); setIsResidentModalOpen(true); }} placeholder="TAP SEARCH BUTTON TO SELECT WARD... / PINDUTIN ANG SEARCH..." className={`w-full px-5 py-4 bg-white border-2 ${errors.fullName ? 'border-red-500 bg-red-50' : (formData.fullName ? 'border-emerald-200 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-xl font-bold cursor-pointer transition-all hover:border-emerald-300 shadow-sm`} />
                                     </div>
                                 </div>
 
@@ -270,21 +270,21 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                     <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                                         <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
                                             <div className="w-8 h-8 bg-[#2d5a3d] text-white rounded-lg flex items-center justify-center font-bold shadow-md">2</div>
-                                            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Guardian Information</h3>
+                                            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Guardian Information / Impormasyon ng Tagapag-alaga</h3>
                                         </div>
                                         <button type="button" onClick={() => { setSearchType('guardian'); setIsResidentModalOpen(true); }} className="inline-flex items-center gap-2 px-4 py-2 border-2 border-[#112e1f]/20 text-[#112e1f] hover:bg-[#112e1f] hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm group">
                                             <Search className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                            Search Guardian
+                                            Search Guardian / Hanap Tagapag-alaga
                                         </button>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="md:col-span-2 space-y-2">
-                                            <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Guardian's Full Name <span className="text-red-500">*</span></label>
-                                            <input type="text" name="guardianName" value={formData.guardianName} readOnly onClick={() => { setSearchType('guardian'); setIsResidentModalOpen(true); }} placeholder="TAP SEARCH BUTTON TO SELECT GUARDIAN..." className={`w-full px-5 py-4 bg-white border-2 ${errors.guardianName ? 'border-red-500 bg-red-50' : (formData.guardianName ? 'border-emerald-200 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-xl font-bold cursor-pointer transition-all hover:border-emerald-300 shadow-sm`} />
+                                            <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Guardian's Full Name / Buong Pangalan ng Tagapag-alaga <span className="text-red-500">*</span></label>
+                                            <input type="text" name="guardianName" value={formData.guardianName} readOnly onClick={() => { setSearchType('guardian'); setIsResidentModalOpen(true); }} placeholder="TAP SEARCH BUTTON TO SELECT GUARDIAN... / PINDUTIN ANG SEARCH..." className={`w-full px-5 py-4 bg-white border-2 ${errors.guardianName ? 'border-red-500 bg-red-50' : (formData.guardianName ? 'border-emerald-200 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-xl font-bold cursor-pointer transition-all hover:border-emerald-300 shadow-sm`} />
                                         </div>
                                         <div className="md:col-span-2 space-y-2">
-                                            <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Relationship <span className="text-red-500">*</span></label>
+                                            <label className="text-xs font-bold text-[#2d5a3d] uppercase tracking-widest ml-1 block">Relationship / Relasyon <span className="text-red-500">*</span></label>
                                             <div className="relative">
                                                 <select
                                                     name="guardianRelationship"
@@ -312,11 +312,11 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                 <div className="space-y-6 pt-4 border-t border-gray-100">
                                     <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
                                         <div className="w-8 h-8 bg-[#112117] text-white rounded-lg flex items-center justify-center font-bold shadow-md">3</div>
-                                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">Contact Information</h3>
+                                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">Contact Information / Impormasyon sa Pakikipag-ugnayan</h3>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-[#112117] uppercase tracking-widest ml-1 block">Requestor's Contact Number <span className="text-red-500">*</span></label>
+                                            <label className="text-xs font-bold text-[#112117] uppercase tracking-widest ml-1 block">Requestor's Contact Number / Numero ng Requestor <span className="text-red-500">*</span></label>
                                             <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full px-5 py-4 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-xl focus:border-[#112117] outline-none font-extrabold text-gray-800 shadow-sm`} />
                                         </div>
                                         <div className="space-y-2">
@@ -328,11 +328,11 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                             </div>
 
                             <div className="border-t bg-gray-50/80 backdrop-blur-md px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print pb-12 sm:pb-6">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest hidden sm:block">Please verify all information before submission</p>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest hidden sm:block">Please verify all information before submission / Pakisuri ang lahat ng impormasyon bago isumite</p>
                                 <div className="flex gap-3 w-full sm:w-auto">
                                     <button type="button" onClick={handleSubmit} className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl transform hover:-translate-y-1 transition-all duration-300 group">
                                         <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                        Review & Submit
+                                        Review & Submit / Suriin at Isumite
                                     </button>
                                 </div>
                             </div>
@@ -368,7 +368,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                 </div>
                             </div>
                             <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print">
-                                <button onClick={() => setShowConfirmationPopup(false)} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50">Go Back & Edit</button>
+                                <button onClick={() => setShowConfirmationPopup(false)} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50">Go Back & Edit / Bumalik sa Pag-edit</button>
                                 <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-8 py-3.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-extrabold flex items-center justify-center gap-3 shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-75">
                                     {isSubmitting ? 'Processing...' : 'Confirm & Submit Application / Ipadala ang Aplikasyon'}
                                 </button>

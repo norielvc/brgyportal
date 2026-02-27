@@ -333,20 +333,20 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Identification Number <span className="text-red-500">*</span></label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Identification Number / Numero ng Pagkakakilanlan <span className="text-red-500">*</span></label>
                     {formData.purok === 'NV9' ? (
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <input type="text" name="phaseNumber" value={formData.phaseNumber} onChange={handleInputChange} placeholder="PH" className={`w-full px-4 py-4 bg-white border-2 ${errors.phaseNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-xl focus:border-[#2d5a3d] outline-none text-center font-black`} />
-                          <span className="text-[8px] text-gray-400 font-black uppercase text-center block">Phase</span>
+                          <span className="text-[8px] text-gray-400 font-black uppercase text-center block">Phase / Bahagi</span>
                         </div>
                         <div className="space-y-1">
                           <input type="text" name="blockNumber" value={formData.blockNumber} onChange={handleInputChange} placeholder="BLK" className={`w-full px-4 py-4 bg-white border-2 ${errors.blockNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-xl focus:border-[#2d5a3d] outline-none text-center font-black`} />
-                          <span className="text-[8px] text-gray-400 font-black uppercase text-center block">Block</span>
+                          <span className="text-[8px] text-gray-400 font-black uppercase text-center block">Block / Bloke</span>
                         </div>
                         <div className="space-y-1">
                           <input type="text" name="lotNumber" value={formData.lotNumber} onChange={handleInputChange} placeholder="LOT" className={`w-full px-4 py-4 bg-white border-2 ${errors.lotNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-xl focus:border-[#2d5a3d] outline-none text-center font-black`} />
-                          <span className="text-[8px] text-gray-400 font-black uppercase text-center block">Lot</span>
+                          <span className="text-[8px] text-gray-400 font-black uppercase text-center block">Lot / Lote</span>
                         </div>
                       </div>
                     ) : (
@@ -355,7 +355,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                         name="houseNumber"
                         value={formData.houseNumber}
                         onChange={handleInputChange}
-                        placeholder="ENTER HOUSE NUMBER..."
+                        placeholder="ENTER HOUSE NUMBER... / ILAGAY ANG NUMERO NG BAHAY..."
                         className={`w-full px-4 py-3 md:px-6 md:py-4 bg-white border-2 ${errors.houseNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 transition-all outline-none font-black text-emerald-900 uppercase`}
                       />
                     )}
@@ -368,14 +368,14 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                 <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
                   <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">3</div>
                   <div>
-                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Academic Profile</h3>
-                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Educational Status & performance</p>
+                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Academic Profile / Akademikong Profile</h3>
+                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Educational Status & performance / Katayuan sa Edukasyon</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Level / Grade (A.Y. 2024-2025) <span className="text-red-500">*</span></label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Level / Grade (A.Y. 2024-2025) / Taon o Antas <span className="text-red-500">*</span></label>
                     <select
                       name="yearGrade"
                       value={formData.yearGrade}
@@ -389,7 +389,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                     </select>
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">General Weighted Average <span className="text-red-500">*</span></label>
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">General Weighted Average / Pangkalahatang Average <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <input
                         type="number"
@@ -397,7 +397,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                         value={formData.gwa}
                         onChange={handleInputChange}
                         step="0.01"
-                        placeholder="ENTER GWA (E.G. 1.25)..."
+                        placeholder="ENTER GWA (E.G. 1.25)... / ILAGAY ANG GWA (HAL. 1.25)..."
                         className={`w-full px-4 py-3 md:px-6 md:py-4 bg-white border-2 ${errors.gwa ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none`}
                       />
                       <div className="absolute right-6 top-1/2 -translate-y-1/2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-[10px] font-black">NUMERIC</div>
@@ -496,7 +496,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
 
         {/* Premium Footer */}
         <div className="border-t bg-gray-50/80 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 flex flex-col sm:flex-row gap-4 justify-between items-center no-print pb-6 md:pb-6 flex-shrink-0 safe-pb">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hidden sm:block">Verify information before final filing</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hidden sm:block">Verify information before final filing / Suriin ang impormasyon bago ang pinal na pagpapasa</p>
 
           <div className="flex gap-4 w-full sm:w-auto">
             <button

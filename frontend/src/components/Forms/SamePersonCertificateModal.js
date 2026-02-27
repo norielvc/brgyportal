@@ -343,7 +343,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100">
                                             <div className="space-y-6">
-                                                <label className="text-xs font-bold text-blue-900 uppercase tracking-widest ml-1 block">SMS Contact Number <span className="text-red-500">*</span></label>
+                                                <label className="text-xs font-bold text-blue-900 uppercase tracking-widest ml-1 block">SMS Contact Number / Numero para sa SMS <span className="text-red-500">*</span></label>
                                                 <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full px-4 py-3 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-blue-100'} rounded-xl focus:border-blue-500 transition-all shadow-sm`} />
                                             </div>
                                             <div className="space-y-6">
@@ -396,7 +396,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                                 </div>
                             </div>
                             <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print">
-                                <button onClick={handleCustomizeForm} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-blue-900/20 text-blue-900 hover:bg-blue-900/5 rounded-2xl font-bold flex items-center justify-center gap-2 outline-none"><Eye className="w-5 h-5" />Go Back & Edit</button>
+                                <button onClick={handleCustomizeForm} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-blue-900/20 text-blue-900 hover:bg-blue-900/5 rounded-2xl font-bold flex items-center justify-center gap-2 outline-none"><Eye className="w-5 h-5" />Go Back & Edit / Bumalik sa Pag-edit</button>
                                 <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-8 py-3.5 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-indigo-900 hover:to-blue-900 text-white rounded-2xl font-extrabold flex items-center justify-center gap-3 shadow-xl hover:shadow-blue-900/20 transform hover:-translate-y-0.5 transition-all">
                                     {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
                                 </button>

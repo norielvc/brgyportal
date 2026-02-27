@@ -226,24 +226,24 @@ export default function MedicoLegalModal({ isOpen, onClose }) {
                                     <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                                             <Search className="w-5 h-5 text-blue-600" />
-                                            Patient Information
+                                            Patient Information / Impormasyon ng Pasyente
                                         </h3>
                                         <button type="button" onClick={() => setIsResidentModalOpen(true)} className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors">
                                             <Search className="w-4 h-4" />
-                                            Search Resident
+                                            Search Resident / Hanap Residente
                                         </button>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                                         <div className="space-y-1">
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Full Name / Buong Pangalan</label>
                                             <input
                                                 type="text"
                                                 name="fullName"
                                                 value={formData.fullName}
                                                 readOnly
                                                 onClick={() => setIsResidentModalOpen(true)}
-                                                placeholder="TAP TO SELECT PATIENT..."
+                                                placeholder="TAP TO SELECT PATIENT... / PINDUTIN UPANG PUMILI NG PASYENTE..."
                                                 className={`w-full px-4 py-3 bg-gray-50 border ${errors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded-xl font-bold uppercase cursor-pointer text-gray-900`}
                                             />
                                         </div>
@@ -255,12 +255,12 @@ export default function MedicoLegalModal({ isOpen, onClose }) {
                                 <div className="space-y-6 pt-6 border-t border-gray-100">
                                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                                         <Calendar className="w-5 h-5 text-blue-600" />
-                                        Investigation Details
+                                        Investigation Details / Detalye ng Imbestigasyon
                                     </h3>
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div className="space-y-1">
-                                            <label className="text-xs font-bold text-blue-700 uppercase tracking-widest ml-1">Date of Examination <span className="text-red-500">*</span></label>
+                                            <label className="text-xs font-bold text-blue-700 uppercase tracking-widest ml-1">Date of Examination / Petsa ng Pagsusuri <span className="text-red-500">*</span></label>
                                             <input
                                                 type="date"
                                                 name="dateOfExamination"
