@@ -1332,45 +1332,213 @@ export default function BarangayPortal() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16">
 
               {/* Outstanding Barangay Award */}
-              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl p-8 border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-yellow-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-2">
-                <div className="flex items-center mb-6">
-                  <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-yellow-600 to-yellow-400 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(250,204,21,0.3)] group-hover:scale-110 transition-transform duration-300 transform rotate-3 group-hover:rotate-0">
-                    <Star className="w-8 h-8 text-white" fill="currentColor" />
+              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-yellow-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col hover:-translate-y-2">
+                {/* Image Cover */}
+                <div className="relative h-48 md:h-56 w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-indigo-900/30 group-hover:bg-transparent transition-colors duration-300 z-10"></div>
+                  <img
+                    src="https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800"
+                    alt="Most Outstanding Barangay"
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-indigo-950 to-transparent z-10"></div>
+                  {/* Floating Badge */}
+                  <div className="absolute top-4 right-4 z-20 bg-yellow-500 text-indigo-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                    <Award className="w-4 h-4" />
+                    2025
                   </div>
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-yellow-400 transition-colors">Most Outstanding Barangay</h3>
-                <p className="text-indigo-200 text-sm font-semibold tracking-wider mb-4 uppercase">City-level Recognition • 2025</p>
-                <p className="text-indigo-100/80 leading-relaxed text-sm md:text-base">
-                  Awarded for exhibiting exemplary performance in local governance, community engagement, and rapid public service delivery across all metrics.
-                </p>
+
+                {/* Content */}
+                <div className="p-6 flex-1 flex flex-col relative z-20 -mt-10">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-600 to-yellow-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.3)] border-2 border-indigo-950 mr-4 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                      <Star className="w-6 h-6 text-white" fill="currentColor" />
+                    </div>
+                    <div>
+                      <p className="text-yellow-400 text-[10px] md:text-xs font-bold tracking-widest uppercase mb-0.5">City-Level Recognition</p>
+                      <h3 className="text-lg md:text-xl font-bold text-white group-hover:text-yellow-400 transition-colors line-clamp-2 leading-tight">Most Outstanding Barangay</h3>
+                    </div>
+                  </div>
+                  <p className="text-indigo-100/80 leading-relaxed text-sm flex-1 pt-3 border-t border-indigo-500/20 mt-1">
+                    Awarded for exhibiting exemplary performance in local governance, community engagement, and rapid public service delivery across all metrics.
+                  </p>
+                </div>
               </div>
 
               {/* Cleanest & Greenest */}
-              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl p-8 border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-emerald-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-2">
-                <div className="flex items-center mb-6">
-                  <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-emerald-600 to-emerald-400 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.3)] group-hover:scale-110 transition-transform duration-300 transform -rotate-3 group-hover:rotate-0">
-                    <Leaf className="w-8 h-8 text-white" />
+              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-emerald-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col hover:-translate-y-2">
+                {/* Image Cover */}
+                <div className="relative h-48 md:h-56 w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-indigo-900/30 group-hover:bg-transparent transition-colors duration-300 z-10"></div>
+                  <img
+                    src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=800"
+                    alt="Cleanest & Greenest"
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-indigo-950 to-transparent z-10"></div>
+                  {/* Floating Badge */}
+                  <div className="absolute top-4 right-4 z-20 bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                    <Award className="w-4 h-4" />
+                    2024
                   </div>
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-emerald-400 transition-colors">Cleanest & Greenest</h3>
-                <p className="text-indigo-200 text-sm font-semibold tracking-wider mb-4 uppercase">Environmental Award • 2024</p>
-                <p className="text-indigo-100/80 leading-relaxed text-sm md:text-base">
-                  Recognized for initiating the Brgy. Green Building Code and maintaining a zero-waste policy within the immediate public vicinity.
-                </p>
+
+                {/* Content */}
+                <div className="p-6 flex-1 flex flex-col relative z-20 -mt-10">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-600 to-emerald-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(52,211,153,0.3)] border-2 border-indigo-950 mr-4 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                      <Leaf className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-emerald-400 text-[10px] md:text-xs font-bold tracking-widest uppercase mb-0.5">Environmental Award</p>
+                      <h3 className="text-lg md:text-xl font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-2 leading-tight">Cleanest & Greenest</h3>
+                    </div>
+                  </div>
+                  <p className="text-indigo-100/80 leading-relaxed text-sm flex-1 pt-3 border-t border-indigo-500/20 mt-1">
+                    Recognized for initiating the Brgy. Green Building Code and maintaining a zero-waste policy within the immediate public vicinity.
+                  </p>
+                </div>
               </div>
 
-              {/* Best in Digital Innovation */}
-              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl p-8 border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-blue-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-2">
-                <div className="flex items-center mb-6">
-                  <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-blue-600 to-blue-400 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(96,165,250,0.3)] group-hover:scale-110 transition-transform duration-300 transform rotate-3 group-hover:rotate-0">
-                    <Laptop className="w-8 h-8 text-white" />
+              {/* Digital Innovation Pioneer */}
+              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-blue-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col hover:-translate-y-2">
+                {/* Image Cover */}
+                <div className="relative h-48 md:h-56 w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-indigo-900/30 group-hover:bg-transparent transition-colors duration-300 z-10"></div>
+                  <img
+                    src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=800"
+                    alt="Digital Innovation Pioneer"
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-indigo-950 to-transparent z-10"></div>
+                  {/* Floating Badge */}
+                  <div className="absolute top-4 right-4 z-20 bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                    <Award className="w-4 h-4" />
+                    2026
                   </div>
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">Digital Innovation Pioneer</h3>
-                <p className="text-indigo-200 text-sm font-semibold tracking-wider mb-4 uppercase">Special Citation • 2026</p>
-                <p className="text-indigo-100/80 leading-relaxed text-sm md:text-base">
-                  Acknowledged for launching the comprehensive E-Services portal, ensuring 100% online availability of forms and digital records.
-                </p>
+
+                {/* Content */}
+                <div className="p-6 flex-1 flex flex-col relative z-20 -mt-10">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(96,165,250,0.3)] border-2 border-indigo-950 mr-4 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                      <Laptop className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-blue-400 text-[10px] md:text-xs font-bold tracking-widest uppercase mb-0.5">Special Citation</p>
+                      <h3 className="text-lg md:text-xl font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2 leading-tight">Digital Innovation Pioneer</h3>
+                    </div>
+                  </div>
+                  <p className="text-indigo-100/80 leading-relaxed text-sm flex-1 pt-3 border-t border-indigo-500/20 mt-1">
+                    Acknowledged for launching the comprehensive E-Services portal, ensuring 100% online availability of forms and digital records.
+                  </p>
+                </div>
+              </div>
+
+              {/* Best in Public Safety */}
+              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-red-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col hover:-translate-y-2">
+                {/* Image Cover */}
+                <div className="relative h-48 md:h-56 w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-indigo-900/30 group-hover:bg-transparent transition-colors duration-300 z-10"></div>
+                  <img
+                    src="https://images.unsplash.com/photo-1533481405265-e9ce0c044abb?auto=format&fit=crop&q=80&w=800"
+                    alt="Best in Public Safety"
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-indigo-950 to-transparent z-10"></div>
+                  {/* Floating Badge */}
+                  <div className="absolute top-4 right-4 z-20 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                    <Award className="w-4 h-4" />
+                    2025
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 flex-1 flex flex-col relative z-20 -mt-10">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(248,113,113,0.3)] border-2 border-indigo-950 mr-4 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                      <Shield className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-red-400 text-[10px] md:text-xs font-bold tracking-widest uppercase mb-0.5">Community Safety</p>
+                      <h3 className="text-lg md:text-xl font-bold text-white group-hover:text-red-400 transition-colors line-clamp-2 leading-tight">Best in Public Safety</h3>
+                    </div>
+                  </div>
+                  <p className="text-indigo-100/80 leading-relaxed text-sm flex-1 pt-3 border-t border-indigo-500/20 mt-1">
+                    Recognized for the lowest crime rate in the municipality and unparalleled rapid response of the Barangay Tanods and safety patrols.
+                  </p>
+                </div>
+              </div>
+
+              {/* Excellence in Healthcare */}
+              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-pink-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col hover:-translate-y-2">
+                {/* Image Cover */}
+                <div className="relative h-48 md:h-56 w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-indigo-900/30 group-hover:bg-transparent transition-colors duration-300 z-10"></div>
+                  <img
+                    src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=800"
+                    alt="Excellence in Healthcare"
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-indigo-950 to-transparent z-10"></div>
+                  {/* Floating Badge */}
+                  <div className="absolute top-4 right-4 z-20 bg-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                    <Award className="w-4 h-4" />
+                    2024
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 flex-1 flex flex-col relative z-20 -mt-10">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-pink-600 to-pink-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(244,114,182,0.3)] border-2 border-indigo-950 mr-4 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                      <Heart className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-pink-400 text-[10px] md:text-xs font-bold tracking-widest uppercase mb-0.5">Health Service</p>
+                      <h3 className="text-lg md:text-xl font-bold text-white group-hover:text-pink-400 transition-colors line-clamp-2 leading-tight">Excellence in Healthcare</h3>
+                    </div>
+                  </div>
+                  <p className="text-indigo-100/80 leading-relaxed text-sm flex-1 pt-3 border-t border-indigo-500/20 mt-1">
+                    Awarded for the continuous deployment of mobile clinics, free check-ups, and maternal care support for marginalized sectors.
+                  </p>
+                </div>
+              </div>
+
+              {/* Champion in Youth Development */}
+              <div className="bg-indigo-950/30 backdrop-blur-md rounded-2xl border border-indigo-400/20 hover:bg-indigo-900/50 hover:border-purple-400/40 transition-all duration-300 group shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col hover:-translate-y-2">
+                {/* Image Cover */}
+                <div className="relative h-48 md:h-56 w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-indigo-900/30 group-hover:bg-transparent transition-colors duration-300 z-10"></div>
+                  <img
+                    src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"
+                    alt="Champion in Youth Development"
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-indigo-950 to-transparent z-10"></div>
+                  {/* Floating Badge */}
+                  <div className="absolute top-4 right-4 z-20 bg-purple-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                    <Award className="w-4 h-4" />
+                    2025
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 flex-1 flex flex-col relative z-20 -mt-10">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(192,132,252,0.3)] border-2 border-indigo-950 mr-4 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                      <GraduationCap className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-purple-400 text-[10px] md:text-xs font-bold tracking-widest uppercase mb-0.5">Youth Council</p>
+                      <h3 className="text-lg md:text-xl font-bold text-white group-hover:text-purple-400 transition-colors line-clamp-2 leading-tight">Youth Development</h3>
+                    </div>
+                  </div>
+                  <p className="text-indigo-100/80 leading-relaxed text-sm flex-1 pt-3 border-t border-indigo-500/20 mt-1">
+                    Honored for establishing local sports tournaments, skill-building workshops, and broad educational assistance distribution.
+                  </p>
+                </div>
               </div>
 
             </div>
