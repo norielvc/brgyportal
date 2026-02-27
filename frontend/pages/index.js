@@ -1050,7 +1050,72 @@ export default function BarangayPortal() {
         </div>
       </section>
 
+      {/* Barangay Programs Section - Carousel layout mirroring exact screenshot design */}
+      <section className="py-12 md:py-16 bg-white w-full">
+        <h2 className="text-center text-3xl md:text-[2.5rem] font-extrabold text-[#113b4d] uppercase mb-10 tracking-[0.05em] font-serif">
+          Barangay Programs
+        </h2>
 
+        <div className="w-full relative overflow-hidden">
+          <div className="flex overflow-x-auto md:grid md:grid-cols-3 snap-x snap-mandatory scrollbar-hide">
+
+            {/* Card 1 */}
+            <div className="relative h-[350px] md:h-[450px] w-full min-w-[85vw] md:min-w-0 snap-center flex-shrink-0 group">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
+                style={{ backgroundImage: 'url(/background.jpg)' }}
+              />
+              <div className="absolute inset-0 bg-[#2a4d5c]/85 flex flex-col items-start justify-center p-10 md:p-14 transition-colors duration-500 hover:bg-[#2a4d5c]/90">
+                <h3 className="text-white text-3xl md:text-4xl font-black uppercase leading-tight mb-8 tracking-wide drop-shadow-md">
+                  Brgy. Green<br className="hidden md:block" /> Building Code
+                </h3>
+                <button className="border-2 border-white text-white px-8 py-3 bg-transparent hover:bg-white hover:text-[#2a4d5c] transition-colors rounded-sm font-semibold text-sm md:text-base">
+                  Read More
+                </button>
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="relative h-[350px] md:h-[450px] w-full min-w-[85vw] md:min-w-0 snap-center flex-shrink-0 group">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
+                style={{ backgroundImage: 'url(/background.jpg)' }}
+              />
+              <div className="absolute inset-0 bg-[#c04646]/85 flex flex-col items-start justify-center p-10 md:p-14 transition-colors duration-500 hover:bg-[#c04646]/90">
+                <h3 className="text-white text-3xl md:text-4xl font-black uppercase leading-tight mb-8 tracking-wide drop-shadow-md">
+                  Pangkabuhayang<br className="hidden md:block" /> Iba O' Este
+                </h3>
+                <button className="border-2 border-white text-white px-8 py-3 bg-transparent hover:bg-white hover:text-[#c04646] transition-colors rounded-sm font-semibold text-sm md:text-base">
+                  Read More
+                </button>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="relative h-[350px] md:h-[450px] w-full min-w-[85vw] md:min-w-0 snap-center flex-shrink-0 group">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
+                style={{ backgroundImage: 'url(/background.jpg)' }}
+              />
+              <div className="absolute inset-0 bg-[#356db3]/85 flex flex-col items-start justify-center p-10 md:p-14 transition-colors duration-500 hover:bg-[#356db3]/90">
+                <h3 className="text-white text-3xl md:text-4xl font-black uppercase leading-tight mb-8 tracking-wide drop-shadow-md">
+                  Barangay<br className="hidden md:block" /> E-Services
+                </h3>
+                <button className="border-2 border-white text-white px-8 py-3 bg-transparent hover:bg-white hover:text-[#356db3] transition-colors rounded-sm font-semibold text-sm md:text-base">
+                  Read More
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div className="text-center mt-12 mb-4">
+          <button className="border border-[#2a4d5c] text-[#2a4d5c] px-8 py-3 hover:bg-[#2a4d5c] hover:text-white transition-colors uppercase font-semibold tracking-wide text-sm rounded-sm">
+            More Programs
+          </button>
+        </div>
+      </section>
 
       {/* Educational Assistance Program Section - SK Project - Trimmed for single screen */}
       <section id="educational-assistance" className="py-4 md:py-6 bg-gradient-to-br from-emerald-900 via-green-900 to-teal-900 relative overflow-hidden flex items-center animate-on-scroll">
