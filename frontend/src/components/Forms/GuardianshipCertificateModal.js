@@ -292,15 +292,15 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                                     onChange={handleInputChange}
                                                     className={`w-full px-5 py-4 bg-white border-2 ${errors.guardianRelationship ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-xl focus:border-[#2d5a3d] outline-none font-bold text-gray-800 appearance-none cursor-pointer`}
                                                 >
-                                                    <option value="">SELECT RELATIONSHIP...</option>
-                                                    <option value="PARENT">PARENT</option>
-                                                    <option value="GRANDPARENT">GRANDPARENT</option>
-                                                    <option value="SIBLING">SIBLING</option>
-                                                    <option value="AUNT/UNCLE">AUNT/UNCLE</option>
-                                                    <option value="COUSIN">COUSIN</option>
-                                                    <option value="STEP-PARENT">STEP-PARENT</option>
-                                                    <option value="LEGAL GUARDIAN">LEGAL GUARDIAN</option>
-                                                    <option value="OTHER">OTHER</option>
+                                                    <option value="">SELECT RELATIONSHIP... / PUMILI NG RELASYON...</option>
+                                                    <option value="PARENT / MAGULANG">PARENT / MAGULANG</option>
+                                                    <option value="GRANDPARENT / LOLO/LOLA">GRANDPARENT / LOLO/LOLA</option>
+                                                    <option value="SIBLING / KAPATID">SIBLING / KAPATID</option>
+                                                    <option value="AUNT/UNCLE / TITA/TITO">AUNT/UNCLE / TITA/TITO</option>
+                                                    <option value="COUSIN / PINSAN">COUSIN / PINSAN</option>
+                                                    <option value="STEP-PARENT / PANGALAWANG MAGULANG">STEP-PARENT / PANGALAWANG MAGULANG</option>
+                                                    <option value="LEGAL GUARDIAN / LIGAL NA TAGAPAG-ALAGA">LEGAL GUARDIAN / LIGAL NA TAGAPAG-ALAGA</option>
+                                                    <option value="OTHER / IBA PA">OTHER / IBA PA</option>
                                                 </select>
                                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                                             </div>

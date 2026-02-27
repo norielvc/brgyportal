@@ -325,7 +325,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                       onChange={handleInputChange}
                       className={`w-full px-4 py-3 md:px-6 md:py-4 bg-white border-2 ${errors.purok ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 transition-all outline-none font-black text-emerald-900 appearance-none cursor-pointer`}
                     >
-                      <option value="">SELECT AREA...</option>
+                      <option value="">SELECT AREA... / PUMILI NG PUROK...</option>
                       {['Purok 1', 'Purok 2', 'Purok 3', 'Purok 4', 'Purok 5', 'Purok 6', 'NV9'].map(p => (
                         <option key={p} value={p}>{p.toUpperCase()}</option>
                       ))}
@@ -382,8 +382,8 @@ export default function EducationalAssistanceModal({ isOpen, onClose }) {
                       onChange={handleInputChange}
                       className={`w-full px-4 py-3 md:px-6 md:py-4 bg-white border-2 ${errors.yearGrade ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 transition-all outline-none font-black text-emerald-900 cursor-pointer`}
                     >
-                      <option value="">SELECT LEVEL...</option>
-                      {['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', '1st Year College', '2nd Year College', '3rd Year College', '4th Year College', '5th Year College'].map(lvl => (
+                      <option value="">SELECT LEVEL... / PUMILI NG ANTAS...</option>
+                      {['Grade 7 / Baitang 7', 'Grade 8 / Baitang 8', 'Grade 9 / Baitang 9', 'Grade 10 / Baitang 10', 'Grade 11 / Baitang 11', 'Grade 12 / Baitang 12', '1st Year College / Unang Taon Kolehiyo', '2nd Year College / Ikalawang Taon Kolehiyo', '3rd Year College / Ikatlong Taon Kolehiyo', '4th Year College / Ika-4 na Taon Kolehiyo', '5th Year College / Ika-5 Taon Kolehiyo'].map(lvl => (
                         <option key={lvl} value={lvl}>{lvl.toUpperCase()}</option>
                       ))}
                     </select>

@@ -177,26 +177,26 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
             {/* Status Notice */}
             <div className="bg-amber-50 border-l-[6px] border-amber-500 rounded-r-2xl p-5 shadow-sm relative overflow-hidden mb-6 flex-shrink-0">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-                      <div className="flex items-start gap-4 relative z-10">
-                        <div className="bg-gradient-to-br from-amber-400 to-amber-600 p-2.5 rounded-full shadow-md mt-1 shrink-0">
-                          <Info className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="space-y-2.5 flex-1">
-                          <div>
-                            <h4 className="font-extrabold text-amber-900 uppercase tracking-widest text-[11px] flex items-center gap-2 mb-1">
-                              Registration Notice / Paunawa
-                            </h4>
-                            <p className="text-amber-800 text-xs font-bold leading-relaxed mb-1">
-                              If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
-                            </p>
-                            <p className="text-amber-800/80 text-[11px] font-bold leading-relaxed">
-                              Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+              <div className="flex items-start gap-4 relative z-10">
+                <div className="bg-gradient-to-br from-amber-400 to-amber-600 p-2.5 rounded-full shadow-md mt-1 shrink-0">
+                  <Info className="w-5 h-5 text-white" />
+                </div>
+                <div className="space-y-2.5 flex-1">
+                  <div>
+                    <h4 className="font-extrabold text-amber-900 uppercase tracking-widest text-[11px] flex items-center gap-2 mb-1">
+                      Registration Notice / Paunawa
+                    </h4>
+                    <p className="text-amber-800 text-xs font-bold leading-relaxed mb-1">
+                      If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
+                    </p>
+                    <p className="text-amber-800/80 text-[11px] font-bold leading-relaxed">
+                      Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {submitStatus?.type === 'error' && (
               <div className="bg-rose-50 border border-rose-100 rounded-2xl p-5 flex items-center gap-4 animate-shake">
@@ -213,7 +213,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
               {/* Step 1: Business Profile */}
               <div className="space-y-4 md:space-y-6">
                 <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
-<div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">1</div>
+                  <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">1</div>
                   <div>
                     <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Business Enterprise Information</h3>
                     <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Legal Entity Identification</p>
@@ -240,8 +240,8 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
                       onChange={handleInputChange}
                       className={`w-full px-6 py-4 bg-white border-2 ${errors.businessType ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 transition-all outline-none font-black text-emerald-900 appearance-none cursor-pointer`}
                     >
-                      <option value="">SELECT TYPE...</option>
-                      {['Retail', 'Restaurant', 'Service', 'Manufacturing', 'Wholesale', 'Other'].map(type => (
+                      <option value="">SELECT TYPE... / PUMILI NG URI...</option>
+                      {['Retail / Tingian', 'Restaurant / Kainan', 'Service / Serbisyo', 'Manufacturing / Pagawaan', 'Wholesale / Pakyawan', 'Other / Iba pa'].map(type => (
                         <option key={type} value={type}>{type.toUpperCase()}</option>
                       ))}
                     </select>
@@ -278,7 +278,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
               {/* Step 2: Owner Profile */}
               <div className="space-y-4 md:space-y-6">
                 <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
-<div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">2</div>
+                  <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">2</div>
                   <div>
                     <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Proprietor Information</h3>
                     <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Owner Identity details</p>
@@ -316,7 +316,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
               {/* Step 3: Operational Details */}
               <div className="space-y-4 md:space-y-6">
                 <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
-<div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">3</div>
+                  <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">3</div>
                   <div>
                     <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Operational Profile</h3>
                     <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Commercial scale & Purpose</p>
@@ -360,8 +360,8 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
                     onChange={handleInputChange}
                     className={`w-full px-6 py-4 bg-white border-2 ${errors.purpose ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 cursor-pointer appearance-none shadow-sm`}
                   >
-                    <option value="">SELECT FILING TYPE...</option>
-                    {['New Business', 'Renewal', 'Transfer of Location', 'Change of Business Name'].map(p => (
+                    <option value="">SELECT FILING TYPE... / PUMILI NG LAYUNIN...</option>
+                    {['New Business / Bagong Negosyo', 'Renewal / Renobasyon', 'Transfer of Location / Paglipat ng Lokasyon', 'Change of Business Name / Pagbabago ng Pangalan ng Negosyo'].map(p => (
                       <option key={p} value={p}>{p.toUpperCase()}</option>
                     ))}
                   </select>

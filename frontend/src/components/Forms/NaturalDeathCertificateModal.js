@@ -332,8 +332,8 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-[#2d5a3d] uppercase tracking-widest ml-1 block">COVID-19 Related / Complication <span className="text-red-500">*</span></label>
                           <select name="covidRelated" value={formData.covidRelated} onChange={handleInputChange} className={`w-full px-5 py-3.5 bg-white border-2 ${errors.covidRelated ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-xl text-gray-900 font-bold focus:outline-none focus:border-[#2d5a3d]`}>
-                            <option value="No">No</option>
-                            <option value="Yes">Yes</option>
+                            <option value="No / Hindi">No / Hindi</option>
+                            <option value="Yes / Oo">Yes / Oo</option>
                           </select>
                         </div>
                       </div>
