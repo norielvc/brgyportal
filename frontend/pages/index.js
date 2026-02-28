@@ -48,6 +48,8 @@ export default function BarangayPortal() {
   });
   const [itemsPerView, setItemsPerView] = useState(3);
   const [heroCarouselIndex, setHeroCarouselIndex] = useState(0);
+  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [facilityImageIndex, setFacilityImageIndex] = useState(0);
 
   const forms = useMemo(() => [
     {
@@ -1228,7 +1230,14 @@ export default function BarangayPortal() {
             <div className="w-full">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
                 {facilities.map((facility, index) => (
-                  <div key={index} className="flex flex-col group bg-white transition-all duration-300">
+                  <div
+                    key={index}
+                    className="flex flex-col group bg-white transition-all duration-300 cursor-pointer"
+                    onClick={() => {
+                      setSelectedFacility(facility);
+                      setFacilityImageIndex(0);
+                    }}
+                  >
                     <div className="w-full h-48 mb-4 overflow-hidden">
                       <img
                         src={(facility.images && facility.images.length > 0) ? facility.images[0] : '/background.jpg'}
@@ -2264,6 +2273,85 @@ export default function BarangayPortal() {
           </div>
         )
       }
+
+      {/* Facility Photo Slider Modal */}
+      {selectedFacility && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 pb-20 sm:pb-6">
+          <div
+            className="absolute inset-0 bg-black/95 backdrop-blur-md transition-opacity duration-300"
+            onClick={() => setSelectedFacility(null)}
+          ></div>
+
+          <div className="relative z-10 w-full max-w-5xl h-[80vh] flex flex-col bg-[#0a1f12] rounded-3xl overflow-hidden border border-[#8dc63f]/30 shadow-[0_0_50px_rgba(141,198,63,0.15)] animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-[#8dc63f]/20 bg-[#112e1f]/80 z-20">
+              <div>
+                <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-[#8dc63f] transition-colors">{selectedFacility.name}</h3>
+                <p className="text-[#8dc63f] text-sm md:text-base font-semibold">Photo Gallery</p>
+              </div>
+              <button
+                onClick={() => setSelectedFacility(null)}
+                className="w-10 h-10 bg-white/10 hover:bg-red-500/20 rounded-full flex items-center justify-center text-white/70 hover:text-red-400 transition-colors border border-white/10 hover:border-red-500/30"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Main Image Content */}
+            <div className="relative flex-1 bg-black overflow-hidden flex items-center justify-center group">
+              {(() => {
+                const images = selectedFacility.images || ['/background.jpg'];
+                const currentImg = images[facilityImageIndex] || '/background.jpg';
+                return (
+                  <>
+                    <img
+                      src={currentImg}
+                      alt={`${selectedFacility.name} image ${facilityImageIndex + 1}`}
+                      className="w-full h-full object-contain"
+                    />
+
+                    {/* Navigation Arrows (only if multiple images) */}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFacilityImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
+                          }}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-[#8dc63f] flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 opacity-0 group-hover:opacity-100 mx-2"
+                        >
+                          <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFacilityImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1);
+                          }}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-[#8dc63f] flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 opacity-0 group-hover:opacity-100 mx-2"
+                        >
+                          <ChevronRight className="w-6 h-6" />
+                        </button>
+
+                        {/* Image Counter */}
+                        <div className="absolute top-4 right-4 bg-black/60 px-3 py-1 rounded-full text-white/90 text-sm border border-white/20 backdrop-blur-sm">
+                          {facilityImageIndex + 1} / {images.length}
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Description / Caption Area */}
+            <div className="p-4 md:p-6 bg-[#112e1f]/80 border-t border-[#8dc63f]/20 z-20">
+              <p className="text-gray-300 text-sm md:text-base leading-relaxed">
+                {selectedFacility.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         /* Smooth scrolling for navigation */
