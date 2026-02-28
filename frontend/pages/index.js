@@ -1756,14 +1756,7 @@ export default function BarangayPortal() {
 
                     return (
                       <div key={section.key} className="mb-16">
-                        {/* Section Header */}
-                        <div className="text-center mb-8">
-                          <div className={`inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r ${section.bgColor} text-white rounded-full mb-4 shadow-lg`}>
-                            <span className="text-2xl">{section.icon}</span>
-                            <span className="font-bold text-lg tracking-wide">{section.title.toUpperCase()}</span>
-                          </div>
-                          <p className="text-gray-600 text-lg font-medium">{section.subtitle}</p>
-                        </div>
+                        {/* Section Header removed as per user request */}
 
                         {/* Officials Flex Container for automatic centering of orphans */}
                         <div className={`flex flex-wrap gap-6 justify-center ${section.key === 'captain' || section.key === 'sk_chairman' ? 'max-w-md mx-auto' : ''}`}>
