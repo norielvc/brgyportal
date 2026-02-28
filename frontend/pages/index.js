@@ -2295,14 +2295,20 @@ export default function BarangayPortal() {
             <div className="relative flex-1 bg-transparent overflow-hidden flex items-center justify-center group">
               {(() => {
                 const images = selectedFacility.images || ['/background.jpg'];
-                const currentImg = images[facilityImageIndex] || '/background.jpg';
                 return (
                   <>
-                    <img
-                      src={currentImg}
-                      alt={`${selectedFacility.name} image ${facilityImageIndex + 1}`}
-                      className="w-full h-full object-contain"
-                    />
+                    {images.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className={`absolute inset-0 transition-opacity duration-500 ease-in-out flex items-center justify-center ${facilityImageIndex === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                      >
+                        <img
+                          src={img}
+                          alt={`${selectedFacility.name} image ${idx + 1}`}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    ))}
 
                     {/* Navigation Arrows (only if multiple images) */}
                     {images.length > 1 && (
@@ -2312,7 +2318,7 @@ export default function BarangayPortal() {
                             e.stopPropagation();
                             setFacilityImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
                           }}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-[#8dc63f] flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 opacity-0 group-hover:opacity-100 mx-2"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-[#8dc63f] flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 opacity-0 group-hover:opacity-100 mx-2 z-50 cursor-pointer"
                         >
                           <ChevronLeft className="w-6 h-6" />
                         </button>
@@ -2321,13 +2327,13 @@ export default function BarangayPortal() {
                             e.stopPropagation();
                             setFacilityImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1);
                           }}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-[#8dc63f] flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 opacity-0 group-hover:opacity-100 mx-2"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-[#8dc63f] flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 opacity-0 group-hover:opacity-100 mx-2 z-50 cursor-pointer"
                         >
                           <ChevronRight className="w-6 h-6" />
                         </button>
 
                         {/* Image Counter */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 px-4 py-1.5 rounded-full text-white/90 text-sm font-semibold tracking-widest border border-white/20 backdrop-blur-sm">
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 px-4 py-1.5 rounded-full text-white/90 text-sm font-semibold tracking-widest border border-white/20 backdrop-blur-sm z-50">
                           {facilityImageIndex + 1} / {images.length}
                         </div>
                       </>
