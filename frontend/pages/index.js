@@ -4,8 +4,8 @@ import {
   Menu, X, ChevronRight, ChevronLeft, Plus, Send, Phone, MapPin, Mail,
   Clock, Sun, Moon, Cloud, CloudRain, Users, FileText, Award, Building2, Heart, Baby,
   AlertTriangle, Shield, Home, Calendar, TrendingUp, CheckCircle, GraduationCap, User,
-  Store, Briefcase, Stethoscope, Fingerprint, UserPlus, Flower2, Search, Star, Leaf, Laptop
-  , Trophy
+  Store, Briefcase, Stethoscope, Fingerprint, UserPlus, Flower2, Search, Star, Leaf, Laptop,
+  Trophy, Target, Quote
 } from 'lucide-react';
 import BarangayClearanceModal from '@/components/Forms/BarangayClearanceModal';
 import IndigencyCertificateModal from '@/components/Forms/IndigencyCertificateModal';
@@ -1756,11 +1756,106 @@ export default function BarangayPortal() {
 
                     return (
                       <div key={section.key} className="mb-16">
-                        {/* Section Header removed as per user request */}
+                        {section.key === 'staff' && (
+                          <div className="text-center mb-8">
+                            <div className={`inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r ${section.bgColor} text-white rounded-full mb-4 shadow-lg`}>
+                              <span className="text-2xl">{section.icon}</span>
+                              <span className="font-bold text-lg tracking-wide">{section.title.toUpperCase()}</span>
+                            </div>
+                            <p className="text-gray-600 text-lg font-medium">{section.subtitle}</p>
+                          </div>
+                        )}
 
-                        {/* Officials Flex Container for automatic centering of orphans */}
-                        <div className={`flex flex-wrap gap-6 justify-center ${section.key === 'captain' || section.key === 'sk_chairman' ? 'max-w-md mx-auto' : ''}`}>
-                          {
+                        {/* Officials Layout Wrapper */}
+                        <div className={section.key === 'captain' ? "max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12 px-4 mb-20" : `flex flex-wrap gap-6 justify-center ${section.key === 'sk_chairman' ? 'max-w-md mx-auto' : ''}`}>
+                          {section.key === 'captain' ? (
+                            <>
+                              {/* Left Aligned Captain Card */}
+                              <div className="w-full lg:w-[450px] flex-shrink-0 animate-on-scroll">
+                                {displayOfficials.map((official, index) => {
+                                  // Reuse same logic for color and initials
+                                  const colors = [
+                                    'from-[#112e1f] to-[#2d5a3d]',
+                                    'from-teal-600 to-green-700',
+                                    'from-emerald-600 to-green-700',
+                                    'from-[#2d5a3d] to-emerald-800',
+                                    'from-green-600 to-emerald-700',
+                                    'from-teal-500 to-emerald-600',
+                                    'from-[#112117] to-green-900',
+                                    'from-emerald-700 to-teal-800',
+                                    'from-green-700 to-emerald-900',
+                                    'from-[#2d5a3d] to-teal-700',
+                                    'from-emerald-500 to-green-600',
+                                    'from-teal-400 to-emerald-500',
+                                    'from-green-500 to-teal-600'
+                                  ];
+                                  const colorClass = 'from-green-800 to-green-950';
+                                  const initials = official.name.split(' ').slice(0, 2).map(n => n[0]).join('');
+                                  const widthClass = 'w-full';
+
+                                  return (
+                                    <div key={official.id || index} className={`bg-white rounded-[40px] shadow-2xl hover:shadow-green-900/20 transition-all duration-500 overflow-hidden border border-gray-100 group ${widthClass} transform hover:-translate-y-2`}>
+                                      <div className="relative aspect-[4/5] overflow-hidden group bg-white">
+                                        {official.image_url ? (
+                                          <img src={official.image_url} alt={official.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 relative z-10" />
+                                        ) : (
+                                          <div className={`w-full h-full bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
+                                            <span className="text-7xl font-bold text-white tracking-widest opacity-30 group-hover:opacity-50 transition-opacity font-serif">{initials}</span>
+                                          </div>
+                                        )}
+                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#112e1f] via-[#112e1f]/40 to-transparent flex flex-col justify-end p-8 text-center z-20 h-1/2">
+                                          <h3 className="text-white font-black text-2xl mb-1 drop-shadow-lg tracking-tight">Punong Barangay</h3>
+                                        </div>
+                                      </div>
+                                      <div className="p-8 text-center bg-white">
+                                        <h4 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">{official.name}</h4>
+                                        <p className="text-gray-600 text-base font-medium leading-relaxed italic line-clamp-3">
+                                          {official.description || `Leading Iba O' Este with vision, integrity, and a heartfelt commitment to serve every constituent with excellence.`}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Right Aligned Goal & Vision */}
+                              <div className="flex-grow space-y-8 animate-all duration-700 delay-300">
+                                <div className="bg-gradient-to-br from-[#112e1f] to-[#1a3d29] rounded-[40px] p-8 md:p-10 shadow-2xl relative overflow-hidden group border border-white/10 hover:shadow-green-900/40 transition-all transform hover:scale-[1.01]">
+                                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                                    <Target className="w-32 h-32 text-white" />
+                                  </div>
+                                  <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-6">
+                                      <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+                                        <Target className="w-8 h-8 text-green-400" />
+                                      </div>
+                                      <h3 className="text-3xl font-black text-white tracking-widest uppercase">Barangay Vision</h3>
+                                    </div>
+                                    <p className="text-green-50/90 text-xl font-medium leading-relaxed italic border-l-4 border-green-500 pl-6 py-2">
+                                      {`"A model community that is progressive, peaceful, and disaster-resilient, where empowered citizens live in harmony with nature and participate in transparent local governance."`}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white rounded-[40px] p-8 md:p-10 shadow-2xl relative overflow-hidden group border border-gray-100 hover:border-green-200 transition-all transform hover:scale-[1.01]">
+                                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                                    <Star className="w-32 h-32 text-green-900" />
+                                  </div>
+                                  <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-6">
+                                      <div className="w-14 h-14 bg-green-900 rounded-2xl flex items-center justify-center shadow-lg">
+                                        <Star className="w-8 h-8 text-white" />
+                                      </div>
+                                      <h3 className="text-3xl font-black text-gray-900 tracking-widest uppercase">Barangay Goal</h3>
+                                    </div>
+                                    <p className="text-gray-700 text-xl font-medium leading-relaxed border-l-4 border-green-900 pl-6 py-2">
+                                      {`"To deliver dedicated public service through innovative social programs, sustainable infrastructure, and community-driven initiatives that uplift the dignity and prosperity of every resident."`}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
                             displayOfficials.map((official, index) => {
                               const colors = [
                                 'from-[#112e1f] to-[#2d5a3d]',
@@ -1846,7 +1941,7 @@ export default function BarangayPortal() {
                                 </div>
                               );
                             })
-                          }
+                          )}
                         </div>
                       </div>
                     );
