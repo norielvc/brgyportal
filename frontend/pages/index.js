@@ -1136,46 +1136,88 @@ export default function BarangayPortal() {
       </section>
 
       {/* Facilities Section */}
-      <section id="directory" className="py-16 md:py-24 bg-white relative">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+      <section id="directory" className="bg-white relative">
+        {/* Top Carousel Hero */}
+        <div className="relative w-full h-[60vh] min-h-[500px] bg-gray-900 overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1541188495357-ad2ce61fa0ca?auto=format&fit=crop&q=80&w=2000"
+            alt="Facilities Hero"
+            className="w-full h-full object-cover"
+            style={{ filter: 'brightness(0.6)' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40 pointer-events-none"></div>
 
-            {/* Left Column: Title and Description */}
-            <div className="lg:w-1/4 flex flex-col pt-2">
-              <div className="border-2 border-gray-100 p-8 shadow-sm bg-white mb-6">
-                <h2 className="text-3xl font-normal text-gray-800 leading-tight">
-                  Exceptional<br />
-                  <span className="text-[#8dc63f] font-extrabold mt-1 inline-block">Facilities We Offer</span>
-                </h2>
-              </div>
-              <p className="text-gray-500 text-sm leading-relaxed px-2">
-                Discover our state-of-the-art community facilities designed to serve and enhance the lives of Iba O' Este residents. We provide exceptional spaces to support a wide range of community events, public services, and recreational activities.
-              </p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+            <p className="text-[#8dc63f] text-xs md:text-sm font-bold tracking-[0.25em] mb-4 uppercase">
+              Quality That Is Guaranteed
+            </p>
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1] mb-8 font-serif">
+              Your community facilities <br className="hidden md:block" />
+              cared for the way they should be
+            </h2>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button className="px-6 py-3.5 bg-[#8dc63f] hover:bg-[#7ab130] text-white font-bold text-xs tracking-wider transition-colors uppercase cursor-pointer rounded-sm">
+                More About Us
+              </button>
+              <button className="px-6 py-3.5 bg-black/20 hover:bg-black/40 border border-white/80 text-white font-bold text-xs tracking-wider backdrop-blur-sm transition-all uppercase cursor-pointer rounded-sm">
+                Get In Touch
+              </button>
             </div>
+          </div>
 
-            {/* Right Column: Facilities Grid */}
-            <div className="lg:w-3/4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
-                {facilities.map((facility, index) => (
-                  <div key={index} className="flex flex-col group bg-white transition-all duration-300">
-                    <div className="w-full h-48 mb-4 overflow-hidden">
-                      <img
-                        src={(facility.images && facility.images.length > 0) ? facility.images[0] : '/background.jpg'}
-                        alt={facility.name}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="px-1">
-                      <h3 className="text-lg font-bold text-gray-800 mb-2 leading-snug group-hover:text-[#8dc63f] transition-colors">{facility.name}</h3>
-                      <p className="text-gray-500 text-sm leading-relaxed line-clamp-3">
-                        {facility.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+          {/* Carousel Arrows */}
+          <button className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-[#8dc63f] flex items-center justify-center text-white transition-colors cursor-pointer">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-[#8dc63f] flex items-center justify-center text-white transition-colors cursor-pointer">
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Bottom green accent line */}
+          <div className="absolute bottom-0 left-1/4 right-0 h-1.5 bg-gradient-to-r from-[#8dc63f] to-[#7ab130]"></div>
+        </div>
+
+        <div className="py-16 md:py-24">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+
+              {/* Left Column: Title and Description */}
+              <div className="lg:w-1/4 flex flex-col pt-2">
+                <div className="border-2 border-gray-100 p-8 shadow-sm bg-white mb-6">
+                  <h2 className="text-3xl font-normal text-gray-800 leading-tight">
+                    Exceptional<br />
+                    <span className="text-[#8dc63f] font-extrabold mt-1 inline-block">Facilities We Offer</span>
+                  </h2>
+                </div>
+                <p className="text-gray-500 text-sm leading-relaxed px-2">
+                  Discover our state-of-the-art community facilities designed to serve and enhance the lives of Iba O' Este residents. We provide exceptional spaces to support a wide range of community events, public services, and recreational activities.
+                </p>
               </div>
-            </div>
 
+              {/* Right Column: Facilities Grid */}
+              <div className="lg:w-3/4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
+                  {facilities.map((facility, index) => (
+                    <div key={index} className="flex flex-col group bg-white transition-all duration-300">
+                      <div className="w-full h-48 mb-4 overflow-hidden">
+                        <img
+                          src={(facility.images && facility.images.length > 0) ? facility.images[0] : '/background.jpg'}
+                          alt={facility.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="px-1">
+                        <h3 className="text-lg font-bold text-gray-800 mb-2 leading-snug group-hover:text-[#8dc63f] transition-colors">{facility.name}</h3>
+                        <p className="text-gray-500 text-sm leading-relaxed line-clamp-3">
+                          {facility.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
       </section>
