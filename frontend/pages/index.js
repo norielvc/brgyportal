@@ -1807,7 +1807,7 @@ export default function BarangayPortal() {
 
                               // Dynamic width based on section type
                               const widthClass = section.key === 'captain' || section.key === 'sk_chairman' ? 'w-full' :
-                                section.key === 'sk_kagawad' || section.key === 'staff' ? 'w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)]' :
+                                section.key === 'sk_kagawad' || section.key === 'staff' || section.key === 'kagawad' ? 'w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)]' :
                                   'w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(33.333%-1.5rem)]';
 
                               return (
