@@ -1767,34 +1767,16 @@ export default function BarangayPortal() {
                         )}
 
                         {/* Officials Layout Wrapper */}
-                        <div className={section.key === 'captain' ? "max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12 px-4 mb-20" : `flex flex-wrap gap-6 justify-center ${section.key === 'sk_chairman' ? 'max-w-md mx-auto' : ''}`}>
+                        <div className={(section.key === 'captain' || section.key === 'sk_chairman') ? "max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12 px-4 mb-20" : "flex flex-wrap gap-6 justify-center"}>
                           {section.key === 'captain' ? (
                             <>
                               {/* Left Aligned Captain Card */}
                               <div className="w-full lg:w-[450px] flex-shrink-0">
                                 {displayOfficials.map((official, index) => {
-                                  // Reuse same logic for color and initials
-                                  const colors = [
-                                    'from-[#112e1f] to-[#2d5a3d]',
-                                    'from-teal-600 to-green-700',
-                                    'from-emerald-600 to-green-700',
-                                    'from-[#2d5a3d] to-emerald-800',
-                                    'from-green-600 to-emerald-700',
-                                    'from-teal-500 to-emerald-600',
-                                    'from-[#112117] to-green-900',
-                                    'from-emerald-700 to-teal-800',
-                                    'from-green-700 to-emerald-900',
-                                    'from-[#2d5a3d] to-teal-700',
-                                    'from-emerald-500 to-green-600',
-                                    'from-teal-400 to-emerald-500',
-                                    'from-green-500 to-teal-600'
-                                  ];
                                   const colorClass = 'from-green-800 to-green-950';
                                   const initials = official.name.split(' ').slice(0, 2).map(n => n[0]).join('');
-                                  const widthClass = 'w-full';
-
                                   return (
-                                    <div key={official.id || index} className={`bg-white rounded-[40px] shadow-2xl hover:shadow-green-900/20 transition-all duration-500 overflow-hidden border border-gray-100 group ${widthClass} transform hover:-translate-y-2`}>
+                                    <div key={official.id || index} className="bg-white rounded-[40px] shadow-2xl hover:shadow-green-900/20 transition-all duration-500 overflow-hidden border border-gray-100 group w-full transform hover:-translate-y-2">
                                       <div className="relative aspect-[4/5] overflow-hidden group bg-white">
                                         {official.image_url ? (
                                           <img src={official.image_url} alt={official.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 relative z-10" />
@@ -1836,7 +1818,6 @@ export default function BarangayPortal() {
                                     </p>
                                   </div>
                                 </div>
-
                                 <div className="bg-white rounded-[40px] p-8 md:p-10 shadow-2xl relative overflow-hidden group border border-gray-100 hover:border-green-200 transition-all transform hover:scale-[1.01]">
                                   <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
                                     <Star className="w-32 h-32 text-green-900" />
@@ -1853,6 +1834,74 @@ export default function BarangayPortal() {
                                     </p>
                                   </div>
                                 </div>
+                              </div>
+                            </>
+                          ) : section.key === 'sk_chairman' ? (
+                            <>
+                              {/* Left Aligned SK Goal & Vision */}
+                              <div className="flex-grow space-y-8 order-2 lg:order-1">
+                                <div className="bg-gradient-to-br from-[#112e1f] to-[#1a3d29] rounded-[40px] p-8 md:p-10 shadow-2xl relative overflow-hidden group border border-white/10 hover:shadow-orange-900/40 transition-all transform hover:scale-[1.01]">
+                                  <div className="absolute top-0 left-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                                    <Trophy className="w-32 h-32 text-white" />
+                                  </div>
+                                  <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-6">
+                                      <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+                                        <Trophy className="w-8 h-8 text-orange-400" />
+                                      </div>
+                                      <h3 className="text-3xl font-black text-white tracking-widest uppercase">SK Vision</h3>
+                                    </div>
+                                    <p className="text-orange-50/90 text-xl font-medium leading-relaxed italic border-l-4 border-orange-500 pl-6 py-2">
+                                      {`"An inspired youth community of Iba O' Este that is actively involved in community building, advocating for education, sports, and social responsibility بينما maintaining the highest level of integrity."`}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="bg-white rounded-[40px] p-8 md:p-10 shadow-2xl relative overflow-hidden group border border-gray-100 hover:border-orange-200 transition-all transform hover:scale-[1.01]">
+                                  <div className="absolute top-0 left-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                                    <Star className="w-32 h-32 text-orange-900" />
+                                  </div>
+                                  <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-6">
+                                      <div className="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                        <Star className="w-8 h-8 text-white" />
+                                      </div>
+                                      <h3 className="text-3xl font-black text-gray-900 tracking-widest uppercase">SK Goal</h3>
+                                    </div>
+                                    <p className="text-gray-700 text-xl font-medium leading-relaxed border-l-4 border-orange-600 pl-6 py-2">
+                                      {`"To empower the youth through comprehensive development programs in leadership, environment, and wellness, ensuring every young resident has the opportunity to contribute to our barangay's future."`}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Right Aligned SK Chairman Card */}
+                              <div className="w-full lg:w-[450px] flex-shrink-0 order-1 lg:order-2">
+                                {displayOfficials.map((official, index) => {
+                                  const colorClass = 'from-orange-600 to-amber-700';
+                                  const initials = official.name.split(' ').slice(0, 2).map(n => n[0]).join('');
+                                  return (
+                                    <div key={official.id || index} className="bg-white rounded-[40px] shadow-2xl hover:shadow-orange-900/20 transition-all duration-500 overflow-hidden border border-gray-100 group w-full transform hover:-translate-y-2">
+                                      <div className="relative aspect-[4/5] overflow-hidden group bg-white">
+                                        {official.image_url ? (
+                                          <img src={official.image_url} alt={official.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 relative z-10" />
+                                        ) : (
+                                          <div className={`w-full h-full bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
+                                            <span className="text-7xl font-bold text-white tracking-widest opacity-30 group-hover:opacity-50 transition-opacity font-serif">{initials}</span>
+                                          </div>
+                                        )}
+                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-orange-900 via-orange-900/40 to-transparent flex flex-col justify-end p-8 text-center z-20 h-1/2">
+                                          <h3 className="text-white font-black text-2xl mb-1 drop-shadow-lg tracking-tight">SK Chairman</h3>
+                                        </div>
+                                      </div>
+                                      <div className="p-8 text-center bg-white">
+                                        <h4 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">{official.name}</h4>
+                                        <p className="text-gray-600 text-base font-medium leading-relaxed italic line-clamp-3">
+                                          {official.description || `Empowering the youth of Iba O' Este through active participation, leadership development, and community-driven initiatives.`}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </>
                           ) : (
@@ -1872,48 +1921,28 @@ export default function BarangayPortal() {
                                 'from-teal-400 to-emerald-500',
                                 'from-green-500 to-teal-600'
                               ];
-
-                              // Use section-specific colors for consistency
                               let colorClass;
-                              if (section.key === 'captain') {
-                                colorClass = 'from-green-800 to-green-950';
-                              } else if (section.key === 'kagawad') {
-                                colorClass = colors[index % colors.length];
-                              } else if (section.key === 'sk_chairman') {
-                                colorClass = 'from-orange-600 to-amber-700';
-                              } else if (section.key === 'sk_secretary') {
-                                colorClass = 'from-orange-500 to-amber-600';
-                              } else if (section.key === 'sk_treasurer') {
-                                colorClass = 'from-amber-600 to-orange-500';
-                              } else if (section.key === 'sk_kagawad') {
-                                colorClass = 'from-amber-500 to-orange-600';
-                              } else {
-                                colorClass = colors[(index + 8) % colors.length];
-                              }
+                              if (section.key === 'kagawad') colorClass = colors[index % colors.length];
+                              else if (section.key === 'sk_secretary') colorClass = 'from-orange-500 to-amber-600';
+                              else if (section.key === 'sk_treasurer') colorClass = 'from-amber-600 to-orange-500';
+                              else if (section.key === 'sk_kagawad') colorClass = 'from-amber-500 to-orange-600';
+                              else colorClass = colors[(index + 8) % colors.length];
 
                               const initials = official.name.split(' ').slice(0, 2).map(n => n[0]).join('');
-
-                              // Dynamic width based on section type
-                              const widthClass = section.key === 'captain' || section.key === 'sk_chairman' ? 'w-full' :
-                                section.key === 'sk_kagawad' || section.key === 'staff' || section.key === 'kagawad' ? 'w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)]' :
-                                  'w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(33.333%-1.5rem)]';
+                              const widthClass = (section.key === 'sk_kagawad' || section.key === 'staff' || section.key === 'kagawad') ?
+                                'w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)]' :
+                                'w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(33.333%-1.5rem)]';
 
                               return (
                                 <div key={official.id || index} className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group ${widthClass}`}>
                                   <div className="relative aspect-square overflow-hidden group bg-white">
                                     {official.image_url ? (
-                                      <img
-                                        src={official.image_url}
-                                        alt={official.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 relative z-10"
-                                      />
+                                      <img src={official.image_url} alt={official.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 relative z-10" />
                                     ) : (
                                       <div className={`w-full h-full bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
                                         <span className="text-5xl font-bold text-white tracking-widest opacity-30 group-hover:opacity-50 transition-opacity">{initials}</span>
                                       </div>
                                     )}
-
-                                    {/* Position & Committee Overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#112e1f]/90 via-[#112e1f]/40 to-transparent flex flex-col justify-end p-6 text-center z-20">
                                       <h3 className="text-white font-bold text-xl mb-1 drop-shadow-lg">
                                         {(() => {
@@ -1921,9 +1950,7 @@ export default function BarangayPortal() {
                                           if (pos.includes('Kagawad')) return 'Brgy. Kagawad';
                                           if (['Secretary', 'Treasurer', 'Administrator', 'Clerk', 'Record Keeper'].includes(pos)) return `Brgy. ${pos}`;
                                           if (pos === 'Barangay Keeper') return 'Brgy. Record Keeper';
-                                          if (['Assistant Secretary', 'Assistant Administrator'].includes(pos)) {
-                                            return pos.replace('Assistant', 'Asst. Brgy.');
-                                          }
+                                          if (['Assistant Secretary', 'Assistant Administrator'].includes(pos)) return pos.replace('Assistant', 'Asst. Brgy.');
                                           return pos;
                                         })()}
                                       </h3>
@@ -1934,9 +1961,7 @@ export default function BarangayPortal() {
                                   </div>
                                   <div className="p-6">
                                     <h4 className="text-lg font-semibold text-gray-900 mb-2">{official.name}</h4>
-                                    <p className="text-gray-600 text-sm leading-relaxed">
-                                      {official.description}
-                                    </p>
+                                    <p className="text-gray-600 text-sm leading-relaxed">{official.description}</p>
                                   </div>
                                 </div>
                               );
