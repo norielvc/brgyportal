@@ -3,30 +3,20 @@ import { X, Building, AlertCircle, CheckCircle, Loader2, Info, Send, Clock, Eye,
 
 export default function BusinessPermitModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
-    // Business Information
-    businessName: '',
-    businessType: '',
-    businessAddress: '',
-    businessPhone: '',
-    businessEmail: '',
+    // Application Info
+    applicationDate: '',
+    applicationNo: '',
 
-    // Owner Information
-    ownerFirstName: '',
-    ownerLastName: '',
+    // Owner Details
+    ownerFullName: '',
     ownerAddress: '',
-    ownerPhone: '',
-    ownerEmail: '',
-    ownerBirthdate: '',
 
     // Business Details
+    businessName: '',
     natureOfBusiness: '',
-    capitalInvestment: '',
-    numberOfEmployees: '',
-    businessHours: '',
-
-    // Requirements
-    dtiRegistration: '',
-    birTin: '',
+    businessAddress: '',
+    contactPerson: '',
+    contactNumber: '',
 
     // Purpose
     purpose: ''
@@ -51,9 +41,11 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
   const validateForm = () => {
     const required = [
-      'businessName', 'businessType', 'businessAddress',
-      'ownerFirstName', 'ownerLastName', 'ownerAddress', 'ownerPhone', 'ownerBirthdate',
-      'natureOfBusiness', 'capitalInvestment', 'purpose'
+      'applicationDate',
+      'ownerFullName', 'ownerAddress',
+      'businessName', 'natureOfBusiness', 'businessAddress',
+      'contactPerson', 'contactNumber',
+      'purpose'
     ];
     const newErrors = {};
     required.forEach(field => {
@@ -131,10 +123,11 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
   const resetForm = () => {
     setFormData({
-      businessName: '', businessType: '', businessAddress: '', businessPhone: '', businessEmail: '',
-      ownerFirstName: '', ownerLastName: '', ownerAddress: '', ownerPhone: '', ownerEmail: '', ownerBirthdate: '',
-      natureOfBusiness: '', capitalInvestment: '', numberOfEmployees: '', businessHours: '',
-      dtiRegistration: '', birTin: '', purpose: ''
+      applicationDate: '', applicationNo: '',
+      ownerFullName: '', ownerAddress: '',
+      businessName: '', natureOfBusiness: '', businessAddress: '',
+      contactPerson: '', contactNumber: '',
+      purpose: ''
     });
     setSubmitStatus(null);
     setReferenceNumber('');
@@ -208,160 +201,205 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-12">
+            <form onSubmit={handleSubmit} className="space-y-8">
 
-              {/* Step 1: Business Profile */}
-              <div className="space-y-4 md:space-y-6">
-                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
-                  <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">1</div>
-                  <div>
-                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Business Enterprise Information</h3>
-                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Legal Entity Identification</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Registered Business Name / Rehistradong Pangalan ng Negosyo <span className="text-red-500">*</span></label>
+              {/* Date & Application No. */}
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest block">
+                      Date of Application <span className="text-red-500">*</span>
+                    </label>
                     <input
-                      type="text"
-                      name="businessName"
-                      value={formData.businessName}
+                      type="date"
+                      name="applicationDate"
+                      value={formData.applicationDate}
                       onChange={handleInputChange}
-                      placeholder="E.G. JUAN'S SARI-SARI STORE..."
-                      className={`w-full px-6 py-4 bg-white border-2 ${errors.businessName ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 transition-all outline-none font-black text-emerald-900 uppercase shadow-sm`}
+                      className={`w-full px-5 py-3 bg-white border-2 ${errors.applicationDate ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded-xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 outline-none font-bold text-gray-800 transition-all`}
                     />
                   </div>
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Industry Classification / Uri ng Industriya <span className="text-red-500">*</span></label>
-                    <select
-                      name="businessType"
-                      value={formData.businessType}
-                      onChange={handleInputChange}
-                      className={`w-full px-6 py-4 bg-white border-2 ${errors.businessType ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 transition-all outline-none font-black text-emerald-900 appearance-none cursor-pointer`}
-                    >
-                      <option value="">SELECT TYPE... / PUMILI NG URI...</option>
-                      {['Retail / Tingian', 'Restaurant / Kainan', 'Service / Serbisyo', 'Manufacturing / Pagawaan', 'Wholesale / Pakyawan', 'Other / Iba pa'].map(type => (
-                        <option key={type} value={type}>{type.toUpperCase()}</option>
-                      ))}
-                    </select>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest block">
+                      Application No. (2026 - ___)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-gray-500 text-sm whitespace-nowrap">2026 —</span>
+                      <input
+                        type="text"
+                        name="applicationNo"
+                        value={formData.applicationNo}
+                        onChange={handleInputChange}
+                        placeholder="Leave blank (auto-assigned)"
+                        className="w-full px-5 py-3 bg-white border-2 border-gray-200 rounded-xl focus:border-[#2d5a3d] outline-none font-bold text-gray-500 text-sm italic"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Owner's Details Section */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm">
+                  <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">1</div>
+                  <div>
+                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Owner&apos;s Details</h3>
+                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Detalye ng May-ari</p>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Commercial Address / Address ng Negosyo <span className="text-red-500">*</span></label>
+                {/* Full Name */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">
+                    Full Name / Buong Pangalan <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="ownerFullName"
+                    value={formData.ownerFullName}
+                    onChange={handleInputChange}
+                    placeholder="LAST NAME, FIRST NAME, MIDDLE NAME..."
+                    className={`w-full px-6 py-4 bg-white border-2 ${errors.ownerFullName ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 outline-none font-black text-emerald-900 uppercase shadow-sm transition-all`}
+                  />
+                </div>
+
+                {/* Complete Address */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">
+                    Complete Address / Kumpletong Tirahan <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="ownerAddress"
+                      value={formData.ownerAddress}
+                      onChange={handleInputChange}
+                      placeholder="PUROK / STREET / BARANGAY / MUNICIPALITY..."
+                      className={`w-full px-6 py-4 bg-white border-2 ${errors.ownerAddress ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] outline-none font-black text-emerald-900 uppercase shadow-sm transition-all`}
+                    />
+                    <MapPin className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                  </div>
+                </div>
+
+                {/* Business Name */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">
+                    Business Name / Pangalan ng Negosyo <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="businessName"
+                    value={formData.businessName}
+                    onChange={handleInputChange}
+                    placeholder="E.G. JUAN'S SARI-SARI STORE..."
+                    className={`w-full px-6 py-4 bg-white border-2 ${errors.businessName ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 outline-none font-black text-emerald-900 uppercase shadow-sm transition-all`}
+                  />
+                </div>
+
+                {/* Nature of Business */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">
+                    Nature of Business / Uri ng Negosyo <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="natureOfBusiness"
+                    value={formData.natureOfBusiness}
+                    onChange={handleInputChange}
+                    className={`w-full px-6 py-4 bg-white border-2 ${errors.natureOfBusiness ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 outline-none font-black text-emerald-900 appearance-none cursor-pointer shadow-sm transition-all`}
+                  >
+                    <option value="">SELECT NATURE OF BUSINESS... / PUMILI NG URI...</option>
+                    {[
+                      'Retail / Tingian',
+                      'Food & Beverage / Pagkain at Inumin',
+                      'Service / Serbisyo',
+                      'Manufacturing / Pagawaan',
+                      'Wholesale / Pakyawan',
+                      'Repair Shop / Tindahan ng Pagaayos',
+                      'Salon / Beauty Shop / Parlor',
+                      'Carinderia / Eatery / Kainan',
+                      'Buy & Sell / Pagbili at Pagbenta',
+                      'Other / Iba pa'
+                    ].map(type => (
+                      <option key={type} value={type}>{type.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Business Complete Address */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">
+                    Business Complete Address / Kumpletong Address ng Negosyo <span className="text-red-500">*</span>
+                  </label>
                   <div className="relative">
                     <input
                       type="text"
                       name="businessAddress"
                       value={formData.businessAddress}
                       onChange={handleInputChange}
-                      placeholder="PUROK / STREET / BARANGAY..."
-                      className={`w-full px-6 py-4 bg-white border-2 ${errors.businessAddress ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none uppercase shadow-sm`}
+                      placeholder="PUROK / STREET / BARANGAY WHERE BUSINESS IS LOCATED..."
+                      className={`w-full px-6 py-4 bg-white border-2 ${errors.businessAddress ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] outline-none font-black text-emerald-900 uppercase shadow-sm transition-all`}
                     />
-                    <MapPin className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5" />
+                    <Store className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Business Telephone/Mobile / Telepono o Mobile ng Negosyo</label>
-                    <input type="tel" name="businessPhone" value={formData.businessPhone} onChange={handleInputChange} placeholder="09XX XXX XXXX..." className="w-full px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none" />
+                {/* Contact Person / Number */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">
+                      Contact Person / Taong Makakausap <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="contactPerson"
+                      value={formData.contactPerson}
+                      onChange={handleInputChange}
+                      placeholder="FULL NAME OF CONTACT PERSON..."
+                      className={`w-full px-6 py-4 bg-white border-2 ${errors.contactPerson ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 outline-none font-black text-emerald-900 uppercase shadow-sm transition-all`}
+                    />
                   </div>
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Business Email Address (Optional) / Email ng Negosyo (Opsyonal)</label>
-                    <input type="email" name="businessEmail" value={formData.businessEmail} onChange={handleInputChange} placeholder="username@example.com" className="w-full px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-[#2d5a3d] font-normal text-emerald-900 outline-none" />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">
+                      Contact Number / Numero <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      name="contactNumber"
+                      value={formData.contactNumber}
+                      onChange={handleInputChange}
+                      placeholder="09XX XXX XXXX..."
+                      className={`w-full px-6 py-4 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] focus:ring-4 focus:ring-[#2d5a3d]/5 outline-none font-black text-emerald-900 shadow-sm transition-all`}
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Step 2: Owner Profile */}
-              <div className="space-y-4 md:space-y-6">
-                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
+              {/* Purpose / Application Type */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm">
                   <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">2</div>
                   <div>
-                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Proprietor Information</h3>
-                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Owner Identity details</p>
+                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Application Type</h3>
+                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Uri ng Aplikasyon</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">First Name / Pangalan <span className="text-red-500">*</span></label>
-                    <input type="text" name="ownerFirstName" value={formData.ownerFirstName} onChange={handleInputChange} placeholder="OWNER GIVEN NAME..." className={`w-full px-6 py-4 bg-white border-2 ${errors.ownerFirstName ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none uppercase shadow-sm`} />
-                  </div>
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Last Name / Apelyido <span className="text-red-500">*</span></label>
-                    <input type="text" name="ownerLastName" value={formData.ownerLastName} onChange={handleInputChange} placeholder="OWNER SURNAME..." className={`w-full px-6 py-4 bg-white border-2 ${errors.ownerLastName ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none uppercase shadow-sm`} />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Owner Residential Address / Tirahan ng May-ari <span className="text-red-500">*</span></label>
-                  <input type="text" name="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} placeholder="COMPLETE HOME ADDRESS..." className={`w-full px-6 py-4 bg-white border-2 ${errors.ownerAddress ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none uppercase shadow-sm`} />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Owner Mobile Number / Numero ng Mobile ng May-ari <span className="text-red-500">*</span></label>
-                    <input type="tel" name="ownerPhone" value={formData.ownerPhone} onChange={handleInputChange} placeholder="09XX XXX XXXX..." className={`w-full px-6 py-4 ${errors.ownerPhone ? 'bg-red-50 border-red-500' : 'bg-emerald-50/20 border-emerald-100'} border-2 rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none shadow-sm`} />
-                  </div>
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Owner Email (Optional) / Email ng May-ari (Opsyonal)</label>
-                    <input type="email" name="ownerEmail" value={formData.ownerEmail} onChange={handleInputChange} placeholder="username@example.com" className="w-full px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-[#2d5a3d] font-normal text-emerald-900 outline-none" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 3: Operational Details */}
-              <div className="space-y-4 md:space-y-6">
-                <div className="flex items-center gap-4 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-xl p-2 pr-6 shadow-sm mb-6">
-                  <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">3</div>
-                  <div>
-                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Operational Profile</h3>
-                    <p className="text-xs text-white/90 font-bold uppercase tracking-widest">Commercial scale & Purpose</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Detailed Nature of Operations / Detalyadong Uri ng Operasyon <span className="text-red-500">*</span></label>
-                  <textarea
-                    name="natureOfBusiness"
-                    value={formData.natureOfBusiness}
-                    onChange={handleInputChange}
-                    placeholder="DESCRIBE PRODUCTS / SERVICES OFFERED..."
-                    rows={3}
-                    className={`w-full px-6 py-5 bg-white border-2 ${errors.natureOfBusiness ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-extrabold text-[#112e1f] outline-none uppercase shadow-sm`}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Capital Investment (Est. PHP) / Puhunan (Est. PHP)</label>
-                    <div className="relative">
-                      <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-emerald-900 opacity-40">₱</span>
-                      <input type="number" name="capitalInvestment" value={formData.capitalInvestment} onChange={handleInputChange} placeholder="0.00" className={`w-full pl-12 pr-6 py-4 bg-white border-2 ${errors.capitalInvestment ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none`} />
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Force size (Employees) / Bilang ng Empleyado</label>
-                    <div className="relative">
-                      <input type="number" name="numberOfEmployees" value={formData.numberOfEmployees} onChange={handleInputChange} placeholder="0" className="w-full px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 outline-none" />
-                      <User className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">Application Intent / Layunin ng Aplikasyon <span className="text-red-500">*</span></label>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1 block">
+                    Application Intent / Layunin ng Aplikasyon <span className="text-red-500">*</span>
+                  </label>
                   <select
                     name="purpose"
                     value={formData.purpose}
                     onChange={handleInputChange}
-                    className={`w-full px-6 py-4 bg-white border-2 ${errors.purpose ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 cursor-pointer appearance-none shadow-sm`}
+                    className={`w-full px-6 py-4 bg-white border-2 ${errors.purpose ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-2xl focus:border-[#2d5a3d] font-black text-emerald-900 cursor-pointer appearance-none shadow-sm transition-all`}
                   >
                     <option value="">SELECT FILING TYPE... / PUMILI NG LAYUNIN...</option>
-                    {['New Business / Bagong Negosyo', 'Renewal / Renobasyon', 'Transfer of Location / Paglipat ng Lokasyon', 'Change of Business Name / Pagbabago ng Pangalan ng Negosyo'].map(p => (
+                    {[
+                      'New Business / Bagong Negosyo',
+                      'Renewal / Renobasyon',
+                      'Transfer of Location / Paglipat ng Lokasyon',
+                      'Change of Business Name / Pagbabago ng Pangalan ng Negosyo'
+                    ].map(p => (
                       <option key={p} value={p}>{p.toUpperCase()}</option>
                     ))}
                   </select>
