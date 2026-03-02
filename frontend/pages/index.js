@@ -42,6 +42,7 @@ export default function BarangayPortal() {
   const [showSamePersonModal, setShowSamePersonModal] = useState(false);
   const [showComingSoonModal, setShowComingSoonModal] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState(null);
+  const [selectedNewsItem, setSelectedNewsItem] = useState(null);
   const [currentFormSlide, setCurrentFormSlide] = useState(0);
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '', message: ''
@@ -799,7 +800,10 @@ export default function BarangayPortal() {
                 </span>
                 <h2 className="text-2xl md:text-3xl font-bold mb-2 leading-tight">{item.title}</h2>
                 <p className="text-sm md:text-base text-gray-200 mb-4">{item.description}</p>
-                <button className="bg-[#efefef] text-[#112117] px-5 py-2 rounded-lg font-semibold hover:bg-white transition-all transform hover:scale-105 flex items-center gap-2 shadow-lg text-sm">
+                <button
+                  onClick={() => setSelectedNewsItem(item)}
+                  className="bg-[#efefef] text-[#112117] px-5 py-2 rounded-lg font-semibold hover:bg-white transition-all transform hover:scale-105 flex items-center gap-2 shadow-lg text-sm"
+                >
                   Read More <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -2197,6 +2201,59 @@ export default function BarangayPortal() {
                   </>
                 );
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* News Read More Modal */}
+      {selectedNewsItem && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          onClick={() => setSelectedNewsItem(null)}
+        >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative h-56 md:h-72">
+              <img
+                src={selectedNewsItem.image || '/background.jpg'}
+                alt={selectedNewsItem.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-[#648a6a] text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow">
+                <Calendar className="w-3.5 h-3.5" />
+                {selectedNewsItem.date}
+              </span>
+              <button
+                onClick={() => setSelectedNewsItem(null)}
+                className="absolute top-4 right-4 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all backdrop-blur-sm"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 md:p-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 leading-tight">
+                {selectedNewsItem.title}
+              </h2>
+              <p className="text-gray-600 leading-relaxed text-base mb-6">
+                {selectedNewsItem.description}
+              </p>
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <Shield className="w-4 h-4 text-[#008000]" />
+                  <span>Barangay Iba O&apos; Este — Official Announcement</span>
+                </div>
+                <button
+                  onClick={() => setSelectedNewsItem(null)}
+                  className="px-5 py-2 bg-[#008000] hover:bg-[#006400] text-white rounded-lg font-semibold text-sm transition-all shadow-md"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
