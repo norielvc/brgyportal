@@ -2214,7 +2214,7 @@ export default function BarangayPortal() {
         >
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden z-10"
+            className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden z-10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative h-56 md:h-72">
