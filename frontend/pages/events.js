@@ -14,6 +14,7 @@ const defaultEvents = [
     id: 1,
     title: 'Barangay Clean-Up Drive 2026',
     description: 'Join us this Saturday for our monthly community clean-up initiative. Together, we can keep Iba O\' Este beautiful!',
+    body: 'Every first Saturday of the month, the residents of Barangay Iba O\' Este come together for our Community Clean-Up Drive. This initiative aims to maintain the cleanliness and beauty of our streets, canals, and public spaces. All residents are encouraged to participate. Bring your own gloves and trash bags. Refreshments will be provided by the Barangay.',
     image: '/background.jpg',
     date: 'January 5, 2026'
   },
@@ -21,6 +22,7 @@ const defaultEvents = [
     id: 2,
     title: 'Free Medical Mission',
     description: 'Free check-ups, medicines, and health consultations for all residents. Bring your Barangay ID.',
+    body: 'In partnership with the Municipal Health Office, Barangay Iba O\' Este is offering a Free Medical Mission open to all registered residents. Services include general check-ups, blood pressure monitoring, blood sugar testing, free medicines, and dental consultations. Residents are advised to bring their Barangay ID and arrive early as slots are limited.',
     image: '/background.jpg',
     date: 'January 10, 2026'
   },
@@ -28,6 +30,7 @@ const defaultEvents = [
     id: 3,
     title: 'Livelihood Training Program',
     description: 'Register now for free skills training in food processing, handicrafts, and more!',
+    body: 'The Barangay Livelihood Office is now accepting registrations for its free skills training program. Courses offered include food processing, handicrafts, basic electrical, and automotive mechanics. The training is open to all residents aged 18 and above. Classes will run for 2 weeks, Monday to Friday from 8:00 AM to 5:00 PM. Registration is on a first-come, first-served basis. Visit the Barangay Hall to sign up.',
     image: '/background.jpg',
     date: 'January 15, 2026'
   }
@@ -47,6 +50,7 @@ export default function EventsPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    body: '',
     image: '/background.jpg',
     date: ''
   });
@@ -170,7 +174,7 @@ export default function EventsPage() {
   };
 
   const openAddModal = () => {
-    setFormData({ title: '', description: '', image: '/background.jpg', date: '' });
+    setFormData({ title: '', description: '', body: '', image: '/background.jpg', date: '' });
     setShowAddModal(true);
   };
 
@@ -294,6 +298,16 @@ export default function EventsPage() {
                       value={editingEvent.description}
                       onChange={(e) => setEditingEvent({ ...editingEvent, description: e.target.value })}
                       rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Body <span className="text-gray-400 font-normal">(shown in Read More modal)</span></label>
+                    <textarea
+                      value={editingEvent.body || ''}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, body: e.target.value })}
+                      rows={5}
+                      placeholder="Full event details, instructions, schedules, etc..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
                     />
                   </div>
@@ -452,7 +466,17 @@ export default function EventsPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  placeholder="Describe the event..."
+                  placeholder="Short summary shown on the carousel..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Body <span className="text-gray-400 font-normal">(shown in Read More modal)</span></label>
+                <textarea
+                  value={formData.body}
+                  onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                  rows={5}
+                  placeholder="Full event details, instructions, venue, schedules, requirements, etc..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>

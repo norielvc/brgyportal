@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
  */
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { title, description, date, image } = req.body;
+    const { title, description, body, date, image } = req.body;
 
     // Get max order_index
     const { data: maxOrder } = await supabase
@@ -61,6 +61,7 @@ router.post('/', authenticateToken, async (req, res) => {
       .insert({
         title,
         description,
+        body: body || '',
         date,
         image: image || '/background.jpg',
         order_index: newOrderIndex
@@ -98,11 +99,12 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, date, image, order_index } = req.body;
+    const { title, description, body, date, image, order_index } = req.body;
 
     const updateData = {};
     if (title) updateData.title = title;
     if (description) updateData.description = description;
+    if (body !== undefined) updateData.body = body;
     if (date) updateData.date = date;
     if (image) updateData.image = image;
     if (order_index !== undefined) updateData.order_index = order_index;
@@ -153,6 +155,7 @@ router.put('/bulk/update', authenticateToken, async (req, res) => {
       const eventsToInsert = events.map((event, index) => ({
         title: event.title,
         description: event.description,
+        body: event.body || '',
         date: event.date,
         image: event.image || '/background.jpg',
         order_index: index

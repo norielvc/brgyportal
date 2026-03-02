@@ -2235,14 +2235,22 @@ export default function BarangayPortal() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 md:p-8">
+            <div className="p-6 md:p-8 max-h-[60vh] overflow-y-auto">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 leading-tight">
                 {selectedNewsItem.title}
               </h2>
-              <p className="text-gray-600 leading-relaxed text-base mb-6">
+              <p className="text-gray-500 leading-relaxed text-sm mb-4 italic">
                 {selectedNewsItem.description}
               </p>
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              {selectedNewsItem.body && (
+                <>
+                  <div className="border-t border-gray-100 my-4" />
+                  <p className="text-gray-700 leading-relaxed text-base whitespace-pre-line">
+                    {selectedNewsItem.body}
+                  </p>
+                </>
+              )}
+              <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <Shield className="w-4 h-4 text-[#008000]" />
                   <span>Barangay Iba O&apos; Este — Official Announcement</span>
