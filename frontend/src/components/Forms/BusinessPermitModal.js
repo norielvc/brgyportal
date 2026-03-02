@@ -50,8 +50,8 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
     const dd = String(today.getDate()).padStart(2, '0');
     const dateStr = `${yyyy}-${mm}-${dd}`;
 
-    const seq = String(Math.floor(Math.random() * 99999) + 1).padStart(5, '0');
-    const appNo = seq;
+    // Format: yyyy-mmdd001 (001 = starting sequence for the day)
+    const appNo = `${yyyy}-${mm}${dd}001`;
 
     setFormData(prev => ({
       ...prev,
@@ -252,15 +252,12 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
                       <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest block">
                         Application No.
                       </label>
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-gray-500 text-sm whitespace-nowrap">2026 —</span>
-                        <input
-                          type="text"
-                          value={formData.applicationNo}
-                          readOnly
-                          className="w-full px-5 py-3 bg-white border-2 border-emerald-200 rounded-xl outline-none font-black text-emerald-800 cursor-default"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        value={formData.applicationNo}
+                        readOnly
+                        className="w-full px-5 py-3 bg-white border-2 border-emerald-200 rounded-xl outline-none font-black text-emerald-800 cursor-default tracking-widest"
+                      />
                     </div>
                   </div>
                 </div>
