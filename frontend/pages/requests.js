@@ -3120,6 +3120,8 @@ function ClearancePreviewForRequests({ request, currentDate, officials, certific
     String(request.certificate_type || '').toLowerCase().includes('same_person') ||
     String(request.certificate_type || '').toLowerCase().includes('same person');
 
+  const isBusinessPermit = String(request.certificate_type || '').toLowerCase() === 'business_permit';
+
   // Parse details if string
   let additionalDetails = {};
   try {
@@ -3184,8 +3186,8 @@ function ClearancePreviewForRequests({ request, currentDate, officials, certific
 
         {/* Main Content Area */}
         <div className="flex flex-1 relative">
-          {/* Sidebar (Conditional) - Only show if enabled AND content exists AND not Medico Legal */}
-          {(sidebarStyle.showSidebar && !isMedicoLegal) && (
+          {/* Sidebar (Conditional) - Only show if enabled AND content exists AND not Medico Legal AND not Business Permit */}
+          {(sidebarStyle.showSidebar && !isMedicoLegal && !isBusinessPermit) && (
             <div className={`w-64 p-6 flex flex-col text-center flex-shrink-0 ${getFontClass(sidebarStyle.fontFamily)}`} style={{
               background: `linear-gradient(to bottom, ${sidebarStyle.bgColor || '#1e40af'}, ${sidebarStyle.gradientEnd || '#1e3a8a'})`,
               color: sidebarStyle.textColor || '#ffffff'
@@ -3221,269 +3223,389 @@ function ClearancePreviewForRequests({ request, currentDate, officials, certific
             )}
 
             <div className="relative z-10 flex flex-col items-center flex-1">
-              <h2 className="text-center font-bold mb-10 border-b-4 border-black inline-block pb-1 px-4 uppercase leading-normal" style={{
-                color: isMedicoLegal ? '#000000' : '#004d40',
-                fontSize: '24px',
-                borderBottom: isMedicoLegal ? '2px solid black' : '4px solid black'
-              }}>
-                {isNaturalDeath ? 'NATURAL DEATH CERTIFICATION' :
-                  isGuardianship ? 'BARANGAY CERTIFICATION FOR GUARDIANSHIP' :
-                    isCohabitation ? 'BARANGAY CERTIFICATION OF CO-HABITATION' :
-                      isSamePerson ? 'BARANGAY CERTIFICATION BEING THE SAME PERSON' :
-                        isMedicoLegal ? 'REQUEST FOR MEDICO LEGAL (COPY)' :
-                          request.certificate_type === 'barangay_clearance' ? 'BARANGAY CLEARANCE CERTIFICATE' :
-                            request.certificate_type === 'certificate_of_indigency' ? 'CERTIFICATE OF INDIGENCY' :
-                              request.certificate_type === 'barangay_residency' ? 'BARANGAY RESIDENCY CERTIFICATE' : 'CERTIFICATE'}
-              </h2>
+              {!isBusinessPermit && (
+                <h2 className="text-center font-bold mb-10 border-b-4 border-black inline-block pb-1 px-4 uppercase leading-normal" style={{
+                  color: isMedicoLegal ? '#000000' : '#004d40',
+                  fontSize: '24px',
+                  borderBottom: isMedicoLegal ? '2px solid black' : '4px solid black'
+                }}>
+                  {isNaturalDeath ? 'NATURAL DEATH CERTIFICATION' :
+                    isGuardianship ? 'BARANGAY CERTIFICATION FOR GUARDIANSHIP' :
+                      isCohabitation ? 'BARANGAY CERTIFICATION OF CO-HABITATION' :
+                        isSamePerson ? 'BARANGAY CERTIFICATION BEING THE SAME PERSON' :
+                          isMedicoLegal ? 'REQUEST FOR MEDICO LEGAL (COPY)' :
+                            request.certificate_type === 'barangay_clearance' ? 'BARANGAY CLEARANCE CERTIFICATE' :
+                              request.certificate_type === 'certificate_of_indigency' ? 'CERTIFICATE OF INDIGENCY' :
+                                request.certificate_type === 'barangay_residency' ? 'BARANGAY RESIDENCY CERTIFICATE' : 'CERTIFICATE'}
+                </h2>
+              )}
 
-              <div className="w-full space-y-6 text-justify" style={{ fontSize: '15px' }}>
-                <div className="flex justify-between items-center mb-6">
-                  <p className="font-bold text-lg">TO WHOM IT MAY CONCERN:</p>
-                </div>  {/* Date removed for Indigency as per new layout */}
+              {isBusinessPermit ? (
+                <div className="w-full text-[11px] print:text-[11px]">
+                  <h2 className="text-center font-bold uppercase mb-4 tracking-wide" style={{ color: '#880000', fontSize: '16px', letterSpacing: '0.05em' }}>
+                    BARANGAY BUSINESS CLEARANCE APPLICATION FORM
+                  </h2>
 
-                <>
-                  <div className="text-left mb-6 leading-relaxed">
-                    {isNaturalDeath ? (
-                      <p>This is to certify that below mentioned person, a bona fide resident of this barangay has died at his residence and classified as "Natural Death":</p>
-                    ) : isGuardianship ? (
-                      <p className="uppercase">
-                        THIS IS TO CERTIFY THAT BELOW PERSON IS UNDER THE GUARDIANSHIP OF <span className="font-bold">{formData.guardianName?.toUpperCase() || "_________________________________"}</span>, BOTH BONA FIDE RESIDENTS OF THIS BARANGAY:
-                      </p>
-                    ) : isCohabitation ? (
-                      <p className="uppercase">
-                        THIS IS TO CERTIFY THAT BELOW MENTIONED PERSONS, BONA FIDE RESIDENTS OF THIS BARANGAY AT <span className="font-bold">{formData.address?.toUpperCase() || '____________________'}</span>, ARE LIVING TOGETHER IN COMMON HOUSE (YET TO UNDERGO CHURCH / CIVIL WEDDING) AS DETAILED BELOW:
+                  {/* Application Info Table */}
+                  <table className="w-full border-collapse border border-black mb-4 font-bold">
+                    <tbody>
+                      <tr>
+                        <td className="border border-black p-1.5 w-[35%]">DATE OF APPLICATION AND NO.</td>
+                        <td className="border border-black p-1.5 w-[35%] font-normal">
+                          {request.applicationDate ? new Date(request.applicationDate).toLocaleDateString('en-US') : (request.created_at ? new Date(request.created_at).toLocaleDateString('en-US') : '')}
+                        </td>
+                        <td className="border border-black p-1.5 w-[30%] text-center text-red-700 font-bold">
+                          {request.applicationNo || request.reference_number || '2026 -'}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5" colSpan="3">OWNER'S DETAILS</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">FULL NAME</td>
+                        <td className="border border-black p-1.5 font-bold" colSpan="2">{request.ownerFullName || additionalDetails.ownerFullName || formData.fullName}</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">COMPLETE ADDRESS</td>
+                        <td className="border border-black p-1.5 font-bold" colSpan="2">{request.ownerAddress || additionalDetails.ownerAddress || formData.address}</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">BUSINESS NAME</td>
+                        <td className="border border-black p-1.5 font-bold" colSpan="2">{request.businessName || additionalDetails.businessName || ''}</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">NATURE OF BUSINESS</td>
+                        <td className="border border-black p-1.5 font-bold" colSpan="2">{request.natureOfBusiness || additionalDetails.natureOfBusiness || ''}</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">BUSINESS COMPLETE ADDRESS</td>
+                        <td className="border border-black p-1.5 font-bold" colSpan="2">{request.businessAddress || additionalDetails.businessAddress || ''}</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">CONTACT PERSON / NUMBER</td>
+                        <td className="border border-black p-1.5 font-bold" colSpan="2">
+                          {request.contactPerson || additionalDetails.contactPerson || request.ownerFullName || additionalDetails.ownerFullName || formData.fullName} / {request.contactNumber || additionalDetails.contactNumber || request.contact_number || ''}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <p className="font-bold mb-1">A. ACTIONS TAKEN BY INSPECTION COMMITTEE:</p>
+                  <table className="w-full border-collapse border border-black text-center mb-4">
+                    <thead>
+                      <tr className="font-bold">
+                        <td className="border border-black p-1.5 w-[25%]">AREAS</td>
+                        <td className="border border-black p-1.5 w-[35%]">FINDINGS AND RECOMMENDATIONS</td>
+                        <td className="border border-black p-1.5 w-[20%]">DATE OF INSPECTION</td>
+                        <td className="border border-black p-1.5 w-[20%]">REMARKS</td>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold text-left">
+                      {[
+                        'HEALTH AND SAFETY', 'SANITATION', 'HEALTH HAZARD', 'BUILDING PERMIT',
+                        'FIRE EXIT / HAZARD', 'ENVIRONMENT', 'WASTE MANAGEMENT', 'HAZARDOUS WASTE',
+                        'OTHERS', 'COMPLAINTS, ETC.'
+                      ].map((area, idx) => (
+                        <tr key={idx} className="h-6">
+                          <td className="border border-black p-1 pl-2 text-[10px]">{area}</td>
+                          <td className="border border-black p-1"></td>
+                          <td className="border border-black p-1"></td>
+                          <td className="border border-black p-1"></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <div className="flex flex-col gap-4 mb-6 font-bold">
+                    <div className="flex items-center gap-2">
+                      <span>DATE AND TIME OF VISIT:</span>
+                      <div className="flex-1 border-b border-black h-4"></div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span>NAME OF OWNER / REPRESENTATIVE AND SIGNATURE:</span>
+                      <div className="flex-1 border-b border-black h-4"></div>
+                    </div>
+                  </div>
+
+                  <p className="font-bold mb-1">B. RECOMMENDING APPROVAL</p>
+                  <table className="w-full border-collapse border border-black text-center mb-8">
+                    <thead>
+                      <tr className="font-bold">
+                        <td className="border border-black p-1.5 w-[30%]">NAME</td>
+                        <td className="border border-black p-1.5 w-[30%]">COMMITTEE</td>
+                        <td className="border border-black p-1.5 w-[15%]">DATE</td>
+                        <td className="border border-black p-1.5 w-[25%]">SIGNATURE</td>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold">
+                      {['HEALTH', 'ENVIRONMENT', 'INFRASTRUCTURE', 'PEACE & ORDER'].map((committee, idx) => (
+                        <tr key={idx} className="h-8">
+                          <td className="border border-black p-1 text-left pl-2">{idx + 1}.</td>
+                          <td className="border border-black p-1 text-[10px]">{committee}</td>
+                          <td className="border border-black p-1"></td>
+                          <td className="border border-black p-1"></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <p className="font-bold mb-6">C. APPROVAL</p>
+                  <div className="flex flex-col mb-4 relative ml-4">
+                    {/* Optional e-signature rendering if available and wanted on business permits */}
+                    <p className="font-bold text-[14px]">ALEXANDER C. MANIO</p>
+                    <p className="font-bold text-[13px]">BARANGAY CHAIRMAN</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full space-y-6 text-justify" style={{ fontSize: '15px' }}>
+                  <div className="flex justify-between items-center mb-6">
+                    <p className="font-bold text-lg">TO WHOM IT MAY CONCERN:</p>
+                  </div>  {/* Date removed for Indigency as per new layout */}
+
+                  <>
+                    <div className="text-left mb-6 leading-relaxed">
+                      {isNaturalDeath ? (
+                        <p>This is to certify that below mentioned person, a bona fide resident of this barangay has died at his residence and classified as "Natural Death":</p>
+                      ) : isGuardianship ? (
+                        <p className="uppercase">
+                          THIS IS TO CERTIFY THAT BELOW PERSON IS UNDER THE GUARDIANSHIP OF <span className="font-bold">{formData.guardianName?.toUpperCase() || "_________________________________"}</span>, BOTH BONA FIDE RESIDENTS OF THIS BARANGAY:
+                        </p>
+                      ) : isCohabitation ? (
+                        <p className="uppercase">
+                          THIS IS TO CERTIFY THAT BELOW MENTIONED PERSONS, BONA FIDE RESIDENTS OF THIS BARANGAY AT <span className="font-bold">{formData.address?.toUpperCase() || '____________________'}</span>, ARE LIVING TOGETHER IN COMMON HOUSE (YET TO UNDERGO CHURCH / CIVIL WEDDING) AS DETAILED BELOW:
+                        </p>
+                      ) : isMedicoLegal ? (
+                        <div className="space-y-6">
+                          <p className="font-bold uppercase">GREETINGS!</p>
+                          <p className="uppercase">
+                            KINDLY REQUESTING YOUR GOOD OFFICE TO FURNISH US A COPY OF "MEDICO LEGAL" OF YOUR BELOW MENTIONED PATIENT IN AIDE OF RECONCILIATORY MEETING / HEARING OF INVOLVED INDIVIDUALS TO BE HELD IN THIS BARANGAY AS DETAILED BELOW:
+                          </p>
+                        </div>
+                      ) : isSamePerson ? (
+                        <p>This is to certify that below names belongs to one and the same person, bona fide resident of this barangay as described herein:</p>
+                      ) : (
+                        <p>
+                          {request.certificate_type === 'barangay_clearance' ?
+                            'This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:' :
+                            request.certificate_type === 'certificate_of_indigency' ?
+                              'This is to certify that below mentioned person is a bona fide resident and their family belongs to the "Indigent Families" of this barangay as of date mentioned below. Further certifying that their income is not enough to sustain and support their basic needs:' :
+                              'This is to certify that below mentioned person is a bona fide resident of this barangay as detailed below:'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mb-6 space-y-1">
+                      {(() => {
+                        const getLabels = () => {
+                          if (isMedicoLegal) {
+                            return [
+                              ['REQUEST DATE', issuedDate.toUpperCase()],
+                              ['NAME', formData.fullName?.toUpperCase()],
+                              ['AGE', formData.age],
+                              ['SEX', (request.sex || formData.sex || 'N/A').toUpperCase()],
+                              ['RESIDENTIAL ADDRESS', formData.address?.toUpperCase()],
+                              ['DATE OF BIRTH', formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : 'N/A'],
+                              ['DATE OF EXAMINATION', formData.date_of_examination || formData.dateOfExamination ? new Date(formData.date_of_examination || formData.dateOfExamination).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : 'NOT RECORDED'],
+                              ['USAPING BARANGAY NO.', formData.usaping_barangay || formData.usapingBarangay || 'NOT RECORDED'],
+                              ['DATE OF HEARING', formData.date_of_hearing || formData.dateOfHearing ? new Date(formData.date_of_hearing || formData.dateOfHearing).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : 'NOT RECORDED']
+                            ];
+                          }
+
+                          let baseLabels = [
+                            ['NAME', formData.fullName?.toUpperCase()],
+                            ['AGE', formData.age],
+                            ['SEX', formData.sex?.toUpperCase()],
+                          ];
+
+                          if (!isCohabitation) {
+                            baseLabels.push(['CIVIL STATUS', formData.civilStatus?.toUpperCase()]);
+                            baseLabels.push(['RESIDENTIAL ADDRESS', formData.address?.toUpperCase()]);
+                          }
+
+                          let extraLabels = [];
+                          if (isNaturalDeath) {
+                            extraLabels = [
+                              ['DATE OF DEATH', formData.dateOfDeath ? new Date(formData.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : ''],
+                              ['CAUSE OF DEATH', formData.causeOfDeath?.toUpperCase()],
+                              ['COVID-19 RELATED', formData.covidRelated?.toUpperCase()]
+                            ];
+                          } else if (isGuardianship) {
+                            extraLabels = [
+                              ['DATE OF BIRTH', formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : ''],
+                              ["GUARDIAN'S RELATIONSHIP", formData.guardianRelationship?.toUpperCase()]
+                            ];
+                          } else if (isCohabitation) {
+                            extraLabels = [
+                              ['NAME', formData.partnerFullName?.toUpperCase()],
+                              ['AGE', formData.partnerAge],
+                              ['SEX', formData.partnerSex?.toUpperCase()],
+                              ['DATE OF BIRTH', formData.partnerDateOfBirth ? new Date(formData.partnerDateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : ''],
+                              ['NO. OF CHILDREN', formData.noOfChildren],
+                              ['DURATION', `${formData.livingTogetherYears} YEAR(S) AND ${formData.livingTogetherMonths} MONTH(S)`]
+                            ];
+                          } else {
+                            extraLabels = [
+                              ['DATE OF BIRTH', formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : ''],
+                              ['PLACE OF BIRTH', formData.placeOfBirth?.toUpperCase()]
+                            ];
+                          }
+
+                          if (isSamePerson) {
+                            // Override entirely for same person
+                            return [
+                              ['Name (1)', name1?.toUpperCase()],
+                              ['Name (2)', name2?.toUpperCase()],
+                              ['Residential Address', formData.address?.toUpperCase()],
+                              ['Age', formData.age],
+                              ['Sex', formData.sex?.toUpperCase()],
+                              ['Civil Status', formData.civilStatus?.toUpperCase()],
+                              ['Date of Birth', formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '']
+                            ];
+                          }
+
+
+                          return baseLabels.concat(extraLabels);
+                        };
+
+                        return getLabels().map(([label, value], idx) => {
+                          const isPartnerSeparator = isCohabitation && idx === 3;
+                          const isCohabChildrenSeparator = isCohabitation && idx === 7;
+                          const isMedicoExam = isMedicoLegal && label === 'DATE OF EXAMINATION';
+                          const isBoldRow = isMedicoLegal && (label === 'USAPING BARANGAY NO.' || label === 'DATE OF HEARING');
+
+                          return (
+                            <div
+                              key={`${label}-${idx}`}
+                              className={`grid grid-cols-[180px_10px_1fr] items-baseline text-black ${isBoldRow ? 'font-bold' : ''}`}
+                              style={{ marginTop: (isPartnerSeparator || isCohabChildrenSeparator) ? '24px' : '0' }}
+                            >
+                              <span className={isSamePerson ? "font-bold" : "font-normal"}>
+                                {isMedicoExam ? (
+                                  <div className="flex flex-col">
+                                    <span>DATE OF EXAMINATION /</span>
+                                    <span>CONFINEMENT</span>
+                                  </div>
+                                ) : label}
+                              </span>
+                              <span className="font-normal">:</span>
+                              <span className={label === 'NAME' || label === 'Name' || isBoldRow || isSamePerson ? 'font-bold' : 'font-normal'}>
+                                {String(value || '_________________').toUpperCase()}
+                              </span>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+
+                    {isNaturalDeath || isGuardianship || isCohabitation || isSamePerson ? (
+                      <p className={`mb-10 text-left leading-relaxed ${(isGuardianship || isCohabitation) ? 'uppercase' : ''}`}>
+                        Issued this {isSamePerson ? issuedDate : issuedDate.toUpperCase()} at Barangay Iba O' Este, Calumpit, Bulacan upon the request of <span className={(isGuardianship || isCohabitation || isSamePerson) ? "" : "font-bold"}>{(isGuardianship || isCohabitation || isSamePerson) ? (isSamePerson ? "above mentioned persons" : "ABOVE MENTIONED PERSONS") : (formData.requestorName ? formData.requestorName.toUpperCase() : "THE ABOVE PERSON'S RELATIVES")}</span> for any legal purposes it may serve.
                       </p>
                     ) : isMedicoLegal ? (
                       <div className="space-y-6">
-                        <p className="font-bold uppercase">GREETINGS!</p>
-                        <p className="uppercase">
-                          KINDLY REQUESTING YOUR GOOD OFFICE TO FURNISH US A COPY OF "MEDICO LEGAL" OF YOUR BELOW MENTIONED PATIENT IN AIDE OF RECONCILIATORY MEETING / HEARING OF INVOLVED INDIVIDUALS TO BE HELD IN THIS BARANGAY AS DETAILED BELOW:
+                        <p className="text-left leading-relaxed uppercase">
+                          YOU MAY PLEASE HANDOVER THE REQUESTED "MEDICO LEGAL" TO YOUR ABOVE PATIENT DIRECTLY. PRAYING FOR YOUR FAVORABLE RESPONSE AND ASSISTANCE. KEEP SAFE AND GOD BLESS!
                         </p>
                       </div>
-                    ) : isSamePerson ? (
-                      <p>This is to certify that below names belongs to one and the same person, bona fide resident of this barangay as described herein:</p>
                     ) : (
-                      <p>
-                        {request.certificate_type === 'barangay_clearance' ?
-                          'This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:' :
-                          request.certificate_type === 'certificate_of_indigency' ?
-                            'This is to certify that below mentioned person is a bona fide resident and their family belongs to the "Indigent Families" of this barangay as of date mentioned below. Further certifying that their income is not enough to sustain and support their basic needs:' :
-                            'This is to certify that below mentioned person is a bona fide resident of this barangay as detailed below:'}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="mb-6 space-y-1">
-                    {(() => {
-                      const getLabels = () => {
-                        if (isMedicoLegal) {
-                          return [
-                            ['REQUEST DATE', issuedDate.toUpperCase()],
-                            ['NAME', formData.fullName?.toUpperCase()],
-                            ['AGE', formData.age],
-                            ['SEX', (request.sex || formData.sex || 'N/A').toUpperCase()],
-                            ['RESIDENTIAL ADDRESS', formData.address?.toUpperCase()],
-                            ['DATE OF BIRTH', formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : 'N/A'],
-                            ['DATE OF EXAMINATION', formData.date_of_examination || formData.dateOfExamination ? new Date(formData.date_of_examination || formData.dateOfExamination).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : 'NOT RECORDED'],
-                            ['USAPING BARANGAY NO.', formData.usaping_barangay || formData.usapingBarangay || 'NOT RECORDED'],
-                            ['DATE OF HEARING', formData.date_of_hearing || formData.dateOfHearing ? new Date(formData.date_of_hearing || formData.dateOfHearing).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : 'NOT RECORDED']
-                          ];
-                        }
-
-                        let baseLabels = [
-                          ['NAME', formData.fullName?.toUpperCase()],
-                          ['AGE', formData.age],
-                          ['SEX', formData.sex?.toUpperCase()],
-                        ];
-
-                        if (!isCohabitation) {
-                          baseLabels.push(['CIVIL STATUS', formData.civilStatus?.toUpperCase()]);
-                          baseLabels.push(['RESIDENTIAL ADDRESS', formData.address?.toUpperCase()]);
-                        }
-
-                        let extraLabels = [];
-                        if (isNaturalDeath) {
-                          extraLabels = [
-                            ['DATE OF DEATH', formData.dateOfDeath ? new Date(formData.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : ''],
-                            ['CAUSE OF DEATH', formData.causeOfDeath?.toUpperCase()],
-                            ['COVID-19 RELATED', formData.covidRelated?.toUpperCase()]
-                          ];
-                        } else if (isGuardianship) {
-                          extraLabels = [
-                            ['DATE OF BIRTH', formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : ''],
-                            ["GUARDIAN'S RELATIONSHIP", formData.guardianRelationship?.toUpperCase()]
-                          ];
-                        } else if (isCohabitation) {
-                          extraLabels = [
-                            ['NAME', formData.partnerFullName?.toUpperCase()],
-                            ['AGE', formData.partnerAge],
-                            ['SEX', formData.partnerSex?.toUpperCase()],
-                            ['DATE OF BIRTH', formData.partnerDateOfBirth ? new Date(formData.partnerDateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : ''],
-                            ['NO. OF CHILDREN', formData.noOfChildren],
-                            ['DURATION', `${formData.livingTogetherYears} YEAR(S) AND ${formData.livingTogetherMonths} MONTH(S)`]
-                          ];
-                        } else {
-                          extraLabels = [
-                            ['DATE OF BIRTH', formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : ''],
-                            ['PLACE OF BIRTH', formData.placeOfBirth?.toUpperCase()]
-                          ];
-                        }
-
-                        if (isSamePerson) {
-                          // Override entirely for same person
-                          return [
-                            ['Name (1)', name1?.toUpperCase()],
-                            ['Name (2)', name2?.toUpperCase()],
-                            ['Residential Address', formData.address?.toUpperCase()],
-                            ['Age', formData.age],
-                            ['Sex', formData.sex?.toUpperCase()],
-                            ['Civil Status', formData.civilStatus?.toUpperCase()],
-                            ['Date of Birth', formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '']
-                          ];
-                        }
-
-
-                        return baseLabels.concat(extraLabels);
-                      };
-
-                      return getLabels().map(([label, value], idx) => {
-                        const isPartnerSeparator = isCohabitation && idx === 3;
-                        const isCohabChildrenSeparator = isCohabitation && idx === 7;
-                        const isMedicoExam = isMedicoLegal && label === 'DATE OF EXAMINATION';
-                        const isBoldRow = isMedicoLegal && (label === 'USAPING BARANGAY NO.' || label === 'DATE OF HEARING');
-
-                        return (
-                          <div
-                            key={`${label}-${idx}`}
-                            className={`grid grid-cols-[180px_10px_1fr] items-baseline text-black ${isBoldRow ? 'font-bold' : ''}`}
-                            style={{ marginTop: (isPartnerSeparator || isCohabChildrenSeparator) ? '24px' : '0' }}
-                          >
-                            <span className={isSamePerson ? "font-bold" : "font-normal"}>
-                              {isMedicoExam ? (
-                                <div className="flex flex-col">
-                                  <span>DATE OF EXAMINATION /</span>
-                                  <span>CONFINEMENT</span>
+                      <>
+                        <div className="mb-6">
+                          <p className="mb-3">
+                            Being issued upon the request of above mentioned person for below purpose(s):
+                          </p>
+                          <div className="pl-8 space-y-1 font-bold">
+                            {formData.purpose ? (
+                              formData.purpose.split('\n').map((line, idx) => (
+                                <div key={idx} className="flex gap-2">
+                                  <span>{idx + 1}.</span>
+                                  <span>{line.toUpperCase()}</span>
                                 </div>
-                              ) : label}
-                            </span>
-                            <span className="font-normal">:</span>
-                            <span className={label === 'NAME' || label === 'Name' || isBoldRow || isSamePerson ? 'font-bold' : 'font-normal'}>
-                              {String(value || '_________________').toUpperCase()}
-                            </span>
+                              ))
+                            ) : (
+                              <p>• PURPOSE NOT SPECIFIED</p>
+                            )}
                           </div>
-                        );
-                      });
-                    })()}
-                  </div>
+                        </div>
 
-                  {isNaturalDeath || isGuardianship || isCohabitation || isSamePerson ? (
-                    <p className={`mb-10 text-left leading-relaxed ${(isGuardianship || isCohabitation) ? 'uppercase' : ''}`}>
-                      Issued this {isSamePerson ? issuedDate : issuedDate.toUpperCase()} at Barangay Iba O' Este, Calumpit, Bulacan upon the request of <span className={(isGuardianship || isCohabitation || isSamePerson) ? "" : "font-bold"}>{(isGuardianship || isCohabitation || isSamePerson) ? (isSamePerson ? "above mentioned persons" : "ABOVE MENTIONED PERSONS") : (formData.requestorName ? formData.requestorName.toUpperCase() : "THE ABOVE PERSON'S RELATIVES")}</span> for any legal purposes it may serve.
-                    </p>
-                  ) : isMedicoLegal ? (
-                    <div className="space-y-6">
-                      <p className="text-left leading-relaxed uppercase">
-                        YOU MAY PLEASE HANDOVER THE REQUESTED "MEDICO LEGAL" TO YOUR ABOVE PATIENT DIRECTLY. PRAYING FOR YOUR FAVORABLE RESPONSE AND ASSISTANCE. KEEP SAFE AND GOD BLESS!
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-6">
-                        <p className="mb-3">
-                          Being issued upon the request of above mentioned person for below purpose(s):
+                        <p className="mb-10 text-left">
+                          Issued this {issuedDate} at Barangay Iba O' Este, Calumpit, Bulacan.
                         </p>
-                        <div className="pl-8 space-y-1 font-bold">
-                          {formData.purpose ? (
-                            formData.purpose.split('\n').map((line, idx) => (
-                              <div key={idx} className="flex gap-2">
-                                <span>{idx + 1}.</span>
-                                <span>{line.toUpperCase()}</span>
-                              </div>
-                            ))
-                          ) : (
-                            <p>• PURPOSE NOT SPECIFIED</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <p className="mb-10 text-left">
-                        Issued this {issuedDate} at Barangay Iba O' Este, Calumpit, Bulacan.
-                      </p>
-                    </>
-                  )}
-
-                  {/* Unified Signature Section (Left Aligned for All) */}
-                  <div
-                    className="relative text-left"
-                    style={{
-                      marginTop: (isGuardianship || isCohabitation || isMedicoLegal || isSamePerson) ? '120px' : (request.certificate_type === 'certificate_of_indigency' ? '32px' : '64px')
-                    }}
-                  >
-                    {isNaturalDeath && <div className="h-10"></div>}
-                    {!isNaturalDeath && !isGuardianship && !isCohabitation && !isMedicoLegal && !isSamePerson && (
-                      <div className={`${request.certificate_type === 'certificate_of_indigency' ? 'mb-8' : 'mb-12'}`}>
-                        <div className={`${request.certificate_type === 'certificate_of_indigency' ? 'h-12' : 'h-16'}`}></div>
-                        <div className="border-t border-black w-64 pt-1">
-                          <p className="text-[15px]">Resident's Signature / Thumb Mark</p>
-                        </div>
-                      </div>
+                      </>
                     )}
 
-                    <div className="text-left mb-4 self-start">
-                      <p className="font-bold text-[15px] mb-12">TRULY YOURS,</p>
-
-                      <div className="relative inline-block">
-                        {/* Big Backdrop Signature centered horizontally but positioned above name */}
-                        {captainApproval?.signature_data && (
-                          <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[80%] w-60 h-32 pointer-events-none flex items-center justify-center z-20" style={{ mixBlendMode: 'multiply' }}>
-                            <img src={captainApproval.signature_data} className="w-full h-full object-contain" alt="Captain Sig" />
+                    {/* Unified Signature Section (Left Aligned for All) */}
+                    <div
+                      className="relative text-left"
+                      style={{
+                        marginTop: (isGuardianship || isCohabitation || isMedicoLegal || isSamePerson) ? '120px' : (request.certificate_type === 'certificate_of_indigency' ? '32px' : '64px')
+                      }}
+                    >
+                      {isNaturalDeath && <div className="h-10"></div>}
+                      {!isNaturalDeath && !isGuardianship && !isCohabitation && !isMedicoLegal && !isSamePerson && (
+                        <div className={`${request.certificate_type === 'certificate_of_indigency' ? 'mb-8' : 'mb-12'}`}>
+                          <div className={`${request.certificate_type === 'certificate_of_indigency' ? 'h-12' : 'h-16'}`}></div>
+                          <div className="border-t border-black w-64 pt-1">
+                            <p className="text-[15px]">Resident's Signature / Thumb Mark</p>
                           </div>
-                        )}
+                        </div>
+                      )}
 
-                        <p className="uppercase font-bold mb-1 relative z-10" style={{ fontSize: '20px' }}>
-                          {officials.chairman}
-                        </p>
+                      <div className="text-left mb-4 self-start">
+                        <p className="font-bold text-[15px] mb-12">TRULY YOURS,</p>
 
-                        <div className="relative flex items-center z-10">
-                          <p className="text-[15px] font-bold shrink-0">BARANGAY CHAIRMAN</p>
+                        <div className="relative inline-block">
+                          {/* Big Backdrop Signature centered horizontally but positioned above name */}
+                          {captainApproval?.signature_data && (
+                            <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[80%] w-60 h-32 pointer-events-none flex items-center justify-center z-20" style={{ mixBlendMode: 'multiply' }}>
+                              <img src={captainApproval.signature_data} className="w-full h-full object-contain" alt="Captain Sig" />
+                            </div>
+                          )}
 
-                          {/* Additional Forwarder Signatures (Backdrop Overlay - does not affect text layout) */}
-                          <div className="absolute left-32 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none" style={{ mixBlendMode: 'multiply' }}>
-                            {(() => {
-                              const seenSignatories = new Set();
-                              return history
-                                ?.filter(h => {
-                                  if (h.action !== 'approve' || !h.signature_data) return false;
+                          <p className="uppercase font-bold mb-1 relative z-10" style={{ fontSize: '20px' }}>
+                            {officials.chairman}
+                          </p>
 
-                                  // Skip captain/chairman signatures as they are handled separately above
-                                  const isCaptain = h.step_name?.toLowerCase().includes('captain') ||
-                                    h.step_name?.toLowerCase().includes('chairman') ||
-                                    h.officialRole === 'Brgy. Captain' ||
-                                    h.official_role === 'Brgy. Captain';
-                                  if (isCaptain) return false;
+                          <div className="relative flex items-center z-10">
+                            <p className="text-[15px] font-bold shrink-0">BARANGAY CHAIRMAN</p>
 
-                                  // Unique per person
-                                  if (seenSignatories.has(h.performed_by)) return false;
-                                  seenSignatories.add(h.performed_by);
-                                  return true;
-                                })
-                                .map((sigEntry, idx) => (
-                                  <div key={idx} className="h-12 w-28">
-                                    <img
-                                      src={sigEntry.signature_data}
-                                      className="h-full w-full object-contain"
-                                      alt="Official Sig"
-                                    />
-                                  </div>
-                                ));
-                            })()}
+                            {/* Additional Forwarder Signatures (Backdrop Overlay - does not affect text layout) */}
+                            <div className="absolute left-32 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none" style={{ mixBlendMode: 'multiply' }}>
+                              {(() => {
+                                const seenSignatories = new Set();
+                                return history
+                                  ?.filter(h => {
+                                    if (h.action !== 'approve' || !h.signature_data) return false;
+
+                                    // Skip captain/chairman signatures as they are handled separately above
+                                    const isCaptain = h.step_name?.toLowerCase().includes('captain') ||
+                                      h.step_name?.toLowerCase().includes('chairman') ||
+                                      h.officialRole === 'Brgy. Captain' ||
+                                      h.official_role === 'Brgy. Captain';
+                                    if (isCaptain) return false;
+
+                                    // Unique per person
+                                    if (seenSignatories.has(h.performed_by)) return false;
+                                    seenSignatories.add(h.performed_by);
+                                    return true;
+                                  })
+                                  .map((sigEntry, idx) => (
+                                    <div key={idx} className="h-12 w-28">
+                                      <img
+                                        src={sigEntry.signature_data}
+                                        className="h-full w-full object-contain"
+                                        alt="Official Sig"
+                                      />
+                                    </div>
+                                  ));
+                              })()}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </>
-              </div>
+                  </>
+                </div>
+              )}
 
               {/* Reference Number Section */}
               <div className="w-full text-right mt-auto mb-2">
