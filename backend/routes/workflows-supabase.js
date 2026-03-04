@@ -95,7 +95,8 @@ router.put('/', authenticateToken, requireAdmin, async (req, res) => {
       'barangay_guardianship',
       'barangay_cohabitation',
       'medico_legal',
-      'business_permit'
+      'business_permit',
+      'certification_same_person'
     ];
 
     // ONLY process known certificate types
@@ -131,7 +132,8 @@ router.put('/', authenticateToken, requireAdmin, async (req, res) => {
     console.error('Save workflows error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Database error while saving workflows. Please ensure all certificate types are allowed in the Supabase schema.',
+      details: error.message || error
     });
   }
 });
@@ -176,7 +178,8 @@ router.post('/sync-assignments', authenticateToken, requireAdmin, async (req, re
       'barangay_guardianship',
       'barangay_cohabitation',
       'medico_legal',
-      'business_permit'
+      'business_permit',
+      'certification_same_person'
     ];
     let syncResults = {
       totalAssignments: 0,
@@ -230,17 +233,20 @@ router.post('/sync-assignments', authenticateToken, requireAdmin, async (req, re
       for (const request of requests || []) {
         let currentStep = null;
 
-        // Determination based on status
+        // Determination based on status - use status field first, then positional fallback
         if (request.status === 'staff_review' || request.status === 'pending' || request.status === 'submitted') {
-          currentStep = workflowSteps.find(s => s.status === 'staff_review' || s.id === 111 || s.id === 1);
+          // Find the review step: match by status, then fallback to first requiresApproval step
+          currentStep = workflowSteps.find(s => s.status === 'staff_review')
+            || workflowSteps.find(s => s.requiresApproval === true);
         } else if (request.status === 'secretary_approval') {
-          currentStep = workflowSteps.find(s => s.status === 'secretary_approval' || s.id === 2);
+          currentStep = workflowSteps.find(s => s.status === 'secretary_approval');
         } else if (request.status === 'captain_approval') {
-          currentStep = workflowSteps.find(s => s.status === 'captain_approval' || s.id === 3);
+          currentStep = workflowSteps.find(s => s.status === 'captain_approval');
         } else if (['oic_review', 'ready', 'ready_for_pickup'].includes(request.status)) {
-          currentStep = workflowSteps.find(s => s.status === 'oic_review' || s.id === 999);
+          // Find releasing step: match by status, then fallback to last requiresApproval step
+          currentStep = workflowSteps.find(s => s.status === 'oic_review')
+            || [...workflowSteps].reverse().find(s => s.requiresApproval === true);
         } else if (request.status === 'processing') {
-          // Fallback for generic processing status
           const approvalSteps = workflowSteps.filter(s => s.status !== 'staff_review' && s.status !== 'oic_review' && s.requiresApproval);
           currentStep = approvalSteps[0];
         }

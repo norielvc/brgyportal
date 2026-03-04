@@ -85,103 +85,58 @@ router.get('/my-assignments', authenticateToken, async (req, res) => {
     const userId = req.user._id;
     const { status = 'pending' } = req.query;
 
-    const { data, error } = await supabase
+    const { data: rawAssignments, error } = await supabase
       .from('workflow_assignments')
       .select(`
         *,
-        certificate_requests:request_id (
-          id,
-          reference_number,
-          full_name,
-          certificate_type,
-          status,
-          created_at,
-          contact_number,
-          purpose,
-          age,
-          sex,
-          civil_status,
-          address,
-          date_of_birth,
-          place_of_birth,
-          date_of_death,
-          cause_of_death,
-          covid_related,
-          requestor_name,
-          guardian_name,
-          guardian_relationship,
-          guardian_id,
-          resident_id,
-          partner_full_name,
-          partner_age,
-          partner_sex,
-          partner_date_of_birth,
-          partner_address,
-          partner_civil_status,
-          no_of_children,
-          living_together_years,
-          living_together_months,
-          date_of_examination,
-          usaping_barangay,
-          date_of_hearing,
-          details,
-          residents:resident_id (*),
-          updated_at
-        )
+        certificate_requests (*)
       `)
       .eq('assigned_user_id', userId)
-      .eq('status', status)
       .order('created_at', { ascending: false });
+
+    console.log(`[MY-ASSIGNMENTS] Querying for UserID: ${userId}. Found ${rawAssignments?.length || 0} total assignments in DB.`);
 
     if (error) return handleSupabaseError(res, error, 'fetch-my-assignments');
 
-    // Fetch all workflow configurations
-    const { data: allConfigs, error: configsError } = await supabase
-      .from('workflow_configurations')
-      .select('certificate_type, workflow_config');
+    // Transform and map to the frontend format
+    const requestsList = (rawAssignments || []).reduce((acc, assignment) => {
+      const request = assignment.certificate_requests;
 
-    if (configsError) console.warn('Failed to fetch workflow configs:', configsError);
+      // Safety: skip if join failed to return the request object
+      if (!request) {
+        console.log(`[MY-ASSIGNMENTS] Skipping assignment ${assignment.id}: Join failed but assignment exists. ID: ${assignment.request_id}`);
+        return acc;
+      }
 
-    const configMap = {};
-    if (allConfigs) {
-      allConfigs.forEach(c => {
-        if (c.workflow_config && c.workflow_config.steps) {
-          configMap[c.certificate_type] = c.workflow_config.steps;
+      // We perform filtering in JS to be more case-insensitive and flexible.
+      const assignmentStatus = (assignment.status || '').toLowerCase();
+      const searchStatus = (status || 'pending').toLowerCase();
+
+      if (assignmentStatus !== searchStatus) {
+        return acc;
+      }
+
+      // We trust the assignment table - if you're assigned and it's active, we show it.
+      // We only filter out entries if the certificate itself is already finalized/closed
+      const finalStatuses = ['released', 'cancelled', 'rejected'];
+      const reqStatus = (request.status || '').toLowerCase();
+
+      if (finalStatuses.includes(reqStatus)) {
+        return acc;
+      }
+
+      // Match the frontend's expected certificate object structure
+      acc.push({
+        ...request,
+        workflow_assignment: {
+          id: assignment.id,
+          step_id: assignment.step_id,
+          step_name: assignment.step_name,
+          assigned_user_id: assignment.assigned_user_id,
+          assigned_at: assignment.assigned_at,
+          status: assignment.status
         }
       });
-    }
-
-    // Transform and filter
-    const requestsList = (data || []).reduce((acc, assignment) => {
-      const request = assignment.certificate_requests;
-      if (!request) return acc;
-
-      const stepId = assignment.step_id;
-      const reqStatus = request.status || 'pending';
-      const certType = request.certificate_type;
-      const steps = configMap[certType] || [];
-
-      let shouldShow = true;
-      if ((reqStatus === 'pending' || reqStatus === 'submitted' || reqStatus === 'staff_review' || reqStatus === 'returned') && steps.length > 0) {
-        const firstApprovalStep = steps.find(s => s.requiresApproval === true);
-        if (firstApprovalStep) {
-          shouldShow = String(stepId) === String(firstApprovalStep.id);
-        }
-      }
-
-      if (shouldShow) {
-        acc.push({
-          ...request,
-          workflow_assignment: {
-            id: assignment.id,
-            step_id: assignment.step_id,
-            step_name: assignment.step_name,
-            assigned_user_id: assignment.assigned_user_id,
-            assigned_at: assignment.assigned_at,
-            status: assignment.status
-          }
-        });
-      }
       return acc;
     }, []);
 

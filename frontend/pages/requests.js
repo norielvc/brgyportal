@@ -71,13 +71,14 @@ export default function RequestsPage() {
     fetchHistory();
   }, [selectedRequest]);
 
-  // Load current user and workflows
+  // Load current user, workflows, and then requests
   useEffect(() => {
     const user = getUserData();
     setCurrentUser(user);
 
-    // Load workflows from API first, then fallback to localStorage
-    const loadWorkflows = async () => {
+    const initializeData = async () => {
+      // 1. Load workflows first so isUserAssignedToRequest has the data it needs to perform Smart Merge
+      let loadedWorkflows = null;
       try {
         const token = getAuthToken();
         const response = await fetch(`${API_URL}/workflows`, {
@@ -88,24 +89,32 @@ export default function RequestsPage() {
         });
         const data = await response.json();
         if (data.success && data.data && Object.keys(data.data).length > 0) {
+          loadedWorkflows = data.data;
           setWorkflows(data.data);
-          return;
         }
       } catch (error) {
         console.log('Could not load workflows from API:', error);
       }
 
-      // Fallback to localStorage
-      const savedWorkflows = localStorage.getItem('certificateWorkflows');
-      if (savedWorkflows) {
-        const parsedWorkflows = JSON.parse(savedWorkflows);
-        setWorkflows(parsedWorkflows);
+      // Fallback to localStorage if API fails
+      if (!loadedWorkflows) {
+        const savedWorkflows = localStorage.getItem('certificateWorkflows');
+        if (savedWorkflows) {
+          loadedWorkflows = JSON.parse(savedWorkflows);
+          setWorkflows(loadedWorkflows);
+        } else {
+          loadedWorkflows = {}; // prevent crash
+        }
       }
+
+      // 2. Fetch User Signatures
+      fetchUserSignature();
+
+      // 3. Now fetch requests (passing the loaded workflows so the Smart Merge works immediately)
+      await fetchRequests(loadedWorkflows, user);
     };
 
-    loadWorkflows();
-    fetchRequests();
-    fetchUserSignature();
+    initializeData();
   }, []);
 
   const fetchUserSignature = async () => {
@@ -133,12 +142,12 @@ export default function RequestsPage() {
 
   // Re-fetch requests when view mode changes
   useEffect(() => {
-    if (currentUser) {
-      fetchRequests();
+    if (currentUser && workflows) {
+      fetchRequests(workflows, currentUser);
     }
-  }, [viewMode, currentUser]);
+  }, [viewMode]);
 
-  const fetchRequests = async () => {
+  const fetchRequests = async (activeWorkflows = workflows, activeUser = currentUser) => {
     setLoading(true);
     try {
       const token = getAuthToken();
@@ -150,7 +159,6 @@ export default function RequestsPage() {
       });
       const assignedData = await assignedRes.json();
       const myAssigned = assignedData.success ? (assignedData.certificates || []) : [];
-      setAssignedCount(myAssigned.length);
 
       // 2. Fetch All Requests
       const allRes = await fetch(`${API_URL}/certificates`, {
@@ -160,9 +168,32 @@ export default function RequestsPage() {
       const allCertificates = allData.success ? (allData.certificates || []) : [];
       setTotalCount(allCertificates.length);
 
-      // 3. Set the active requests list based on viewMode
+      // 3. Smart Merge: Always calculate total assignments to keep the badge universally accurate
+      const combined = [...myAssigned];
+
+      // Find items in 'allCertificates' that user is assigned to but aren't in 'myAssigned' already
+      allCertificates.forEach(cert => {
+        const alreadyIn = combined.some(c => c.id === cert.id || c.reference_number === cert.reference_number);
+        if (!alreadyIn && isUserAssignedToRequest(cert, activeWorkflows, activeUser)) {
+          combined.push(cert);
+        }
+      });
+
+      // Sort combined list by newest activity first so fallbacks appear at the top too!
+      combined.sort((a, b) => {
+        const timeA = new Date(a.updated_at || a.created_at).getTime();
+        const timeB = new Date(b.updated_at || b.created_at).getTime();
+        if (isNaN(timeA)) return 1;
+        if (isNaN(timeB)) return -1;
+        return timeB - timeA;
+      });
+
+      // ALWAYS set the accurate assigned count
+      setAssignedCount(combined.length);
+
+      // 4. Set the active requests list based on viewMode
       if (viewMode === 'assigned') {
-        setRequests(myAssigned);
+        setRequests(combined);
       } else {
         setRequests(allCertificates);
       }
@@ -193,42 +224,40 @@ export default function RequestsPage() {
   }, [router.query.id, requests]);
 
   // Check if current user is assigned to approve a request at its current step
-  const isUserAssignedToRequest = (request) => {
-    if (!currentUser) return false;
-    if (currentUser.role === 'admin') return true;
+  const isUserAssignedToRequest = (request, activeWorkflows = workflows, activeUser = currentUser) => {
+    if (!activeUser) return false;
+    if (activeUser.role === 'admin') return true;
 
     // Use the workflow_assignment data attached by the backend if available
     if (request.workflow_assignment) {
       const assignedId = request.workflow_assignment.assigned_user_id || request.workflow_assignment.userId;
-      const currentUserId = currentUser._id || currentUser.id;
+      const currentUserId = activeUser._id || activeUser.id;
       return String(assignedId) === String(currentUserId);
     }
 
     // Fallback: Check based on current status and global workflows
-    if (!currentUser) return false;
-
     // 1. Trust explicit backend assignment if available
-    if (request.workflow_assignment && String(request.workflow_assignment.assigned_user_id) === String(currentUser._id || currentUser.id)) {
+    if (request.workflow_assignment && String(request.workflow_assignment.assigned_user_id) === String(activeUser._id || activeUser.id)) {
       return true;
     }
 
     // 2. Fallback to manual check based on current workflows
-    if (!workflows) return false;
-    const workflowSteps = workflows[request.certificate_type] || Object.values(workflows)[0];
+    if (!activeWorkflows) return false;
+    const workflowSteps = activeWorkflows[request.certificate_type] || Object.values(activeWorkflows)[0];
     if (!workflowSteps) return false;
 
     let currentStep;
     const s = (request.status || '').toLowerCase();
 
-    if (['staff_review', 'pending', 'returned', 'submitted'].includes(s)) {
+    if (['staff_review', 'staff review', 'pending', 'returned', 'submitted'].some(status => s.includes(status))) {
       currentStep = workflowSteps.find(step => step.status === 'staff_review');
-    } else if (['oic_review', 'ready', 'ready_for_pickup'].includes(s)) {
+    } else if (['oic_review', 'oic review', 'ready', 'ready_for_pickup', 'ready for pickup'].some(status => s.includes(status))) {
       currentStep = workflowSteps.find(step => step.status === 'oic_review');
-    } else if (s === 'captain_approval') {
+    } else if (s.includes('captain')) {
       currentStep = workflowSteps.find(step => step.status === 'captain_approval');
-    } else if (s === 'secretary_approval') {
+    } else if (s.includes('secretary')) {
       currentStep = workflowSteps.find(step => step.status === 'secretary_approval');
-    } else if (s === 'processing') {
+    } else if (s.includes('processing')) {
       // Find the first step that requires approval and isn't staff/oic
       currentStep = workflowSteps.find(step =>
         step.requiresApproval &&
@@ -237,8 +266,9 @@ export default function RequestsPage() {
       );
     }
 
+    // 3. Precise Workflow Check
     if (!currentStep) return false;
-    const userId = currentUser._id || currentUser.id;
+    const userId = activeUser._id || activeUser.id;
     return (currentStep.assignedUsers || []).some(id => String(id) === String(userId));
   };
 
@@ -318,6 +348,7 @@ export default function RequestsPage() {
     if (s.includes('residency')) return 'Barangay Residency';
     if (s.includes('cohabitation')) return 'Co-habitation Certificate';
     if (s.includes('same_person') || s.includes('same person')) return 'Certification of Same Person';
+    if (s.includes('business_permit')) return 'Business Permit';
 
     // Fallback: remove all underscores/dashes and capitalize
     return String(type)
@@ -332,6 +363,7 @@ export default function RequestsPage() {
     if (s.includes('clearance')) return 'bg-blue-500';
     if (s.includes('indigency')) return 'bg-green-500';
     if (s.includes('residency')) return 'bg-orange-500';
+    if (s.includes('business')) return 'bg-purple-500';
     return 'bg-gray-500';
   };
 
@@ -548,9 +580,10 @@ export default function RequestsPage() {
 
   // Filter requests based on view mode and other filters
   const filteredRequests = requests.filter(req => {
-    // View mode filter
-    if (viewMode === 'assigned' && !isUserAssignedToRequest(req)) {
-      return false;
+    // View mode filter - Robust fallback
+    if (viewMode === 'assigned') {
+      const isAssigned = req.workflow_assignment || isUserAssignedToRequest(req);
+      if (!isAssigned) return false;
     }
 
     // History group filter (Active/Closed)
@@ -714,6 +747,7 @@ export default function RequestsPage() {
                   <option value="natural_death">Natural Death</option>
                   <option value="barangay_guardianship">Guardianship</option>
                   <option value="barangay_cohabitation">Co-habitation</option>
+                  <option value="business_permit">Business Permit</option>
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>

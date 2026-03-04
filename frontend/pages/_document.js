@@ -5,9 +5,9 @@ export default function Document() {
     <Html lang="en">
       <Head>
         {/* Allow data URLs for signature images */}
-        <meta 
-          httpEquiv="Content-Security-Policy" 
-          content="img-src 'self' data: blob: https:; object-src 'none';" 
+        <meta
+          httpEquiv="Content-Security-Policy"
+          content="img-src 'self' data: blob: https:; object-src 'self' data: 'none';"
         />
       </Head>
       <body>

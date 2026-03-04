@@ -108,25 +108,48 @@ router.get('/next-reference/:type', async (req, res) => {
     }
 
     let nextNumber = 1;
+    let referenceNumber = '';
 
-    // Find the highest number from existing records for this year
-    if (records && records.length > 0) {
-      let maxNumber = 0;
-      for (const record of records) {
-        if (record.reference_number && record.reference_number.startsWith(`${prefix}-${year}-`)) {
-          const parts = record.reference_number.split('-');
-          if (parts.length === 3) {
-            const num = parseInt(parts[2], 10);
-            if (!isNaN(num) && num > maxNumber) {
-              maxNumber = num;
+    if (type === 'business_permit' || type === 'BP') {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const dayPrefix = `${yyyy}-${mm}${dd}`;
+
+      let maxDayNum = 0;
+      if (records && records.length > 0) {
+        for (const record of records) {
+          if (record.reference_number && record.reference_number.startsWith(dayPrefix)) {
+            const lastPart = record.reference_number.substring(dayPrefix.length);
+            const num = parseInt(lastPart, 10);
+            if (!isNaN(num) && num > maxDayNum) {
+              maxDayNum = num;
             }
           }
         }
       }
-      nextNumber = maxNumber + 1;
+      nextNumber = maxDayNum + 1;
+      referenceNumber = `${dayPrefix}${String(nextNumber).padStart(3, '0')}`;
+    } else {
+      // Original logic for other certificates
+      if (records && records.length > 0) {
+        let maxNumber = 0;
+        for (const record of records) {
+          if (record.reference_number && record.reference_number.startsWith(`${prefix}-${year}-`)) {
+            const parts = record.reference_number.split('-');
+            if (parts.length === 3) {
+              const num = parseInt(parts[2], 10);
+              if (!isNaN(num) && num > maxNumber) {
+                maxNumber = num;
+              }
+            }
+          }
+        }
+        nextNumber = maxNumber + 1;
+      }
+      referenceNumber = `${prefix}-${year}-${String(nextNumber).padStart(5, '0')}`;
     }
-
-    const referenceNumber = `${prefix}-${year}-${String(nextNumber).padStart(5, '0')}`;
 
     console.log(`Next reference for ${type}: ${referenceNumber} (found ${records?.length || 0} records)`);
 

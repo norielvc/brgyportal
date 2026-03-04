@@ -16,7 +16,12 @@ const certificateTypes = [
   { id: 'barangay_clearance', name: 'Barangay Clearance', color: 'blue', isUnified: true },
   { id: 'certificate_of_indigency', name: 'Certificate of Indigency', color: 'green', isUnified: true },
   { id: 'barangay_residency', name: 'Barangay Residency', color: 'orange', isUnified: true },
-  { id: 'business_permit', name: 'Business Permit', color: 'purple', isUnified: false }
+  { id: 'business_permit', name: 'Business Permit', color: 'purple', isUnified: false },
+  { id: 'natural_death', name: 'Natural Death', color: 'red', isUnified: true },
+  { id: 'medico_legal', name: 'Medico Legal', color: 'pink', isUnified: true },
+  { id: 'barangay_guardianship', name: 'Barangay Guardianship', color: 'indigo', isUnified: true },
+  { id: 'barangay_cohabitation', name: 'Barangay Cohabitation', color: 'teal', isUnified: true },
+  { id: 'certification_same_person', name: 'Certify Same Person', color: 'yellow', isUnified: true }
 ];
 
 // Default workflow steps
@@ -151,40 +156,45 @@ export default function WorkflowsPage() {
   };
 
   const saveWorkflows = async (updated) => {
-    // Force sync: apply the same workflow steps to ALL certificate types
-    let masterSteps = updated[MASTER_WORKFLOW_ID] || [];
+    // Determine which workflow we are actually editing
+    const certId = updated[selectedCertificate] ? selectedCertificate : (updated[MASTER_WORKFLOW_ID] ? MASTER_WORKFLOW_ID : selectedCertificate);
+    let targetSteps = updated[certId] || workflows[certId] || JSON.parse(JSON.stringify(defaultSteps));
 
     // 🛡️ RE-ORDERING LOGIC - ENSURE SEQUENTIAL FLOW
-    // 1. Review Request Team (Always First)
-    // 2. Custom Approval Steps (Middle)
-    // 3. Releasing Team (Always Last)
-    const staffReview = masterSteps.find(s => s.status === 'staff_review');
-    const oicReview = masterSteps.find(s => s.status === 'oic_review');
-    const middleSteps = masterSteps.filter(s => s.status !== 'staff_review' && s.status !== 'oic_review');
+    const staffReview = targetSteps.find(s => s.status === 'staff_review');
+    const oicReview = targetSteps.find(s => s.status === 'oic_review' || s.name?.toLowerCase().includes('releasing'));
+    const middleSteps = targetSteps.filter(s => s.status !== 'staff_review' && s.status !== 'oic_review' && !s.name?.toLowerCase().includes('releasing'));
 
     const orderedSteps = [];
-    // 🔒 NORMALIZE: staff_review is ALWAYS called "Review Request Team"
-    if (staffReview) orderedSteps.push({ ...staffReview, name: 'Review Request Team', requiresApproval: true });
-    orderedSteps.push(...middleSteps);
-    // 🔒 NORMALIZE: oic_review is ALWAYS called "Releasing Team"
-    if (oicReview) orderedSteps.push({ ...oicReview, name: 'Releasing Team', requiresApproval: true });
+    if (staffReview) {
+      const stepName = certId === MASTER_WORKFLOW_ID ? 'Review Request Team' : (staffReview.name || 'Initial Review');
+      orderedSteps.push({ ...staffReview, name: stepName, requiresApproval: true });
+    }
 
-    masterSteps = orderedSteps;
-    const unifiedWorkflows = { ...workflows, ...updated };
+    orderedSteps.push(...middleSteps);
+
+    if (oicReview) {
+      const stepName = certId === MASTER_WORKFLOW_ID ? 'Releasing Team' : (oicReview.name || 'Final Releasing');
+      orderedSteps.push({ ...oicReview, name: stepName, requiresApproval: true });
+    }
+
+    // Prepare the final state
+    const unifiedWorkflows = { ...workflows, ...updated, [certId]: orderedSteps };
 
     // Sync master steps ALWAYS to unified certificates
-    certificateTypes.filter(c => c.isUnified).forEach(cert => {
-      unifiedWorkflows[cert.id] = JSON.parse(JSON.stringify(updated[MASTER_WORKFLOW_ID] || workflows[MASTER_WORKFLOW_ID]));
-    });
+    if (certId === MASTER_WORKFLOW_ID) {
+      certificateTypes.filter(c => c.isUnified).forEach(cert => {
+        unifiedWorkflows[cert.id] = JSON.parse(JSON.stringify(orderedSteps));
+      });
+    }
 
-    // Ensure currently selected cert is updated in state
-    setWorkflows(prev => ({ ...prev, ...updated, [selectedCertificate]: masterSteps }));
-    localStorage.setItem('certificateWorkflows', JSON.stringify({ ...workflows, ...updated, [selectedCertificate]: masterSteps }));
+    // Update local state and storage
+    setWorkflows(unifiedWorkflows);
+    localStorage.setItem('certificateWorkflows', JSON.stringify(unifiedWorkflows));
 
-    // Also save to API (database) so other users can access
+    // Save to API (database)
     try {
       const token = getAuthToken();
-      // Filter only real certificate types - do NOT save 'master_certificate_flow' to DB
       const validCertTypes = certificateTypes.map(c => c.id);
       const filteredWorkflows = {};
       Object.keys(unifiedWorkflows).forEach(key => {
@@ -192,6 +202,8 @@ export default function WorkflowsPage() {
           filteredWorkflows[key] = unifiedWorkflows[key];
         }
       });
+
+      console.log('[DEBUG] Saving to database:', filteredWorkflows);
 
       const response = await fetch(`${API_URL}/workflows`, {
         method: 'PUT',
@@ -201,15 +213,18 @@ export default function WorkflowsPage() {
         },
         body: JSON.stringify({ workflows: filteredWorkflows })
       });
+
       const data = await response.json();
-      if (data.success) {
-        showNotificationMsg('success', 'Workflow saved to database!');
-      } else {
-        showNotificationMsg('success', 'Workflow saved locally (database save failed)');
+      if (!response.ok || !data.success) {
+        console.error('[EROR] API Save failed:', data);
+        showNotificationMsg('error', data.message || 'Database error: ' + (data.details || 'Check console'));
+        return;
       }
+
+      showNotificationMsg('success', 'Workflow successfully saved to database!');
     } catch (error) {
-      console.error('Error saving to API:', error);
-      showNotificationMsg('success', 'Workflow saved locally');
+      console.error('[ERROR] Network error saving to API:', error);
+      showNotificationMsg('success', 'Workflow saved locally (network error for database sync)');
     }
   };
 
@@ -225,6 +240,19 @@ export default function WorkflowsPage() {
       const masterSteps = workflows[MASTER_WORKFLOW_ID] || [];
       certificateTypes.filter(c => c.isUnified).forEach(cert => {
         unifiedWorkflows[cert.id] = JSON.parse(JSON.stringify(masterSteps));
+      });
+
+      // Ensure standalone workflows (like business_permit) have proper status fields
+      certificateTypes.filter(c => !c.isUnified).forEach(cert => {
+        const steps = unifiedWorkflows[cert.id];
+        if (!steps || steps.length === 0) return;
+        // Find and tag the first approval step as staff_review
+        const firstApproval = steps.find(s => s.requiresApproval === true);
+        if (firstApproval && !firstApproval.status) firstApproval.status = 'staff_review';
+        // Find and tag the last step as oic_review
+        const lastApproval = [...steps].reverse().find(s => s.requiresApproval === true);
+        if (lastApproval && lastApproval !== firstApproval && !lastApproval.status) lastApproval.status = 'oic_review';
+        unifiedWorkflows[cert.id] = steps;
       });
 
       // Save workflows to DB first
@@ -495,7 +523,7 @@ export default function WorkflowsPage() {
       )}
 
       {/* Workflow Tabs */}
-      <div className="flex p-1 bg-gray-100 rounded-xl w-full sm:w-fit">
+      <div className="flex p-1 bg-gray-100 rounded-xl w-full sm:w-fit mb-6">
         <button
           onClick={() => setSelectedCertificate(MASTER_WORKFLOW_ID)}
           className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${selectedCertificate === MASTER_WORKFLOW_ID
@@ -503,7 +531,7 @@ export default function WorkflowsPage() {
             : 'text-gray-500 hover:text-gray-700'
             }`}
         >
-          Unified (Clearance/Indigency/Residency)
+          Unified (Clearance/Death/Etc.)
         </button>
         <button
           onClick={() => setSelectedCertificate('business_permit')}
@@ -523,8 +551,8 @@ export default function WorkflowsPage() {
             <Settings className="w-6 h-6" />
             Unified Certificate Workflow
           </h2>
-          <p className="text-blue-100 mt-2 text-sm">
-            Changes made here are automatically applied to <b>Barangay Clearance</b>, <b>Indigency</b>, and <b>Residency</b>.
+          <p className="text-blue-100 mt-2 text-sm italic">
+            Changes made here are applied to <b>Guardianship</b>, <b>Clearance</b>, <b>Death</b>, and other general certificates.
           </p>
         </div>
       ) : (
@@ -533,8 +561,8 @@ export default function WorkflowsPage() {
             <Briefcase className="w-6 h-6" />
             Business Permit Workflow
           </h2>
-          <p className="text-purple-100 mt-2 text-sm">
-            This configuration is exclusive to <b>Business Permits</b> and will not affect other certificate types.
+          <p className="text-purple-100 mt-2 text-sm italic">
+            This configuration is <b>exclusive</b> to Business Permits and does not affect other certificates.
           </p>
         </div>
       )}
@@ -546,8 +574,8 @@ export default function WorkflowsPage() {
         </h2>
         <p className="text-xs text-gray-400 italic mb-4">
           {selectedCertificate === MASTER_WORKFLOW_ID
-            ? 'These steps define the standard process for all certificates in the system.'
-            : 'Custom approval chain for business registrations.'}
+            ? 'Common approval process for majority of barangay services.'
+            : 'Custom process for business registrations and permits.'}
         </p>
       </div>
 
@@ -783,9 +811,9 @@ export default function WorkflowsPage() {
           }`}>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Shield className="w-5 h-5" />
-            Releasing Team ({selectedCertificate === MASTER_WORKFLOW_ID ? 'Global' : 'Exclusive'})
+            Releasing Team ({selectedCertificate === MASTER_WORKFLOW_ID ? 'Unified' : 'Exclusive'})
           </h2>
-          <p className="text-xs text-blue-100 mt-0.5">Assigned users will handle the final processing for <b>{selectedCertificate === MASTER_WORKFLOW_ID ? 'ALL UNIFIED' : 'BUSINESS PERMIT'}</b> requests.</p>
+          <p className="text-xs text-white/80 mt-0.5">Assigned users will handle the final processing for <b>{selectedCertificate === MASTER_WORKFLOW_ID ? 'ALL UNIFIED' : 'BUSINESS PERMIT'}</b> requests.</p>
         </div>
         <div className="p-6">
           {(() => {

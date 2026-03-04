@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Building, AlertCircle, CheckCircle, Loader2, Info, Send, Clock, Eye, Briefcase, User, MapPin, Store, Search } from 'lucide-react';
+import { X, Building, AlertCircle, CheckCircle, Loader2, Info, Send, Clock, Eye, Briefcase, User, MapPin, Store, Search, Phone } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 
 export default function BusinessPermitModal({ isOpen, onClose }) {
@@ -56,20 +56,37 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
   // Auto-fill date and generate application number on open
   useEffect(() => {
     if (!isOpen) return;
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const dateStr = `${yyyy}-${mm}-${dd}`;
 
-    // Format: yyyy-mmdd001 (001 = starting sequence for the day)
-    const appNo = `${yyyy}-${mm}${dd}001`;
+    const fetchMetadata = async () => {
+      try {
+        const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
-    setFormData(prev => ({
-      ...prev,
-      applicationDate: dateStr,
-      applicationNo: appNo
-    }));
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        // Fetch official sequence from backend
+        const res = await fetch(`${API_URL}/certificates/next-reference/BP`);
+        let appNo = `${yyyy}-${mm}${dd}001`; // Fallback
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) appNo = data.referenceNumber;
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          applicationDate: dateStr,
+          applicationNo: appNo
+        }));
+      } catch (err) {
+        console.error("Failed to fetch next app no:", err);
+      }
+    };
+
+    fetchMetadata();
   }, [isOpen]);
 
   const handleInputChange = (e) => {
@@ -85,7 +102,7 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
 
   const validateForm = () => {
     const required = [
-      'ownerFullName', 'ownerAddress',
+      'ownerFullName', 'ownerAddress', 'residentId',
       'businessName', 'natureOfBusiness', 'businessAddress',
       'contactPerson', 'contactNumber', 'email'
     ];
@@ -95,6 +112,14 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
         newErrors[field] = true;
       }
     });
+
+    if (newErrors.residentId) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please search and select the owner from the Resident Database (Census).'
+      });
+      return false;
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -116,10 +141,9 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
     try {
       const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
-      // Generate reference number
-      const currentYear = new Date().getFullYear();
+      // Re-fetch to ensure no race condition (someone else submitted while user filled form)
       const referenceResponse = await fetch(`${API_URL}/certificates/next-reference/BP`);
-      let refNum = `BP-${currentYear}-00001`;
+      let refNum = formData.applicationNo; // Use already fetched one as backup
 
       if (referenceResponse.ok) {
         const refData = await referenceResponse.json();
@@ -129,17 +153,21 @@ export default function BusinessPermitModal({ isOpen, onClose }) {
       }
 
       setReferenceNumber(refNum);
+      const submissionData = {
+        ...formData,
+        referenceNumber: refNum,
+        applicationNo: refNum, // Sync both for consistency
+        certificateType: 'business_permit'
+      };
+
+      console.log('Submitting Business Permit:', submissionData);
 
       const response = await fetch(`${API_URL}/certificates/business-permit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          referenceNumber: refNum,
-          certificateType: 'Business Permit'
-        }),
+        body: JSON.stringify(submissionData),
       });
 
       const data = await response.json();
