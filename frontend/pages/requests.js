@@ -3753,7 +3753,7 @@ function ActionModal({ request, actionType, comment, setComment, onSubmit, onClo
                   disabled={processing}
                   className="px-6 py-3 rounded-xl border-2 border-gray-100 text-[11px] font-black text-gray-600 uppercase tracking-widest hover:border-gray-300 hover:bg-gray-50 transition-all"
                 >
-                  Skip Signature
+                  Approve w/o Signature
                 </button>
                 <button
                   onClick={() => onSubmit(tempSignature || userSignature)}
@@ -3761,8 +3761,7 @@ function ActionModal({ request, actionType, comment, setComment, onSubmit, onClo
                   className="px-8 py-3 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 hover:shadow-blue-300 transform active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {processing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <PenTool className="w-4 h-4" />}
-                  Sign & {currentStep?.status === 'Treasury' ? 'Generate OR' :
-                    currentStep?.status === 'captain_approval' ? 'Approve' : 'Forward'}
+                  Approve with Signature
                 </button>
               </>
             ) : (
@@ -4196,11 +4195,25 @@ function ClearancePreviewForRequests({ request, currentDate, officials, certific
   const name1 = request.name_1 || additionalDetails.name_1 || additionalDetails.fullName1 || formData.fullName;
   const name2 = request.name_2 || additionalDetails.name_2 || additionalDetails.fullName2 || '';
 
+  // Find the timestamp of the last "return" or "reject" event to reset codes
+  const returnEvents = (history || []).filter(h => h.action === 'return' || h.action === 'reject');
+  const lastReturnTime = returnEvents.length > 0 ? Math.max(...returnEvents.map(h => new Date(h.created_at).getTime())) : 0;
+
   // Determine Issued Date (Final Approval Date or Current Date)
   const captainApproval = history?.find(h =>
     h.action === 'approve' &&
+    new Date(h.created_at).getTime() > lastReturnTime &&
     (h.step_name?.toLowerCase().includes('captain') || h.step_name?.toLowerCase().includes('chairman') || h.officialRole === 'Brgy. Captain' || h.official_role === 'Brgy. Captain')
   );
+
+  // Collect all unique employee codes from previous processors in chronological order, AFTER the most recent return
+  const previousProcessors = (history || [])
+    .filter(h => ['create', 'approve', 'forward', 'physical_inspection'].includes(h.action) && h.users?.employee_code)
+    .filter(h => new Date(h.created_at).getTime() > lastReturnTime)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    .map(h => h.users.employee_code);
+    
+  const uniqueProcessorCodes = [...new Set(previousProcessors)].join(' / ');
 
   const issuedDate = captainApproval?.created_at
     ? new Date(captainApproval.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -4375,7 +4388,12 @@ function ClearancePreviewForRequests({ request, currentDate, officials, certific
                           <p className="font-bold text-[22px] uppercase relative z-10 text-black">
                             {officials.chairman}
                           </p>
-                          <p className="text-[16px] font-bold text-gray-900 uppercase tracking-tight relative z-10">BARANGAY CHAIRMAN</p>
+                          <div className="flex flex-col relative z-10">
+                            <p className="text-[16px] font-bold text-gray-900 uppercase tracking-tight">BARANGAY CHAIRMAN</p>
+                            {uniqueProcessorCodes && (
+                              <p className="text-[10px] font-bold text-gray-500 mt-0.5">{uniqueProcessorCodes}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -4531,8 +4549,11 @@ function ClearancePreviewForRequests({ request, currentDate, officials, certific
                     <p className="font-bold mb-6">C. APPROVAL</p>
                     <div className="flex flex-col mb-4 relative ml-4">
                       {/* Optional e-signature rendering if available and wanted on business permits */}
-                      <p className="font-bold text-[14px]">ALEXANDER C. MANIO</p>
-                      <p className="font-bold text-[13px]">BARANGAY CHAIRMAN</p>
+                      <p className="font-bold text-[14px] uppercase">{officials.chairman}</p>
+                      <p className="font-bold text-[13px] uppercase">BARANGAY CHAIRMAN</p>
+                      {uniqueProcessorCodes && (
+                        <p className="text-[10px] font-bold text-gray-500 mt-0.5">{uniqueProcessorCodes}</p>
+                      )}
                     </div>
                   </div>
                 )
@@ -4717,7 +4738,7 @@ function ClearancePreviewForRequests({ request, currentDate, officials, certific
                     <div
                       className="relative text-left"
                       style={{
-                        marginTop: isSamePerson ? '60px' : ((isGuardianship || isCohabitation || isMedicoLegal) ? '80px' : (request.certificate_type === 'certificate_of_indigency' ? '10px' : '0px'))
+                        marginTop: isSamePerson ? '60px' : ((isGuardianship || isCohabitation || isMedicoLegal) ? '80px' : (request.certificate_type === 'certificate_of_indigency' ? '34px' : '24px'))
                       }}
                     >
                       {isNaturalDeath && <div className="h-6"></div>}
@@ -4746,7 +4767,12 @@ function ClearancePreviewForRequests({ request, currentDate, officials, certific
                           </p>
 
                           <div className="relative flex items-center z-10">
-                            <p className="text-[15px] font-bold shrink-0">BARANGAY CHAIRMAN</p>
+                            <div className="flex flex-col">
+                              <p className="text-[15px] font-bold shrink-0">BARANGAY CHAIRMAN</p>
+                              {uniqueProcessorCodes && (
+                                <p className="text-[10px] font-bold text-gray-500 mt-0.5 shrink-0">{uniqueProcessorCodes}</p>
+                              )}
+                            </div>
 
                             {/* Additional Forwarder Signatures (Backdrop Overlay - does not affect text layout) */}
                             <div className="absolute left-32 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none" style={{ mixBlendMode: 'multiply' }}>
@@ -4755,6 +4781,7 @@ function ClearancePreviewForRequests({ request, currentDate, officials, certific
                                 return history
                                   ?.filter(h => {
                                     if (h.action !== 'approve' || !h.signature_data) return false;
+                                    if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
 
                                     // Skip captain/chairman signatures as they are handled separately above
                                     const isCaptain = h.step_name?.toLowerCase().includes('captain') ||

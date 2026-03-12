@@ -111,33 +111,73 @@ class CertificateGenerationService {
             const config = await this.getBarangayConfig();
             console.log(`[CERT-GEN] Config fetched for ID: ${requestId}`);
 
+            // Fetch approval history to get employee code
+            const { data: history } = await supabase
+                .from('workflow_history')
+                .select('*, users:performed_by (first_name, last_name, employee_code)')
+                .eq('request_id', requestId)
+                .order('created_at', { ascending: false });
+
+            // Find the timestamp of the last "return" or "reject" event to reset codes
+            const returnEvents = (history || []).filter(h => h.action === 'return' || h.action === 'reject');
+            const lastReturnTime = returnEvents.length > 0 ? Math.max(...returnEvents.map(h => new Date(h.created_at).getTime())) : 0;
+
+            // Collect all unique employee codes from previous processors in chronological order, AFTER the most recent return
+            const previousProcessors = (history || [])
+                .filter(h => ['create', 'approve', 'forward', 'physical_inspection'].includes(h.action) && h.users?.employee_code)
+                .filter(h => new Date(h.created_at).getTime() > lastReturnTime)
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                .map(h => h.users.employee_code);
+                
+            const uniqueProcessorCodes = [...new Set(previousProcessors)].join(' / ');
+            
+            // Pass a unified object to maintain compatibility with existing template logic
+            const captainApproval = uniqueProcessorCodes ? { users: { employee_code: uniqueProcessorCodes } } : null;
+
             // Generate certificate content based on type
             let certificateContent;
             switch (request.certificate_type) {
                 case 'barangay_clearance':
-                    certificateContent = await this.generateBarangayClearanceContent(request, config);
+                    certificateContent = await this.generateBarangayClearanceContent(request, config, captainApproval);
                     break;
                 case 'certificate_of_indigency':
-                    certificateContent = this.generateIndigencyContent(request, config);
+                    certificateContent = this.generateIndigencyContent(request, config, captainApproval);
                     break;
                 case 'barangay_residency':
-                    certificateContent = this.generateResidencyContent(request, config);
+                    certificateContent = this.generateResidencyContent(request, config, captainApproval);
                     break;
                 case 'certification_same_person':
-                    certificateContent = this.generateSamePersonContent(request, config);
+                    certificateContent = this.generateSamePersonContent(request, config, captainApproval);
+                    break;
+                case 'barangay_guardianship':
+                    certificateContent = this.generateGuardianshipContent(request, config, captainApproval);
+                    break;
+                case 'barangay_cohabitation':
+                    certificateContent = this.generateCohabitationContent(request, config, captainApproval);
+                    break;
+                case 'natural_death':
+                    certificateContent = this.generateNaturalDeathContent(request, config, captainApproval);
+                    break;
+                case 'certification_medico_legal':
+                    certificateContent = this.generateMedicoLegalContent(request, config, captainApproval);
                     break;
                 case 'business_permit':
                     // Choose template for business permit
                     if (templateType === 'new') {
                         // Explicitly requested new template
-                        certificateContent = await this.generateBusinessClearanceContent(request, config);
+                        certificateContent = await this.generateBusinessClearanceContent(request, config, captainApproval);
                     } else {
                         // Default to the old Business Permit template (satisfies 'revert' request)
-                        certificateContent = await this.generateBusinessPermitContent(request, config);
+                        certificateContent = await this.generateBusinessPermitContent(request, config, captainApproval);
                     }
                     break;
                 default:
-                    throw new Error(`Unknown certificate type: ${request.certificate_type}`);
+                    if (String(request.certificate_type || '').toLowerCase().includes('medico') || 
+                        String(request.reference_number || '').toUpperCase().startsWith('CDL')) {
+                        certificateContent = this.generateMedicoLegalContent(request, config, captainApproval);
+                    } else {
+                        throw new Error(`Unknown certificate type: ${request.certificate_type}`);
+                    }
             }
 
             // Generate unique filename
@@ -282,7 +322,7 @@ class CertificateGenerationService {
       `;
     }
 
-    async generateBarangayClearanceContent(request, config) {
+    async generateBarangayClearanceContent(request, config, captainApproval = null) {
         const { officials, styles } = config;
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const bodyStyle = styles.bodyStyle || {};
@@ -366,8 +406,8 @@ class CertificateGenerationService {
 
                 <div class="signature-section">
                     <div class="sig-block">
-                        <div class="sig-line">
-                            <p style="font-size: 12px; margin: 0;">Resident's Signature / Thumb Mark</p>
+                        <div class="sig-line" style="border-bottom: 1px solid #000; width: 300px; height: 40px; margin: 20px 0 5px 0;">
+                            <p style="font-size: 12px; margin: 0; padding-top: 45px;">Resident's Signature / Thumb Mark</p>
                         </div>
                     </div>
 
@@ -376,6 +416,7 @@ class CertificateGenerationService {
                         <div style="height: 40px;"></div>
                         <p style="font-weight: bold; margin: 0; text-transform: uppercase; font-size: 1.1em;">${officials.chairman}</p>
                         <p style="font-size: 11px; font-weight: bold; margin: 0;">BARANGAY CHAIRMAN</p>
+                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 0; color: #666;">${captainApproval.users.employee_code}</p>` : ''}
                     </div>
                 </div>
             </div>
@@ -384,7 +425,7 @@ class CertificateGenerationService {
         return this.generateDocument('BARANGAY CLEARANCE CERTIFICATE', bodyHtml, request, config);
     }
 
-    generateIndigencyContent(request, config) {
+    generateIndigencyContent(request, config, captainApproval = null) {
         const { officials, styles } = config;
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const bodyStyle = styles.bodyStyle || {};
@@ -418,8 +459,8 @@ class CertificateGenerationService {
 
                 <div class="signature-section">
                     <div class="sig-block">
-                        <div class="sig-line">
-                            <p style="font-size: 12px; margin: 0;">Resident's Signature / Thumb Mark</p>
+                        <div class="sig-line" style="border-bottom: 1px solid #000; width: 300px; height: 40px; margin: 20px 0 5px 0;">
+                            <p style="font-size: 12px; margin: 0; padding-top: 45px;">Resident's Signature / Thumb Mark</p>
                         </div>
                     </div>
 
@@ -428,6 +469,7 @@ class CertificateGenerationService {
                         <div style="height: 40px;"></div>
                         <p style="font-weight: bold; margin: 0; text-transform: uppercase; font-size: 1.1em;">${officials.chairman}</p>
                         <p style="font-size: 11px; font-weight: bold; margin: 0;">BARANGAY CHAIRMAN</p>
+                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 0; color: #666;">${captainApproval.users.employee_code}</p>` : ''}
                     </div>
                 </div>
             </div>
@@ -436,7 +478,7 @@ class CertificateGenerationService {
         return this.generateDocument('CERTIFICATE OF INDIGENCY', bodyHtml, request, config);
     }
 
-    generateResidencyContent(request, config) {
+    generateResidencyContent(request, config, captainApproval = null) {
         const { officials, styles } = config;
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const bodyStyle = styles.bodyStyle || {};
@@ -470,8 +512,8 @@ class CertificateGenerationService {
 
                 <div class="signature-section">
                     <div class="sig-block">
-                        <div class="sig-line">
-                            <p style="font-size: 12px; margin: 0;">Resident's Signature / Thumb Mark</p>
+                        <div class="sig-line" style="border-bottom: 1px solid #000; width: 300px; height: 40px; margin: 20px 0 5px 0;">
+                            <p style="font-size: 12px; margin: 0; padding-top: 45px;">Resident's Signature / Thumb Mark</p>
                         </div>
                     </div>
 
@@ -480,6 +522,7 @@ class CertificateGenerationService {
                         <div style="height: 40px;"></div>
                         <p style="font-weight: bold; margin: 0; text-transform: uppercase; font-size: 1.1em;">${officials.chairman}</p>
                         <p style="font-size: 11px; font-weight: bold; margin: 0;">BARANGAY CHAIRMAN</p>
+                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 0; color: #666;">${captainApproval.users.employee_code}</p>` : ''}
                     </div>
                 </div>
             </div>
@@ -488,7 +531,7 @@ class CertificateGenerationService {
         return this.generateDocument('BARANGAY RESIDENCY CERTIFICATE', bodyHtml, request, config);
     }
 
-    generateSamePersonContent(request, config) {
+    generateSamePersonContent(request, config, captainApproval = null) {
         const { officials, styles } = config;
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const bodyStyle = styles.bodyStyle || {};
@@ -545,8 +588,8 @@ class CertificateGenerationService {
 
                 <div class="signature-section">
                     <div class="sig-block">
-                        <div class="sig-line">
-                            <p style="font-size: 12px; margin: 0;">Resident's Signature / Thumb Mark</p>
+                        <div class="sig-line" style="border-bottom: 1px solid #000; width: 300px; height: 40px; margin: 20px auto 5px auto;">
+                            <p style="font-size: 12px; margin: 0; padding-top: 45px;">Resident's Signature / Thumb Mark</p>
                         </div>
                     </div>
 
@@ -555,6 +598,7 @@ class CertificateGenerationService {
                         <div style="height: 40px;"></div>
                         <p style="font-weight: bold; margin: 0; text-transform: uppercase; font-size: 1.1em;">${officials.chairman}</p>
                         <p style="font-size: 11px; font-weight: bold; margin: 0;">BARANGAY CHAIRMAN</p>
+                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 0; color: #666;">${captainApproval.users.employee_code}</p>` : ''}
                     </div>
                 </div>
             </div>
@@ -636,7 +680,7 @@ class CertificateGenerationService {
                     text-decoration: underline;
                 }
                 .signature-section {
-                    margin-top: 20px;
+                    margin-top: 44px;
                 }
                 .sig-block {
                     text-align: center;
@@ -746,8 +790,7 @@ class CertificateGenerationService {
         </html>
         `;
     }
-
-    async generateBusinessPermitContent(request, config) {
+    async generateBusinessPermitContent(request, config, captainApproval = null) {
         try {
             console.log(`[CERT-GEN] Generating Business Permit Content for: ${request.reference_number}`);
             // Get physical inspection data from the new tables
@@ -991,8 +1034,9 @@ class CertificateGenerationService {
                     <div style="margin-top: 15px; padding-left: 5px;">
                       <p style="font-weight: 800; font-size: 10px; margin-bottom: 20px;">C. APPROVAL</p>
                       <div style="margin-left: 40px;">
-                        <p style="font-weight: 900; font-size: 13px; margin: 0; text-transform: uppercase;">ALEXANDER C. MANIO</p>
+                        <p style="font-weight: 900; font-size: 13px; margin: 0; text-transform: uppercase;">${config.officials.chairman}</p>
                         <p style="font-weight: 800; font-size: 11px; margin: 0;">BARANGAY CHAIRMAN</p>
+                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 0; color: #666;">${captainApproval.users.employee_code}</p>` : ''}
                       </div>
                     </div>
                 </div>
@@ -1151,7 +1195,7 @@ class CertificateGenerationService {
         };
     }
 
-    async generateBusinessClearanceContent(request, config) {
+    async generateBusinessClearanceContent(request, config, captainApproval = null) {
         // Get physical inspection data
         const inspectionData = await this.getPhysicalInspectionData(request.id);
 
@@ -1454,6 +1498,7 @@ class CertificateGenerationService {
                             <div class="truly-yours">TRULY YOURS,</div>
                             <div class="signature-name">${config.officials.chairman}</div>
                             <div class="signature-title">BARANGAY CHAIRMAN</div>
+                            ${captainApproval?.users?.employee_code ? `<div style="font-size: 10px; font-weight: bold; margin-top: 2px; color: #666;">${captainApproval.users.employee_code}</div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -1467,6 +1512,133 @@ class CertificateGenerationService {
         // Simple QR code placeholder - in production, use a proper QR code library
         const encoded = Buffer.from(`VERIFY:${text}`).toString('base64');
         return encoded;
+    }
+
+    generateGuardianshipContent(request, config, captainApproval = null) {
+        const { officials, styles } = config;
+        const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const bodyStyle = styles.bodyStyle || {};
+        const details = typeof request.details === 'string' ? JSON.parse(request.details) : (request.details || {});
+
+        const bodyHtml = `
+            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+                <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
+                <p style="margin: 20px 0;">This is to certify that below person is under the guardianship of <strong>${(details.guardianName || '').toUpperCase()}</strong>, both bona fide residents of this barangay:</p>
+                <div class="details-grid">
+                    <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(request.full_name || '').toUpperCase()}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${(request.address || '').toUpperCase()}</span>
+                    <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
+                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${(request.sex || '').toUpperCase()}</span>
+                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${(request.civil_status || '').toUpperCase()}</span>
+                    <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
+                    <span class="detail-label">Guardian's Relationship</span><span>:</span><span class="detail-value">${(details.guardianRelationship || '').toUpperCase()}</span>
+                </div>
+                <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName}, ${config.headerInfo.municipality}, ${config.headerInfo.province} upon the request of above mentioned persons for any legal purposes it may serve.</p>
+                <div class="signature-section">
+                    <div class="sig-block"><div class="sig-line"></div><p style="font-size: 11px;">Resident's Signature / Thumb Mark</p></div>
+                    <div class="sig-block" style="margin-top: 30px;">
+                        <p style="font-weight: bold; margin: 0;">TRULY YOURS,</p>
+                        <div style="height: 40px;"></div>
+                        <p style="font-weight: bold; margin: 0; text-transform: uppercase;">${officials.chairman}</p>
+                        <p style="font-size: 11px; font-weight: bold; margin: 0;">BARANGAY CHAIRMAN</p>
+                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 0; color: #666;">${captainApproval.users.employee_code}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        return this.generateDocument('BARANGAY CERTIFICATION FOR GUARDIANSHIP', bodyHtml, request, config);
+    }
+
+    generateCohabitationContent(request, config, captainApproval = null) {
+        const { officials, styles } = config;
+        const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const bodyStyle = styles.bodyStyle || {};
+        const details = typeof request.details === 'string' ? JSON.parse(request.details) : (request.details || {});
+
+        const bodyHtml = `
+            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+                <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
+                <p style="margin: 20px 0;">This is to certify that the persons named below are living together as husband and wife without the benefit of marriage for <strong>${details.livingTogetherYears || '0'} year(s) and ${details.livingTogetherMonths || '0'} month(s)</strong>:</p>
+                <div class="details-grid">
+                    <span class="detail-label">Name (1)</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(request.full_name || '').toUpperCase()}</span>
+                    <span class="detail-label">Age/Sex/DOB</span><span>:</span><span class="detail-value">${request.age || '-'} / ${(request.sex || '').toUpperCase()} / ${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString() : '-'}</span>
+                    <span class="detail-label">Name (2)</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(details.partnerFullName || '').toUpperCase()}</span>
+                    <span class="detail-label">Partner Age/Sex/DOB</span><span>:</span><span class="detail-value">${details.partnerAge || '-'} / ${(details.partnerSex || '').toUpperCase()} / ${details.partnerDateOfBirth ? new Date(details.partnerDateOfBirth).toLocaleDateString() : '-'}</span>
+                    <span class="detail-label">No. of Children</span><span>:</span><span class="detail-value">${details.noOfChildren || '0'}</span>
+                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${(request.address || '').toUpperCase()}</span>
+                </div>
+                <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName} for legal purposes.</p>
+                <div class="signature-section">
+                    <div class="sig-block" style="margin-top: 30px;">
+                        <p style="font-weight: bold; margin: 0;">TRULY YOURS,</p>
+                        <div style="height: 40px;"></div>
+                        <p style="font-weight: bold; margin: 0; text-transform: uppercase;">${officials.chairman}</p>
+                        <p style="font-size: 11px; font-weight: bold; margin: 0;">BARANGAY CHAIRMAN</p>
+                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 0; color: #666;">${captainApproval.users.employee_code}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        return this.generateDocument('CERTIFICATE OF COHABITATION', bodyHtml, request, config);
+    }
+
+    generateNaturalDeathContent(request, config, captainApproval = null) {
+        const { officials, styles } = config;
+        const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const bodyStyle = styles.bodyStyle || {};
+        const details = typeof request.details === 'string' ? JSON.parse(request.details) : (request.details || {});
+
+        const bodyHtml = `
+            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+                <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
+                <p style="margin: 20px 0;">This is to certify that <strong>${(request.full_name || '').toUpperCase()}</strong>, a resident of ${request.address || ''}, passed away on <strong>${details.dateOfDeath ? new Date(details.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</strong> due to <strong>${(details.causeOfDeath || 'NATURAL CAUSES').toUpperCase()}</strong>.</p>
+                <p style="margin: 20px 0;">This also certifies that the death was <strong>${details.covidRelated ? 'COVID-19' : 'NON-COVID'}</strong> related.</p>
+                <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> for burial/legal purposes.</p>
+                <div class="signature-section">
+                    <div class="sig-block" style="margin-top: 30px;">
+                        <p style="font-weight: bold; margin: 0;">TRULY YOURS,</p>
+                        <div style="height: 40px;"></div>
+                        <p style="font-weight: bold; margin: 0; text-transform: uppercase;">${officials.chairman}</p>
+                        <p style="font-size: 11px; font-weight: bold; margin: 0;">BARANGAY CHAIRMAN</p>
+                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 0; color: #666;">${captainApproval.users.employee_code}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        return this.generateDocument('CERTIFICATION OF NATURAL DEATH', bodyHtml, request, config);
+    }
+
+    generateMedicoLegalContent(request, config, captainApproval = null) {
+        const { officials, styles } = config;
+        const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const bodyStyle = styles.bodyStyle || {};
+        const details = typeof request.details === 'string' ? JSON.parse(request.details) : (request.details || {});
+
+        const bodyHtml = `
+            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+                <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
+                <p style="margin: 20px 0;">This is a REQUEST FOR MEDICO LEGAL for the following person:</p>
+                <div class="details-grid">
+                    <span class="detail-label">Name</span><span>:</span><span class="detail-value">${(request.full_name || '').toUpperCase()}</span>
+                    <span class="detail-label">Age/Sex</span><span>:</span><span class="detail-value">${request.age || '-'} / ${(request.sex || '').toUpperCase()}</span>
+                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${(request.address || '').toUpperCase()}</span>
+                    <span class="detail-label">Date of Exam</span><span>:</span><span class="detail-value">${details.dateOfExamination || '-'}</span>
+                    <span class="detail-label">Usaping Brgy</span><span>:</span><span class="detail-value">${details.usapingBarangay || '-'}</span>
+                    <span class="detail-label">Date of Hearing</span><span>:</span><span class="detail-value">${details.dateOfHearing || '-'}</span>
+                </div>
+                <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> for medical record purposes.</p>
+                <div class="signature-section">
+                    <div class="sig-block" style="margin-top: 30px;">
+                        <p style="font-weight: bold; margin: 0;">TRULY YOURS,</p>
+                        <div style="height: 40px;"></div>
+                        <p style="font-weight: bold; margin: 0; text-transform: uppercase;">${officials.chairman}</p>
+                        <p style="font-size: 11px; font-weight: bold; margin: 0;">BARANGAY CHAIRMAN</p>
+                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 0; color: #666;">${captainApproval.users.employee_code}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        return this.generateDocument('REQUEST FOR MEDICO LEGAL', bodyHtml, request, config);
     }
 }
 

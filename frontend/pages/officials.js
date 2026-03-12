@@ -135,17 +135,21 @@ const defaultOfficials = {
 
 export default function OfficialsPage() {
   const [officials, setOfficials] = useState(defaultOfficials);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [notification, setNotification] = useState(null);
   const [editingField, setEditingField] = useState(null);
   const [tempValue, setTempValue] = useState('');
-  const [notification, setNotification] = useState(null);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState('officials');
-  const [isSaving, setIsSaving] = useState(false);
-  const leftLogoRef = useRef(null);
-  const rightLogoRef = useRef(null);
-  const captainImageRef = useRef(null);
   const [croppingImg, setCroppingImg] = useState(null);
   const [targetField, setTargetField] = useState(null);
+  const [activeTab, setActiveTab] = useState('officials');
+
+  const tabs = [
+    { id: 'officials', label: 'Officials & Vision', icon: Users },
+    { id: 'branding', label: 'Branding & Header', icon: LayoutIcon },
+    { id: 'appearance', label: 'Appearance & Themes', icon: Award },
+  ];
 
   useEffect(() => {
     // Fetch from API
@@ -660,19 +664,19 @@ export default function OfficialsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Barangay Officials</h1>
-          <p className="text-gray-600 mt-1">Manage the list of current barangay officials</p>
+          <h1 className="text-2xl font-bold text-gray-900">Barangay Configuration</h1>
+          <p className="text-gray-600 mt-1">Manage officials, branding, and certificate appearance</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={resetToDefault} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Reset</button>
+          <button onClick={resetToDefault} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-mediumTransition-all hover:scale-105">Reset Values</button>
           <button
             onClick={saveAllChanges}
             disabled={!hasChanges || isSaving}
-            className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-all ${!hasChanges
+            className={`px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${!hasChanges
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
               : isSaving
                 ? 'bg-blue-600/80 text-white cursor-wait'
-                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 active:scale-95'
               }`}
           >
             {isSaving ? (
@@ -691,109 +695,125 @@ export default function OfficialsPage() {
       </div>
 
       {notification && (
-        <div className={`flex items-center gap-3 p-4 rounded-xl border ${notification.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+        <div className={`flex items-center gap-3 p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 ${notification.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
           {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span className="font-medium">{notification.message}</span>
         </div>
       )}
 
+      {/* Tab Navigation */}
+      <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm w-fit">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${activeTab === tab.id
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {hasChanges && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 animate-pulse">
           <AlertCircle className="w-5 h-5 text-amber-600" />
-          <span className="text-amber-800 font-medium">Unsaved changes. Click "Save All" to apply.</span>
+          <span className="text-amber-800 font-medium">Unsaved changes detected. Remember to click "Save All" before leaving.</span>
         </div>
       )}
 
-      {/* Feature Section (Hero Header) */}
-      <div className="bg-emerald-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
-              <LayoutIcon className="w-6 h-6 text-emerald-300" />
-            </div>
-            <h3 className="text-xl font-black uppercase tracking-widest">Feature Section (Hero Header)</h3>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <div>
-                <label className="text-xs font-bold text-emerald-300 uppercase tracking-widest mb-2 block">Hero Title</label>
-                {editingField === 'hero_title' ? (
-                  <div className="flex gap-2">
-                    <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)}
-                      className="flex-1 bg-white/10 border border-emerald-400/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400" autoFocus />
-                    <button onClick={() => saveField('hero_title')} className="p-3 bg-emerald-500 rounded-xl hover:bg-emerald-400 transition-colors"><Check className="w-5 h-5" /></button>
-                    <button onClick={cancelEditing} className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"><X className="w-5 h-5" /></button>
-                  </div>
-                ) : (
-                  <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3 group">
-                    <span className="text-xl font-bold">{officials.heroSection?.title || 'BARANGAY OFFICIALS'}</span>
-                    <button onClick={() => startEditing('hero_title', officials.heroSection?.title)} className="p-2 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 rounded-lg"><Edit2 className="w-4 h-4" /></button>
-                  </div>
-                )}
+      {/* Tab Content: Officials & Vision */}
+      {activeTab === 'officials' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-emerald-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
+                  <LayoutIcon className="w-6 h-6 text-emerald-300" />
+                </div>
+                <h3 className="text-xl font-black uppercase tracking-widest">Hero Section Header</h3>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-emerald-300 uppercase tracking-widest mb-2 block">Hero Subtitle</label>
-                {editingField === 'hero_subtitle' ? (
-                  <div className="flex gap-2">
-                    <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)}
-                      className="flex-1 bg-white/10 border border-emerald-400/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400" autoFocus />
-                    <button onClick={() => saveField('hero_subtitle')} className="p-3 bg-emerald-500 rounded-xl hover:bg-emerald-400 transition-colors"><Check className="w-5 h-5" /></button>
-                    <button onClick={cancelEditing} className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"><X className="w-5 h-5" /></button>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-xs font-bold text-emerald-300 uppercase tracking-widest mb-2 block">Hero Title</label>
+                    {editingField === 'hero_title' ? (
+                      <div className="flex gap-2">
+                        <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)}
+                          className="flex-1 bg-white/10 border border-emerald-400/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400" autoFocus />
+                        <button onClick={() => saveField({ field: 'hero_title', type: 'name' })} className="p-3 bg-emerald-500 rounded-xl hover:bg-emerald-400 transition-colors"><Check className="w-5 h-5" /></button>
+                        <button onClick={cancelEditing} className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"><X className="w-5 h-5" /></button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3 group">
+                        <span className="text-xl font-bold">{officials.heroSection?.title || 'BARANGAY OFFICIALS'}</span>
+                        <button onClick={() => startEditing('hero_title', officials.heroSection?.title)} className="p-2 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3 group">
-                    <span className="text-emerald-50/70">{officials.heroSection?.subtitle || 'Meet our dedicated team serving Iba O\' Este'}</span>
-                    <button onClick={() => startEditing('hero_subtitle', officials.heroSection?.subtitle)} className="p-2 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 rounded-lg"><Edit2 className="w-4 h-4" /></button>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            <div>
-              <label className="text-xs font-bold text-emerald-300 uppercase tracking-widest mb-2 block">Hero Background Image</label>
-              <div className="relative group aspect-video bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-inner">
-                <img src={officials.heroSection?.image || '/images/barangay-officials.jpg'} alt="Hero Preview" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
-                  <label className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-bold cursor-pointer hover:bg-emerald-400 hover:scale-105 transition-all shadow-xl flex items-center gap-2">
-                    <Camera className="w-5 h-5" /> Change Hero Image
-                    <input type="file" className="hidden" accept="image/*" onChange={handleHeroImageUpload} />
-                  </label>
+                  <div>
+                    <label className="text-xs font-bold text-emerald-300 uppercase tracking-widest mb-2 block">Hero Subtitle</label>
+                    {editingField === 'hero_subtitle' ? (
+                      <div className="flex gap-2">
+                        <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)}
+                          className="flex-1 bg-white/10 border border-emerald-400/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400" autoFocus />
+                        <button onClick={() => saveField({ field: 'hero_subtitle', type: 'name' })} className="p-3 bg-emerald-500 rounded-xl hover:bg-emerald-400 transition-colors"><Check className="w-5 h-5" /></button>
+                        <button onClick={cancelEditing} className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"><X className="w-5 h-5" /></button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3 group">
+                        <span className="text-emerald-50/70">{officials.heroSection?.subtitle || 'Meet our dedicated team serving Iba O\' Este'}</span>
+                        <button onClick={() => startEditing('hero_subtitle', officials.heroSection?.subtitle)} className="p-2 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-emerald-300 uppercase tracking-widest mb-2 block">Hero Sidebar Photo</label>
+                  <div className="relative group aspect-video bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-inner">
+                    <img src={officials.heroSection?.image || '/images/barangay-officials.jpg'} alt="Hero Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
+                      <label className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-bold cursor-pointer hover:bg-emerald-400 hover:scale-105 transition-all shadow-xl flex items-center gap-2">
+                        <Camera className="w-5 h-5" /> Change Hero Image
+                        <input type="file" className="hidden" accept="image/*" onChange={handleHeroImageUpload} />
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <p className="text-[10px] text-emerald-400/60 mt-2 text-center uppercase tracking-widest font-bold font-mono">Recommended: 1920x600 px or similar wide aspect</p>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Officials List */}
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <EditableField label="Punong Barangay" field="chairman" value={officials.chairman} icon={Shield} />
-
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl p-6 border border-blue-100 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <EditableField label="Punong Barangay" field="chairman" value={officials.chairman} icon={Shield} />
+            <div className="bg-white rounded-3xl p-6 border border-blue-50 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
                 <div className="bg-blue-100 p-2 rounded-xl"><Award className="w-5 h-5 text-blue-600" /></div>
-                <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase">Barangay Vision & Mission</h3>
+                <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase">Vision & Mission Statements</h3>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest mb-1 block">Our Vision</label>
                   {editingField?.field === 'vision' ? (
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2">
                       <textarea value={tempValue} onChange={(e) => setTempValue(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-blue-300 rounded-xl text-sm" rows={3} autoFocus />
-                      <button onClick={() => saveField({ field: 'vision', type: 'name' })} className="p-2 bg-green-100 text-green-600 rounded-xl self-end"><Check className="w-4 h-4" /></button>
+                        className="w-full px-3 py-2 border border-blue-300 rounded-xl text-sm" rows={3} autoFocus />
+                      <div className="flex justify-end gap-2">
+                        <button onClick={cancelEditing} className="px-3 py-1 bg-gray-100 rounded-lg text-xs">Cancel</button>
+                        <button onClick={() => saveField({ field: 'vision', type: 'name' })} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs">Save</button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex justify-between items-start group/edit">
-                      <p className="text-sm text-gray-600 leading-relaxed italic pr-8">"{officials.vision}"</p>
-                      <button onClick={() => startEditing('vision', officials.vision)} className="p-1.5 text-gray-400 hover:text-blue-600 opacity-0 group-hover/edit:opacity-100 transition-opacity"><Edit2 className="w-3 h-3" /></button>
+                    <div className="flex justify-between items-start group/edit hover:bg-gray-50 p-2 rounded-xl transition-all cursor-pointer" onClick={() => startEditing('vision', officials.vision)}>
+                      <p className="text-xs text-gray-600 leading-relaxed italic pr-8">"{officials.vision}"</p>
+                      <Edit2 className="w-3 h-3 text-gray-300 opacity-0 group-hover/edit:opacity-100 transition-opacity" />
                     </div>
                   )}
                 </div>
@@ -801,63 +821,194 @@ export default function OfficialsPage() {
                 <div>
                   <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest mb-1 block">Our Mission</label>
                   {editingField?.field === 'mission' ? (
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2">
                       <textarea value={tempValue} onChange={(e) => setTempValue(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-blue-300 rounded-xl text-sm" rows={3} autoFocus />
-                      <button onClick={() => saveField({ field: 'mission', type: 'name' })} className="p-2 bg-green-100 text-green-600 rounded-xl self-end"><Check className="w-4 h-4" /></button>
+                        className="w-full px-3 py-2 border border-blue-300 rounded-xl text-sm" rows={3} autoFocus />
+                      <div className="flex justify-end gap-2">
+                        <button onClick={cancelEditing} className="px-3 py-1 bg-gray-100 rounded-lg text-xs">Cancel</button>
+                        <button onClick={() => saveField({ field: 'mission', type: 'name' })} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs">Save</button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex justify-between items-start group/edit">
-                      <p className="text-sm text-gray-600 leading-relaxed pr-8">{officials.mission}</p>
-                      <button onClick={() => startEditing('mission', officials.mission)} className="p-1.5 text-gray-400 hover:text-blue-600 opacity-0 group-hover/edit:opacity-100 transition-opacity"><Edit2 className="w-3 h-3" /></button>
+                    <div className="flex justify-between items-start group/edit hover:bg-gray-50 p-2 rounded-xl transition-all cursor-pointer" onClick={() => startEditing('mission', officials.mission)}>
+                      <p className="text-xs text-gray-600 leading-relaxed pr-8">{officials.mission}</p>
+                      <Edit2 className="w-3 h-3 text-gray-300 opacity-0 group-hover/edit:opacity-100 transition-opacity" />
                     </div>
                   )}
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-gray-50 rounded-2xl p-6 border">
-          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-blue-600" />Kagawad</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {officials.councilors.map((c, i) => <EditableField key={i} label="Brgy. Kagawad" field={`councilor_${i}`} value={c} icon={UserCog} showCommittee={true} />)}
-          </div>
-        </div>
-
-        <div className="bg-orange-50 rounded-2xl p-6 border border-orange-200">
-          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-orange-600" />SK Council</h3>
-          <div className="space-y-6">
+          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+            <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-tight"><Users className="w-5 h-5 text-blue-600" />Sangguniang Barangay (Kagawad)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <EditableField label="SK Chairman" field="skChairman" value={officials.skChairman} icon={Shield} />
-              <EditableField label="SK Secretary" field="skSecretary" value={officials.skSecretary} icon={UserCog} />
-              <EditableField label="SK Treasurer" field="skTreasurer" value={officials.skTreasurer} icon={Award} />
+              {officials.councilors.map((c, i) => <EditableField key={i} label="Brgy. Kagawad" field={`councilor_${i}`} value={c} icon={UserCog} showCommittee={true} />)}
             </div>
+          </div>
 
-            <div className="border-t border-orange-100 pt-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">SK Kagawad</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {officials.skKagawads.map((c, i) => (
-                  <EditableField key={i} label={`SK Kagawad ${i + 1}`} field={`skKagawad_${i}`} value={c} icon={Users} showCommittee={true} />
-                ))}
+          <div className="bg-orange-50/50 rounded-2xl p-6 border border-orange-100">
+            <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-tight"><Award className="w-5 h-5 text-orange-600" />SK Council (Kabataan)</h3>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <EditableField label="SK Chairman" field="skChairman" value={officials.skChairman} icon={Shield} />
+                <EditableField label="SK Secretary" field="skSecretary" value={officials.skSecretary} icon={UserCog} />
+                <EditableField label="SK Treasurer" field="skTreasurer" value={officials.skTreasurer} icon={Award} />
+              </div>
+
+              <div className="border-t border-orange-200/50 pt-4">
+                <h4 className="text-[10px] font-black text-gray-400 mb-3 uppercase tracking-[0.2em]">Sangguniang Kabataan Kagawad</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {officials.skKagawads.map((c, i) => (
+                    <EditableField key={i} label={`SK Kagawad ${i + 1}`} field={`skKagawad_${i}`} value={c} icon={Users} showCommittee={true} />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-blue-50 rounded-2xl p-6 border border-blue-200">
-          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Building className="w-5 h-5 text-blue-600" />Staff</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <EditableField label="Brgy. Secretary" field="secretary" value={officials.secretary} icon={UserCog} />
-            <EditableField label="Brgy. Treasurer" field="treasurer" value={officials.treasurer} icon={Award} />
-            <EditableField label="Brgy. Administrator" field="administrator" value={officials.administrator} icon={UserCog} />
-            <EditableField label="Asst. Brgy. Secretary" field="assistantSecretary" value={officials.assistantSecretary} icon={UserCog} />
-            <EditableField label="Asst. Brgy. Administrator" field="assistantAdministrator" value={officials.assistantAdministrator} icon={UserCog} />
-            <EditableField label="Brgy. Record Keeper" field="recordKeeper" value={officials.recordKeeper} icon={UserCog} />
-            <EditableField label="Brgy. Clerk" field="clerk" value={officials.clerk} icon={UserCog} />
+          <div className="bg-blue-50/50 rounded-2xl p-6 border border-blue-100">
+            <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-tight"><Building className="w-5 h-5 text-blue-600" />Administrative Staff</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <EditableField label="Brgy. Secretary" field="secretary" value={officials.secretary} icon={UserCog} />
+              <EditableField label="Brgy. Treasurer" field="treasurer" value={officials.treasurer} icon={Award} />
+              <EditableField label="Brgy. Administrator" field="administrator" value={officials.administrator} icon={UserCog} />
+              <EditableField label="Asst. Brgy. Secretary" field="assistantSecretary" value={officials.assistantSecretary} icon={UserCog} />
+              <EditableField label="Asst. Brgy. Administrator" field="assistantAdministrator" value={officials.assistantAdministrator} icon={UserCog} />
+              <EditableField label="Brgy. Record Keeper" field="recordKeeper" value={officials.recordKeeper} icon={UserCog} />
+              <EditableField label="Brgy. Clerk" field="clerk" value={officials.clerk} icon={UserCog} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Tab Content: Branding & Header */}
+      {activeTab === 'branding' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-indigo-100 p-2 rounded-xl">
+                <LayoutIcon className="w-6 h-6 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-widest text-gray-900">Certificate Header Configuration</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Global metadata for official documents</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { label: 'Country / Republic', field: 'country' },
+                { label: 'Province Name', field: 'province' },
+                { label: 'Municipality / City', field: 'municipality' },
+                { label: 'Barangay Name', field: 'barangayName' },
+                { label: 'Primary Office Name', field: 'officeName' },
+              ].map((item) => (
+                <div key={item.field} className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{item.label}</label>
+                  <input
+                    type="text"
+                    value={officials.headerInfo[item.field]}
+                    onChange={(e) => setOfficials({
+                      ...officials,
+                      headerInfo: { ...officials.headerInfo, [item.field]: e.target.value }
+                    })}
+                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-gray-900 font-bold focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {[
+              { id: 'left', label: 'Primary Left Seal', field: 'leftLogo', desc: 'Main Barangay Logo' },
+              { id: 'right', label: 'Secondary Right Seal', field: 'rightLogo', desc: 'Municipal/Provincial Logo' },
+              { id: 'captain', label: 'Signatory Signature Image', field: 'captainImage', desc: 'Used for auto-signing documents' },
+            ].map((logo) => (
+              <div key={logo.id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-lg flex flex-col items-center">
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">{logo.label}</div>
+                <div className="relative group/logo w-40 h-40 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden mb-4">
+                  {officials.logos[logo.field] ? (
+                    <>
+                      <img src={officials.logos[logo.field]} className="max-w-[80%] max-h-[80%] object-contain" alt={logo.label} />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/logo:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm gap-3">
+                        <button onClick={() => removeLogo(logo.id)} className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600"><Trash2 className="w-5 h-5" /></button>
+                      </div>
+                    </>
+                  ) : (
+                    <Image className="w-12 h-12 text-gray-200" />
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 text-center px-4 mb-4">{logo.desc}</p>
+                <label className="w-full">
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(logo.id, e)} />
+                  <div className="w-full py-3 bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-black uppercase text-center cursor-pointer hover:bg-gray-100 tracking-widest">Update Asset</div>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab Content: Appearance & Themes */}
+      {activeTab === 'appearance' && (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-blue-100 p-2 rounded-xl">
+                <Activity className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-widest text-gray-900">Visual Theme Configuration</h3>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <div className="space-y-6">
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b pb-2">Document Header Styles</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <ColorPicker label="Header Background" value={officials.headerStyle.bgColor} onChange={updateStyle} section="headerStyle" field="bgColor" />
+                  <ColorPicker label="Accent Border" value={officials.headerStyle.borderColor} onChange={updateStyle} section="headerStyle" field="borderColor" />
+                </div>
+                <FontSelect label="Global Interface Font" value={officials.headerStyle.fontFamily} onChange={updateStyle} section="headerStyle" field="fontFamily" />
+                
+                <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+                   <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Barangay Name Branding</h5>
+                   <div className="grid grid-cols-2 gap-4">
+                     <ColorPicker label="Brand Color" value={officials.barangayNameStyle.color} onChange={updateStyle} section="barangayNameStyle" field="color" />
+                     <SizeSlider label="Font Size" value={officials.barangayNameStyle.size} onChange={updateStyle} section="barangayNameStyle" field="size" min={16} max={32} />
+                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b pb-2">Sidebar & UI Elements</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <ColorPicker label="Sidebar Start" value={officials.sidebarStyle.bgColor} onChange={updateStyle} section="sidebarStyle" field="bgColor" />
+                  <ColorPicker label="Sidebar End" value={officials.sidebarStyle.gradientEnd} onChange={updateStyle} section="sidebarStyle" field="gradientEnd" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <ColorPicker label="Accent Text" value={officials.sidebarStyle.labelColor} onChange={updateStyle} section="sidebarStyle" field="labelColor" />
+                  <SizeSlider label="Label Scaling" value={officials.sidebarStyle.titleSize} onChange={updateStyle} section="sidebarStyle" field="titleSize" min={10} max={20} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-900 rounded-3xl p-8 flex items-center justify-between overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+            <div className="relative z-10 flex items-center gap-6">
+               <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center p-3">
+                 <img src={officials.logos.leftLogo || "/iba-o-este.png"} className="w-full h-full object-contain" />
+               </div>
+               <div>
+                  <div className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-1">Branding Engine Preview</div>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight" style={{ color: officials.barangayNameStyle.color }}>{officials.headerInfo.barangayName}</h3>
+                  <p className="text-white/50 text-xs font-bold uppercase tracking-widest">{officials.headerInfo.province} • {officials.headerInfo.municipality}</p>
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {croppingImg && (
         <ImageCropperModal
@@ -875,6 +1026,7 @@ export default function OfficialsPage() {
     </div>
   );
 }
+
 
 OfficialsPage.getLayout = (page) => (
   <Layout

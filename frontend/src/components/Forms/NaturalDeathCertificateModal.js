@@ -247,7 +247,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
     };
 
     const validateForm = () => {
-        const required = ['deceasedFullName', 'dateOfDeath', 'placeOfDeath', 'causeOfDeath', 'requesterFullName', 'relationship', 'contactNumber', 'purpose'];
+        const required = ['deceasedFullName', 'dateOfDeath', 'placeOfDeath', 'causeOfDeath', 'requesterFullName', 'relationship', 'contactNumber'];
         const newErrors = {};
         required.forEach(field => { if (!formData[field]) newErrors[field] = true; });
 
@@ -444,9 +444,9 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
                                         </div>
                                     </div>
 
-                                    {/* Section 3: Contact & Purpose */}
+                                    {/* Section 3: Contact Details */}
                                     <div className="pt-4 border-t border-gray-100 space-y-4">
-                                        <SectionHeader num="3" title="Contact & Purpose / Kontak at Layunin" subtitle="Notification details and reason for the certificate" />
+                                        <SectionHeader num="3" title="Contact Details / Detalye ng Contact" subtitle="Notification details / Detalye ng notification" />
 
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                             <div>
@@ -463,43 +463,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose }) {
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 mb-1">
-                                                <label className="text-[10px] font-bold text-[#2d5a3d] uppercase tracking-wide ml-1">Purpose / Layunin ng Pagkuha <span className="text-red-500">*</span></label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    <select
-                                                        onChange={handlePurposeSelect}
-                                                        className="text-[9px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-emerald-400 min-w-[120px]"
-                                                    >
-                                                        <option value="">-- SELECT PURPOSE --</option>
-                                                        {PURPOSE_LIST_1.map((p, i) => <option key={i} value={p}>{p}</option>)}
-                                                    </select>
-                                                    <select
-                                                        onChange={handlePurposeSelect}
-                                                        className="text-[9px] font-bold bg-blue-50 border border-blue-200 text-blue-700 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400 min-w-[120px]"
-                                                    >
-                                                        <option value="">-- OTHER CATEGORY --</option>
-                                                        {PURPOSE_LIST_2.map((p, i) => <option key={i} value={p}>{p}</option>)}
-                                                    </select>
-                                                    <select
-                                                        onChange={handlePurposeSelect}
-                                                        className="text-[9px] font-bold bg-amber-50 border border-amber-200 text-amber-700 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-amber-400 min-w-[120px]"
-                                                    >
-                                                        <option value="">-- MEDICAL/OTHERS --</option>
-                                                        {PURPOSE_LIST_3.map((p, i) => <option key={i} value={p}>{p}</option>)}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <textarea
-                                                name="purpose"
-                                                value={formData.purpose}
-                                                onChange={handleInputChange}
-                                                rows={4}
-                                                placeholder="e.g. For burial permit, insurance claim, legal purposes..."
-                                                className={`w-full px-4 py-3 bg-white border-2 ${errors.purpose ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-lg focus:border-[#2d5a3d] focus:shadow-lg transition-all outline-none uppercase font-bold text-gray-800 shadow-sm min-h-[120px]`}
-                                            />
-                                            <p className="text-[9px] text-gray-400 font-bold mt-1 italic ml-1">You can select from the dropdowns above or type manually / Maaaring pumili sa listahan o mag-type nang manu-mano</p>
-                                        </div>
+
                                     </div>
                                 </form>
                             </div>

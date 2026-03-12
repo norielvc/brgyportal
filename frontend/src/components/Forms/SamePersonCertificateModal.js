@@ -242,7 +242,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
 
   const validateForm = () => {
     setErrors({});
-    const required = ['fullName', 'age', 'gender', 'civilStatus', 'address', 'contactNumber', 'aliasName', 'purpose'];
+    const required = ['fullName', 'age', 'gender', 'civilStatus', 'address', 'contactNumber', 'aliasName'];
     const newErrors = {};
 
     for (const field of required) {
@@ -415,8 +415,8 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                       <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm mb-4">
                         <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">3</div>
                         <div>
-                          <h3 className="text-base font-bold text-white">Contact & Purpose / Contact at Layunin</h3>
-                          <p className="text-[10px] text-white/90 font-medium tracking-wide">Contact details and purpose / Detalye ng contact at layunin</p>
+                          <h3 className="text-base font-bold text-white">Contact Details / Detalye ng Contact</h3>
+                          <p className="text-[10px] text-white/90 font-medium tracking-wide">Provide your contact information / Ibigay ang inyong impormasyon sa pag-contact</p>
                         </div>
                       </div>
 
@@ -429,43 +429,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose }) {
                           <label className="text-[10px] font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
                           <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="username@example.com" className="w-full px-4 py-2.5 bg-white border-2 border-emerald-100 rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-normal text-emerald-900 shadow-sm" />
                         </div>
-                        <div className="space-y-1 md:col-span-2">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 mb-1">
-                            <label className="text-[10px] font-bold text-[#2d5a3d] uppercase tracking-wide ml-1">Request Purpose / Dahilan ng Pagkuha <span className="text-red-500">*</span></label>
-                            <div className="flex flex-wrap gap-2">
-                              <select
-                                onChange={handlePurposeSelect}
-                                className="text-[9px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-emerald-400 min-w-[120px]"
-                              >
-                                <option value="">-- SELECT PURPOSE --</option>
-                                {PURPOSE_LIST_1.map((p, i) => <option key={i} value={p}>{p}</option>)}
-                              </select>
-                              <select
-                                onChange={handlePurposeSelect}
-                                className="text-[9px] font-bold bg-blue-50 border border-blue-200 text-blue-700 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400 min-w-[120px]"
-                              >
-                                <option value="">-- OTHER CATEGORY --</option>
-                                {PURPOSE_LIST_2.map((p, i) => <option key={i} value={p}>{p}</option>)}
-                              </select>
-                              <select
-                                onChange={handlePurposeSelect}
-                                className="text-[9px] font-bold bg-amber-50 border border-amber-200 text-amber-700 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-amber-400 min-w-[120px]"
-                              >
-                                <option value="">-- MEDICAL/OTHERS --</option>
-                                {PURPOSE_LIST_3.map((p, i) => <option key={i} value={p}>{p}</option>)}
-                              </select>
-                            </div>
-                          </div>
-                          <textarea
-                            name="purpose"
-                            value={formData.purpose}
-                            onChange={handleInputChange}
-                            rows={4}
-                            placeholder="e.g. Legal Documentation, Bank Requirements..."
-                            className={`w-full px-4 py-3 bg-white border-2 ${errors.purpose ? 'border-red-500 bg-red-50' : 'border-gray-100'} rounded-lg focus:border-[#2d5a3d] focus:shadow-lg transition-all outline-none uppercase font-bold text-gray-800 shadow-sm min-h-[120px]`}
-                          />
-                          <p className="text-[9px] text-gray-400 font-bold mt-1 italic ml-1">You can select from the dropdowns above or type manually / Maaaring pumili sa listahan o mag-type nang manu-mano</p>
-                        </div>
+
                       </div>
                     </div>
                   </div>

@@ -621,7 +621,7 @@ router.get('/history/:requestId', async (req, res) => {
 
     const { data: historyData, error: historyError } = await supabase
       .from('workflow_history')
-      .select('*, users:performed_by (first_name, last_name, email)')
+      .select('*, users:performed_by (first_name, last_name, email, employee_code)')
       .eq('request_id', requestId)
       .order('created_at', { ascending: false });
 

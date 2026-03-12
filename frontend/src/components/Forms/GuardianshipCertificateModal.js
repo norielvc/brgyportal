@@ -273,7 +273,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
     };
 
     const validateForm = () => {
-        const required = ['fullName', 'guardianName', 'guardianRelationship', 'contactNumber', 'purpose'];
+        const required = ['fullName', 'guardianName', 'guardianRelationship', 'contactNumber'];
         const newErrors = {};
         required.forEach(field => { if (!formData[field]) newErrors[field] = true; });
 
@@ -415,7 +415,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
 
                                             {formData.fullName && (
                                                 <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 mt-2 flex items-center justify-center gap-2 text-emerald-700 shadow-inner">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                                                     <span className="text-[10px] font-bold uppercase tracking-wide italic">Personal Data Protected Under Data Privacy Act</span>
                                                 </div>
                                             )}
@@ -483,55 +483,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose }) {
                                             </div>
                                         </div>
 
-                                        <div className="pt-4 border-t border-gray-100">
-                                            <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm mb-4">
-                                                <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">4</div>
-                                                <div>
-                                                    <h3 className="text-base font-bold text-white">Application Intent / Layunin ng Aplikasyon</h3>
-                                                    <p className="text-[10px] text-white/90 font-medium tracking-wide">Purpose of your request / Dahilan ng inyong pagkuha</p>
-                                                </div>
-                                            </div>
 
-                                            <div className="space-y-4">
-                                                <div className="space-y-1">
-                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 mb-1">
-                                                        <label className="text-[10px] font-bold text-[#2d5a3d] uppercase tracking-wide ml-1">Request Purpose / Dahilan ng Pagkuha <span className="text-red-500">*</span></label>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            <select
-                                                                onChange={handlePurposeSelect}
-                                                                className="text-[9px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-emerald-400 min-w-[120px]"
-                                                            >
-                                                                <option value="">-- SELECT PURPOSE --</option>
-                                                                {PURPOSE_LIST_1.map((p, i) => <option key={i} value={p}>{p}</option>)}
-                                                            </select>
-                                                            <select
-                                                                onChange={handlePurposeSelect}
-                                                                className="text-[9px] font-bold bg-blue-50 border border-blue-200 text-blue-700 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400 min-w-[120px]"
-                                                            >
-                                                                <option value="">-- OTHER CATEGORY --</option>
-                                                                {PURPOSE_LIST_2.map((p, i) => <option key={i} value={p}>{p}</option>)}
-                                                            </select>
-                                                            <select
-                                                                onChange={handlePurposeSelect}
-                                                                className="text-[9px] font-bold bg-amber-50 border border-amber-200 text-amber-700 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-amber-400 min-w-[120px]"
-                                                            >
-                                                                <option value="">-- MEDICAL/OTHERS --</option>
-                                                                {PURPOSE_LIST_3.map((p, i) => <option key={i} value={p}>{p}</option>)}
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <textarea
-                                                        name="purpose"
-                                                        value={formData.purpose}
-                                                        onChange={handleInputChange}
-                                                        rows={4}
-                                                        placeholder="e.g. For school enrollment, legal guardianship requirement..."
-                                                        className={`w-full px-4 py-3 bg-white border-2 ${errors.purpose ? 'border-red-500 bg-red-50 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'border-gray-100'} rounded-lg focus:border-[#2d5a3d] focus:shadow-lg transition-all outline-none uppercase font-bold text-gray-800 shadow-sm min-h-[120px] resize-none`}
-                                                    />
-                                                    <p className="text-[9px] text-gray-400 font-bold mt-1 italic ml-1">You can select from the dropdowns above or type manually / Maaaring pumili sa listahan o mag-type nang manu-mano</p>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
