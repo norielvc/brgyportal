@@ -1592,11 +1592,13 @@ export default function BarangayPortal() {
                   const groupedOfficials = {
                     captain: officials.filter(o => o.position_type === 'captain'),
                     kagawad: officials.filter(o => o.position_type === 'kagawad'),
+                    secretary: officials.filter(o => o.position_type === 'secretary'),
+                    treasurer: officials.filter(o => o.position_type === 'treasurer'),
                     sk_chairman: officials.filter(o => o.position_type === 'sk_chairman'),
                     sk_secretary: officials.filter(o => o.position_type === 'sk_secretary'),
                     sk_treasurer: officials.filter(o => o.position_type === 'sk_treasurer'),
                     sk_kagawad: officials.filter(o => o.position_type === 'sk_kagawad'),
-                    staff: officials.filter(o => ['secretary', 'treasurer', 'staff'].includes(o.position_type))
+                    staff: officials.filter(o => !['captain', 'kagawad', 'secretary', 'treasurer', 'sk_chairman', 'sk_secretary', 'sk_treasurer', 'sk_kagawad'].includes(o.position_type))
                   };
 
                   const sections = [
@@ -1611,8 +1613,8 @@ export default function BarangayPortal() {
                     {
                       key: 'kagawad',
                       title: 'Barangay Kagawad',
-                      subtitle: 'Council Members',
-                      officials: groupedOfficials.kagawad,
+                      subtitle: 'Council Members, Secretary, and Treasurer',
+                      officials: [...groupedOfficials.kagawad, ...groupedOfficials.secretary, ...groupedOfficials.treasurer],
                       bgColor: 'from-green-600 to-emerald-700',
                       icon: '🏛️'
                     },
