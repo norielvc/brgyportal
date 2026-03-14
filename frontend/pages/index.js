@@ -247,71 +247,9 @@ export default function BarangayPortal() {
   const [officials, setOfficials] = useState([]);
   const [visibilitySettings, setVisibilitySettings] = useState(null);
 
-  // Default achievements (fallback)
-  const defaultAchievements = [
-    {
-      id: 1,
-      title: 'Best in Public Safety',
-      category: 'Community Safety',
-      description: 'Recognized for the lowest crime rate in the municipality and unparalleled rapid response of the Barangay Tanods and safety patrols.',
-      year: '2025',
-      image: 'https://images.unsplash.com/photo-1533481405265-e9ce0c044abb?auto=format&fit=crop&q=80&w=800',
-      colorClass: 'bg-red-500',
-      textColor: 'red-400'
-    },
-    {
-      id: 2,
-      title: 'Excellence in Healthcare',
-      category: 'Health Service',
-      description: 'Awarded for the continuous deployment of mobile clinics, free check-ups, and maternal care support for marginalized sectors.',
-      year: '2024',
-      image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=800',
-      colorClass: 'bg-pink-500',
-      textColor: 'pink-400'
-    },
-    {
-      id: 3,
-      title: 'Champion in Youth Development',
-      category: 'Youth Council',
-      description: 'Honored for establishing local sports tournaments, skill-building workshops, and broad educational assistance distribution.',
-      year: '2025',
-      image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800',
-      colorClass: 'bg-purple-500',
-      textColor: 'purple-400'
-    }
-  ];
+  const [achievements, setAchievements] = useState([]);
 
-  const [achievements, setAchievements] = useState(defaultAchievements);
-
-  // Default programs (fallback)
-  const defaultPrograms = [
-    {
-      category: "HEALTH & WELLNESS",
-      title: "Free Medical Mission 2026",
-      description: "Comprehensive health check-ups, free medicines, and basic dental services for all registered residents of our barangay.",
-      image: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      category: "LIVELIHOOD",
-      title: "Pangkabuhayang Iba O' Este",
-      description: "Empowering residents with practical skills in culinary arts, tailoring, and automotive mechanics.",
-      image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      category: "INFRASTRUCTURE",
-      title: "Brgy. Green Building Initiative",
-      description: "Launching sustainable practices and installing solar-powered streetlights across major puroks.",
-      image: "https://images.unsplash.com/photo-1503694978374-8a2fa686963a?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      category: "EDUCATION",
-      title: "Scholarship Grants Awarding",
-      description: "Distributing financial assistance to deserving local youth to support their higher education journeys.",
-      image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=800"
-    }
-  ];
-
-  const [programs, setPrograms] = useState(defaultPrograms);
+  const [programs, setPrograms] = useState([]);
   const [heroSettings, setHeroSettings] = useState({
     title: 'BARANGAY OFFICIALS',
     subtitle: 'Meet our dedicated team serving Iba O\' Este',
