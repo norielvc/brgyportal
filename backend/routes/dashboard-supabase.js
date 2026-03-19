@@ -11,10 +11,12 @@ const router = express.Router();
  */
 router.get('/stats', requireAdmin, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     // Get all users
     const { data: allUsers, error: usersError } = await supabase
       .from('users')
-      .select('*');
+      .select('*')
+      .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
 
     if (usersError) {
       return res.status(400).json({
@@ -177,11 +179,13 @@ router.get('/stats', requireAdmin, async (req, res) => {
  */
 router.get('/analytics', requireAdmin, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { period = '30d' } = req.query;
     
     const { data: allUsers, error: usersError } = await supabase
       .from('users')
-      .select('*');
+      .select('*')
+      .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
 
     if (usersError) {
       return res.status(400).json({
@@ -272,9 +276,11 @@ router.get('/analytics', requireAdmin, async (req, res) => {
  */
 router.get('/certificate-analytics', authenticateToken, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { data: requests, error } = await supabase
       .from('certificate_requests')
-      .select('id, certificate_type, status, created_at, updated_at, applicant_name, reference_number, current_step');
+      .select('id, certificate_type, status, created_at, updated_at, applicant_name, reference_number, current_step')
+      .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
 
     if (error) {
       return res.status(400).json({ success: false, message: 'Failed to fetch certificate requests' });

@@ -19,11 +19,12 @@ if (!fs.existsSync(dataDir)) {
 const defaultWorkflows = workflowService.defaultWorkflows;
 
 // Helper to get workflows from DB
-const getWorkflowsFromDB = async () => {
+const getWorkflowsFromDB = async (tenantId) => {
   try {
     const { data, error } = await supabase
       .from('workflow_configurations')
-      .select('*');
+      .select('*')
+      .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
 
     if (error) throw error;
 
@@ -54,8 +55,9 @@ const getWorkflowsFromDB = async () => {
  */
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const workflows = await getWorkflowsFromDB();
-    console.log('Workflows loaded from DB:', Object.keys(workflows));
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
+    const workflows = await getWorkflowsFromDB(tenantId);
+    console.log(`Workflows loaded from DB for tenant ${tenantId}:`, Object.keys(workflows));
 
     res.status(200).json({
       success: true,
@@ -77,6 +79,7 @@ router.get('/', authenticateToken, async (req, res) => {
  */
 router.put('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { workflows } = req.body;
 
     if (!workflows || typeof workflows !== 'object') {
@@ -109,10 +112,11 @@ router.put('/', authenticateToken, requireAdmin, async (req, res) => {
         .from('workflow_configurations')
         .upsert([{
           certificate_type: certType,
+          tenant_id: tenantId, // MULTI-TENANT KEY
           workflow_config: { steps: steps },
           is_active: true,
           updated_at: new Date().toISOString()
-        }], { onConflict: 'certificate_type' });
+        }], { onConflict: 'certificate_type,tenant_id' });
 
       if (error) {
         console.error(`Error saving workflow for ${certType}:`, error);
@@ -145,15 +149,17 @@ router.put('/', authenticateToken, requireAdmin, async (req, res) => {
  */
 router.post('/sync-assignments', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    console.log('=== SYNCING WORKFLOW ASSIGNMENTS WITH UI CONFIGURATION ===');
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
+    console.log(`=== SYNCING WORKFLOW ASSIGNMENTS FOR TENANT ${tenantId} ===`);
 
     // Load current workflows from DB
-    const workflows = await getWorkflowsFromDB();
+    const workflows = await getWorkflowsFromDB(tenantId);
 
     // Get all users to find the correct IDs
     const { data: users, error: usersError } = await supabase
       .from('users')
       .select('*')
+      .eq('tenant_id', tenantId)
       .order('first_name');
 
     if (usersError) {
@@ -201,7 +207,8 @@ router.post('/sync-assignments', authenticateToken, requireAdmin, async (req, re
         .from('workflow_assignments')
         .delete()
         .eq('request_type', certType)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .eq('tenant_id', tenantId);
 
       if (deleteError) {
         console.error(`Error clearing assignments for ${certType}:`, deleteError);
@@ -219,6 +226,7 @@ router.post('/sync-assignments', authenticateToken, requireAdmin, async (req, re
           certificate_type
         `)
         .eq('certificate_type', certType)
+        .eq('tenant_id', tenantId)
         .in('status', ['pending', 'submitted', 'staff_review', 'processing', 'secretary_approval', 'captain_approval', 'oic_review', 'ready', 'ready_for_pickup']);
 
       if (requestsError) {
@@ -261,6 +269,7 @@ router.post('/sync-assignments', authenticateToken, requireAdmin, async (req, re
               .from('workflow_assignments')
               .insert([{
                 request_id: request.id,
+                tenant_id: tenantId,
                 request_type: certType,
                 step_id: currentStep.id.toString(),
                 step_name: currentStep.name,
@@ -288,9 +297,10 @@ router.post('/sync-assignments', authenticateToken, requireAdmin, async (req, re
           .from('workflow_configurations')
           .upsert([{
             certificate_type: certType,
+            tenant_id: tenantId,
             workflow_config: { steps: workflowSteps },
             is_active: true
-          }], { onConflict: 'certificate_type' });
+          }], { onConflict: 'certificate_type,tenant_id' });
 
         if (configError) {
           console.error(`Error updating ${certType} workflow config:`, configError);

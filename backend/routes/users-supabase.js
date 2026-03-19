@@ -13,9 +13,10 @@ const router = express.Router();
  */
 router.get('/', requireAdmin, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { search = '', role, status } = req.query;
 
-    let query = supabase.from('users').select('*');
+    let query = supabase.from('users').select('*').eq('tenant_id', tenantId); // MULTI-TENANT FILTER
 
     // Apply filters
     if (role) {
@@ -82,10 +83,12 @@ router.get('/', requireAdmin, async (req, res) => {
  */
 router.get('/:id', requireAdmin, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', req.params.id)
+      .eq('tenant_id', tenantId)
       .single();
 
     if (error || !user) {
@@ -131,6 +134,7 @@ router.get('/:id', requireAdmin, async (req, res) => {
  */
 router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { firstName, lastName, email, password, role = 'user', status = 'active', position = '', employeeCode = '' } = req.body;
 
     // Check if user already exists
@@ -138,6 +142,7 @@ router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
       .from('users')
       .select('id')
       .eq('email', email)
+      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .single();
 
     if (existingUser) {
@@ -154,6 +159,7 @@ router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
     const { data: newUser, error } = await supabase
       .from('users')
       .insert([{
+        tenant_id: tenantId, // MULTI-TENANT ASSIGNMENT
         email,
         first_name: firstName,
         last_name: lastName,
@@ -211,6 +217,7 @@ router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
  */
 router.put('/:id/reset-password', requireAdmin, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const userId = req.params.id;
     const { newPassword } = req.body;
 
@@ -227,6 +234,7 @@ router.put('/:id/reset-password', requireAdmin, async (req, res) => {
       .from('users')
       .select('id, email, first_name, last_name')
       .eq('id', userId)
+      .eq('tenant_id', tenantId)
       .single();
 
     if (fetchError || !user) {
@@ -246,7 +254,8 @@ router.put('/:id/reset-password', requireAdmin, async (req, res) => {
         password_hash: hashedPassword,
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId);
+      .eq('id', userId)
+      .eq('tenant_id', tenantId);
 
     if (updateError) {
       return res.status(400).json({
@@ -275,6 +284,7 @@ router.put('/:id/reset-password', requireAdmin, async (req, res) => {
  */
 router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { firstName, lastName, email, password, role, status, position, employeeCode } = req.body;
     const userId = req.params.id;
 
@@ -283,6 +293,7 @@ router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
       .from('users')
       .select('*')
       .eq('id', userId)
+      .eq('tenant_id', tenantId)
       .single();
 
     if (fetchError || !user) {
@@ -298,6 +309,7 @@ router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
         .from('users')
         .select('id')
         .eq('email', email)
+        .eq('tenant_id', tenantId)
         .single();
 
       if (existingUser) {
@@ -325,6 +337,7 @@ router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
       .from('users')
       .update(updateData)
       .eq('id', userId)
+      .eq('tenant_id', tenantId)
       .select()
       .single();
 
@@ -372,6 +385,7 @@ router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
  */
 router.delete('/:id', requireAdmin, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const userId = req.params.id;
 
     // Prevent admin from deleting themselves
@@ -387,6 +401,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
       .from('users')
       .select('id')
       .eq('id', userId)
+      .eq('tenant_id', tenantId)
       .single();
 
     if (fetchError || !user) {
@@ -400,7 +415,8 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     const { error: deleteError } = await supabase
       .from('users')
       .delete()
-      .eq('id', userId);
+      .eq('id', userId)
+      .eq('tenant_id', tenantId);
 
     if (deleteError) {
       return res.status(400).json({

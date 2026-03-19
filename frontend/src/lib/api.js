@@ -11,13 +11,19 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and tenant ID
 api.interceptors.request.use(
   (config) => {
+    // 1. Send the Auth Token
     const token = Cookies.get('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // 2. Send the Tenant ID for Multi-Tenant Architecture
+    // It reads this from the Vercel environment variable, defaulting to ibaoeste
+    config.headers['x-tenant-id'] = process.env.NEXT_PUBLIC_TENANT_ID || 'ibaoeste';
+    
     return config;
   },
   (error) => {

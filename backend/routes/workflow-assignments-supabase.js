@@ -18,12 +18,14 @@ router.get('/active-assignment/:requestId', authenticateToken, async (req, res) 
       return res.status(400).json({ success: false, message: 'Invalid Request ID' });
     }
 
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     // 1. First, check for existing pending assignments
     let { data: assignments, error } = await supabase
       .from('workflow_assignments')
       .select('*')
       .eq('request_id', requestId)
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .eq('tenant_id', tenantId);
 
     if (error) throw error;
 
@@ -36,6 +38,7 @@ router.get('/active-assignment/:requestId', authenticateToken, async (req, res) 
         .select('*')
         .eq('request_id', requestId)
         .eq('status', 'completed')
+        .eq('tenant_id', tenantId)
         .order('completed_at', { ascending: false })
         .limit(1);
 
@@ -57,6 +60,7 @@ router.get('/active-assignment/:requestId', authenticateToken, async (req, res) 
         .from('certificate_requests')
         .select('*')
         .eq('id', requestId)
+        .eq('tenant_id', tenantId)
         .single();
 
       if (request) {
@@ -64,6 +68,7 @@ router.get('/active-assignment/:requestId', authenticateToken, async (req, res) 
         const { data: newAssignment, error: insertError } = await supabase
           .from('workflow_assignments')
           .insert([{
+            tenant_id: tenantId,
             request_id: requestId,
             request_type: request.certificate_type || 'business_permit',
             step_id: '111', // Default Review Request step ID
@@ -103,12 +108,14 @@ router.get('/active-assignment/:requestId', authenticateToken, async (req, res) 
           .from('certificate_requests')
           .select('*')
           .eq('id', requestId)
+          .eq('tenant_id', tenantId)
           .single();
 
         if (request) {
           const { data: newAssignment, error: insertError } = await supabase
             .from('workflow_assignments')
             .insert([{
+              tenant_id: tenantId,
               request_id: requestId,
               request_type: request.certificate_type || 'business_permit',
               step_id: '111',
@@ -148,6 +155,7 @@ const handleSupabaseError = (res, error, context) => {
 // Get workflow assignments for a specific user
 router.get('/user/:userId', authenticateToken, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { userId } = req.params;
     const { status } = req.query;
 
@@ -186,7 +194,8 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
           details
         )
       `)
-      .eq('assigned_user_id', userId);
+      .eq('assigned_user_id', userId)
+      .eq('tenant_id', tenantId);
 
     if (status) {
       query = query.eq('status', status);
@@ -209,6 +218,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
 // Get all requests assigned to a user (for "My Assignments" view)
 router.get('/my-assignments', authenticateToken, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const userId = req.user._id;
     const { status = 'pending' } = req.query;
 
@@ -219,6 +229,7 @@ router.get('/my-assignments', authenticateToken, async (req, res) => {
         certificate_requests (*)
       `)
       .eq('assigned_user_id', userId)
+      .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false });
 
     console.log(`[MY-ASSIGNMENTS] Querying for UserID: ${userId}. Found ${rawAssignments?.length || 0} total assignments in DB.`);
@@ -290,6 +301,7 @@ router.get('/my-assignments', authenticateToken, async (req, res) => {
 // Update workflow assignment status (approve, reject, etc.)
 router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { assignmentId } = req.params;
     const { action, comment, signatureData } = req.body;
     const userId = req.user._id;
@@ -301,6 +313,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
         certificate_requests:request_id (*)
       `)
       .eq('id', assignmentId)
+      .eq('tenant_id', tenantId)
       .single();
 
     if (fetchError) throw fetchError;
@@ -317,6 +330,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
       .from('workflow_configurations')
       .select('workflow_config')
       .eq('certificate_type', assignment.request_type)
+      .eq('tenant_id', tenantId)
       .single();
 
     let steps = workflowService.getWorkflowSteps(assignment.request_type, workflowConfig?.workflow_config?.steps);
@@ -399,7 +413,8 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
     const { error: updateError } = await supabase
       .from('workflow_assignments')
       .update({ status: newStatus, completed_at: new Date().toISOString() })
-      .eq('id', assignmentId);
+      .eq('id', assignmentId)
+      .eq('tenant_id', tenantId);
 
     if (updateError) throw updateError;
 
@@ -414,6 +429,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
         })
         .eq('request_id', assignment.request_id)
         .eq('status', 'pending')
+        .eq('tenant_id', tenantId)
         .neq('id', assignmentId); // Don't update the current assignment again
 
       if (otherAssignmentsError) {
@@ -425,7 +441,8 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
     const { error: requestUpdateError } = await supabase
       .from('certificate_requests')
       .update({ status: newRequestStatus, updated_at: new Date().toISOString() })
-      .eq('id', assignment.request_id);
+      .eq('id', assignment.request_id)
+      .eq('tenant_id', tenantId);
 
     if (requestUpdateError) throw requestUpdateError;
 
@@ -434,10 +451,11 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
       for (const nextUserId of nextStepAssignments) {
         const { data: existing } = await supabase
           .from('workflow_assignments')
-          .select('id').eq('request_id', assignment.request_id).eq('step_id', nextStep.id.toString()).eq('assigned_user_id', nextUserId).eq('status', 'pending').single();
+          .select('id').eq('request_id', assignment.request_id).eq('step_id', nextStep.id.toString()).eq('assigned_user_id', nextUserId).eq('status', 'pending').eq('tenant_id', tenantId).single();
 
         if (!existing) {
           await supabase.from('workflow_assignments').insert([{
+            tenant_id: tenantId,
             request_id: assignment.request_id,
             request_type: assignment.request_type,
             step_id: nextStep.id.toString(),
@@ -453,6 +471,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
     console.log(`[HISTORY] Saving history entry for request ${assignment.request_id}, action: ${action}, comment: "${comment}"`);
 
     const { error: historyError } = await supabase.from('workflow_history').insert([{
+      tenant_id: tenantId,
       request_id: assignment.request_id,
       request_type: historyRequestType,
       step_id: assignment.step_id,
@@ -590,6 +609,7 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
 // Add an internal note to a request
 router.post('/add-note', authenticateToken, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { requestId, requestType, comment, stepId, stepName } = req.body;
     const userId = req.user._id;
 
@@ -597,6 +617,7 @@ router.post('/add-note', authenticateToken, async (req, res) => {
 
     const historyRequestType = requestType === 'barangay_guardianship' ? 'note' : requestType;
     await supabase.from('workflow_history').insert([{
+      tenant_id: tenantId,
       request_id: requestId,
       request_type: historyRequestType,
       step_id: stepId || 'note',

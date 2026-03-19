@@ -109,10 +109,12 @@ const mapOfficialsToConfig = (officials) => {
 // GET Configuration (Officials + Settings)
 router.get('/config', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     // 1. Fetch Officials
     const { data: officials, error: officialsError } = await supabase
       .from('barangay_officials')
       .select('*')
+      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .eq('is_active', true)
       .order('order_index', { ascending: true });
 
@@ -123,6 +125,7 @@ router.get('/config', async (req, res) => {
       .from('barangay_settings')
       .select('value')
       .eq('key', 'certificate_settings')
+      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .single();
 
     // Ignore settings error (might not exist yet), use defaults if so
@@ -147,6 +150,7 @@ router.get('/config', async (req, res) => {
 // PUT Configuration (Update Officials + Settings)
 router.put('/config', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const config = req.body;
 
     // 1. Update Officials
@@ -161,7 +165,7 @@ router.put('/config', async (req, res) => {
       if (description !== null && description !== undefined) payload.description = description;
       if (committee !== null && committee !== undefined) payload.committee = committee;
 
-      let query = supabase.from('barangay_officials').update(payload).eq('position_type', type);
+      let query = supabase.from('barangay_officials').update(payload).eq('position_type', type).eq('tenant_id', tenantId);
 
       if (positionPattern) {
         query = query.eq('position', positionPattern);
@@ -194,6 +198,7 @@ router.put('/config', async (req, res) => {
           supabase.from('barangay_officials')
             .update({ name: name || '', image_url: imageUrl, description, committee, updated_at: new Date() })
             .eq('position_type', 'sk_kagawad')
+            .eq('tenant_id', tenantId)
             .eq('position', `SK Kagawad ${i + 1}`)
         );
       });
@@ -210,17 +215,18 @@ router.put('/config', async (req, res) => {
           supabase.from('barangay_officials')
             .update({ name, image_url: imageUrl, description, committee, updated_at: new Date() })
             .eq('position_type', 'kagawad')
+            .eq('tenant_id', tenantId)
             .eq('position', `Kagawad ${i + 1}`)
         );
       });
     }
 
     // Staff
-    updates.push(supabase.from('barangay_officials').update({ name: config.administrator, image_url: imgs.administrator, description: descs.administrator }).eq('position', 'Administrator'));
-    updates.push(supabase.from('barangay_officials').update({ name: config.assistantSecretary, image_url: imgs.assistantSecretary, description: descs.assistantSecretary }).eq('position', 'Assistant Secretary'));
-    updates.push(supabase.from('barangay_officials').update({ name: config.assistantAdministrator, image_url: imgs.assistantAdministrator, description: descs.assistantAdministrator }).eq('position', 'Assistant Administrator'));
-    updates.push(supabase.from('barangay_officials').update({ name: config.recordKeeper, image_url: imgs.recordKeeper, description: descs.recordKeeper }).eq('position', 'Barangay Keeper'));
-    updates.push(supabase.from('barangay_officials').update({ name: config.clerk, image_url: imgs.clerk, description: descs.clerk }).eq('position', 'Clerk'));
+    updates.push(supabase.from('barangay_officials').update({ name: config.administrator, image_url: imgs.administrator, description: descs.administrator }).eq('position', 'Administrator').eq('tenant_id', tenantId));
+    updates.push(supabase.from('barangay_officials').update({ name: config.assistantSecretary, image_url: imgs.assistantSecretary, description: descs.assistantSecretary }).eq('position', 'Assistant Secretary').eq('tenant_id', tenantId));
+    updates.push(supabase.from('barangay_officials').update({ name: config.assistantAdministrator, image_url: imgs.assistantAdministrator, description: descs.assistantAdministrator }).eq('position', 'Assistant Administrator').eq('tenant_id', tenantId));
+    updates.push(supabase.from('barangay_officials').update({ name: config.recordKeeper, image_url: imgs.recordKeeper, description: descs.recordKeeper }).eq('position', 'Barangay Keeper').eq('tenant_id', tenantId));
+    updates.push(supabase.from('barangay_officials').update({ name: config.clerk, image_url: imgs.clerk, description: descs.clerk }).eq('position', 'Clerk').eq('tenant_id', tenantId));
 
 
     await Promise.all(updates);
@@ -247,9 +253,10 @@ router.put('/config', async (req, res) => {
       .from('barangay_settings')
       .upsert({
         key: 'certificate_settings',
+        tenant_id: tenantId,
         value: settingsValue,
         updated_at: new Date()
-      });
+      }, { onConflict: 'key,tenant_id' });
 
     if (settingsError) throw settingsError;
 
@@ -264,11 +271,13 @@ router.put('/config', async (req, res) => {
 // Get all barangay officials (Original Endpoint)
 router.get('/', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     console.log('Fetching barangay officials...');
 
     const { data: officials, error } = await supabase
       .from('barangay_officials')
       .select('*')
+      .eq('tenant_id', tenantId)
       .eq('is_active', true)
       .order('order_index', { ascending: true });
 
@@ -332,12 +341,14 @@ router.get('/', async (req, res) => {
 // Get officials by position type
 router.get('/by-type/:type', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { type } = req.params;
     console.log(`Fetching officials by type: ${type}`);
 
     const { data: officials, error } = await supabase
       .from('barangay_officials')
       .select('*')
+      .eq('tenant_id', tenantId)
       .eq('position_type', type)
       .eq('is_active', true)
       .order('order_index', { ascending: true });
@@ -370,6 +381,7 @@ router.get('/by-type/:type', async (req, res) => {
 // Get single official by ID
 router.get('/:id', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { id } = req.params;
     console.log(`Fetching official with ID: ${id}`);
 
@@ -377,6 +389,7 @@ router.get('/:id', async (req, res) => {
       .from('barangay_officials')
       .select('*')
       .eq('id', id)
+      .eq('tenant_id', tenantId)
       .eq('is_active', true)
       .single();
 

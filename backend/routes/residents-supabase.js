@@ -16,6 +16,7 @@ const sanitizeResidentData = (data) => {
 // Search residents by name with pagination
 router.get('/search', async (req, res) => {
     try {
+        const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
         const { name = '', page = 1, limit = 15 } = req.query;
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
@@ -25,6 +26,7 @@ router.get('/search', async (req, res) => {
         let query = supabase
             .from('residents')
             .select('*', { count: 'exact' })
+            .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
             .ilike('full_name', `%${name}%`)
             .order('last_name', { ascending: true })
             .range(offset, offset + limitNum - 1);
@@ -49,14 +51,18 @@ router.get('/search', async (req, res) => {
 // Bulk insert residents (for data import)
 router.post('/bulk-insert', async (req, res) => {
     try {
+        const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
         const { residents } = req.body;
 
         if (!residents || !Array.isArray(residents)) {
             return res.status(400).json({ success: false, message: 'Invalid residents data' });
         }
 
-        // Sanitize each resident record
-        const sanitizedResidents = residents.map(r => sanitizeResidentData(r));
+        // Sanitize each resident record and attach tenant_id
+        const sanitizedResidents = residents.map(r => ({
+            ...sanitizeResidentData(r),
+            tenant_id: tenantId // MULTI-TENANT ASSIGNMENT
+        }));
 
         // Insert data into Supabase
         const { data, error } = await supabase
@@ -81,11 +87,15 @@ router.post('/bulk-insert', async (req, res) => {
 // Create new resident
 router.post('/', async (req, res) => {
     try {
+        const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
         const residentData = sanitizeResidentData(req.body);
         
         // Remove generated or system columns
         delete residentData.full_name;
         delete residentData.id;
+        
+        // Assign to current tenant
+        residentData.tenant_id = tenantId; // MULTI-TENANT ASSIGNMENT
 
         const { data, error } = await supabase
             .from('residents')
@@ -104,6 +114,7 @@ router.post('/', async (req, res) => {
 // Update resident
 router.put('/:id', async (req, res) => {
     try {
+        const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
         const { id } = req.params;
         const updates = sanitizeResidentData(req.body);
 
@@ -112,11 +123,14 @@ router.put('/:id', async (req, res) => {
         delete updates.id;
         delete updates.created_at;
         delete updates.updated_at;
+        delete updates.tenant_id; // Do not allow manual updates of tenant_id
 
         const { data, error } = await supabase
             .from('residents')
             .update(updates)
             .eq('id', id)
+            .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
+
             .select()
             .single();
 
@@ -131,11 +145,13 @@ router.put('/:id', async (req, res) => {
 // Delete resident
 router.delete('/:id', async (req, res) => {
     try {
+        const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
         const { id } = req.params;
         const { error } = await supabase
             .from('residents')
             .delete()
-            .eq('id', id);
+            .eq('id', id)
+            .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
 
         if (error) throw error;
         res.json({ success: true, message: 'Resident deleted successfully' });

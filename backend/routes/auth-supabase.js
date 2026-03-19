@@ -14,14 +14,16 @@ const router = express.Router();
  */
 router.post('/login', validateLogin, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { email, password } = req.body;
-    console.log('Login attempt for:', email);
+    console.log(`Login attempt for: ${email} on tenant: ${tenantId}`);
 
-    // Get user from Supabase
+    // Get user from Supabase with tenant filter
     const { data: users, error: fetchError } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
+      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .single();
 
     console.log('Supabase query result:', { users: users ? 'found' : 'not found', error: fetchError });
@@ -62,7 +64,8 @@ router.post('/login', validateLogin, async (req, res) => {
         last_login: new Date().toISOString(),
         login_count: users.login_count + 1
       })
-      .eq('id', users.id);
+      .eq('id', users.id)
+      .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
 
     // Generate token
     const token = generateToken(users.id);
@@ -128,10 +131,12 @@ router.post('/logout', authenticateToken, async (req, res) => {
  */
 router.get('/me', authenticateToken, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', req.user._id)
+      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .single();
 
     if (error || !user) {
@@ -177,16 +182,18 @@ router.get('/me', authenticateToken, async (req, res) => {
  */
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { firstName, lastName, email } = req.body;
     const userId = req.user._id;
 
-    // Check if email is already taken
+    // Check if email is already taken within this tenant
     if (email) {
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
         .eq('email', email)
         .neq('id', userId)
+        .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
         .single();
 
       if (existingUser) {
@@ -208,6 +215,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
       .from('users')
       .update(updateData)
       .eq('id', userId)
+      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .select()
       .single();
 

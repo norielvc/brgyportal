@@ -29,9 +29,7 @@ const notifyNextStepApprovers = async (certificateType, referenceNumber, applica
 
     // 2. Notify staff approvers
     const { data: workflowConfig } = await supabase
-      .from('workflow_configurations')
-      .select('workflow_config')
-      .eq('certificate_type', certificateType)
+      .from('workflow_configurations').select('workflow_config').eq('certificate_type', certificateType).eq('tenant_id', tenantId)
       .single();
 
     let approverIds = [];
@@ -97,10 +95,12 @@ router.get('/next-reference/:type', async (req, res) => {
     const year = new Date().getFullYear();
 
     // Get ALL records of this type for this year, ordered by reference_number descending
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { data: records, error } = await supabase
       .from('certificate_requests')
       .select('reference_number')
       .eq('certificate_type', type)
+      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .order('reference_number', { ascending: false });
 
     if (error) {
@@ -188,8 +188,9 @@ router.get('/next-reference/:type', async (req, res) => {
 // Get all certificate requests (with optional filters)
 router.get('/', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { type, status } = req.query;
-    console.log('Fetching certificates with filters:', { type, status });
+    console.log(`Fetching certificates for tenant: ${tenantId} with filters:`, { type, status });
 
     let query = supabase
       .from('certificate_requests')
@@ -198,7 +199,8 @@ router.get('/', async (req, res) => {
         residents:resident_id (
           *
         )
-      `);
+      `)
+      .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
 
     // Only apply valid filters
     if (type && type !== 'all') query = query.eq('certificate_type', type);
@@ -221,6 +223,7 @@ router.get('/', async (req, res) => {
 // Get single certificate request
 router.get('/:id', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { data, error } = await supabase
       .from('certificate_requests')
       .select(`
@@ -230,6 +233,7 @@ router.get('/:id', async (req, res) => {
         )
       `)
       .eq('id', req.params.id)
+      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .single();
 
     if (error) throw error;
@@ -245,6 +249,7 @@ router.get('/:id', async (req, res) => {
 // Get certificate by reference number
 router.get('/reference/:refNumber', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { refNumber } = req.params;
     const { data, error } = await supabase
       .from('certificate_requests')
@@ -255,6 +260,7 @@ router.get('/reference/:refNumber', async (req, res) => {
         )
       `)
       .eq('reference_number', refNumber.toUpperCase())
+      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .single();
 
     if (error) {
@@ -274,6 +280,7 @@ router.get('/reference/:refNumber', async (req, res) => {
 // Create new certificate request (Barangay Clearance)
 router.post('/clearance', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const {
       fullName, first_name, middle_name, last_name, suffix,
       age, sex, civilStatus, address, contactNumber,
@@ -312,7 +319,7 @@ router.post('/clearance', async (req, res) => {
 
     const { data, error } = await supabase
       .from('certificate_requests')
-      .insert([{
+      .insert([{ tenant_id: tenantId, 
         reference_number: refNumber,
         certificate_type: 'barangay_clearance',
         full_name: fullName?.toUpperCase() || '',
@@ -343,9 +350,7 @@ router.post('/clearance', async (req, res) => {
     // Create initial workflow assignments based on configuration
     // Fetch workflow config for this type
     const { data: workflowConfig } = await supabase
-      .from('workflow_configurations')
-      .select('workflow_config')
-      .eq('certificate_type', 'barangay_clearance')
+      .from('workflow_configurations').select('workflow_config').eq('certificate_type', 'barangay_clearance').eq('tenant_id', tenantId)
       .single();
 
     let staffUserIds = [];
@@ -385,7 +390,7 @@ router.post('/clearance', async (req, res) => {
     for (const staffUserId of staffUserIds) {
       const { error: assignmentError } = await supabase
         .from('workflow_assignments')
-        .insert([{
+        .insert([{ tenant_id: tenantId, 
           request_id: data.id,
           request_type: 'barangay_clearance',
           step_id: initialStepId,
@@ -400,7 +405,7 @@ router.post('/clearance', async (req, res) => {
     }
 
     // Create initial history entry
-    await supabase.from('workflow_history').insert([{
+    await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
       request_id: data.id,
       request_type: 'barangay_clearance',
       step_id: 0,
@@ -429,6 +434,7 @@ router.post('/clearance', async (req, res) => {
 // Create new certificate request (Certificate of Indigency)
 router.post('/indigency', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     console.log('--- INDIGENCY REQUEST START ---');
     console.log('Body:', JSON.stringify(req.body, null, 2));
     const {
@@ -469,7 +475,7 @@ router.post('/indigency', async (req, res) => {
 
     const { data, error } = await supabase
       .from('certificate_requests')
-      .insert([{
+      .insert([{ tenant_id: tenantId, 
         reference_number: refNumber,
         certificate_type: 'certificate_of_indigency',
         full_name: fullName?.toUpperCase() || '',
@@ -500,9 +506,7 @@ router.post('/indigency', async (req, res) => {
     // Create initial workflow assignments based on configuration
     // Fetch workflow config for this type
     const { data: workflowConfig } = await supabase
-      .from('workflow_configurations')
-      .select('workflow_config')
-      .eq('certificate_type', 'certificate_of_indigency')
+      .from('workflow_configurations').select('workflow_config').eq('certificate_type', 'certificate_of_indigency').eq('tenant_id', tenantId)
       .single();
 
     let staffUserIds = [];
@@ -540,7 +544,7 @@ router.post('/indigency', async (req, res) => {
     for (const staffUserId of staffUserIds) {
       const { error: assignmentError } = await supabase
         .from('workflow_assignments')
-        .insert([{
+        .insert([{ tenant_id: tenantId, 
           request_id: data.id,
           request_type: 'certificate_of_indigency',
           step_id: initialStepId,
@@ -556,7 +560,7 @@ router.post('/indigency', async (req, res) => {
 
     // Send email notifications to next step approvers
     // Create initial history entry
-    await supabase.from('workflow_history').insert([{
+    await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
       request_id: data.id,
       request_type: 'certificate_of_indigency',
       step_id: 0,
@@ -584,6 +588,7 @@ router.post('/indigency', async (req, res) => {
 // Create new certificate request (Barangay Residency)
 router.post('/residency', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const {
       fullName, first_name, middle_name, last_name, suffix,
       age, sex, civilStatus, address, contactNumber,
@@ -622,7 +627,7 @@ router.post('/residency', async (req, res) => {
 
     const { data, error } = await supabase
       .from('certificate_requests')
-      .insert([{
+      .insert([{ tenant_id: tenantId, 
         reference_number: refNumber,
         certificate_type: 'barangay_residency',
         full_name: fullName?.toUpperCase() || '',
@@ -653,9 +658,7 @@ router.post('/residency', async (req, res) => {
     // Create initial workflow assignments based on configuration
     // Fetch workflow config for this type
     const { data: workflowConfig } = await supabase
-      .from('workflow_configurations')
-      .select('workflow_config')
-      .eq('certificate_type', 'barangay_residency')
+      .from('workflow_configurations').select('workflow_config').eq('certificate_type', 'barangay_residency').eq('tenant_id', tenantId)
       .single();
 
     let staffUserIds = [];
@@ -680,7 +683,7 @@ router.post('/residency', async (req, res) => {
     for (const staffUserId of staffUserIds) {
       const { error: assignmentError } = await supabase
         .from('workflow_assignments')
-        .insert([{
+        .insert([{ tenant_id: tenantId, 
           request_id: data.id,
           request_type: 'barangay_residency',
           step_id: initialStepId,
@@ -696,7 +699,7 @@ router.post('/residency', async (req, res) => {
 
     // Send email notifications to next step approvers
     // Create initial history entry
-    await supabase.from('workflow_history').insert([{
+    await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
       request_id: data.id,
       request_type: 'barangay_residency',
       step_id: 0,
@@ -724,6 +727,7 @@ router.post('/residency', async (req, res) => {
 // Create new certificate request (Natural Death Certificate)
 router.post('/natural-death', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const {
       fullName, age, sex, civilStatus, address, contactNumber,
       dateOfDeath, causeOfDeath, covidRelated, requestorName, residentId
@@ -761,7 +765,7 @@ router.post('/natural-death', async (req, res) => {
 
     const { data, error } = await supabase
       .from('certificate_requests')
-      .insert([{
+      .insert([{ tenant_id: tenantId, 
         reference_number: refNumber,
         certificate_type: 'natural_death',
         full_name: fullName?.toUpperCase() || '',
@@ -787,9 +791,7 @@ router.post('/natural-death', async (req, res) => {
 
     // Create initial workflow assignments based on configuration
     const { data: workflowConfig } = await supabase
-      .from('workflow_configurations')
-      .select('workflow_config')
-      .eq('certificate_type', 'natural_death')
+      .from('workflow_configurations').select('workflow_config').eq('certificate_type', 'natural_death').eq('tenant_id', tenantId)
       .single();
 
     let staffUserIds = [];
@@ -811,7 +813,7 @@ router.post('/natural-death', async (req, res) => {
     for (const staffUserId of staffUserIds) {
       await supabase
         .from('workflow_assignments')
-        .insert([{
+        .insert([{ tenant_id: tenantId, 
           request_id: data.id,
           request_type: 'natural_death',
           step_id: initialStepId,
@@ -822,7 +824,7 @@ router.post('/natural-death', async (req, res) => {
     }
 
     // Create initial history entry
-    await supabase.from('workflow_history').insert([{
+    await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
       request_id: data.id,
       request_type: 'natural_death',
       step_id: 0,
@@ -850,6 +852,7 @@ router.post('/natural-death', async (req, res) => {
 // Create new certificate request (Medico Legal Request)
 router.post('/medico-legal', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const {
       fullName, age, sex, civilStatus, address, contactNumber, dateOfBirth,
       dateOfExamination, usapingBarangay, dateOfHearing, residentId
@@ -887,7 +890,7 @@ router.post('/medico-legal', async (req, res) => {
 
     const { data, error } = await supabase
       .from('certificate_requests')
-      .insert([{
+      .insert([{ tenant_id: tenantId, 
         reference_number: refNumber,
         certificate_type: 'medico_legal',
         full_name: fullName?.toUpperCase() || '',
@@ -913,9 +916,7 @@ router.post('/medico-legal', async (req, res) => {
 
     // Create initial workflow assignments
     const { data: workflowConfig } = await supabase
-      .from('workflow_configurations')
-      .select('workflow_config')
-      .eq('certificate_type', 'medico_legal')
+      .from('workflow_configurations').select('workflow_config').eq('certificate_type', 'medico_legal').eq('tenant_id', tenantId)
       .single();
 
     let staffUserIds = [];
@@ -940,7 +941,7 @@ router.post('/medico-legal', async (req, res) => {
     for (const staffUserId of staffUserIds) {
       await supabase
         .from('workflow_assignments')
-        .insert([{
+        .insert([{ tenant_id: tenantId, 
           request_id: data.id,
           request_type: 'medico_legal',
           step_id: initialStepId,
@@ -951,7 +952,7 @@ router.post('/medico-legal', async (req, res) => {
     }
 
     // Workflow history
-    await supabase.from('workflow_history').insert([{
+    await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
       request_id: data.id,
       request_type: 'medico_legal',
       action: 'submitted',
@@ -978,6 +979,7 @@ router.post('/medico-legal', async (req, res) => {
 // Create new certificate request (Guardianship Certificate)
 router.post('/guardianship', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const {
       fullName, age, sex, civilStatus, address, contactNumber,
       dateOfBirth, guardianName, guardianRelationship, purpose, residentId, guardianId
@@ -1015,7 +1017,7 @@ router.post('/guardianship', async (req, res) => {
 
     const { data, error } = await supabase
       .from('certificate_requests')
-      .insert([{
+      .insert([{ tenant_id: tenantId, 
         reference_number: refNumber,
         certificate_type: 'barangay_guardianship',
         full_name: fullName?.toUpperCase() || '',
@@ -1043,9 +1045,7 @@ router.post('/guardianship', async (req, res) => {
 
     // Create initial workflow assignments based on configuration
     const { data: workflowConfig } = await supabase
-      .from('workflow_configurations')
-      .select('workflow_config')
-      .eq('certificate_type', 'barangay_guardianship')
+      .from('workflow_configurations').select('workflow_config').eq('certificate_type', 'barangay_guardianship').eq('tenant_id', tenantId)
       .single();
 
     let staffUserIds = [];
@@ -1068,7 +1068,7 @@ router.post('/guardianship', async (req, res) => {
     for (const staffUserId of staffUserIds) {
       await supabase
         .from('workflow_assignments')
-        .insert([{
+        .insert([{ tenant_id: tenantId, 
           request_id: data.id,
           request_type: 'barangay_guardianship',
           step_id: initialStepId,
@@ -1079,7 +1079,7 @@ router.post('/guardianship', async (req, res) => {
     }
 
     // Create initial history entry
-    await supabase.from('workflow_history').insert([{
+    await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
       request_id: data.id,
       request_type: 'barangay_guardianship',
       step_id: 0,
@@ -1107,6 +1107,7 @@ router.post('/guardianship', async (req, res) => {
 // Create new certificate request (Co-habitation Certificate)
 router.post('/cohabitation', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const {
       fullName, age, gender, dateOfBirth, residentId,
       partnerFullName, partnerAge, partnerGender, partnerDateOfBirth, partnerResidentId,
@@ -1146,7 +1147,7 @@ router.post('/cohabitation', async (req, res) => {
 
     const { data, error } = await supabase
       .from('certificate_requests')
-      .insert([{
+      .insert([{ tenant_id: tenantId, 
         reference_number: refNumber,
         certificate_type: 'barangay_cohabitation',
         full_name: fullName?.toUpperCase() || '',
@@ -1179,9 +1180,7 @@ router.post('/cohabitation', async (req, res) => {
 
     // Create initial workflow assignments based on configuration
     const { data: workflowConfig } = await supabase
-      .from('workflow_configurations')
-      .select('workflow_config')
-      .eq('certificate_type', 'barangay_cohabitation')
+      .from('workflow_configurations').select('workflow_config').eq('certificate_type', 'barangay_cohabitation').eq('tenant_id', tenantId)
       .single();
 
     let staffUserIds = [];
@@ -1204,7 +1203,7 @@ router.post('/cohabitation', async (req, res) => {
     for (const staffUserId of staffUserIds) {
       await supabase
         .from('workflow_assignments')
-        .insert([{
+        .insert([{ tenant_id: tenantId, 
           request_id: data.id,
           request_type: 'barangay_cohabitation',
           step_id: initialStepId,
@@ -1215,7 +1214,7 @@ router.post('/cohabitation', async (req, res) => {
     }
 
     // Create initial history entry
-    await supabase.from('workflow_history').insert([{
+    await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
       request_id: data.id,
       request_type: 'barangay_cohabitation',
       step_id: 0,
@@ -1243,6 +1242,7 @@ router.post('/cohabitation', async (req, res) => {
 // Create new certificate request (Business Permit / Clearance)
 router.post('/business-permit', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const {
       ownerFullName, ownerAddress, residentId, businessName, natureOfBusiness,
       businessAddress, contactPerson, contactNumber, referenceNumber, applicationDate,
@@ -1296,9 +1296,7 @@ router.post('/business-permit', async (req, res) => {
 
     // Create initial workflow assignments
     const { data: workflowConfig } = await supabase
-      .from('workflow_configurations')
-      .select('workflow_config')
-      .eq('certificate_type', 'business_permit')
+      .from('workflow_configurations').select('workflow_config').eq('certificate_type', 'business_permit').eq('tenant_id', tenantId)
       .single();
 
     let staffUserIds = [];
@@ -1322,7 +1320,7 @@ router.post('/business-permit', async (req, res) => {
     for (const staffUserId of staffUserIds) {
       await supabase
         .from('workflow_assignments')
-        .insert([{
+        .insert([{ tenant_id: tenantId, 
           request_id: data.id,
           request_type: 'business_permit',
           step_id: initialStepId,
@@ -1333,7 +1331,7 @@ router.post('/business-permit', async (req, res) => {
     }
 
     // Workflow history
-    await supabase.from('workflow_history').insert([{
+    await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
       request_id: data.id,
       request_type: 'business_permit',
       action: 'submitted',
@@ -1361,6 +1359,7 @@ router.post('/business-permit', async (req, res) => {
 // Update certificate status (for admin)
 router.put('/:id/status', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { status, comment, action } = req.body;
     console.log(`Updating status for request ${req.params.id}:`, { status, action, comment });
 
@@ -1404,7 +1403,7 @@ router.put('/:id/status', async (req, res) => {
         .from('certificate_requests')
         .update(updateData)
         .eq('id', req.params.id)
-        .select()
+        .eq('tenant_id', tenantId).select()
         .single();
 
       if (error) throw error;
@@ -1469,7 +1468,7 @@ router.put('/:id/status', async (req, res) => {
           .from('certificate_requests')
           .update(basicUpdateData)
           .eq('id', req.params.id)
-          .select()
+          .eq('tenant_id', tenantId).select()
           .single();
 
         if (error) throw error;
@@ -1537,6 +1536,7 @@ router.put('/:id/status', async (req, res) => {
 // Update certificate details
 router.put('/:id', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { id } = req.params;
     const updateData = { ...req.body };
 
@@ -1578,7 +1578,7 @@ router.put('/:id', async (req, res) => {
       .from('certificate_requests')
       .update(updateData)
       .eq('id', id)
-      .select(`
+      .eq('tenant_id', tenantId).select(`
         *,
         residents:resident_id (
           id,
@@ -1606,10 +1606,11 @@ router.put('/:id', async (req, res) => {
 // Delete certificate request
 router.delete('/:id', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { error } = await supabase
       .from('certificate_requests')
       .delete()
-      .eq('id', req.params.id);
+      .eq('id', req.params.id).eq('tenant_id', tenantId);
 
     if (error) throw error;
 
@@ -1623,6 +1624,7 @@ router.delete('/:id', async (req, res) => {
 // Sync certificate request data to resident profile
 router.post('/:id/sync-resident', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { id } = req.params;
     const { adminId } = req.body;
 
@@ -1696,7 +1698,7 @@ router.post('/:id/sync-resident', async (req, res) => {
     if (updateError) throw updateError;
 
     // Record this action in the history
-    await supabase.from('workflow_history').insert([{
+    await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
       request_id: id,
       request_type: cert.certificate_type,
       step_id: 999,
@@ -1748,6 +1750,7 @@ router.get('/stats/summary', async (req, res) => {
 // Generic create endpoint for new certificate types
 router.post('/create', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { certificate_type } = req.body;
 
     if (certificate_type === 'certification_same_person') {
@@ -1789,7 +1792,7 @@ router.post('/create', async (req, res) => {
 
       const { data, error } = await supabase
         .from('certificate_requests')
-        .insert([{
+        .insert([{ tenant_id: tenantId, 
           reference_number: refNumber,
           certificate_type: 'certification_same_person',
           full_name: full_name?.toUpperCase() || '',
@@ -1815,9 +1818,7 @@ router.post('/create', async (req, res) => {
 
       // Create workflow assignments based on configuration
       const { data: workflowConfig } = await supabase
-        .from('workflow_configurations')
-        .select('workflow_config')
-        .eq('certificate_type', 'certification_same_person')
+        .from('workflow_configurations').select('workflow_config').eq('certificate_type', 'certification_same_person').eq('tenant_id', tenantId)
         .single();
 
       let staffUserIds = [];
@@ -1841,7 +1842,7 @@ router.post('/create', async (req, res) => {
       for (const staffUserId of staffUserIds) {
         await supabase
           .from('workflow_assignments')
-          .insert([{
+          .insert([{ tenant_id: tenantId, 
             request_id: data.id,
             request_type: 'certification_same_person',
             step_id: initialStepId,
@@ -1852,7 +1853,7 @@ router.post('/create', async (req, res) => {
       }
 
       // Create initial history entry
-      await supabase.from('workflow_history').insert([{
+      await supabase.from('workflow_history').insert([{ tenant_id: tenantId, 
         request_id: data.id,
         request_type: 'note', // Use 'note' for certification_same_person compatibility
         step_id: 0,
