@@ -32,7 +32,7 @@ const tenantRoutes = require('./routes/tenants-supabase');
 const errorHandler = require('./middleware/errorHandler');
 const { authenticateToken } = require('./middleware/auth-supabase');
 
-// Deployment Sync: 2026-03-02 13:32 - fix programs + achievements bulk/update routes
+// Deployment Sync: 2026-03-19 19:39 - fix inline supabase createClient crash in routes
 
 const app = express();
 const PORT = process.env.PORT || 5000;

@@ -1,16 +1,11 @@
 const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
+const { supabase } = require('../services/supabaseClient');
 const { authenticateToken } = require('../middleware/auth-supabase');
 const officialReceiptService = require('../services/officialReceiptService');
 const path = require('path');
 const fs = require('fs');
 
 const router = express.Router();
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 // Generate Official Receipt and mark request as paid
 router.post('/generate/:requestId', authenticateToken, async (req, res) => {
