@@ -20,9 +20,21 @@ export default function Login() {
     setError('');
 
     try {
+      // Get tenant ID dynamically
+      let tenantId = process.env.NEXT_PUBLIC_TENANT_ID;
+      if (typeof window !== 'undefined' && !tenantId) {
+        if (window.location.hostname.includes('demo')) {
+          tenantId = 'demo';
+        }
+      }
+      tenantId = tenantId || 'ibaoeste';
+
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-tenant-id': tenantId
+        },
         body: JSON.stringify({ email, password }),
       });
 
