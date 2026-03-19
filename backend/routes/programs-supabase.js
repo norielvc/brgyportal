@@ -11,9 +11,11 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
     try {
+        const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
         const { data: programs, error } = await supabase
             .from('programs')
             .select('*')
+            .eq('tenant_id', tenantId)
             .order('order_index', { ascending: true });
 
         if (error) {
@@ -53,10 +55,12 @@ router.post('/', authenticateToken, async (req, res) => {
     try {
         const { title, category, description, image } = req.body;
 
+        const tenantId = req.user.tenant_id;
         // Get max order_index
         const { data: maxOrder } = await supabase
             .from('programs')
             .select('order_index')
+            .eq('tenant_id', tenantId)
             .order('order_index', { ascending: false })
             .limit(1)
             .single();
@@ -70,7 +74,8 @@ router.post('/', authenticateToken, async (req, res) => {
                 category,
                 description,
                 image: image || 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800',
-                order_index: newOrderIndex
+                order_index: newOrderIndex,
+                tenant_id: tenantId
             })
             .select()
             .single();
@@ -105,9 +110,10 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/bulk/update', authenticateToken, async (req, res) => {
     try {
         const { programs } = req.body;
+        const tenantId = req.user.tenant_id;
 
-        // Delete all existing programs and re-insert (full sync)
-        await supabase.from('programs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        // Delete all existing programs for this tenant and re-insert (full sync)
+        await supabase.from('programs').delete().eq('tenant_id', tenantId);
 
         if (programs && programs.length > 0) {
             const programsToInsert = programs.map((prog, index) => ({
@@ -115,7 +121,8 @@ router.put('/bulk/update', authenticateToken, async (req, res) => {
                 category: prog.category,
                 description: prog.description,
                 image: prog.image || 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800',
-                order_index: index
+                order_index: index,
+                tenant_id: tenantId
             }));
 
             const { error } = await supabase.from('programs').insert(programsToInsert);
@@ -160,10 +167,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
         if (order_index !== undefined) updateData.order_index = order_index;
         updateData.updated_at = new Date().toISOString();
 
+        const tenantId = req.user.tenant_id;
         const { data: program, error } = await supabase
             .from('programs')
             .update(updateData)
             .eq('id', id)
+            .eq('tenant_id', tenantId)
             .select()
             .single();
 
@@ -197,11 +206,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
+        const tenantId = req.user.tenant_id;
 
         const { error } = await supabase
             .from('programs')
             .delete()
-            .eq('id', id);
+            .eq('id', id)
+            .eq('tenant_id', tenantId);
 
         if (error) {
             console.error('Error deleting program:', error);

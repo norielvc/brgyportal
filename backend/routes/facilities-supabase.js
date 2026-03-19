@@ -11,9 +11,11 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { data: facilities, error } = await supabase
       .from('facilities')
       .select('*')
+      .eq('tenant_id', tenantId)
       .order('order_index', { ascending: true });
 
     if (error) {
@@ -46,10 +48,12 @@ router.post('/', authenticateToken, async (req, res) => {
   try {
     const { name, description, icon, color, images, features } = req.body;
 
+    const tenantId = req.user.tenant_id;
     // Get max order_index
     const { data: maxOrder } = await supabase
       .from('facilities')
       .select('order_index')
+      .eq('tenant_id', tenantId)
       .order('order_index', { ascending: false })
       .limit(1)
       .single();
@@ -65,7 +69,8 @@ router.post('/', authenticateToken, async (req, res) => {
         color: color || 'bg-blue-500',
         images: images || ['/background.jpg'],
         features: features || [],
-        order_index: newOrderIndex
+        order_index: newOrderIndex,
+        tenant_id: tenantId
       })
       .select()
       .single();
@@ -112,10 +117,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
     if (order_index !== undefined) updateData.order_index = order_index;
     updateData.updated_at = new Date().toISOString();
 
+    const tenantId = req.user.tenant_id;
     const { data: facility, error } = await supabase
       .from('facilities')
       .update(updateData)
       .eq('id', id)
+      .eq('tenant_id', tenantId)
       .select()
       .single();
 
@@ -149,9 +156,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.put('/bulk/update', authenticateToken, async (req, res) => {
   try {
     const { facilities } = req.body;
-
-    // Delete all existing facilities and insert new ones
-    await supabase.from('facilities').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    const tenantId = req.user.tenant_id;
+    // Delete all existing facilities for this tenant and insert new ones
+    await supabase.from('facilities').delete().eq('tenant_id', tenantId);
 
     if (facilities && facilities.length > 0) {
       const facilitiesToInsert = facilities.map((facility, index) => ({
@@ -161,7 +168,8 @@ router.put('/bulk/update', authenticateToken, async (req, res) => {
         color: facility.color || 'bg-blue-500',
         images: facility.images || ['/background.jpg'],
         features: facility.features || [],
-        order_index: index
+        order_index: index,
+        tenant_id: tenantId
       }));
 
       const { error } = await supabase.from('facilities').insert(facilitiesToInsert);
@@ -196,11 +204,12 @@ router.put('/bulk/update', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-
+    const tenantId = req.user.tenant_id;
     const { error } = await supabase
       .from('facilities')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('tenant_id', tenantId);
 
     if (error) {
       console.error('Error deleting facility:', error);

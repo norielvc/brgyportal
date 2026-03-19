@@ -11,9 +11,11 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
     const { data: events, error } = await supabase
       .from('events')
       .select('*')
+      .eq('tenant_id', tenantId)
       .order('order_index', { ascending: true });
 
     if (error) {
@@ -46,10 +48,11 @@ router.post('/', authenticateToken, async (req, res) => {
   try {
     const { title, description, body, date, image } = req.body;
 
-    // Get max order_index
+    const tenantId = req.user.tenant_id; // Added by authenticateToken middleware
     const { data: maxOrder } = await supabase
       .from('events')
       .select('order_index')
+      .eq('tenant_id', tenantId)
       .order('order_index', { ascending: false })
       .limit(1)
       .single();
@@ -64,7 +67,8 @@ router.post('/', authenticateToken, async (req, res) => {
         body: body || '',
         date,
         image: image || '/background.jpg',
-        order_index: newOrderIndex
+        order_index: newOrderIndex,
+        tenant_id: tenantId
       })
       .select()
       .single();
@@ -110,10 +114,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
     if (order_index !== undefined) updateData.order_index = order_index;
     updateData.updated_at = new Date().toISOString();
 
+    const tenantId = req.user.tenant_id;
     const { data: event, error } = await supabase
       .from('events')
       .update(updateData)
       .eq('id', id)
+      .eq('tenant_id', tenantId)
       .select()
       .single();
 
@@ -147,9 +153,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.put('/bulk/update', authenticateToken, async (req, res) => {
   try {
     const { events } = req.body;
-
-    // Delete all existing events and insert new ones
-    await supabase.from('events').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    const tenantId = req.user.tenant_id;
+    // Delete all existing events for this tenant and insert new ones
+    await supabase.from('events').delete().eq('tenant_id', tenantId);
 
     if (events && events.length > 0) {
       const eventsToInsert = events.map((event, index) => ({
@@ -158,7 +164,8 @@ router.put('/bulk/update', authenticateToken, async (req, res) => {
         body: event.body || '',
         date: event.date,
         image: event.image || '/background.jpg',
-        order_index: index
+        order_index: index,
+        tenant_id: tenantId
       }));
 
       const { error } = await supabase.from('events').insert(eventsToInsert);
@@ -193,11 +200,12 @@ router.put('/bulk/update', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-
+    const tenantId = req.user.tenant_id;
     const { error } = await supabase
       .from('events')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('tenant_id', tenantId);
 
     if (error) {
       console.error('Error deleting event:', error);

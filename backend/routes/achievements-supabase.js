@@ -11,9 +11,11 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
     try {
+        const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
         const { data: achievements, error } = await supabase
             .from('achievements')
             .select('*')
+            .eq('tenant_id', tenantId)
             .order('year', { ascending: false })
             .order('order_index', { ascending: true });
 
@@ -54,10 +56,12 @@ router.post('/', authenticateToken, async (req, res) => {
     try {
         const { title, category, description, year, image, color_class, text_color } = req.body;
 
+        const tenantId = req.user.tenant_id;
         // Get max order_index
         const { data: maxOrder } = await supabase
             .from('achievements')
             .select('order_index')
+            .eq('tenant_id', tenantId)
             .order('order_index', { ascending: false })
             .limit(1)
             .single();
@@ -74,7 +78,8 @@ router.post('/', authenticateToken, async (req, res) => {
                 image: image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=800',
                 color_class: color_class || 'bg-blue-500',
                 text_color: text_color || 'blue-400',
-                order_index: newOrderIndex
+                order_index: newOrderIndex,
+                tenant_id: tenantId
             })
             .select()
             .single();
@@ -109,9 +114,10 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/bulk/update', authenticateToken, async (req, res) => {
     try {
         const { achievements } = req.body;
+        const tenantId = req.user.tenant_id;
 
-        // Delete all existing achievements and re-insert (full sync)
-        await supabase.from('achievements').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        // Delete all existing achievements for this tenant and re-insert (full sync)
+        await supabase.from('achievements').delete().eq('tenant_id', tenantId);
 
         if (achievements && achievements.length > 0) {
             const achievementsToInsert = achievements.map((ach, index) => ({
@@ -122,7 +128,8 @@ router.put('/bulk/update', authenticateToken, async (req, res) => {
                 image: ach.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=800',
                 color_class: ach.color_class || 'bg-blue-500',
                 text_color: ach.text_color || 'blue-400',
-                order_index: index
+                order_index: index,
+                tenant_id: tenantId
             }));
 
             const { error } = await supabase.from('achievements').insert(achievementsToInsert);
@@ -170,10 +177,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
         if (order_index !== undefined) updateData.order_index = order_index;
         updateData.updated_at = new Date().toISOString();
 
+        const tenantId = req.user.tenant_id;
         const { data: achievement, error } = await supabase
             .from('achievements')
             .update(updateData)
             .eq('id', id)
+            .eq('tenant_id', tenantId)
             .select()
             .single();
 
@@ -207,11 +216,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
+        const tenantId = req.user.tenant_id;
 
         const { error } = await supabase
             .from('achievements')
             .delete()
-            .eq('id', id);
+            .eq('id', id)
+            .eq('tenant_id', tenantId);
 
         if (error) {
             console.error('Error deleting achievement:', error);
