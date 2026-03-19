@@ -243,10 +243,6 @@ export default function PricingPage() {
             <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
             Subscription Plans
           </span>
-          <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight tracking-tight mb-5">
-            Simple, transparent<br />
-            <span className="text-[#004700]">pricing</span>
-          </h1>
           <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
             A professional barangay website and complete document management system.
             No hidden fees. Cancel anytime.
