@@ -25,6 +25,15 @@ export default function Login() {
       if (typeof window !== 'undefined' && !tenantId) {
         if (window.location.hostname.includes('demo')) {
           tenantId = 'demo';
+        } else {
+          const urlParams = new URLSearchParams(window.location.search);
+          const tenantParam = urlParams.get('tenant');
+          if (tenantParam) {
+            localStorage.setItem('tenant_override', tenantParam);
+            tenantId = tenantParam;
+          } else {
+            tenantId = localStorage.getItem('tenant_override');
+          }
         }
       }
       tenantId = tenantId || 'ibaoeste';
