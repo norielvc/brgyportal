@@ -49,8 +49,7 @@ export default function App({ Component, pageProps }) {
           config.headers['Authorization'] = `Bearer ${token}`;
         }
         
-        // Force/Inject Tenant ID:
-        // Priority: 1. Header already in call, 2. Global fallback
+        // Detect/Inject Tenant ID
         if (!config.headers['x-tenant-id']) {
           config.headers['x-tenant-id'] = fallbackTenantId;
         }
