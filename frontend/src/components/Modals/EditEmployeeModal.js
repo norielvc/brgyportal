@@ -1,18 +1,47 @@
 import { useState, useEffect } from 'react';
-import { X, AlertCircle, User, Mail, Shield, UserCircle, Briefcase, Lock, CheckCircle2, Save } from 'lucide-react';
+import { X, AlertCircle, User, Mail, Shield, UserCircle, Briefcase, Lock, CheckCircle2, Save, Building2 } from 'lucide-react';
+import { getUserData, getAuthToken } from '@/lib/auth';
+
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoading: externalIsLoading }) {
+  const currentUser = getUserData();
+  const isSuperAdmin = currentUser?.role === 'superadmin';
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     position: '',
-    role: 'user',
+    role: 'staff',
     status: 'active',
-    employeeCode: ''
+    employeeCode: '',
+    tenant_id: ''
   });
+  const [tenants, setTenants] = useState([]);
   const [errors, setErrors] = useState({});
   const [internalIsLoading, setInternalIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      fetchTenants();
+    }
+  }, [isSuperAdmin]);
+
+  const fetchTenants = async () => {
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${API_URL}/tenants`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTenants(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch tenants:', err);
+    }
+  };
 
   const isLoading = externalIsLoading || internalIsLoading;
 
@@ -23,9 +52,10 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
         lastName: employee.lastName || '',
         email: employee.email || '',
         position: employee.position || '',
-        role: employee.role || 'user',
+        role: employee.role || 'staff',
         status: employee.status || 'active',
-        employeeCode: employee.employeeCode || ''
+        employeeCode: employee.employeeCode || '',
+        tenant_id: employee.tenant_id || ''
       });
     }
   }, [employee]);
@@ -215,7 +245,7 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
                       name="role"
                       value={formData.role}
                       onChange={handleChange}
-                      className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-gray-900 uppercase text-[10px] tracking-widest appearance-none cursor-pointer"
+                      className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-gray-900 uppercase text-[10px] tracking-widest cursor-pointer hover:border-gray-200"
                     >
                       <option value="super_admin">Super Admin</option>
                       <option value="admin">Admin</option>
@@ -230,13 +260,32 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
                       name="status"
                       value={formData.status}
                       onChange={handleChange}
-                      className="w-full px-5 py-4 bg-gray-100/50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-emerald-500 outline-none transition-all font-black text-emerald-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer"
+                      className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:bg-white focus:border-emerald-500 outline-none transition-all font-black text-emerald-700 uppercase text-[10px] tracking-widest cursor-pointer hover:border-gray-200"
                     >
                       <option value="active">Active/Authorized</option>
                       <option value="inactive">Inactive</option>
                       <option value="suspended">Suspended/Locked</option>
                     </select>
                   </div>
+
+                  {isSuperAdmin && (
+                    <div className="space-y-2 mt-4 pt-4 border-t border-gray-50">
+                      <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest px-1 flex items-center gap-2">
+                        <Building2 className="w-3.5 h-3.5" /> Administrative Tenant
+                      </label>
+                      <select
+                        name="tenant_id"
+                        value={formData.tenant_id}
+                        onChange={handleChange}
+                        className="w-full px-5 py-4 bg-indigo-50/50 border-2 border-gray-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-gray-900 uppercase text-[10px] tracking-widest cursor-pointer hover:border-indigo-100"
+                      >
+                        <option value="">-- CURRENT TENANT --</option>
+                        {tenants.map(t => (
+                          <option key={t.id} value={t.id}>{t.name} ({t.id})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
