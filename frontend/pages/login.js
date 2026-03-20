@@ -98,8 +98,7 @@ export default function Login() {
             {/* Left — Branding */}
             <div className="hidden lg:block text-left space-y-6">
               <div className="space-y-3">
-                <p className="text-gray-500 text-3xl font-black tracking-widest uppercase">BARANGAY</p>
-                <h1 className="text-6xl xl:text-7xl font-black leading-tight">
+                <h1 className="text-6xl xl:text-8xl font-black leading-tight tracking-tighter">
                   <span className={`text-transparent bg-clip-text bg-gradient-to-r ${tenantConfig.colors.primaryGradient}`}>
                     {tenantConfig.name}
                   </span>
@@ -114,7 +113,7 @@ export default function Login() {
               </div>
 
               <p className="text-gray-600 text-lg leading-relaxed max-w-sm font-medium">
-                Your gateway to efficient barangay management and community services
+                Your gateway to efficient municipal management and digital governance
               </p>
             </div>
 
@@ -127,8 +126,8 @@ export default function Login() {
                   <div className="text-center">
                     <img
                       src={tenantConfig.logo}
-                      alt="Barangay Logo"
-                      className="w-14 h-14 object-contain drop-shadow-md mx-auto mb-2"
+                      alt="LGU Hub Logo"
+                      className="w-16 h-16 object-contain drop-shadow-md mx-auto mb-2"
                     />
                     <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
                     <p className="text-gray-500 text-sm mt-1">Sign in to your management dashboard</p>
