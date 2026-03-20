@@ -1,8 +1,14 @@
-import { useState } from 'react';
-import { X, AlertCircle, User, Mail, Shield, UserCircle, Briefcase, Lock, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, AlertCircle, User, Mail, Shield, UserCircle, Briefcase, Lock, CheckCircle2, Building2 } from 'lucide-react';
 import PasswordStrengthIndicator from '@/components/UI/PasswordStrengthIndicator';
+import { getUserData, getAuthToken } from '@/lib/auth';
+
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externalIsLoading }) {
+  const currentUser = getUserData();
+  const isSuperAdmin = currentUser?.role === 'superadmin';
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -10,12 +16,36 @@ export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externa
     password: '',
     confirmPassword: '',
     position: '',
-    role: 'user',
+    role: 'staff',
     status: 'active',
-    employeeCode: ''
+    employeeCode: '',
+    tenant_id: isSuperAdmin ? '' : (currentUser?.tenant_id || 'ibaoeste')
   });
+
+  const [tenants, setTenants] = useState([]);
   const [errors, setErrors] = useState({});
   const [internalIsLoading, setInternalIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      fetchTenants();
+    }
+  }, [isSuperAdmin]);
+
+  const fetchTenants = async () => {
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${API_URL}/tenants`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTenants(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch tenants for selector:', err);
+    }
+  };
 
   const isLoading = externalIsLoading || internalIsLoading;
 
@@ -34,8 +64,7 @@ export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externa
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
     if (!formData.employeeCode) newErrors.employeeCode = 'Employee code is required';
     if (!/^[A-Z0-9]{3}$/.test(formData.employeeCode)) newErrors.employeeCode = 'Code must be exactly 3 alphanumeric capital letters';
-    
-    setErrors(newErrors);
+    if (isSuperAdmin && !formData.tenant_id) newErrors.tenant_id = 'Please select a tenant';
     return Object.keys(newErrors).length === 0;
   };
 
@@ -231,6 +260,26 @@ export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externa
                       </select>
                     </div>
                   </div>
+
+                  {isSuperAdmin && (
+                    <div className="space-y-2 mt-4 pt-4 border-t border-gray-50">
+                      <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest px-1 flex items-center gap-2">
+                        <Building2 className="w-3.5 h-3.5" /> Target Barangay (Tenant)
+                      </label>
+                      <select
+                        name="tenant_id"
+                        value={formData.tenant_id}
+                        onChange={handleChange}
+                        className={`w-full px-5 py-4 bg-blue-50/50 border-2 rounded-2xl outline-none transition-all font-black text-gray-900 uppercase text-[10px] tracking-widest appearance-none cursor-pointer ${errors.tenant_id ? 'border-rose-500' : 'border-transparent focus:border-blue-500'}`}
+                      >
+                        <option value="">-- CHOOSE TENANT --</option>
+                        {tenants.map(t => (
+                          <option key={t.id} value={t.id}>{t.name} ({t.id})</option>
+                        ))}
+                      </select>
+                      {errors.tenant_id && <p className="text-rose-500 text-[9px] font-black uppercase px-1 italic">{errors.tenant_id}</p>}
+                    </div>
+                  )}
                 </div>
               </div>
 

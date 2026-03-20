@@ -13,10 +13,20 @@ const router = express.Router();
  */
 router.get('/', requireAdmin, async (req, res) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
-    const { search = '', role, status } = req.query;
+    let targetTenantId = req.headers['x-tenant-id'] || 'ibaoeste';
+    const { search = '', role, status, tenant_id } = req.query;
 
-    let query = supabase.from('users').select('*').eq('tenant_id', tenantId); // MULTI-TENANT FILTER
+    let query = supabase.from('users').select('*');
+
+    // Multi-tenant logic: Superadmins can see anyone, regular admins only their tenant
+    if (req.user.role === 'superadmin') {
+      if (tenant_id) {
+        query = query.eq('tenant_id', tenant_id);
+      }
+      // If no tenant_id is provided, superadmin sees EVERYTHING globally
+    } else {
+      query = query.eq('tenant_id', targetTenantId);
+    }
 
     // Apply filters
     if (role) {
@@ -134,15 +144,19 @@ router.get('/:id', requireAdmin, async (req, res) => {
  */
 router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
-    const { firstName, lastName, email, password, role = 'user', status = 'active', position = '', employeeCode = '' } = req.body;
+    let targetTenantId = req.headers['x-tenant-id'] || 'ibaoeste';
+    // If super admin specifies a different tenant, anchor to that
+    if (req.user.role === 'superadmin' && req.body.tenant_id) {
+       targetTenantId = req.body.tenant_id;
+    }
 
-    // Check if user already exists
+    const { firstName, lastName, email, password, role = 'user', status = 'active', position = '', employeeCode = '', tenant_id } = req.body;
+
+    // 1. Check if user already exists (Global search for email unique integrity)
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
       .eq('email', email)
-      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .single();
 
     if (existingUser) {
@@ -159,7 +173,7 @@ router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
     const { data: newUser, error } = await supabase
       .from('users')
       .insert([{
-        tenant_id: tenantId, // MULTI-TENANT ASSIGNMENT
+        tenant_id: targetTenantId, // MULTI-TENANT ASSIGNMENT
         email,
         first_name: firstName,
         last_name: lastName,
@@ -284,7 +298,12 @@ router.put('/:id/reset-password', requireAdmin, async (req, res) => {
  */
 router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
+    let targetTenantId = req.headers['x-tenant-id'] || 'ibaoeste';
+    // If super admin specified a different tenant, anchor to that
+    if (req.user.role === 'superadmin' && req.body.tenant_id) {
+       targetTenantId = req.body.tenant_id;
+    }
+
     const { firstName, lastName, email, password, role, status, position, employeeCode } = req.body;
     const userId = req.params.id;
 
@@ -293,7 +312,7 @@ router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
       .from('users')
       .select('*')
       .eq('id', userId)
-      .eq('tenant_id', tenantId)
+      .eq('tenant_id', targetTenantId)
       .single();
 
     if (fetchError || !user) {
@@ -309,7 +328,6 @@ router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
         .from('users')
         .select('id')
         .eq('email', email)
-        .eq('tenant_id', tenantId)
         .single();
 
       if (existingUser) {
@@ -337,7 +355,7 @@ router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
       .from('users')
       .update(updateData)
       .eq('id', userId)
-      .eq('tenant_id', tenantId)
+      .eq('tenant_id', targetTenantId)
       .select()
       .single();
 
@@ -385,7 +403,11 @@ router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
  */
 router.delete('/:id', requireAdmin, async (req, res) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] || 'ibaoeste';
+    let targetTenantId = req.headers['x-tenant-id'] || 'ibaoeste';
+    if (req.user.role === 'superadmin' && req.query.tenant_id) {
+       targetTenantId = req.query.tenant_id;
+    }
+
     const userId = req.params.id;
 
     // Prevent admin from deleting themselves
@@ -401,7 +423,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
       .from('users')
       .select('id')
       .eq('id', userId)
-      .eq('tenant_id', tenantId)
+      .eq('tenant_id', targetTenantId)
       .single();
 
     if (fetchError || !user) {
@@ -416,7 +438,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
       .from('users')
       .delete()
       .eq('id', userId)
-      .eq('tenant_id', tenantId);
+      .eq('tenant_id', targetTenantId);
 
     if (deleteError) {
       return res.status(400).json({
