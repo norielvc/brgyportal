@@ -83,7 +83,7 @@ export default function Login() {
       <div className="relative z-20 px-6 py-3 flex-shrink-0">
         <button
           onClick={() => router.push('/')}
-          className={`group inline-flex items-center gap-2 px-4 py-2 bg-${tenantConfig.colors.primary} hover:bg-${tenantConfig.colors.primaryHover} text-white rounded-full transition-all duration-300 shadow-md text-sm font-medium`}
+          className="group inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-black text-white rounded-full transition-all duration-300 shadow-md text-sm font-medium"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           Back to Portal
@@ -105,11 +105,11 @@ export default function Login() {
                 </h1>
               </div>
 
-              <div className={`w-36 h-1.5 bg-gradient-to-r ${tenantConfig.colors.primaryGradient} rounded-full`} />
+              <div className="w-36 h-1.5 bg-slate-800 rounded-full" />
 
-              <div className={`inline-flex items-center gap-3 px-6 py-3 bg-${tenantConfig.colors.primary} text-white rounded-full shadow-lg`}>
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-800 text-white rounded-full shadow-lg border border-slate-700">
                 <Shield className="w-5 h-5" />
-                <span className="text-base font-bold">SECURE PORTAL</span>
+                <span className="text-base font-bold tracking-wider">SECURE PORTAL</span>
               </div>
 
               <p className="text-gray-600 text-lg leading-relaxed max-w-sm font-medium">
@@ -207,7 +207,7 @@ export default function Login() {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className={`group relative w-full bg-gradient-to-r ${tenantConfig.colors.primaryGradient} disabled:from-gray-400 disabled:to-gray-500 text-white py-3 rounded-xl font-bold text-sm transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:cursor-not-allowed overflow-hidden mt-1`}
+                      className="group relative w-full bg-slate-800 hover:bg-black disabled:bg-slate-400 text-white py-3 rounded-xl font-bold text-sm transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:cursor-not-allowed overflow-hidden mt-1"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                       <span className="relative flex items-center justify-center gap-2">
