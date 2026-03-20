@@ -193,7 +193,7 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
 
   const navRef = useRef(null);
   const user = getUserData();
-  const adminRoles = ['SuperAdmin', 'super_admin', 'admin', 'captain', 'secretary'];
+  const adminRoles = ['SuperAdmin', 'super_admin', 'admin', 'captain', 'secretary', 'SUPERADMIN', 'superadmin'];
 
   const handleLogout = () => {
     logout();
