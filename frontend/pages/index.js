@@ -32,22 +32,18 @@ export default function BarangayPortal() {
     colorStyle: { background: 'linear-gradient(to right, #004700, #001a00)' }
   });
 
+  const [tenantId, setTenantId] = useState('ibaoeste');
+
   useEffect(() => {
-    let tenantId = '';
     if (typeof window !== 'undefined') {
-      if (window.location.hostname.includes('demo')) {
-        tenantId = 'demo';
-      } else {
-        const urlParams = new URLSearchParams(window.location.search);
-        const tenantParam = urlParams.get('tenant');
-        if (tenantParam) {
-          tenantId = tenantParam;
-        } else {
-          tenantId = localStorage.getItem('tenant_override');
-        }
+      const hostname = window.location.hostname;
+      if (hostname.includes('demo')) {
+        setTenantId('demo');
       }
     }
+  }, []);
 
+  useEffect(() => {
     if (tenantId === 'demo') {
       setTenantConfig({
         name: "DEMO BARANGAY PORTAL",
@@ -56,7 +52,7 @@ export default function BarangayPortal() {
         logo: "/calumpit.png",
         colorStyle: { background: 'linear-gradient(to right, #1e3a8a, #0f172a)' }
       });
-    } else if (tenantId === 'ibaoeste') {
+    } else {
       setTenantConfig({
         name: "IBA O' ESTE PORTAL",
         shortName: "Iba O' Este",
@@ -64,17 +60,8 @@ export default function BarangayPortal() {
         logo: "/logo.png",
         colorStyle: { background: 'linear-gradient(to right, #004700, #001a00)' }
       });
-    } else {
-      // Default Generic Branding
-      setTenantConfig({
-        name: "BARANGAY PORTAL",
-        shortName: "Barangay",
-        subtitle: "Local Government Unit Hub",
-        logo: "/logo.png",
-        colorStyle: { background: 'linear-gradient(to right, #1a1a1a, #0a0a0a)' }
-      });
     }
-  }, []);
+  }, [tenantId]);
 
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -374,10 +361,13 @@ export default function BarangayPortal() {
   // Load events from API
   useEffect(() => {
     const fetchEvents = async () => {
+      if (!tenantId) return;
       try {
         const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
         console.log('Fetching events from:', `${API_URL}/events`);
-        const response = await fetch(`${API_URL}/events`);
+        const response = await fetch(`${API_URL}/events`, {
+          headers: { 'x-tenant-id': tenantId }
+        });
         console.log('Events API response status:', response.status);
 
         if (!response.ok) {
@@ -406,10 +396,13 @@ export default function BarangayPortal() {
   // Load facilities from API
   useEffect(() => {
     const fetchFacilities = async () => {
+      if (!tenantId) return;
       try {
         const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
         console.log('Fetching facilities from:', `${API_URL}/facilities`);
-        const response = await fetch(`${API_URL}/facilities`);
+        const response = await fetch(`${API_URL}/facilities`, {
+          headers: { 'x-tenant-id': tenantId }
+        });
         console.log('Facilities API response status:', response.status);
 
         if (!response.ok) {
@@ -457,19 +450,23 @@ export default function BarangayPortal() {
   // Fetch local government details and achievements
   useEffect(() => {
     const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
-
     const fetchData = async () => {
+      if (!tenantId) return;
       try {
         // Fetch Officials
-        const officialsRes = await fetch(`${API_URL}/officials`);
+        const officialsRes = await fetch(`${API_URL}/officials`, {
+          headers: { 'x-tenant-id': tenantId }
+        });
         const officialsData = await officialsRes.json();
         if (officialsData.success && officialsData.data) {
-          setOfficials(officialsData.data);
+          setOfficials(Array.isArray(officialsData.data) ? officialsData.data : []);
         }
 
         // Fetch Hero & Visibility Settings
-        const settingsRes = await fetch(`${API_URL}/officials/config`);
-        const settingsData = await settingsRes.json();
+        const configRes = await fetch(`${API_URL}/officials/config`, {
+          headers: { 'x-tenant-id': tenantId }
+        });
+        const settingsData = await configRes.json(); // Corrected variable name from settingsRes to configRes
         if (settingsData.success && settingsData.data) {
           if (settingsData.data.heroSection) setHeroSettings(settingsData.data.heroSection);
           if (settingsData.data.visibility) setVisibilitySettings(settingsData.data.visibility);
