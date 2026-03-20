@@ -43,16 +43,25 @@ export default function App({ Component, pageProps }) {
     const fallbackTenantId = getFallbackTenantId();
 
     // 2. SECURE FETCH WRAPPER:
-    // This intercepts every single 'fetch' call to ensure correct Auth and Tenant context
     const originalFetch = window.fetch;
     window.fetch = async (resource, config = {}) => {
-      // Determine if this is a call to our internal backend API
+      // Resilient API URL discovery
+      const getBaseUrl = () => {
+        if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+        if (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
+           const backendHost = window.location.hostname.replace('frontend', 'backend');
+           return `https://${backendHost}`;
+        }
+        return 'http://localhost:5005';
+      };
+      
+      const backendUrl = getBaseUrl().replace(/\/$/, '');
       const isInternalApi = typeof resource === 'string' && (
         resource.startsWith('/api') || 
+        resource.includes(backendUrl) ||
         resource.includes('/api/') || 
         resource.includes('/auth/') || 
-        resource.includes('/dashboard/') ||
-        resource.includes('localhost:5005') // Keep for local dev
+        resource.includes('/dashboard/')
       );
 
       if (isInternalApi) {
