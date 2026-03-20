@@ -41,12 +41,13 @@ const authenticateToken = async (req, res, next) => {
     }
 
     // Add user to request object (transform to match expected format)
+    const userRole = user.role;
     req.user = {
       _id: user.id,
       firstName: user.first_name,
       lastName: user.last_name,
       email: user.email,
-      role: user.role,
+      role: userRole,
       status: user.status,
       avatar: user.avatar,
       lastLogin: user.last_login,
@@ -55,6 +56,18 @@ const authenticateToken = async (req, res, next) => {
       createdAt: user.created_at,
       updatedAt: user.updated_at
     };
+
+    /**
+     * MULTI-TENANT ENFORCEMENT
+     * Force the tenant ID header to match the user's verified record.
+     * This prevents header spoofing and ensures data isolation.
+     * Superadmins are allowed to override if they provide a header.
+     */
+    if (userRole === 'superadmin') {
+      req.headers['x-tenant-id'] = req.headers['x-tenant-id'] || user.tenant_id;
+    } else {
+      req.headers['x-tenant-id'] = user.tenant_id;
+    }
 
     next();
   } catch (error) {

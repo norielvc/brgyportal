@@ -138,31 +138,27 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
-app.use('/api/certificates', certificateRoutes); // Public for form submissions
-
-// Serve generated certificate files
-app.use('/api/certificates/files', express.static(path.join(__dirname, 'generated-certificates')));
-app.use('/api/workflows', workflowRoutes); // Workflow management
-app.use('/api/workflow-assignments', workflowAssignmentRoutes); // Workflow assignments
-app.use('/api/events', eventRoutes); // Events/Carousel management (public GET, private POST/PUT/DELETE)
-app.use('/api/facilities', facilityRoutes); // Facilities management (public GET, private POST/PUT/DELETE)
-app.use('/api/officials', officialRoutes); // Barangay officials (public GET)
-app.use('/api/educational-assistance', educationalAssistanceRoutes); // Educational assistance program (public POST, private GET)
-app.use('/api/employee-scans', authenticateToken, employeeScansRoutes); // Employee QR scan tracking
-app.use('/api/employees', authenticateToken, employeesQRRoutes); // Employee QR management
-app.use('/api/qr-scans', authenticateToken, qrScansRoutes); // General QR scan tracking
-app.use('/api/pickup', pickupRoutes); // Certificate pickup verification (public)
-app.use('/api/user/signatures', signatureRoutes); // User signature management (authenticated)
-app.use('/api/physical-inspection', authenticateToken, physicalInspectionRoutes); // Physical inspection reports
-
-// Serve generated OR files (public access)
 app.use('/api/official-receipts/files', express.static(path.join(__dirname, 'generated-receipts')));
+app.use('/api/certificates/files', express.static(path.join(__dirname, 'generated-certificates')));
+app.use('/api/official-receipts', authenticateToken, officialReceiptRoutes); 
+app.use('/api/residents', authenticateToken, residentRoutes); 
+app.use('/api/achievements', authenticateToken, achievementRoutes); 
+app.use('/api/programs', authenticateToken, programRoutes); 
+app.use('/api/tenants', authenticateToken, tenantRoutes); 
+app.use('/api/officials', authenticateToken, officialRoutes); 
+app.use('/api/certificates', authenticateToken, certificateRoutes); 
+app.use('/api/workflows', authenticateToken, workflowRoutes); 
+app.use('/api/workflow-assignments', authenticateToken, workflowAssignmentRoutes); 
+app.use('/api/events', authenticateToken, eventRoutes); 
+app.use('/api/facilities', authenticateToken, facilityRoutes); 
+app.use('/api/pickup', pickupRoutes); 
+app.use('/api/educational-assistance', educationalAssistanceRoutes); 
+app.use('/api/employee-scans', authenticateToken, employeeScansRoutes); 
+app.use('/api/employees', authenticateToken, employeesQRRoutes); 
+app.use('/api/qr-scans', authenticateToken, qrScansRoutes); 
+app.use('/api/user/signatures', authenticateToken, signatureRoutes); 
+app.use('/api/physical-inspection', authenticateToken, physicalInspectionRoutes); 
 
-app.use('/api/official-receipts', authenticateToken, officialReceiptRoutes); // Official receipts API (authenticated)
-app.use('/api/residents', residentRoutes); // Residents database (public search)
-app.use('/api/achievements', achievementRoutes); // Achievements/Awards management
-app.use('/api/programs', programRoutes); // Barangay Programs management
-app.use('/api/tenants', tenantRoutes); // System orchestration (Super Admin Only)
 
 // 404 handler
 app.use('*', (req, res) => {
