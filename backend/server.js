@@ -90,8 +90,13 @@ const allowedOrigins = [
 
 // Add production URLs from environment variable
 if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(process.env.FRONTEND_URL);
+  const extraOrigins = process.env.FRONTEND_URL.split(',').map(o => o.trim());
+  allowedOrigins.push(...extraOrigins);
 }
+// Force inclusion of the production frontend URL
+allowedOrigins.push('https://brgyportal-frontend-production.up.railway.app');
+allowedOrigins.push('http://brgyportal-frontend-production.up.railway.app');
+
 if (process.env.ALLOWED_ORIGINS) {
   const extraOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
   allowedOrigins.push(...extraOrigins);
