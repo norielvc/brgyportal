@@ -7,29 +7,29 @@ const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api')
 
 const defaultOfficials = {
     // We need the full structure to avoid breaking things, even if we don't edit names here
-    chairman: 'ALEXANDER C. MANIO',
-    secretary: 'ROYCE ANN C. GALVEZ',
-    treasurer: 'MA. LUZ S. REYES',
-    skChairman: 'JOHN RUZZEL C. SANTOS',
+    chairman: '',
+    secretary: '',
+    treasurer: '',
+    skChairman: '',
     councilors: [],
     contactInfo: {
-        address: 'Purok 2 (Sitio Banawe) Barangay Iba O\' Este, Calumpit, Bulacan',
-        contactPerson: 'Sec. Royce Ann C. Galvez',
-        telephone: '0967 631 9168',
-        email: 'anneseriousme@gmail.com'
+        address: '',
+        contactPerson: '',
+        telephone: '',
+        email: ''
     },
     headerInfo: {
         country: 'Republic of the Philippines',
-        province: 'Province of Bulacan',
-        municipality: 'Municipality of Calumpit',
-        barangayName: 'BARANGAY IBA O\' ESTE',
+        province: '',
+        municipality: '',
+        barangayName: 'BARANGAY NAME',
         officeName: 'Office of the Punong Barangay'
     },
     logos: {
-        leftLogo: '/iba-o-este.png',
-        rightLogo: '/calumpit.png',
+        leftLogo: '',
+        rightLogo: '',
         logoSize: 115,
-        captainImage: '/images/brgycaptain.png'
+        captainImage: ''
     },
     headerStyle: {
         bgColor: '#ffffff',

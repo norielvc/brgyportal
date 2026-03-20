@@ -9,53 +9,7 @@ import { getAuthToken } from '@/lib/auth';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
-const defaultFacilities = [
-  {
-    id: 1,
-    name: 'Health Center',
-    icon: 'Heart',
-    description: 'Primary healthcare services for residents',
-    color: 'bg-red-500',
-    images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-    features: ['Free Checkups', 'Vaccination', 'First Aid']
-  },
-  {
-    id: 2,
-    name: 'Multi-purpose Hall',
-    icon: 'Building2',
-    description: 'Events, meetings, and community gatherings',
-    color: 'bg-blue-500',
-    images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-    features: ['500 Capacity', 'AC Equipped', 'Stage']
-  },
-  {
-    id: 3,
-    name: 'Daycare Center',
-    icon: 'Baby',
-    description: 'Early childhood education and care',
-    color: 'bg-pink-500',
-    images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-    features: ['Ages 3-5', 'Free Education', 'Meals']
-  },
-  {
-    id: 4,
-    name: 'Barangay Hall',
-    icon: 'Home',
-    description: 'Administrative services and assistance',
-    color: 'bg-green-500',
-    images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-    features: ['Documents', 'Assistance', 'Info Desk']
-  },
-  {
-    id: 5,
-    name: 'Sports Complex',
-    icon: 'Award',
-    description: 'Basketball court and fitness area',
-    color: 'bg-orange-500',
-    images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-    features: ['Basketball', 'Volleyball', 'Gym']
-  }
-];
+const defaultFacilities = [];
 
 const iconOptions = [
   { name: 'Heart', component: Heart },

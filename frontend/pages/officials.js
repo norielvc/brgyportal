@@ -832,7 +832,7 @@ export default function OfficialsPage() {
                 <div>
                   <label className="text-xs font-bold text-emerald-300 uppercase tracking-widest mb-2 block">Hero Sidebar Photo</label>
                   <div className="relative group aspect-video bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-inner">
-                    <img src={officials.heroSection?.image || '/images/barangay-officials.jpg'} alt="Hero Preview" className="w-full h-full object-cover" />
+                    <img src={officials.heroSection?.image || ''} alt="Hero Preview" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
                       <label className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-bold cursor-pointer hover:bg-emerald-400 hover:scale-105 transition-all shadow-xl flex items-center gap-2">
                         <Camera className="w-5 h-5" /> Change Hero Image

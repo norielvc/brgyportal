@@ -292,6 +292,7 @@ export default function Employees() {
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Department & Role</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Security Status</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Telemetry</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Management System</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Operations</th>
                 </tr>
               </thead>
@@ -354,6 +355,23 @@ export default function Employees() {
                         <span className="text-[10px] font-mono font-bold uppercase">
                           {emp.lastLogin ? new Date(emp.lastLogin).toLocaleDateString() : 'NO HISTORY'}
                         </span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center">
+                        {emp.tenantId === 'demo' ? (
+                          <span className="px-2.5 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-lg text-[10px] font-black tracking-widest uppercase">
+                            Demo System
+                          </span>
+                        ) : emp.tenantId === 'ibaoeste' ? (
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-[10px] font-black tracking-widest uppercase">
+                            Iba O' Este
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 bg-gray-50 text-gray-400 border border-gray-100 rounded-lg text-[10px] font-black tracking-widest uppercase">
+                            {emp.tenantId || 'Global'}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-8 py-6 text-right">

@@ -32,21 +32,17 @@ export default function BarangayPortal() {
     colorStyle: { background: 'linear-gradient(to right, #004700, #001a00)' }
   });
 
-  useEffect(() => {
-    let tId = 'ibaoeste';
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const urlParams = new URLSearchParams(window.location.search);
-      const tenantParam = urlParams.get('tenant');
-      
-      if (tenantParam) {
-        tId = tenantParam;
-      } else if (hostname.includes('demo')) {
-        tId = 'demo';
-      }
-    }
-    setTenantId(tId);
-  }, []);
+  // Detect tenant synchronously so the FIRST render uses the correct tenant
+  const getInitialTenantId = () => {
+    if (typeof window === 'undefined') return 'ibaoeste';
+    const urlParams = new URLSearchParams(window.location.search);
+    const tenantParam = urlParams.get('tenant');
+    if (tenantParam) return tenantParam;
+    if (window.location.hostname.includes('demo')) return 'demo';
+    return 'ibaoeste';
+  };
+
+  const [tenantId, setTenantId] = useState(() => getInitialTenantId());
 
   useEffect(() => {
     if (tenantId === 'demo') {
@@ -220,75 +216,11 @@ export default function BarangayPortal() {
     return () => window.removeEventListener('resize', handleResize);
   }, [forms.length]);
 
-  // Default events (fallback)
-  const defaultNewsItems = [
-    {
-      title: 'Barangay Clean-Up Drive 2026',
-      description: `Join us this Saturday for our monthly community clean-up initiative. Together, we can keep ${tenantConfig.shortName} beautiful!`,
-      image: '/background.jpg',
-      date: 'January 5, 2026'
-    },
-    {
-      title: 'Free Medical Mission',
-      description: 'Free check-ups, medicines, and health consultations for all residents. Bring your Barangay ID.',
-      image: '/background.jpg',
-      date: 'January 10, 2026'
-    },
-    {
-      title: 'Livelihood Training Program',
-      description: 'Register now for free skills training in food processing, handicrafts, and more!',
-      image: '/background.jpg',
-      date: 'January 15, 2026'
-    }
-  ];
+  // Events load from DB per tenant - no hardcoded defaults
+  const [newsItems, setNewsItems] = useState([]);
 
-  const [newsItems, setNewsItems] = useState(defaultNewsItems);
-
-  // Default facilities (fallback)
-  const defaultFacilities = [
-    {
-      name: 'Health Center',
-      icon: Heart,
-      description: 'Primary healthcare services for residents',
-      color: 'bg-red-500',
-      images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-      features: ['Free Checkups', 'Vaccination', 'First Aid']
-    },
-    {
-      name: 'Multi-purpose Hall',
-      icon: Building2,
-      description: 'Events, meetings, and community gatherings',
-      color: 'bg-blue-500',
-      images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-      features: ['500 Capacity', 'AC Equipped', 'Stage']
-    },
-    {
-      name: 'Daycare Center',
-      icon: Baby,
-      description: 'Early childhood education and care',
-      color: 'bg-pink-500',
-      images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-      features: ['Ages 3-5', 'Free Education', 'Meals']
-    },
-    {
-      name: 'Barangay Hall',
-      icon: Home,
-      description: 'Administrative services and assistance',
-      color: 'bg-green-500',
-      images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-      features: ['Documents', 'Assistance', 'Info Desk']
-    },
-    {
-      name: 'Sports Complex',
-      icon: Award,
-      description: 'Basketball court and fitness area',
-      color: 'bg-orange-500',
-      images: ['/background.jpg', '/background.jpg', '/background.jpg'],
-      features: ['Basketball', 'Volleyball', 'Gym']
-    }
-  ];
-
-  const [facilities, setFacilities] = useState(defaultFacilities);
+  // Facilities load from DB per tenant - no hardcoded defaults
+  const [facilities, setFacilities] = useState([]);
   const [officials, setOfficials] = useState([]);
   const [visibilitySettings, setVisibilitySettings] = useState(null);
 
@@ -297,8 +229,8 @@ export default function BarangayPortal() {
   const [programs, setPrograms] = useState([]);
   const [heroSettings, setHeroSettings] = useState({
     title: 'BARANGAY OFFICIALS',
-    subtitle: 'Meet our dedicated team serving Iba O\' Este',
-    image: '/images/barangay-officials.jpg'
+    subtitle: 'Meet our dedicated team serving our community',
+    image: '' // No default image - upload via management page
   });
 
   // Helper function to map icon names to components
@@ -396,7 +328,7 @@ export default function BarangayPortal() {
     };
 
     fetchEvents();
-  }, []);
+  }, [tenantId]);
 
   // Load facilities from API
   useEffect(() => {
@@ -436,7 +368,7 @@ export default function BarangayPortal() {
     };
 
     fetchFacilities();
-  }, []);
+  }, [tenantId]);
 
   // Set up 5-second interval for hero carousel auto transition
   useEffect(() => {
@@ -478,7 +410,9 @@ export default function BarangayPortal() {
         }
 
         // Fetch Achievements
-        const achievementsRes = await fetch(`${API_URL}/achievements`);
+        const achievementsRes = await fetch(`${API_URL}/achievements`, {
+          headers: { 'x-tenant-id': tenantId }
+        });
         if (achievementsRes.ok) {
           const achievementsData = await achievementsRes.json();
           if (achievementsData.success && achievementsData.data?.length > 0) {
@@ -492,7 +426,9 @@ export default function BarangayPortal() {
         }
 
         // Fetch Programs
-        const programsRes = await fetch(`${API_URL}/programs`);
+        const programsRes = await fetch(`${API_URL}/programs`, {
+          headers: { 'x-tenant-id': tenantId }
+        });
         if (programsRes.ok) {
           const programsData = await programsRes.json();
           if (programsData.success && programsData.data?.length > 0) {
@@ -505,7 +441,7 @@ export default function BarangayPortal() {
     };
 
     fetchData();
-  }, []);
+  }, [tenantId]);
 
 
   // Update time and weather every second
@@ -1529,11 +1465,11 @@ export default function BarangayPortal() {
         {/* Photo - Full visibility without overlay */}
         <div className="relative">
           <img
-            src={heroSettings?.image || '/images/barangay-officials.jpg'}
+            src={heroSettings?.image || ''}
             alt={heroSettings?.title || "Barangay Officials"}
             className="w-full h-auto md:h-[400px] lg:h-[500px] xl:h-[600px] md:object-cover bg-gray-800"
             onError={(e) => {
-              e.target.src = '/background.jpg';
+              e.target.src = '';
             }}
           />
           {/* Green Shadow Overlay on Edges */}

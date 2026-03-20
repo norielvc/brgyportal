@@ -13,7 +13,7 @@ const router = express.Router();
  */
 router.get('/', requireAdmin, async (req, res) => {
   try {
-    let targetTenantId = req.headers['x-tenant-id'] || req.user?.tenant_id;
+    let targetTenantId = req.user?.tenant_id;
     const { search = '', role, status, tenant_id } = req.query;
 
     let query = supabase.from('users').select('*');
@@ -28,24 +28,15 @@ router.get('/', requireAdmin, async (req, res) => {
       query = query.eq('tenant_id', targetTenantId);
     }
 
-    // Apply filters
-    if (role) {
-      query = query.eq('role', role);
-    }
-    if (status) {
-      query = query.eq('status', status);
-    }
+    if (role) query = query.eq('role', role);
+    if (status) query = query.eq('status', status);
 
     const { data: users, error } = await query;
 
     if (error) {
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to fetch users'
-      });
+      return res.status(400).json({ success: false, message: 'Failed to fetch users' });
     }
 
-    // Client-side search (Supabase free tier limitation)
     let filteredUsers = users || [];
     if (search) {
       filteredUsers = filteredUsers.filter(user =>
@@ -55,9 +46,8 @@ router.get('/', requireAdmin, async (req, res) => {
       );
     }
 
-    // Transform data to match frontend expectations
     const transformedUsers = filteredUsers.map(user => ({
-      id: user.id,      // Include both id and _id for compatibility
+      id: user.id,
       _id: user.id,
       firstName: user.first_name,
       lastName: user.last_name,
@@ -69,20 +59,15 @@ router.get('/', requireAdmin, async (req, res) => {
       lastLogin: user.last_login,
       loginCount: user.login_count,
       employeeCode: user.employee_code,
+      tenantId: user.tenant_id,
       createdAt: user.created_at,
       updatedAt: user.updated_at
     }));
 
-    res.status(200).json({
-      success: true,
-      data: transformedUsers
-    });
+    res.status(200).json({ success: true, data: transformedUsers });
   } catch (error) {
     console.error('Get users error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
@@ -93,48 +78,43 @@ router.get('/', requireAdmin, async (req, res) => {
  */
 router.get('/:id', requireAdmin, async (req, res) => {
   try {
-    const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
-    if (!tenantId) return res.status(403).json({ success: false, message: 'Tenant context required' });
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', req.params.id)
-      .eq('tenant_id', tenantId)
-      .single();
+    const { id } = req.params;
+    let query = supabase.from('users').select('*').eq('id', id);
 
-    if (error || !user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+    // Filter by tenant ONLY if not superadmin
+    if (req.user.role !== 'superadmin') {
+      const tenantId = req.user?.tenant_id;
+      if (!tenantId) return res.status(403).json({ success: false, message: 'Tenant context required' });
+      query = query.eq('tenant_id', tenantId);
     }
 
-    const transformedUser = {
-      _id: user.id,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      position: user.position,
-      avatar: user.avatar,
-      lastLogin: user.last_login,
-      loginCount: user.login_count,
-      employeeCode: user.employee_code,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at
-    };
+    const { data: user, error } = await query.single();
+
+    if (error || !user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
     res.status(200).json({
       success: true,
-      data: transformedUser
+      data: {
+        _id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        position: user.position,
+        avatar: user.avatar,
+        lastLogin: user.last_login,
+        loginCount: user.login_count,
+        employeeCode: user.employee_code,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at
+      }
     });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
@@ -142,18 +122,21 @@ router.get('/:id', requireAdmin, async (req, res) => {
  * @route   POST /api/users
  * @desc    Create new user
  * @access  Private (Admin only)
+ * FIX: tenant_id from the request body (UI System dropdown) takes priority
+ * so that new users are assigned to the correct tenant, not the creator's tenant.
  */
 router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
   try {
-    let targetTenantId = req.headers['x-tenant-id'] || req.user?.tenant_id;
-    // If super admin specifies a different tenant, anchor to that
-    if (req.user.role === 'superadmin' && req.body.tenant_id) {
-       targetTenantId = req.body.tenant_id;
+    // Default: assign to creator's tenant
+    let targetTenantId = req.user?.tenant_id;
+    // Allow any admin to override with tenant_id from the form body (e.g., System dropdown)
+    if (req.body.tenant_id) {
+      targetTenantId = req.body.tenant_id;
     }
 
-    const { firstName, lastName, email, password, role = 'user', status = 'active', position = '', employeeCode = '', tenant_id } = req.body;
+    const { firstName, lastName, email, password, role = 'user', status = 'active', position = '', employeeCode = '' } = req.body;
 
-    // 1. Check if user already exists (Global search for email unique integrity)
+    // Check for existing user globally
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
@@ -161,20 +144,15 @@ router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
       .single();
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User with this email already exists'
-      });
+      return res.status(400).json({ success: false, message: 'User with this email already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create new user
     const { data: newUser, error } = await supabase
       .from('users')
       .insert([{
-        tenant_id: targetTenantId, // MULTI-TENANT ASSIGNMENT
+        tenant_id: targetTenantId,
         email,
         first_name: firstName,
         last_name: lastName,
@@ -188,40 +166,26 @@ router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
       .single();
 
     if (error) {
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to create user',
-        error: error.message
-      });
+      return res.status(400).json({ success: false, message: 'Failed to create user', error: error.message });
     }
-
-    const transformedUser = {
-      _id: newUser.id,
-      firstName: newUser.first_name,
-      lastName: newUser.last_name,
-      email: newUser.email,
-      role: newUser.role,
-      status: newUser.status,
-      position: newUser.position,
-      avatar: newUser.avatar,
-      lastLogin: newUser.last_login,
-      loginCount: newUser.login_count,
-      employeeCode: newUser.employee_code,
-      createdAt: newUser.created_at,
-      updatedAt: newUser.updated_at
-    };
 
     res.status(201).json({
       success: true,
       message: 'User created successfully',
-      data: transformedUser
+      data: {
+        _id: newUser.id,
+        firstName: newUser.first_name,
+        lastName: newUser.last_name,
+        email: newUser.email,
+        role: newUser.role,
+        status: newUser.status,
+        tenant_id: newUser.tenant_id,
+        createdAt: newUser.created_at
+      }
     });
   } catch (error) {
     console.error('Create user error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
@@ -232,64 +196,50 @@ router.post('/', requireAdmin, validateUserCreation, async (req, res) => {
  */
 router.put('/:id/reset-password', requireAdmin, async (req, res) => {
   try {
-    const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
-    if (!tenantId) return res.status(403).json({ success: false, message: 'Tenant context required' });
     const userId = req.params.id;
     const { newPassword } = req.body;
 
-    // Validate password
     if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 6 characters'
-      });
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
     }
 
-    // Check if user exists
-    const { data: user, error: fetchError } = await supabase
-      .from('users')
-      .select('id, email, first_name, last_name')
-      .eq('id', userId)
-      .eq('tenant_id', tenantId)
-      .single();
+    let query = supabase.from('users').select('id, email, first_name, last_name, tenant_id').eq('id', userId);
+
+    // Filter by tenant ONLY if not superadmin
+    if (req.user.role !== 'superadmin') {
+      const tenantId = req.user?.tenant_id;
+      if (!tenantId) return res.status(403).json({ success: false, message: 'Tenant context required' });
+      query = query.eq('tenant_id', tenantId);
+    }
+
+    const { data: user, error: fetchError } = await query.single();
 
     if (fetchError || !user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    // Update password
-    const { error: updateError } = await supabase
+    let updateQuery = supabase
       .from('users')
-      .update({
-        password_hash: hashedPassword,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId)
-      .eq('tenant_id', tenantId);
+      .update({ password_hash: hashedPassword, updated_at: new Date().toISOString() })
+      .eq('id', userId);
 
-    if (updateError) {
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to reset password'
-      });
+    // Filter by tenant ONLY if not superadmin
+    if (req.user.role !== 'superadmin') {
+      updateQuery = updateQuery.eq('tenant_id', req.user.tenant_id);
     }
 
-    res.status(200).json({
-      success: true,
-      message: `Password reset successfully for ${user.first_name} ${user.last_name}`
-    });
+    const { error: updateError } = await updateQuery;
+
+    if (updateError) {
+      return res.status(400).json({ success: false, message: 'Failed to reset password' });
+    }
+
+    res.status(200).json({ success: true, message: `Password reset successfully for ${user.first_name} ${user.last_name}` });
   } catch (error) {
     console.error('Reset password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
@@ -300,101 +250,83 @@ router.put('/:id/reset-password', requireAdmin, async (req, res) => {
  */
 router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
   try {
-    let targetTenantId = req.headers['x-tenant-id'] || req.user?.tenant_id;
-    // If super admin specified a different tenant, anchor to that
-    if (req.user.role === 'superadmin' && req.body.tenant_id) {
-       targetTenantId = req.body.tenant_id;
-    }
-
     const { firstName, lastName, email, password, role, status, position, employeeCode } = req.body;
     const userId = req.params.id;
 
-    // Check if user exists
-    const { data: user, error: fetchError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .eq('tenant_id', targetTenantId)
-      .single();
+    let query = supabase.from('users').select('*').eq('id', userId);
 
-    if (fetchError || !user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+    // Filter by tenant ONLY if not superadmin
+    if (req.user.role !== 'superadmin') {
+      const targetTenantId = req.user?.tenant_id;
+      if (!targetTenantId) return res.status(403).json({ success: false, message: 'Tenant context required' });
+      query = query.eq('tenant_id', targetTenantId);
     }
 
-    // Check if email is already taken
-    if (email && email !== user.email) {
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .single();
+    const { data: user, error: fetchError } = await query.single();
 
+    if (fetchError || !user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (email && email !== user.email) {
+      const { data: existingUser } = await supabase.from('users').select('id').eq('email', email).single();
       if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email is already in use'
-        });
+        return res.status(400).json({ success: false, message: 'Email is already in use' });
       }
     }
 
-    // Build update data
     const updateData = {};
     if (firstName) updateData.first_name = firstName;
     if (lastName) updateData.last_name = lastName;
     if (email) updateData.email = email;
-    if (password) updateData.password_hash = await bcrypt.hash(password, 12);
+    const hashedPassword = password ? await bcrypt.hash(password, 12) : undefined;
+    if (hashedPassword) updateData.password_hash = hashedPassword;
     if (role) updateData.role = role;
     if (status) updateData.status = status;
     if (position !== undefined) updateData.position = position;
     if (employeeCode !== undefined) updateData.employee_code = employeeCode;
     updateData.updated_at = new Date().toISOString();
 
-    // Update user
-    const { data: updatedUser, error: updateError } = await supabase
+    let updateQuery = supabase
       .from('users')
       .update(updateData)
-      .eq('id', userId)
-      .eq('tenant_id', targetTenantId)
+      .eq('id', userId);
+
+    // Filter by tenant ONLY if not superadmin
+    if (req.user.role !== 'superadmin') {
+      updateQuery = updateQuery.eq('tenant_id', req.user.tenant_id);
+    }
+
+    const { data: updatedUser, error: updateError } = await updateQuery
       .select()
       .single();
 
     if (updateError) {
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to update user'
-      });
+      return res.status(400).json({ success: false, message: 'Failed to update user' });
     }
-
-    const transformedUser = {
-      _id: updatedUser.id,
-      firstName: updatedUser.first_name,
-      lastName: updatedUser.last_name,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      status: updatedUser.status,
-      position: updatedUser.position,
-      avatar: updatedUser.avatar,
-      lastLogin: updatedUser.last_login,
-      loginCount: updatedUser.login_count,
-      employeeCode: updatedUser.employee_code,
-      createdAt: updatedUser.created_at,
-      updatedAt: updatedUser.updated_at
-    };
 
     res.status(200).json({
       success: true,
       message: 'User updated successfully',
-      data: transformedUser
+      data: {
+        _id: updatedUser.id,
+        firstName: updatedUser.first_name,
+        lastName: updatedUser.last_name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        position: updatedUser.position,
+        avatar: updatedUser.avatar,
+        lastLogin: updatedUser.last_login,
+        loginCount: updatedUser.login_count,
+        employeeCode: updatedUser.employee_code,
+        createdAt: updatedUser.created_at,
+        updatedAt: updatedUser.updated_at
+      }
     });
   } catch (error) {
     console.error('Update user error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
@@ -405,60 +337,45 @@ router.put('/:id', requireAdmin, validateUserUpdate, async (req, res) => {
  */
 router.delete('/:id', requireAdmin, async (req, res) => {
   try {
-    let targetTenantId = req.headers['x-tenant-id'] || req.user?.tenant_id;
-    if (req.user.role === 'superadmin' && req.query.tenant_id) {
-       targetTenantId = req.query.tenant_id;
-    }
-
+    const targetTenantId = req.user?.tenant_id;
     const userId = req.params.id;
 
-    // Prevent admin from deleting themselves
     if (userId === req.user._id) {
-      return res.status(400).json({
-        success: false,
-        message: 'You cannot delete your own account'
-      });
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
     }
 
-    // Check if user exists
-    const { data: user, error: fetchError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .eq('tenant_id', targetTenantId)
-      .single();
+    let query = supabase.from('users').select('id').eq('id', userId);
+
+    // Filter by tenant ONLY if not superadmin
+    if (req.user.role !== 'superadmin') {
+      const targetTenantId = req.user?.tenant_id;
+      if (!targetTenantId) return res.status(403).json({ success: false, message: 'Tenant context required' });
+      query = query.eq('tenant_id', targetTenantId);
+    }
+
+    const { data: user, error: fetchError } = await query.single();
 
     if (fetchError || !user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Delete user
-    const { error: deleteError } = await supabase
-      .from('users')
-      .delete()
-      .eq('id', userId)
-      .eq('tenant_id', targetTenantId);
+    let deleteQuery = supabase.from('users').delete().eq('id', userId);
+
+    // Filter by tenant ONLY if not superadmin
+    if (req.user.role !== 'superadmin') {
+      deleteQuery = deleteQuery.eq('tenant_id', req.user.tenant_id);
+    }
+
+    const { error: deleteError } = await deleteQuery;
 
     if (deleteError) {
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to delete user'
-      });
+      return res.status(400).json({ success: false, message: 'Failed to delete user' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'User deleted successfully'
-    });
+    res.status(200).json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 

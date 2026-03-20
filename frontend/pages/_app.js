@@ -3,43 +3,56 @@ import { useEffect } from 'react';
 
 export default function App({ Component, pageProps }) {
   useEffect(() => {
-    // 1. Determine the Tenant ID 
-    // We try the environment variable FIRST (as configured in Vercel)
-    // Then we try the hostname (as an emergency backup/nuclear option)
-    let tenantId = process.env.NEXT_PUBLIC_TENANT_ID;
-    if (typeof window !== 'undefined' && !tenantId) {
-      if (window.location.hostname.includes('demo')) {
-        tenantId = 'demo';
-      }
-    }
-    const finalTenantId = tenantId || 'ibaoeste';
+    // 1. Determine the Tenant ID Fallback
+    const getFallbackTenantId = () => {
+      if (typeof window === 'undefined') return 'ibaoeste';
+      
+      // Try URL parameter first (e.g., ?tenant=demo)
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('tenant')) return urlParams.get('tenant');
+      
+      // Try hostname (e.g., demo.brgyportal.com)
+      if (window.location.hostname.includes('demo')) return 'demo';
+
+      // Try user profile from localStorage if logged in (for dashboard paths)
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.tenant_id) return user.tenant_id;
+        }
+      } catch (e) {}
+
+      // Try environment variable
+      if (process.env.NEXT_PUBLIC_TENANT_ID) return process.env.NEXT_PUBLIC_TENANT_ID;
+      
+      return 'ibaoeste';
+    };
+
+    const fallbackTenantId = getFallbackTenantId();
 
     // 2. SECURE FETCH WRAPPER:
-    // This intercepts every single 'fetch' call in the legacy part of the app
-    // to ensure the backend always knows which tenant is making the request.
+    // This intercepts every single 'fetch' call to ensure correct Auth and Tenant context
     const originalFetch = window.fetch;
-    window.fetch = async (...args) => {
-      let [resource, config] = args;
-      
-      // Determine if this is a call to our backend
-      const backendUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+    window.fetch = async (resource, config = {}) => {
+      const backendUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005').replace(/\/$/, '');
       const isInternalApi = typeof resource === 'string' && 
         (resource.includes(backendUrl) || resource.startsWith('/api') || resource.includes('/auth/') || resource.includes('/dashboard/'));
 
       if (isInternalApi) {
         config = config || {};
-        const headers = config.headers || {};
+        config.headers = config.headers || {};
         
-        // If the header is missing, forcefully inject it
-        if (!headers['x-tenant-id']) {
-          if (headers instanceof Headers) {
-            headers.set('x-tenant-id', finalTenantId);
-          } else {
-            config.headers = {
-              ...headers,
-              'x-tenant-id': finalTenantId
-            };
-          }
+        // Auto-inject Token if missing
+        const token = localStorage.getItem('token');
+        if (token && !config.headers['Authorization']) {
+          config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        // Force/Inject Tenant ID:
+        // Priority: 1. Header already in call, 2. Global fallback
+        if (!config.headers['x-tenant-id']) {
+          config.headers['x-tenant-id'] = fallbackTenantId;
         }
       }
       
