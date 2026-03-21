@@ -311,32 +311,24 @@ export default function BarangayPortal() {
   // Load events from API
   useEffect(() => {
     const fetchEvents = async () => {
+      // Small delay on first load to ensure interceptor is ready
+      await new Promise(r => setTimeout(r, 100));
       if (!tenantId) return;
       try {
-        const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
-        console.log('Fetching events from:', `${API_URL}/events`);
+        console.log(`📡 Fetching events from: ${API_URL}/events for tenant: ${tenantId}`);
         const response = await fetch(`${API_URL}/events`, {
           headers: { 'x-tenant-id': tenantId }
         });
-        console.log('Events API response status:', response.status);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
+        
         const data = await response.json();
-        console.log('Events API data:', data);
-
         if (data.success && data.data && data.data.length > 0) {
-          console.log('Setting events from API:', data.data);
+          console.log('✅ Setting events from API:', data.data);
           setNewsItems(data.data);
         } else {
-          console.log('No events from API, using defaults');
+          console.log('⚠️ No events from API, using defaults');
         }
       } catch (error) {
-        console.error('Error fetching events:', error);
-        console.log('Using default events due to error');
-        // Keep default events on error
+        console.error('❌ Error fetching events:', error);
       }
     };
 
@@ -346,37 +338,29 @@ export default function BarangayPortal() {
   // Load facilities from API
   useEffect(() => {
     const fetchFacilities = async () => {
+      // Small delay on first load to ensure interceptor is ready
+      await new Promise(r => setTimeout(r, 150));
       if (!tenantId) return;
       try {
-        const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
-        console.log('Fetching facilities from:', `${API_URL}/facilities`);
+        console.log(`📡 Fetching facilities from: ${API_URL}/facilities for tenant: ${tenantId}`);
         const response = await fetch(`${API_URL}/facilities`, {
           headers: { 'x-tenant-id': tenantId }
         });
-        console.log('Facilities API response status:', response.status);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
+        
         const data = await response.json();
-        console.log('Facilities API data:', data);
-
         if (data.success && data.data && data.data.length > 0) {
           // Map icon names to actual components
           const facilitiesWithIcons = data.data.map(facility => ({
             ...facility,
             icon: getIconComponent(facility.icon)
           }));
-          console.log('Setting facilities from API:', facilitiesWithIcons);
+          console.log('✅ Setting facilities from API:', facilitiesWithIcons);
           setFacilities(facilitiesWithIcons);
         } else {
-          console.log('No facilities from API, using defaults');
+          console.log('⚠️ No facilities from API, using defaults');
         }
       } catch (error) {
-        console.error('Error fetching facilities:', error);
-        console.log('Using default facilities due to error');
-        // Keep default facilities on error
+        console.error('❌ Error fetching facilities:', error);
       }
     };
 
@@ -399,10 +383,13 @@ export default function BarangayPortal() {
 
   // Fetch local government details and achievements
   useEffect(() => {
-    const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
     const fetchData = async () => {
+      // Small delay on first load to ensure interceptor is ready
+      await new Promise(r => setTimeout(r, 200));
       if (!tenantId) return;
       try {
+        console.log(`📡 Fetching dynamic content from: ${API_URL} for tenant: ${tenantId}`);
+
         // Fetch Officials
         const officialsRes = await fetch(`${API_URL}/officials`, {
           headers: { 'x-tenant-id': tenantId }
@@ -416,7 +403,7 @@ export default function BarangayPortal() {
         const configRes = await fetch(`${API_URL}/officials/config`, {
           headers: { 'x-tenant-id': tenantId }
         });
-        const settingsData = await configRes.json(); // Corrected variable name from settingsRes to configRes
+        const settingsData = await configRes.json();
         if (settingsData.success && settingsData.data) {
           if (settingsData.data.heroSection) setHeroSettings(settingsData.data.heroSection);
           if (settingsData.data.visibility) setVisibilitySettings(settingsData.data.visibility);
@@ -449,7 +436,7 @@ export default function BarangayPortal() {
           }
         }
       } catch (error) {
-        console.error('Error fetching dynamic content:', error);
+        console.error('❌ Error fetching dynamic content:', error);
       }
     };
 

@@ -40,49 +40,49 @@ export default function App({ Component, pageProps }) {
       return 'ibaoeste';
     };
 
-    const fallbackTenantId = getFallbackTenantId();
-
-    // 2. SECURE FETCH WRAPPER:
-    const originalFetch = window.fetch;
-    window.fetch = async (resource, config = {}) => {
-      // Resilient API URL discovery
+    // 2. SECURE FETCH WRAPPER (Moved outside to ensure immediate effect)
+    if (typeof window !== 'undefined' && !window.__interceptorActive) {
+      window.__interceptorActive = true;
+      const originalFetch = window.fetch;
+      
       const getBaseUrl = () => {
         if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-        if (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
+        if (window.location.hostname.includes('railway.app')) {
            const backendHost = window.location.hostname.replace('frontend', 'backend');
            return `https://${backendHost}`;
         }
         return 'http://localhost:5005';
       };
-      
-      const backendUrl = getBaseUrl().replace(/\/$/, '');
-      const isInternalApi = typeof resource === 'string' && (
-        resource.startsWith('/api') || 
-        resource.includes(backendUrl) ||
-        resource.includes('/api/') || 
-        resource.includes('/auth/') || 
-        resource.includes('/dashboard/')
-      );
 
-      if (isInternalApi) {
-        config = config || {};
-        config.headers = config.headers || {};
-        
-        // Auto-inject Token if missing
-        const token = localStorage.getItem('token');
-        if (token && !config.headers['Authorization']) {
-          config.headers['Authorization'] = `Bearer ${token}`;
+      const backendUrl = getBaseUrl().replace(/\/$/, '');
+      console.log(`🌐 BRGY PORTAL: API Backend URL resolved to: ${backendUrl}`);
+
+      window.fetch = async (resource, config = {}) => {
+        const isInternalApi = typeof resource === 'string' && (
+          resource.startsWith('/api') || 
+          resource.includes(backendUrl) ||
+          resource.includes('/api/') || 
+          resource.includes('/auth/') || 
+          resource.includes('/dashboard/')
+        );
+
+        if (isInternalApi) {
+          config = config || {};
+          config.headers = config.headers || {};
+          
+          const token = localStorage.getItem('token');
+          if (token && !config.headers['Authorization']) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+          }
+          
+          if (!config.headers['x-tenant-id']) {
+            config.headers['x-tenant-id'] = getFallbackTenantId();
+          }
         }
         
-        // Force/Inject Tenant ID:
-        // Priority: 1. Header already in call, 2. Global fallback
-        if (!config.headers['x-tenant-id']) {
-          config.headers['x-tenant-id'] = fallbackTenantId;
-        }
-      }
-      
-      return originalFetch(resource, config);
-    };
+        return originalFetch(resource, config);
+      };
+    }
   }, []);
 
   // Use the layout defined at the page level, if available
