@@ -45,8 +45,8 @@ export default function BarangayPortal() {
   const getApiUrl = () => {
     if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
     if (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
-       // HARDCODED PRODUCTION BACKEND FOR RELIABILITY
-       return `https://brgyportal-backend-production.up.railway.app/api`;
+       // REFINED PRODUCTION BACKEND FROM LIVE LOGS
+       return `https://brgyportal-production.up.railway.app/api`;
     }
     return 'http://localhost:5005/api';
   };
