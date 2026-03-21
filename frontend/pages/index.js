@@ -335,6 +335,14 @@ export default function BarangayPortal() {
     fetchEvents();
   }, [tenantId]);
 
+  // SELF-HEALING: Reset currentSlide if it becomes NaN or out of bounds when data arrives
+  useEffect(() => {
+    if (newsItems.length > 0 && (isNaN(currentSlide) || currentSlide >= newsItems.length)) {
+      console.log('🔄 Self-healing: Resetting currentSlide from', currentSlide, 'to 0');
+      setCurrentSlide(0);
+    }
+  }, [newsItems, currentSlide]);
+
   // Load facilities from API
   useEffect(() => {
     const fetchFacilities = async () => {
@@ -498,8 +506,10 @@ export default function BarangayPortal() {
     return () => clearInterval(interval);
   }, []);
 
-  // Hero news carousel auto-slide
+  // Hero news carousel auto-slide with NaN guard
   useEffect(() => {
+    if (newsItems.length === 0) return;
+    
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % newsItems.length);
     }, 5000);
@@ -567,18 +577,13 @@ export default function BarangayPortal() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'translateY(0)';
+          entry.target.classList.add('active');
         }
       });
     }, observerOptions);
 
-    // Observe all animatable elements with lightweight setup
     const animatableElements = document.querySelectorAll('.animate-on-scroll');
     animatableElements.forEach((el) => {
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(20px)';
-      el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
       observer.observe(el);
     });
 
@@ -711,18 +716,32 @@ export default function BarangayPortal() {
         )}
       </nav>
 
-      {/* Hero Section with News Carousel */}
-      <section id="news" className="relative h-[280px] md:h-[320px] lg:h-[400px] xl:h-[420px] overflow-hidden">
+      {/* Hero Section with News Carousel - Trimmed Balanced Height */}
+      <section id="news" className="relative h-[320px] md:h-[380px] lg:h-[450px] xl:h-[480px] overflow-hidden bg-gray-900">
+        {/* Loading Skeleton */}
+        {newsItems.length === 0 && (
+          <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
+            <div className="w-full max-w-[1800px] px-4 md:px-8 space-y-4 animate-pulse">
+               <div className="h-6 w-32 bg-white/10 rounded-full" />
+               <div className="h-12 w-1/2 bg-white/20 rounded-lg" />
+               <div className="h-20 w-3/4 bg-white/10 rounded-lg" />
+               <div className="h-12 w-40 bg-white/30 rounded-lg" />
+            </div>
+          </div>
+        )}
         {newsItems.map((item, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${currentSlide === index ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-              }`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              currentSlide === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
+            }`}
           >
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${item.image})` }}
-            />
+            {item.image && (
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${item.image})` }}
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-r from-[#112117]/80 to-[#112e1f]/60" />
             <div className="relative h-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
               <div className="max-w-2xl text-white">
@@ -777,11 +796,11 @@ export default function BarangayPortal() {
 
       {/* Available Forms Section - Modern Design with Responsive Background */}
       <section id="forms" className="py-6 md:py-8 relative overflow-hidden animate-on-scroll">
-        {/* Responsive Background Image */}
+        {/* Removed redundant hardcoded image to fix 404 */}
         <div
           className="absolute inset-0 bg-cover bg-no-repeat hidden md:block"
           style={{
-            backgroundImage: 'url(/images/barangay-captain.jpg)',
+            backgroundColor: '#f8f9fa',
             backgroundPosition: 'center center',
           }}
         />
@@ -2104,11 +2123,25 @@ export default function BarangayPortal() {
           }
         }
         
-        /* Base state for animated elements */
+        /* Base state for animated elements - RESTORED BUT ROBUST */
         .animate-on-scroll {
           opacity: 0;
-          transform: translateY(50px);
-          transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: translateY(30px);
+          transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+          will-change: opacity, transform;
+        }
+
+        .animate-on-scroll.active {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        
+        @keyframes pulse-light {
+          0%, 100% { opacity: 0.1; }
+          50% { opacity: 0.2; }
+        }
+        .animate-pulse {
+          animation: pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         
         /* Animated states */
