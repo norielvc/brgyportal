@@ -27,6 +27,7 @@ const residentRoutes = require('./routes/residents-supabase');
 const achievementRoutes = require('./routes/achievements-supabase');
 const programRoutes = require('./routes/programs-supabase');
 const tenantRoutes = require('./routes/tenants-supabase');
+const homepageRoutes = require('./routes/homepage-supabase');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -150,6 +151,7 @@ app.use('/api/residents', authenticateToken, residentRoutes);
 app.use('/api/achievements', optionalAuthenticateToken, achievementRoutes); 
 app.use('/api/programs', optionalAuthenticateToken, programRoutes); 
 app.use('/api/tenants', authenticateToken, tenantRoutes); 
+app.use('/api/homepage', optionalAuthenticateToken, homepageRoutes);
 app.use('/api/officials', optionalAuthenticateToken, officialRoutes); 
 app.use('/api/certificates', authenticateToken, certificateRoutes); 
 app.use('/api/workflows', authenticateToken, workflowRoutes); 

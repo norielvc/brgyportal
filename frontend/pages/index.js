@@ -305,133 +305,67 @@ export default function BarangayPortal() {
     setTouchEnd(null);
   };
 
-  // Load events from API
+  // Load ALL homepage data in a single request
   useEffect(() => {
-    const fetchEvents = async () => {
-      if (!tenantId) return;
+    if (!tenantId) return;
+    const fetchHomepage = async () => {
       try {
-        console.log(`📡 Fetching events from: ${API_URL}/events for tenant: ${tenantId}`);
-        const response = await fetch(`${API_URL}/events`, {
+        console.log(`📡 Fetching homepage data for tenant: ${tenantId}`);
+        const response = await fetch(`${API_URL}/homepage`, {
           headers: { 'x-tenant-id': tenantId }
         });
-        
         const data = await response.json();
-        if (data.success && data.data && data.data.length > 0) {
-          console.log('✅ Setting events from API:', data.data);
-          setNewsItems(data.data);
-        } else {
-          console.log('⚠️ No events from API, using defaults');
+        if (!data.success) return;
+
+        const { events, facilities: facs, officials: offs, achievements: achs, programs: progs, settings } = data.data;
+
+        if (events?.length > 0) setNewsItems(events);
+
+        if (facs?.length > 0) {
+          setFacilities(facs.map(f => ({ ...f, icon: getIconComponent(f.icon) })));
         }
+
+        if (offs?.length > 0) setOfficials(Array.isArray(offs) ? offs : []);
+
+        if (settings) {
+          if (settings.heroSection) setHeroSettings(settings.heroSection);
+          if (settings.visibility) setVisibilitySettings(settings.visibility);
+        }
+
+        if (achs?.length > 0) {
+          setAchievements(achs.map(ach => ({
+            ...ach,
+            colorClass: ach.color_class || 'bg-blue-500',
+            textColor: ach.text_color || 'blue-400'
+          })));
+        }
+
+        if (progs?.length > 0) setPrograms(progs);
+
+        console.log('✅ Homepage data loaded');
       } catch (error) {
-        console.error('❌ Error fetching events:', error);
+        console.error('❌ Error fetching homepage data:', error);
       }
     };
-
-    fetchEvents();
+    fetchHomepage();
   }, [tenantId]);
 
   // SELF-HEALING: Reset currentSlide if it becomes NaN or out of bounds when data arrives
   useEffect(() => {
     if (newsItems.length > 0 && (isNaN(currentSlide) || currentSlide >= newsItems.length)) {
-      console.log('🔄 Self-healing: Resetting currentSlide from', currentSlide, 'to 0');
       setCurrentSlide(0);
     }
   }, [newsItems, currentSlide]);
 
-  // Load facilities from API
-  useEffect(() => {
-    const fetchFacilities = async () => {
-      if (!tenantId) return;
-      try {
-        console.log(`📡 Fetching facilities from: ${API_URL}/facilities for tenant: ${tenantId}`);
-        const response = await fetch(`${API_URL}/facilities`, {
-          headers: { 'x-tenant-id': tenantId }
-        });
-        
-        const data = await response.json();
-        if (data.success && data.data && data.data.length > 0) {
-          // Map icon names to actual components
-          const facilitiesWithIcons = data.data.map(facility => ({
-            ...facility,
-            icon: getIconComponent(facility.icon)
-          }));
-          console.log('✅ Setting facilities from API:', facilitiesWithIcons);
-          setFacilities(facilitiesWithIcons);
-        } else {
-          console.log('⚠️ No facilities from API, using defaults');
-        }
-      } catch (error) {
-        console.error('❌ Error fetching facilities:', error);
-      }
-    };
-
-    fetchFacilities();
-  }, [tenantId]);
-
   // Set up 5-second interval for hero carousel auto transition
   useEffect(() => {
     const totalImages = facilities.flatMap(f => f.images || []).filter((img, i, arr) => arr.indexOf(img) === i).length || 1;
-    // Don't setup interval if there aren't multiple images to flip through
     if (totalImages <= 1) return;
-    
     const timer = setInterval(() => {
       setHeroCarouselIndex((prev) => (prev === totalImages - 1 ? 0 : prev + 1));
     }, 5000);
-
     return () => clearInterval(timer);
   }, [facilities]);
-
-  // Fetch local government details and achievements
-  // Load other dynamic content from API
-  useEffect(() => {
-    const fetchDynamicContent = async () => {
-      if (!tenantId) return;
-      try {
-        console.log(`🌐 BRGY PORTAL [V2.5]: Fetching dynamic content for tenant: ${tenantId}`);
-
-        // Fetch all in parallel for speed
-        const [officialsRes, programsRes, achievementsRes, configRes] = await Promise.all([
-          fetch(`${API_URL}/officials`, { headers: { 'x-tenant-id': tenantId } }),
-          fetch(`${API_URL}/programs`, { headers: { 'x-tenant-id': tenantId } }),
-          fetch(`${API_URL}/achievements`, { headers: { 'x-tenant-id': tenantId } }),
-          fetch(`${API_URL}/officials/config`, { headers: { 'x-tenant-id': tenantId } })
-        ]);
-        
-        const [officialsData, programsData, achievementsData, settingsData] = await Promise.all([
-          officialsRes.json(),
-          programsRes.json(),
-          achievementsRes.json(),
-          configRes.json()
-        ]);
-
-        if (officialsData.success && officialsData.data) {
-          setOfficials(Array.isArray(officialsData.data) ? officialsData.data : []);
-        }
-
-        if (settingsData.success && settingsData.data) {
-          if (settingsData.data.heroSection) setHeroSettings(settingsData.data.heroSection);
-          if (settingsData.data.visibility) setVisibilitySettings(settingsData.data.visibility);
-        }
-
-        if (achievementsData.success && achievementsData.data?.length > 0) {
-          const mappedAchievements = achievementsData.data.map(ach => ({
-            ...ach,
-            colorClass: ach.color_class || 'bg-blue-500',
-            textColor: ach.text_color || 'blue-400'
-          }));
-          setAchievements(mappedAchievements);
-        }
-
-        if (programsData.success && programsData.data?.length > 0) {
-          setPrograms(programsData.data);
-        }
-      } catch (error) {
-        console.error('❌ Error fetching dynamic content:', error);
-      }
-    };
-
-    fetchDynamicContent();
-  }, [tenantId]);
 
 
   // Update time and weather every second
