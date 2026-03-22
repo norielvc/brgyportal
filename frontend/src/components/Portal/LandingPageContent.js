@@ -247,12 +247,16 @@ export default function LandingPageContent() {
                 Every barangay gets a professional public portal where residents can read news, view officials, see facilities, and most importantly — request certificates online. It works perfectly on phones, tablets, and desktops.
               </p>
               <div className="space-y-4">
-                {[ 'News & Announcements', 'Officials Directory', 'Facilities & Programs', 'Online Form Submission' ].map(item => (
+                {[ 
+                  'News & Announcements', 'Officials Directory', 
+                  'No More Long Queues — Apply from home', 
+                  'Zero Waiting Time — Visit only for pickup' 
+                ].map((item, i) => (
                   <div key={item} className="flex items-center gap-3">
                     <div className="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center border border-amber-100">
-                      <CheckCircle className="w-3.5 h-3.5" style={{ color: GOLD }} />
+                      <CheckCircle className="w-3.5 h-3.5" style={{ color: i > 1 ? '#10b981' : GOLD }} />
                     </div>
-                    <span className="text-base font-semibold text-gray-700">{item}</span>
+                    <span className={`text-base font-semibold ${i > 1 ? 'text-green-600' : 'text-gray-700'}`}>{item}</span>
                   </div>
                 ))}
               </div>
