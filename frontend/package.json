@@ -1,7 +1,7 @@
 {
-  "name": "admin-dashboard-frontend",
+  "name": "brgydesk-frontend",
   "version": "1.0.0",
-  "description": "Frontend for Admin Dashboard System",
+  "description": "BrgyDesk Frontend - Barangay Service Portal",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",

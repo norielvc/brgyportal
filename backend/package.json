@@ -1,7 +1,7 @@
 {
-  "name": "admin-dashboard-backend",
+  "name": "brgydesk-backend",
   "version": "1.0.0",
-  "description": "Backend API for Admin Dashboard",
+  "description": "BrgyDesk Backend API",
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
@@ -32,6 +32,6 @@
     "jwt",
     "api"
   ],
-  "author": "Admin Dashboard Team",
+  "author": "BrgyDesk Team",
   "license": "MIT"
 }

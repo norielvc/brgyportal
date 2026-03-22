@@ -1,6 +1,6 @@
-# CompanyHub - Professional Management System
+# BrgyDesk - Barangay Service Portal
 
-A production-ready, full-stack admin dashboard system designed for internal company management. Built with Next.js, Express.js, and MongoDB.
+A production-ready, multi-tenant barangay portal system for digitizing government services. Built with Next.js, Express.js, and Supabase.
 
 ## 🚀 Features
 

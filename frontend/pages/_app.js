@@ -11,7 +11,7 @@ export default function App({ Component, pageProps }) {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('tenant')) return urlParams.get('tenant');
       
-      // Try hostname (e.g., demo.brgyportal.com)
+      // Try hostname (e.g., demo.brgydesk.com)
       if (window.location.hostname.includes('demo')) return 'demo';
 
       // Always try stored user data first — most reliable source

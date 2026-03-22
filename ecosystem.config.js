@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'admin-dashboard-backend',
+      name: 'brgydesk-backend',
       script: './backend/server.js',
       instances: 1,
       autorestart: true,
@@ -17,7 +17,7 @@ module.exports = {
       time: true
     },
     {
-      name: 'admin-dashboard-frontend',
+      name: 'brgydesk-frontend',
       script: 'npm',
       args: 'start',
       cwd: './frontend',

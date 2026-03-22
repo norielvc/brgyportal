@@ -21,7 +21,7 @@ import SamePersonCertificateModal from '@/components/Forms/SamePersonCertificate
 export default function BarangayPortal() {
   // Version Check Log
   useEffect(() => {
-    console.log('🚀 Barangay Portal Loaded: Version 2.5 (Multi-Tenant Branding)');
+    console.log('🚀 BrgyDesk Portal Loaded: Version 2.5 (Multi-Tenant Branding)');
   }, []);
 
   const [tenantConfig, setTenantConfig] = useState({

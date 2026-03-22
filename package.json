@@ -1,7 +1,7 @@
 {
-  "name": "admin-dashboard-system",
+  "name": "brgydesk",
   "version": "1.0.0",
-  "description": "Production-ready Full-Stack Admin Dashboard System",
+  "description": "BrgyDesk - Multi-Tenant Barangay Service Portal",
   "scripts": {
     "install-all": "cd frontend && npm install && cd ../backend && npm install",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
@@ -20,14 +20,15 @@
     "concurrently": "^8.2.2"
   },
   "keywords": [
-    "admin-dashboard",
+    "brgydesk",
+    "barangay",
     "nextjs",
     "express",
     "mongodb",
     "jwt",
     "full-stack"
   ],
-  "author": "Admin Dashboard Team",
+  "author": "BrgyDesk Team",
   "license": "MIT",
   "dependencies": {
     "node-fetch": "^3.3.2"
