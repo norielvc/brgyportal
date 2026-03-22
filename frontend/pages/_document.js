@@ -4,8 +4,10 @@ export default function Document() {
   return (
     <Html lang="en" style={{ zoom: '0.75' }}>
       <Head>
-        {/* CSP is handled by the backend server */}
         <link rel="icon" href="/favicon.ico" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
       </Head>
       <body>
         <Main />

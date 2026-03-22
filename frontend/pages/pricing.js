@@ -2,26 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { CheckCircle, X, Star, Zap, Crown, Shield, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 
-// Hook: fade+slide in when element enters viewport
 function useReveal(immediate = false) {
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     if (immediate) {
-      // Reveal right away (for above-fold content)
       const t = setTimeout(() => el.classList.add('revealed'), 80);
       return () => clearTimeout(t);
     }
     const timer = setTimeout(() => {
       const observer = new IntersectionObserver(
         ([entry]) => {
-          if (entry.isIntersecting) {
-            el.classList.add('revealed');
-            observer.unobserve(el);
-          }
+          if (entry.isIntersecting) { el.classList.add('revealed'); observer.unobserve(el); }
         },
-        { threshold: 0.05, rootMargin: '0px 0px 0px 0px' }
+        { threshold: 0.05 }
       );
       observer.observe(el);
       return () => observer.disconnect();
@@ -31,6 +26,9 @@ function useReveal(immediate = false) {
   return ref;
 }
 
+const GOLD = '#C9A84C';
+const GOLD_DARK = '#A07830';
+
 const plans = [
   {
     name: 'Starter',
@@ -38,8 +36,7 @@ const plans = [
     setup: 5000,
     description: 'For small barangays getting started with digital services.',
     icon: Zap,
-    color: 'blue',
-    popular: false,
+    highlight: false,
     requests: '300 requests / mo',
     staff: '3 staff + 1 admin',
     support: 'Email · 3–5 days',
@@ -77,8 +74,7 @@ const plans = [
     setup: 8000,
     description: 'Full-featured system for active barangays with complete document processing.',
     icon: Star,
-    color: 'green',
-    popular: true,
+    highlight: true,
     requests: '2,000 requests / mo',
     staff: '8 staff + 1 admin',
     support: 'Email · 1–2 days',
@@ -113,8 +109,7 @@ const plans = [
     setup: 10000,
     description: 'For high-volume or urban barangays that need everything, unlimited.',
     icon: Crown,
-    color: 'slate',
-    popular: false,
+    highlight: false,
     requests: 'Unlimited',
     staff: 'Unlimited',
     support: 'Priority · same-day',
@@ -187,12 +182,10 @@ export default function PricingPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Trigger hero animation on mount
     const t = setTimeout(() => setMounted(true), 50);
     return () => clearTimeout(t);
   }, []);
 
-  // Plans are the main content — reveal immediately; rest trigger on scroll
   const plansRef = useReveal(true);
   const enterpriseRef = useReveal();
   const addonsRef = useReveal();
@@ -200,51 +193,61 @@ export default function PricingPage() {
   const ctaRef = useReveal();
 
   return (
-    <div className="min-h-screen bg-white font-sans">
-      <style>{`
-        .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s cubic-bezier(.4,0,.2,1), transform 0.65s cubic-bezier(.4,0,.2,1); }
+    <div className="min-h-screen bg-white font-sans pricing-page">
+      <style suppressHydrationWarning>{`
+        .pricing-page, .pricing-page * { font-family: 'Google Sans', 'Product Sans', 'Nunito Sans', sans-serif !important; }
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s cubic-bezier(.4,0,.2,1), transform 0.6s cubic-bezier(.4,0,.2,1); }
         .reveal.revealed { opacity: 1; transform: translateY(0); }
         .plan-card { transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s cubic-bezier(.4,0,.2,1); }
-        .plan-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.12); }
-        .plan-card.popular:hover { transform: scale(1.02) translateY(-6px); }
+        .plan-card:hover { transform: translateY(-6px); box-shadow: 0 24px 48px -12px rgba(0,0,0,0.10); }
+        .plan-card.highlight { box-shadow: 0 0 0 2px #C9A84C; }
+        .plan-card.highlight:hover { box-shadow: 0 24px 48px -12px rgba(201,168,76,0.25), 0 0 0 2px #C9A84C; }
         .faq-answer { overflow: hidden; max-height: 0; transition: max-height 0.35s cubic-bezier(.4,0,.2,1), opacity 0.3s ease; opacity: 0; }
-        .faq-answer.open { max-height: 200px; opacity: 1; }
-        .btn-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .btn-hover:hover { transform: translateY(-1px); box-shadow: 0 6px 20px -4px rgba(0,71,0,0.3); }
+        .faq-answer.open { max-height: 300px; opacity: 1; }
+        .btn-gold { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 8px 24px -6px rgba(201,168,76,0.4); }
+        .btn-dark { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .btn-dark:hover { transform: translateY(-1px); box-shadow: 0 8px 24px -6px rgba(0,0,0,0.2); }
         .addon-card { transition: transform 0.25s ease, box-shadow 0.25s ease; }
-        .addon-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px -6px rgba(0,0,0,0.08); }
+        .addon-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px -6px rgba(0,0,0,0.07); }
       `}</style>
 
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-[#004700] rounded-lg flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-[1400px] mx-auto px-8 h-18 flex items-center justify-between" style={{ height: '68px' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-gray-900 text-base">BarangayPortal</span>
+            <span className="font-bold text-gray-900 text-lg tracking-tight">BrgyDesk</span>
           </div>
-          <div className="flex items-center gap-6">
-            <a href="#addons" className="text-sm text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">Add-ons</a>
-            <a href="#faq" className="text-sm text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">FAQ</a>
+          <div className="flex items-center gap-8">
+            <a href="#addons" className="text-base text-gray-400 hover:text-gray-900 transition-colors hidden sm:block">Add-ons</a>
+            <a href="#faq" className="text-base text-gray-400 hover:text-gray-900 transition-colors hidden sm:block">FAQ</a>
             <button
               onClick={() => router.push('/')}
-              className="text-sm font-medium text-[#004700] hover:text-[#006400] transition-colors"
+              className="text-base font-semibold transition-colors"
+              style={{ color: GOLD }}
+              onMouseEnter={e => e.currentTarget.style.color = GOLD_DARK}
+              onMouseLeave={e => e.currentTarget.style.color = GOLD}
             >
-              ← Back to Portal
+              ← Back to BrgyDesk
             </button>
           </div>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-6 text-center bg-white">
-        <div className={`max-w-3xl mx-auto transition-all duration-700 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-          <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-green-100">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+      <section className="pt-36 pb-14 px-8 text-center bg-white">
+        <div className={`max-w-4xl mx-auto transition-all duration-700 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+          <span
+            className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full mb-8 border"
+            style={{ background: `${GOLD}12`, color: GOLD_DARK, borderColor: `${GOLD}35` }}
+          >
+            <span className="w-2 h-2 rounded-full" style={{ background: GOLD }}></span>
             Subscription Plans
           </span>
-          <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
             A professional barangay website and complete document management system.
             No hidden fees. Cancel anytime.
           </p>
@@ -252,99 +255,87 @@ export default function PricingPage() {
       </section>
 
       {/* Plans */}
-      <section className="pb-24 px-6">
-        <div ref={plansRef} className="reveal max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+      <section className="pb-28 px-8">
+        <div ref={plansRef} className="reveal max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
             {plans.map((plan, idx) => {
               const Icon = plan.icon;
               return (
                 <div
                   key={plan.name}
                   style={{ transitionDelay: `${idx * 0.12}s` }}
-                  className={`plan-card relative rounded-2xl flex flex-col overflow-hidden
-                    ${plan.popular
-                      ? 'popular bg-[#004700] text-white shadow-2xl shadow-green-900/20 scale-[1.02]'
-                      : 'bg-white border border-gray-200 shadow-sm'
-                    }`}
+                  className={`plan-card${plan.highlight ? ' highlight' : ''} relative rounded-2xl flex flex-col overflow-hidden bg-white border ${plan.highlight ? 'border-transparent' : 'border-gray-200'} shadow-sm`}
                 >
-                  {plan.popular && (
-                    <div className="bg-[#8dc63f] text-[#002200] text-[11px] font-bold text-center py-2 tracking-widest uppercase">
-                      Most Popular
-                    </div>
-                  )}
-
-                  <div className="p-8 flex-1 flex flex-col">
+                  <div className="p-10 flex-1 flex flex-col">
                     {/* Icon + Name */}
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center
-                        ${plan.popular ? 'bg-white/15' : 'bg-gray-100'}`}>
-                        <Icon className={`w-5 h-5 ${plan.popular ? 'text-white' : 'text-gray-600'}`} />
+                    <div className="flex items-center gap-4 mb-8">
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center"
+                        style={plan.highlight ? { background: `${GOLD}20` } : { background: '#f3f4f6' }}
+                      >
+                        <Icon
+                          className="w-6 h-6"
+                          style={plan.highlight ? { color: GOLD_DARK } : { color: '#6b7280' }}
+                        />
                       </div>
-                      <h3 className={`text-xl font-bold ${plan.popular ? 'text-white' : 'text-gray-900'}`}>
-                        {plan.name}
-                      </h3>
+                      <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
                     </div>
 
                     {/* Price */}
-                    <div className="mb-1">
-                      <span className={`text-5xl font-extrabold tracking-tight ${plan.popular ? 'text-white' : 'text-gray-900'}`}>
+                    <div className="mb-2">
+                      <span className="text-6xl font-extrabold tracking-tight text-gray-900">
                         ₱{plan.price.toLocaleString()}
                       </span>
-                      <span className={`text-sm ml-1 ${plan.popular ? 'text-green-200' : 'text-gray-400'}`}>/month</span>
+                      <span className="text-base ml-2 text-gray-400">/month</span>
                     </div>
-                    <p className={`text-sm mb-2 ${plan.popular ? 'text-green-200' : 'text-gray-400'}`}>
-                      + ₱{plan.setup.toLocaleString()} one-time setup
-                    </p>
-                    <p className={`text-sm mb-8 leading-relaxed ${plan.popular ? 'text-green-100' : 'text-gray-500'}`}>
-                      {plan.description}
-                    </p>
+                    <p className="text-base text-gray-400 mb-3">+ ₱{plan.setup.toLocaleString()} one-time setup</p>
+                    <p className="text-base text-gray-500 mb-10 leading-relaxed">{plan.description}</p>
 
                     {/* CTA */}
-                    <button className={`btn-hover w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all mb-8
-                      ${plan.popular
-                        ? 'bg-white text-[#004700] hover:bg-green-50'
-                        : 'bg-[#004700] text-white hover:bg-[#006400]'
-                      }`}>
-                      Get Started <ArrowRight className="w-4 h-4" />
-                    </button>
+                    {plan.highlight ? (
+                      <button
+                        className="btn-gold w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 mb-10 text-white"
+                        style={{ background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})` }}
+                      >
+                        Get Started <ArrowRight className="w-5 h-5" />
+                      </button>
+                    ) : (
+                      <button className="btn-dark w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 mb-10 bg-gray-900 text-white hover:bg-black transition-colors">
+                        Get Started <ArrowRight className="w-5 h-5" />
+                      </button>
+                    )}
 
                     {/* Meta */}
-                    <div className={`grid grid-cols-2 gap-3 p-4 rounded-xl mb-8 text-xs
-                      ${plan.popular ? 'bg-white/10' : 'bg-gray-50'}`}>
-                      <div>
-                        <p className={`font-semibold mb-0.5 ${plan.popular ? 'text-green-200' : 'text-gray-400'}`}>Requests</p>
-                        <p className={plan.popular ? 'text-white font-medium' : 'text-gray-700 font-medium'}>{plan.requests}</p>
-                      </div>
-                      <div>
-                        <p className={`font-semibold mb-0.5 ${plan.popular ? 'text-green-200' : 'text-gray-400'}`}>Staff</p>
-                        <p className={plan.popular ? 'text-white font-medium' : 'text-gray-700 font-medium'}>{plan.staff}</p>
-                      </div>
-                      <div>
-                        <p className={`font-semibold mb-0.5 ${plan.popular ? 'text-green-200' : 'text-gray-400'}`}>Support</p>
-                        <p className={plan.popular ? 'text-white font-medium' : 'text-gray-700 font-medium'}>{plan.support}</p>
-                      </div>
-                      <div>
-                        <p className={`font-semibold mb-0.5 ${plan.popular ? 'text-green-200' : 'text-gray-400'}`}>Training</p>
-                        <p className={plan.popular ? 'text-white font-medium' : 'text-gray-700 font-medium'}>{plan.training}</p>
-                      </div>
+                    <div className="grid grid-cols-2 gap-4 p-5 rounded-xl mb-10 text-sm bg-gray-50">
+                      {[
+                        { label: 'Requests', value: plan.requests },
+                        { label: 'Staff', value: plan.staff },
+                        { label: 'Support', value: plan.support },
+                        { label: 'Training', value: plan.training },
+                      ].map(({ label, value }) => (
+                        <div key={label}>
+                          <p className="text-gray-400 font-semibold mb-1">{label}</p>
+                          <p className="text-gray-700 font-medium">{value}</p>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Features */}
-                    <div className="space-y-2.5">
+                    <div className="space-y-3.5">
                       {plan.features.map((f, i) => (
-                        <div key={i} className="flex items-start gap-2.5">
-                          <CheckCircle className={`w-4 h-4 mt-0.5 shrink-0 ${plan.popular ? 'text-[#8dc63f]' : 'text-green-500'}`} />
-                          <span className={`text-sm ${plan.popular ? 'text-green-50' : 'text-gray-600'}`}>{f}</span>
+                        <div key={i} className="flex items-start gap-3">
+                          <CheckCircle className="w-5 h-5 mt-0.5 shrink-0" style={{ color: GOLD }} />
+                          <span className="text-base text-gray-600">{f}</span>
                         </div>
                       ))}
                     </div>
 
                     {plan.notIncluded.length > 0 && (
-                      <div className="mt-6 pt-6 border-t border-gray-100 space-y-2.5">
+                      <div className="mt-8 pt-8 border-t border-gray-100 space-y-3.5">
                         {plan.notIncluded.map((f, i) => (
-                          <div key={i} className="flex items-start gap-2.5">
-                            <X className="w-4 h-4 mt-0.5 shrink-0 text-gray-300" />
-                            <span className="text-sm text-gray-400">{f}</span>
+                          <div key={i} className="flex items-start gap-3">
+                            <X className="w-5 h-5 mt-0.5 shrink-0 text-gray-300" />
+                            <span className="text-base text-gray-400">{f}</span>
                           </div>
                         ))}
                       </div>
@@ -358,46 +349,49 @@ export default function PricingPage() {
       </section>
 
       {/* LGU Enterprise */}
-      <section className="pb-24 px-6">
-        <div ref={enterpriseRef} className="reveal max-w-6xl mx-auto">
-          <div className="bg-gray-950 rounded-2xl p-10 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-            <div className="max-w-xl">
-              <span className="text-xs font-bold text-green-400 uppercase tracking-widest mb-3 block">LGU Enterprise</span>
-              <h3 className="text-2xl md:text-3xl font-extrabold text-white mb-3 leading-snug">
+      <section className="pb-28 px-8">
+        <div ref={enterpriseRef} className="reveal max-w-[1400px] mx-auto">
+          <div className="bg-gray-950 rounded-2xl p-12 md:p-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-10">
+            <div className="max-w-2xl">
+              <span className="text-sm font-bold uppercase tracking-widest mb-4 block" style={{ color: GOLD }}>LGU Enterprise</span>
+              <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-4 leading-snug">
                 Deploying to multiple barangays?
               </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="text-gray-400 text-base leading-relaxed">
                 Get a centralized LGU dashboard, bulk deployment across all barangays, unified reporting,
                 SLA guarantee, and a dedicated account manager. Starting at ₱25,000/month.
               </p>
             </div>
-            <button className="shrink-0 bg-white text-gray-900 font-semibold px-7 py-3 rounded-xl hover:bg-gray-100 transition-all text-sm flex items-center gap-2">
-              Contact Us <ArrowRight className="w-4 h-4" />
+            <button
+              className="btn-gold shrink-0 font-semibold px-8 py-4 rounded-xl text-base flex items-center gap-2 text-white"
+              style={{ background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})` }}
+            >
+              Contact Us <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>
       </section>
 
       {/* Add-ons */}
-      <section id="addons" className="pb-24 px-6 bg-gray-50">
-        <div ref={addonsRef} className="reveal max-w-6xl mx-auto pt-20">
-          <div className="mb-12">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Add-ons</h2>
-            <p className="text-gray-500">Extend your plan with exactly what you need.</p>
+      <section id="addons" className="pb-28 px-8 bg-gray-50">
+        <div ref={addonsRef} className="reveal max-w-[1400px] mx-auto pt-24">
+          <div className="mb-14">
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-3">Add-ons</h2>
+            <p className="text-lg text-gray-500">Extend your plan with exactly what you need.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {addons.map((group, gi) => (
-              <div key={gi} className="addon-card bg-white rounded-2xl border border-gray-100 p-7 shadow-sm">
-                <h3 className="text-base font-bold text-gray-900 mb-1">{group.category}</h3>
-                {group.description && (
-                  <p className="text-sm text-gray-400 mb-5">{group.description}</p>
-                )}
-                {!group.description && <div className="mb-5" />}
+              <div key={gi} className="addon-card bg-white rounded-2xl border border-gray-100 p-9 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{group.category}</h3>
+                {group.description
+                  ? <p className="text-base text-gray-400 mb-6">{group.description}</p>
+                  : <div className="mb-6" />
+                }
                 <div className="space-y-1">
                   {group.items.map((item, ii) => (
-                    <div key={ii} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-                      <span className="text-sm text-gray-600">{item.name}</span>
-                      <span className="text-sm font-bold text-gray-900 ml-4 shrink-0">{item.price}</span>
+                    <div key={ii} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0">
+                      <span className="text-base text-gray-600">{item.name}</span>
+                      <span className="text-base font-bold ml-4 shrink-0" style={{ color: GOLD_DARK }}>{item.price}</span>
                     </div>
                   ))}
                 </div>
@@ -408,59 +402,60 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="py-24 px-6 bg-white">
-        <div ref={faqRef} className="reveal max-w-2xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Frequently asked questions</h2>
-            <p className="text-gray-500">Everything you need to know before getting started.</p>
+      <section id="faq" className="py-28 px-8 bg-white">
+        <div ref={faqRef} className="reveal max-w-3xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-3">Frequently asked questions</h2>
+            <p className="text-lg text-gray-500">Everything you need to know before getting started.</p>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {faqs.map((faq, i) => (
               <div key={i} className="border border-gray-100 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between px-7 py-5 text-left hover:bg-gray-50 transition-colors"
                 >
-                  <span className="font-semibold text-gray-900 text-sm pr-4">{faq.q}</span>
+                  <span className="font-semibold text-gray-900 text-base pr-4">{faq.q}</span>
                   {openFaq === i
-                    ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
-                    : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                    ? <ChevronUp className="w-5 h-5 text-gray-400 shrink-0" />
+                    : <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
                   }
                 </button>
-                <div className={`faq-answer px-6 text-sm text-gray-500 leading-relaxed border-t border-gray-50 pt-3 pb-5 ${openFaq === i ? 'open' : ''}`}>
+                <div className={`faq-answer px-7 text-base text-gray-500 leading-relaxed border-t border-gray-50 pt-4 pb-6 ${openFaq === i ? 'open' : ''}`}>
                   {faq.a}
-                </div>              </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Footer CTA */}
-      <section className="py-24 px-6 bg-[#004700]">
-        <div ref={ctaRef} className="reveal max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4 leading-tight">
+      <section className="py-28 px-8 bg-gray-950">
+        <div ref={ctaRef} className="reveal max-w-3xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-5 leading-tight">
             Ready to modernize your barangay?
           </h2>
-          <p className="text-green-200 mb-10 text-base leading-relaxed">
+          <p className="text-gray-400 mb-12 text-lg leading-relaxed">
             Contact us for a free demo. We will walk you through the system and help you pick the right plan.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="mailto:your@email.com"
-              className="bg-white text-[#004700] font-semibold px-8 py-3.5 rounded-xl hover:bg-green-50 transition-all text-sm"
+              className="btn-gold font-semibold px-10 py-4 rounded-xl text-base text-white"
+              style={{ background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})` }}
             >
               Email Us
             </a>
             <a
               href="#"
-              className="border border-white/30 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-white/10 transition-all text-sm"
+              className="border border-white/20 text-white font-semibold px-10 py-4 rounded-xl hover:bg-white/10 transition-all text-base"
             >
               Message on Facebook
             </a>
           </div>
         </div>
       </section>
-
     </div>
   );
 }
