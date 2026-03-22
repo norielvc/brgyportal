@@ -4,27 +4,13 @@ import {
   Shield, FileText, Users, CheckCircle, ArrowRight, Menu, X,
   Zap, Star, Crown, ChevronDown, ChevronUp, Building2, QrCode,
   BarChart3, Bell, Fingerprint, Receipt, ClipboardCheck, Search,
-  Globe, Lock, Layers, Award, Phone, Mail, MapPin, MessageSquare
+  Globe, Lock, Layers, Award, Phone, Mail, MapPin, MessageSquare, ChevronRight
 } from 'lucide-react';
 
 const GOLD = '#C9A84C';
 const GOLD_DARK = '#A07830';
 const GOLD_LIGHT = '#E8C96A';
 
-function useReveal() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { el.classList.add('revealed'); observer.unobserve(el); } },
-      { threshold: 0.07 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  return ref;
-}
 
 const CERTS = [
   'Barangay Clearance', 'Certificate of Indigency', 'Barangay Residency',
@@ -71,6 +57,7 @@ const FAQS = [
   { q: 'Can we customize the workflow steps?', a: 'Absolutely. Each certificate type has its own configurable workflow. Add, remove, or reorder steps.' },
   { q: 'What if we need a certificate type not in the list?', a: 'We can build custom request forms. Pricing starts at ₱5,000 depending on complexity.' },
   { q: 'Can our LGU deploy this for all barangays?', a: 'Yes. Our LGU Enterprise plan gives you a centralized dashboard for all barangays under your municipality.' },
+  { q: 'Can residents track their application status?', a: 'Yes. Every resident receives a unique reference number to track their application progress in real-time without logging in.' },
 ];
 
 export default function LandingPageContent() {
@@ -81,12 +68,6 @@ export default function LandingPageContent() {
 
   useEffect(() => { const t = setTimeout(() => setMounted(true), 60); return () => clearTimeout(t); }, []);
 
-  const featRef = useReveal();
-  const howRef = useReveal();
-  const certsRef = useReveal();
-  const plansRef = useReveal();
-  const faqRef = useReveal();
-  const ctaRef = useReveal();
 
   const NAV = [
     { label: 'Features', href: '#features' },
@@ -100,8 +81,8 @@ export default function LandingPageContent() {
     <div className="min-h-screen bg-white landing-page">
       <style suppressHydrationWarning>{`
         .landing-page, .landing-page * { font-family: 'Google Sans', 'Product Sans', 'Nunito Sans', sans-serif !important; }
-        .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s cubic-bezier(.4,0,.2,1), transform 0.65s cubic-bezier(.4,0,.2,1); }
-        .reveal.revealed { opacity: 1; transform: translateY(0); }
+        .section-animate { opacity: 0; transform: translateY(20px); transition: all 0.8s ease-out; }
+        .section-animate.visible { opacity: 1; transform: translateY(0); }
         .feat-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
         .feat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.09); }
         .faq-body { overflow: hidden; max-height: 0; transition: max-height 0.35s cubic-bezier(.4,0,.2,1), opacity 0.3s ease; opacity: 0; }
@@ -210,18 +191,18 @@ export default function LandingPageContent() {
               </div>
             </div>
 
-            <div className="hidden lg:block relative lg:-mt-40">
+            <div className="hidden lg:block relative lg:-mt-10">
               {/* Background Glow */}
                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full blur-[100px] opacity-10 pointer-events-none" style={{ background: GOLD }} />
 
-              {/* Primary Wide Desktop View (Cropped) */}
-              <div className="relative z-10 w-full aspect-video rounded-[1.5rem] shadow-[0_45px_100px_rgba(0,0,0,0.1)] bg-white overflow-hidden border border-gray-100">
-                <img src="/logo.png" alt="BrgyDesk Desktop View" className="w-full h-full object-contain p-20 scale-[1.15]" />
+              {/* Primary Wide Desktop View */}
+              <div className="relative z-10 w-full aspect-video rounded-[1.5rem] shadow-[0_45px_100px_rgba(0,0,0,0.1)] bg-white overflow-hidden border border-gray-100 p-3">
+                <img src="/images/landing/hero.png" alt="BrgyDesk Desktop View" className="w-full h-full object-cover rounded-[1rem] shadow-sm" />
               </div>
 
-              {/* Secondary Vertical Tablet View (Cropped) */}
-              <div className="absolute -left-12 -bottom-10 z-20 w-1/2 aspect-[4/5] rounded-[1.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.15)] bg-white overflow-hidden hidden sm:block transform -rotate-3 border border-gray-100 hover:rotate-0 transition-transform duration-500">
-                <img src="/calumpit.png" alt="BrgyDesk Tablet View" className="w-full h-full object-contain p-10 scale-[1.3]" />
+              {/* Secondary Vertical Tablet View */}
+              <div className="absolute -left-12 -bottom-10 z-20 w-1/2 aspect-[4/5] rounded-[1.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.15)] bg-white overflow-hidden hidden sm:block transform -rotate-3 border border-gray-100 hover:rotate-0 transition-transform duration-500 p-3">
+                <img src="/images/landing/hero-tablet.png" alt="BrgyDesk Tablet View" className="w-full h-full object-cover rounded-[1rem] shadow-sm" />
               </div>
             </div>
           </div>
@@ -230,7 +211,7 @@ export default function LandingPageContent() {
 
       {/* ── FEATURES ── */}
       <section id="features" className="py-28 px-8 bg-gray-50">
-        <div ref={featRef} className="reveal max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto">
           <div className="mb-16">
             <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Everything you need</span>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 mb-4 tracking-tight">One platform, complete coverage</h2>
@@ -254,9 +235,141 @@ export default function LandingPageContent() {
         </div>
       </section>
 
+      {/* ── HIGHLIGHT: PUBLIC PORTAL ── */}
+      <section className="py-28 px-8 bg-white overflow-hidden">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div>
+              <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Public Portal</span>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 mb-6 tracking-tight">Your barangay's<br />official website</h2>
+              <p className="text-lg text-gray-500 mb-8 leading-relaxed font-medium">
+                Every barangay gets a professional public portal where residents can read news, view officials, see facilities, and most importantly — request certificates online. It works perfectly on phones, tablets, and desktops.
+              </p>
+              <div className="space-y-4">
+                {[ 'News & Announcements', 'Officials Directory', 'Facilities & Programs', 'Online Form Submission' ].map(item => (
+                  <div key={item} className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center border border-amber-100">
+                      <CheckCircle className="w-3.5 h-3.5" style={{ color: GOLD }} />
+                    </div>
+                    <span className="text-base font-semibold text-gray-700">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-0 bg-amber-100/50 blur-[80px] rounded-full pointer-events-none" />
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-100 transform lg:rotate-2 hover:rotate-0 transition-transform duration-700">
+                <img src="/images/landing/portal.png" alt="Public Portal Preview" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HIGHLIGHT: QR SCANNER ── */}
+      <section className="py-28 px-8 bg-gray-50 overflow-hidden">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+             <div className="order-2 lg:order-1 relative">
+              <div className="absolute inset-0 bg-amber-100/30 blur-[60px] rounded-full pointer-events-none" />
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-100 transform lg:-rotate-2 hover:rotate-0 transition-transform duration-700">
+                <img src="/images/landing/qr-scan.png" alt="QR Scanner Preview" className="w-full h-full object-cover" />
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>QR Code System</span>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 mb-6 tracking-tight">Scan resident IDs<br />in seconds</h2>
+              <p className="text-lg text-gray-500 mb-8 leading-relaxed font-medium">
+                Streamline relief operations and verify residents instantly. Every resident is issued a unique QR code ID. Staff simply scans it with any mobile phone — no special equipment needed.
+              </p>
+              <div className="space-y-4">
+                {[ 'Instant Resident Verification', 'Track Relief Claims', 'Prevent Duplicate Claims', 'Offline Verification Mode' ].map(item => (
+                  <div key={item} className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center border border-amber-100">
+                      <CheckCircle className="w-3.5 h-3.5" style={{ color: GOLD }} />
+                    </div>
+                    <span className="text-base font-semibold text-gray-700">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HIGHLIGHT: NOTIFICATIONS ── */}
+      <section className="py-28 px-8 bg-white overflow-hidden">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div>
+              <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Messaging & Alerts</span>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 mb-6 tracking-tight">Stay connected with<br />real-time notifications</h2>
+              <p className="text-lg text-gray-500 mb-8 leading-relaxed font-medium">
+                No more manual follow-up calls or missed updates. BrgyDesk automatically sends notifications to both residents and barangay staff at every stage of the document lifecycle — via both Email and SMS.
+              </p>
+              <div className="space-y-6">
+                {[ 
+                  { icon: Bell, title: 'Instant Confirmation', desc: 'Residents receive a reference number via SMS immediately after submission.' },
+                  { icon: Mail, title: 'Email Updates', desc: 'Secure links for document tracking and official receipts sent to the resident\'s inbox.' },
+                  { icon: MessageSquare, title: 'Pick-up Alerts', desc: 'Automated SMS notifying the resident when the document is ready for collection.' }
+                ].map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={i} className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0 border border-amber-100 shadow-sm">
+                        <Icon className="w-6 h-6" style={{ color: GOLD }} />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900 mb-1">{item.title}</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed font-medium">{item.desc}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="relative p-6 md:p-10 bg-gray-50 rounded-[3rem] border border-gray-100 shadow-inner">
+               <div className="absolute inset-0 bg-blue-50/30 blur-[60px] rounded-full pointer-events-none" />
+               <div className="space-y-4 relative z-10">
+                  {/* SMS Bubble Mock */}
+                  <div className="bg-white p-4 rounded-2xl rounded-bl-none shadow-lg border border-gray-100 max-w-[85%] animate-fade-in">
+                    <div className="flex items-center gap-2 mb-2">
+                       <div className="w-2 h-2 rounded-full bg-green-500" />
+                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-wrap">BrgyDesk SMS</span>
+                    </div>
+                    <p className="text-sm text-gray-700 font-medium leading-relaxed">
+                      Barangay Iba O' Este: Mabuhay! Your <span className="font-bold text-gray-900">Barangay Clearance</span> (REF: #B-240322) has been approved and is ready for pickup. See you at the Barangay Hall!
+                    </p>
+                  </div>
+                  {/* Email Bubble Mock */}
+                  <div className="bg-gray-950 p-6 rounded-3xl shadow-xl w-full border border-white/5 transform lg:translate-x-12">
+                     <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                           <div className="p-1.5 bg-white/10 rounded-lg">
+                              <Mail className="w-4 h-4 text-amber-500" />
+                           </div>
+                           <span className="text-xs font-bold text-white tracking-widest uppercase">Official Update</span>
+                        </div>
+                        <span className="text-[10px] text-gray-500">Just now</span>
+                     </div>
+                     <div className="space-y-2">
+                        <div className="h-1.5 w-1/3 bg-white/20 rounded-full" />
+                        <div className="h-1.5 w-full bg-white/10 rounded-full" />
+                        <div className="h-1.5 w-4/5 bg-white/10 rounded-full" />
+                     </div>
+                     <div className="mt-5 flex justify-end">
+                        <div className="px-4 py-1.5 bg-amber-500 text-gray-950 rounded-full text-[10px] font-bold">Document Approved</div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── HOW IT WORKS ── */}
       <section id="how" className="py-28 px-8 bg-white">
-        <div ref={howRef} className="reveal max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto">
           <div className="text-center mb-16">
             <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>The process</span>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 tracking-tight">From request to release</h2>
@@ -265,13 +378,20 @@ export default function LandingPageContent() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {WORKFLOW_STEPS.map((s, i) => (
-              <div key={i} className="relative text-center">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 font-bold text-lg" style={{ background: i === 0 ? `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})` : '#f3f4f6', color: i === 0 ? '#fff' : '#374151' }}>
+              <div key={i} className="relative text-center group">
+                <div className="w-64 h-40 mx-auto mb-6 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 flex items-center justify-center">
+                  {i < 3 ? (
+                    <img src={`/images/landing/step-${i + 1}.png`} alt={s.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <div className="w-full h-full bg-amber-50 flex flex-col items-center justify-center gap-3">
+                       <CheckCircle className="w-16 h-16 text-amber-500" />
+                       <span className="text-xs font-bold text-amber-600 uppercase tracking-widest">Released</span>
+                    </div>
+                  )}
+                </div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-4 font-bold text-sm" style={{ background: i === 0 ? `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})` : '#f3f4f6', color: i === 0 ? '#fff' : '#374151' }}>
                   {s.num}
                 </div>
-                {i < WORKFLOW_STEPS.length - 1 && (
-                  <div className="hidden md:block absolute top-7 left-[calc(50%+28px)] right-0 h-px" style={{ background: `linear-gradient(90deg, ${GOLD}50, transparent)` }} />
-                )}
                 <h3 className="text-base font-bold text-gray-900 mb-2">{s.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{s.desc}</p>
               </div>
@@ -280,9 +400,84 @@ export default function LandingPageContent() {
         </div>
       </section>
 
+      {/* ── HIGHLIGHT: RESIDENT MANAGEMENT ── */}
+      <section className="py-28 px-8 bg-gray-50 overflow-hidden">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div className="order-2 lg:order-1 relative">
+               <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl border border-gray-100">
+                  <div className="flex items-center justify-between mb-8">
+                     <div className="text-xl font-bold text-gray-900">Resident Search</div>
+                     <Search className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <div className="space-y-4">
+                     {[ 'Dela Cruz, Juan', 'Santos, Maria', 'Lopez, Antonio' ].map((name, i) => (
+                       <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-amber-200 transition-colors cursor-pointer group">
+                          <div className="flex items-center gap-4">
+                             <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-xs">{name[0]}</div>
+                             <div>
+                                <div className="text-sm font-bold text-gray-900">{name}</div>
+                                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Zone 4 — Verified</div>
+                             </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" />
+                       </div>
+                     ))}
+                  </div>
+                  <div className="mt-8 pt-8 border-t border-gray-50 flex items-center justify-between">
+                     <div className="text-xs text-gray-400 font-bold uppercase tracking-widest">Total Residents</div>
+                     <div className="text-2xl font-black text-gray-900 tracking-tight">12,402</div>
+                  </div>
+               </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Resident Database</span>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 mb-6 tracking-tight">Your barangay's<br />digital census</h2>
+              <p className="text-lg text-gray-500 mb-8 leading-relaxed font-medium">
+                Eliminate manual record-keeping. Search, verify, and manage your residents instantly. Track household relations, verify residency status during certificate requests, and keep your records always up to date.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 {[ 'Instant Verification', 'Barangay ID Generation', 'Household Mapping', 'Activity Logs' ].map(item => (
+                   <div key={item} className="flex items-center gap-3">
+                      <Shield className="w-5 h-5" style={{ color: GOLD }} />
+                      <span className="text-base font-semibold text-gray-700">{item}</span>
+                   </div>
+                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HIGHLIGHT: TRACK STATUS ── */}
+      <section className="py-28 px-8 bg-gray-900 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-amber-500/5 to-transparent" />
+        <div className="max-w-[1400px] mx-auto text-center relative z-10">
+          <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Real-time Transparency</span>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mt-3 mb-6 tracking-tight">Resident Application Tracker</h2>
+          <p className="text-lg text-gray-400 mb-12 max-w-2xl mx-auto font-medium">
+            Give your residents peace of mind. Every application generates a unique reference number they can use to track real-time progress — from submission to signature.
+          </p>
+          <div className="max-w-xl mx-auto bg-white/10 p-2 rounded-[2rem] border border-white/10 flex flex-col sm:flex-row items-center gap-2">
+             <input type="text" placeholder="E.G. BC-2026-00001" className="w-full bg-transparent px-6 py-4 outline-none text-white font-bold uppercase tracking-widest text-sm" readOnly />
+             <button className="whitespace-nowrap w-full sm:w-auto px-8 py-4 rounded-[1.5rem] bg-amber-500 text-gray-900 font-bold uppercase tracking-widest text-sm shadow-xl">
+                Check Status
+             </button>
+          </div>
+          <div className="flex flex-wrap justify-center gap-8 mt-12">
+             {[ { label: 'Submitted', color: '#6b7280' }, { label: 'In Review', color: GOLD }, { label: 'Ready for Pickup', color: '#10b981' } ].map(s => (
+               <div key={s.label} className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: s.color }} />
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{s.label}</span>
+               </div>
+             ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── CERTIFICATES ── */}
       <section id="certs" className="py-28 px-8 bg-gray-950">
-        <div ref={certsRef} className="reveal max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Document types</span>
@@ -319,14 +514,14 @@ export default function LandingPageContent() {
 
       {/* ── PRICING PREVIEW ── */}
       <section id="pricing" className="py-28 px-8 bg-gray-50">
-        <div ref={plansRef} className="reveal max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto">
           <div className="text-center mb-16">
             <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Pricing</span>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 tracking-tight">Simple, transparent plans</h2>
             <p className="text-lg text-gray-500 mt-4 font-medium">No hidden fees. Cancel anytime. Upgrade as you grow.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {PLANS.map((plan) => {
               const Icon = plan.icon;
               return (
@@ -353,12 +548,62 @@ export default function LandingPageContent() {
               );
             })}
           </div>
+
+          <div className="bg-gray-900 rounded-[2.5rem] p-10 md:p-16 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+              <div>
+                <span className="inline-flex px-3 py-1 bg-amber-500/20 text-amber-500 rounded-full text-xs font-bold uppercase tracking-widest mb-6">Enterprise Suite</span>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 tracking-tight">LGU City & Municipality Dashboard</h2>
+                <p className="text-lg text-gray-400 leading-relaxed font-medium mb-8">
+                  Centralized control for Municipal and City governments. Monitor all 26+ barangays in one dashboard, track document volumes, and generate city-wide reports instantly.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[ 'Consolidated Analytics', 'City-wide Reporting', 'Bulk Onboarding', 'Technical Support' ].map(item => (
+                    <div key={item} className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5" style={{ color: GOLD }} />
+                      <span className="text-white font-medium">{item}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-10">
+                   <button 
+                     onClick={() => router.push('#faq')} 
+                     className="px-8 py-4 rounded-xl font-bold text-gray-900 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-xl" 
+                     style={{ background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})` }}
+                   >
+                     Contact Us for LGU Pricing <ArrowRight className="w-5 h-5" />
+                   </button>
+                </div>
+              </div>
+              <div className="bg-gray-800 rounded-2xl p-6 border border-white/5 shadow-2xl">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <Building2 className="w-8 h-8 text-amber-500" />
+                    <div>
+                      <div className="text-white font-bold">LGU Dashboard</div>
+                      <div className="text-gray-500 text-xs">Full Governance Visibility</div>
+                    </div>
+                  </div>
+                  <div className="px-3 py-1 bg-white/5 rounded-full text-[10px] text-gray-400 font-bold uppercase tracking-widest">Live Preview</div>
+                </div>
+                <div className="space-y-4">
+                  {[ { n: "Active Barangays", v: "26/26" }, { n: "Total Requests", v: "15,402" }, { n: "Avg. Process Time", v: "1.2 Days" } ].map(s => (
+                    <div key={s.n} className="bg-white/5 rounded-xl p-4 flex items-center justify-between border border-white/5 hover:border-white/10 transition-colors">
+                      <span className="text-gray-400 font-medium">{s.n}</span>
+                      <span className="text-white font-bold">{s.v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ── FAQ ── */}
       <section id="faq" className="py-28 px-8 bg-white">
-        <div ref={faqRef} className="reveal max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <div className="text-center mb-14">
             <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>FAQ</span>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 tracking-tight">Common questions</h2>
@@ -387,7 +632,7 @@ export default function LandingPageContent() {
 
       {/* ── CTA ── */}
       <section className="py-28 px-8 bg-gray-950">
-        <div ref={ctaRef} className="reveal max-w-3xl mx-auto text-center">
+        <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight tracking-tight">
             Ready to modernize<br />your barangay?
           </h2>
