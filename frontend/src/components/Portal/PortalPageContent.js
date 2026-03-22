@@ -63,7 +63,7 @@ export default function PortalPageContent({ initialTenantId }) {
         name: "DEMO BARANGAY PORTAL",
         shortName: "Demo Barangay",
         subtitle: "Sample Municipality, Philippines",
-        logo: "/calumpit.png",
+        logo: "/images/bdlogo.png",
         colorStyle: { background: 'linear-gradient(to right, #000000, #333333)' },
         primaryColor: '#1a1a1a',
         primaryHover: '#333333',
