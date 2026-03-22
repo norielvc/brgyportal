@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import LandingPageContent from '@/src/components/Portal/LandingPageContent';
-import PortalPageContent from '@/src/components/Portal/PortalPageContent';
+import LandingPageContent from '@/components/Portal/LandingPageContent';
+import PortalPageContent from '@/components/Portal/PortalPageContent';
 
 export default function Home() {
   const [view, setView] = useState('loading'); // 'loading', 'landing', 'portal'
