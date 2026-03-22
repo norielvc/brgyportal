@@ -225,7 +225,7 @@ export default function PricingPage() {
             <a href="#addons" className="text-base text-gray-400 hover:text-gray-900 transition-colors hidden sm:block">Add-ons</a>
             <a href="#faq" className="text-base text-gray-400 hover:text-gray-900 transition-colors hidden sm:block">FAQ</a>
             <button
-              onClick={() => router.push('/landing')}
+              onClick={() => window.location.href = 'https://brgydesk.up.railway.app/'}
               className="text-base font-semibold transition-colors flex items-center gap-2"
               style={{ color: GOLD }}
               onMouseEnter={e => e.currentTarget.style.color = GOLD_DARK}
