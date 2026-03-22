@@ -35,6 +35,7 @@ const FEATURES = [
   { icon: Lock, title: 'Data Privacy Compliant', desc: 'Fully compliant with RA 10173 (Data Privacy Act). Encrypted, backed up daily, multi-tenant isolated.' },
   { icon: Globe, title: 'Cloud-Based', desc: 'Fully hosted in the cloud. No servers to maintain, no installations. Access from any device, anywhere — your data is always safe and backed up.' },
   { icon: FileText, title: 'PDF Certificate Generation', desc: 'Certificates are auto-generated as professionally formatted PDFs. Ready to print or download instantly after approval.' },
+  { icon: Shield, title: 'Security Alert Center', desc: 'Instantly notify admins if a document requester has a pending case or is on a restricted list. Prevents unauthorized certificate issuance.' },
 ];
 
 const WORKFLOW_STEPS = [
@@ -437,7 +438,7 @@ export default function LandingPageContent() {
                 Eliminate manual record-keeping. Search, verify, and manage your residents instantly. Track household relations, verify residency status during certificate requests, and keep your records always up to date.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 {[ 'Instant Verification', 'Barangay ID Generation', 'Household Mapping', 'Activity Logs' ].map(item => (
+                 {[ 'Instant Verification', 'Barangay ID Generation', 'Household Mapping', 'Pending Case / Restricted Alerts' ].map(item => (
                    <div key={item} className="flex items-center gap-3">
                       <Shield className="w-5 h-5" style={{ color: GOLD }} />
                       <span className="text-base font-semibold text-gray-700">{item}</span>
