@@ -638,7 +638,7 @@ export default function PortalPageContent({ initialTenantId }) {
         <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6">
           {/* Left Side - Logo and Title */}
           <div className="flex items-center gap-3 md:gap-4">
-            <img src={tenantConfig.logo} alt="Barangay Logo" className="h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 object-contain drop-shadow-2xl bg-white rounded-full p-1" />
+            <img src={tenantConfig.logo} alt="Barangay Logo" className="h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 object-contain drop-shadow-2xl" />
             <div className="text-center md:text-left">
               <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">
                 {tenantConfig.name}
