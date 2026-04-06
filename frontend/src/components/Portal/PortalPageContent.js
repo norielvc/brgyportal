@@ -331,6 +331,11 @@ export default function PortalPageContent({ initialTenantId }) {
           headers: { 'x-tenant-id': tenantId }
         });
         
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API error ${response.status}: ${errorText}`);
+        }
+
         const data = await response.json();
         if (data.success && data.data && data.data.length > 0) {
           console.log('✅ Setting events from API:', data.data);
@@ -339,7 +344,7 @@ export default function PortalPageContent({ initialTenantId }) {
           throw new Error('API results empty - falling back');
         }
       } catch (error) {
-        console.warn('📡 API Fallback: Serving events from internal resilience store', error);
+        console.warn('📡 API Fallback: Serving events from internal resilience store', error.message);
         const internalEvents = [
           { id: 'ev-1', title: 'Community Health Fair', date: '2026-04-15', description: 'Free check-ups at the Plaza.', tenant_id: 'ibaoeste', image: '/images/seniorcitizens.jpg' },
           { id: 'ev-2', title: 'Barangay cleanup', date: '2026-04-20', description: 'Join the green drive.', tenant_id: 'demo', image: '/images/barangay-officials.jpg' }
@@ -371,6 +376,11 @@ export default function PortalPageContent({ initialTenantId }) {
           headers: { 'x-tenant-id': tenantId }
         });
         
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API error ${response.status}: ${errorText}`);
+        }
+
         const data = await response.json();
         if (data.success && data.data && data.data.length > 0) {
           // Map icon names to actual components
@@ -384,7 +394,7 @@ export default function PortalPageContent({ initialTenantId }) {
           throw new Error('API results empty - falling back');
         }
       } catch (error) {
-        console.warn('📡 API Fallback: Serving facilities from internal resilience store', error);
+        console.warn('📡 API Fallback: Serving facilities from internal resilience store', error.message);
         const internalFacilities = [
           { 
             id: 'f-1', 
@@ -442,14 +452,17 @@ export default function PortalPageContent({ initialTenantId }) {
           headers: { 'x-tenant-id': tenantId }
         });
         
-        if (officialsRes.ok) {
-          const officialsData = await officialsRes.json();
-          if (officialsData.success && Array.isArray(officialsData.data)) {
-            setOfficials(officialsData.data);
-          }
+        if (!officialsRes.ok) {
+          const errorText = await officialsRes.text();
+          throw new Error(`API error ${officialsRes.status}: ${errorText}`);
+        }
+
+        const officialsData = await officialsRes.json();
+        if (officialsData.success && Array.isArray(officialsData.data)) {
+          setOfficials(officialsData.data);
         }
       } catch (err) {
-        console.warn('📡 API Fallback: Serving officials from internal resilience store');
+        console.warn('📡 API Fallback: Serving officials from internal resilience store', err.message);
         const internalOfficials = [
           { name: 'Hon. Juan Dela Cruz', position: 'Punong Barangay', position_type: 'captain', image_url: '/images/brgycaptain.png' },
           { name: 'Hon. Maria Clara Santos', position: 'Barangay Secretary', position_type: 'secretary' },
