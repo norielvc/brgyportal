@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, FileText, Eye, Send, CheckCircle, AlertCircle, Info, Search, Clock, Phone, Mail, Flower2 } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 
-// API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 // Default officials data (fallback)
 const defaultOfficials = {
@@ -205,6 +203,22 @@ const SearchableDropdown = ({ items, onSelect, placeholder, label, colorClass, s
 };
 
 export default function NaturalDeathCertificateModal({ isOpen, onClose, isDemo = false }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [isOpen]);
+
     const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [notification, setNotification] = useState(null);
@@ -338,10 +352,25 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose, isDemo =
     const handleProceedSubmission = async () => {
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${API_URL}/certificates/naturaldeath`, {
+            // POINTED TO NEXT.JS RESILIENCE API
+            const timestamp = Date.now().toString().slice(-6);
+            const refNum = `ND-${new Date().getFullYear()}-${timestamp}`;
+
+            const response = await fetch('/api/portal/submit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, certificate_type: 'natural_death' })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-tenant-id': isDemo ? 'demo' : 'ibaoeste'
+                },
+                body: JSON.stringify({ 
+                    type: 'natural_death',
+                    formData: {
+                        ...formData,
+                        fullName: formData.deceasedFullName, // Map for backend compatibility
+                        address: formData.deceasedAddress,
+                        referenceNumber: refNum
+                    }
+                })
             });
 
             const result = await response.json();
@@ -505,7 +534,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose, isDemo =
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
-                                                    <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">Registration Notice / Paunawa</h4>
+                                                    <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">Registration Notice<span class="hidden sm:inline"> / Paunawa</span></h4>
                                                 </div>
                                                 <p className="text-white/80 text-sm font-medium leading-relaxed mb-0.5">
                                                     If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
@@ -591,7 +620,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose, isDemo =
                                             </div>
                                             <div>
                                                 <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block mb-1">
-                                                    <div className="flex items-center gap-1"><Phone className="w-3 h-3" /> Contact Number / Numero ng Telepono <span className="text-red-500">*</span></div>
+                                                    <div className="flex items-center gap-1"><Phone className="w-3 h-3" /> Contact Number<span class="hidden sm:inline"> / Numero ng Telepono</span> <span className="text-red-500">*</span></div>
                                                 </label>
                                                 <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={inputClass('contactNumber')} />
                                             </div>
@@ -668,7 +697,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose, isDemo =
                                 <div className="flex gap-2 w-full sm:w-auto">
                                     <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold uppercase tracking-wide text-sm flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all group">
                                         <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                        Submit Application / Ipadala ang Aplikasyon
+                                        Submit Application<span class="hidden sm:inline"> / Ipadala ang Aplikasyon</span>
                                     </button>
                                 </div>
                             </div>
@@ -714,7 +743,7 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose, isDemo =
                                     <Eye className="w-4 h-4" /> Go Back & Edit / Bumalik sa Pag-edit
                                 </button>
                                 <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-4 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold flex items-center gap-2 shadow-xl transform hover:-translate-y-0.5 transition-all">
-                                    {isSubmitting ? 'Processing... / Pinoproseso...' : 'Confirm & Submit / Kumpirmahin at Ipadala'}
+                                    {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
                                 </button>
                             </div>
                         </div>

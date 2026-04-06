@@ -8,7 +8,7 @@ import {
   Download, Filter, Printer
 } from 'lucide-react';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+const API_URL = '/api';
 
 const TYPE_LABELS = {
   barangay_clearance: 'Clearance',

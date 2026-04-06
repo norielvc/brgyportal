@@ -6,7 +6,7 @@ export default function TestSimpleOfficials() {
   useEffect(() => {
     const fetchOfficials = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+        const API_URL = '/api';
         const response = await fetch(`${API_URL}/officials`);
         const data = await response.json();
 

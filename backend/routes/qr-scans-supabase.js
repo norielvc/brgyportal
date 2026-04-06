@@ -37,23 +37,29 @@ router.get('/stats', authenticateToken, async (req, res) => {
     endOfDay.setDate(endOfDay.getDate() + 1);
 
     const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
-    // Get today's scans count
-    const { count: todayCount, error: todayError } = await supabase
+    const { event_id } = req.query;
+
+    let todayQuery = supabase
       .from('qr_scans')
       .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
+      .eq('tenant_id', tenantId)
       .gte('scan_timestamp', startOfDay.toISOString())
       .lt('scan_timestamp', endOfDay.toISOString());
+    if (event_id) todayQuery = todayQuery.eq('event_id', event_id);
+
+    const { count: todayCount, error: todayError } = await todayQuery;
 
     if (todayError) {
       console.error('❌ Error getting today\'s count:', todayError);
     }
 
-    // Get total scans count
-    const { count: totalCount, error: totalError } = await supabase
+    let totalQuery = supabase
       .from('qr_scans')
       .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
+      .eq('tenant_id', tenantId);
+    if (event_id) totalQuery = totalQuery.eq('event_id', event_id);
+
+    const { count: totalCount, error: totalError } = await totalQuery;
 
     if (totalError) {
       console.error('❌ Error getting total count:', totalError);
@@ -117,11 +123,12 @@ router.get('/recent', authenticateToken, async (req, res) => {
 // POST /api/qr-scans - Save a new QR scan
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { qr_data, scan_timestamp, scanner_type, device_info } = req.body;
+    const { qr_data, scan_timestamp, scanner_type, device_info, event_id } = req.body;
     const user_id = req.user._id;
 
     console.log('📱 Saving QR scan:', {
       qr_data,
+      event_id,
       scan_timestamp,
       scanner_type,
       user_id
@@ -188,15 +195,21 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Check if this QR code has already been scanned
     const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
-    const { data: existingScan, error: checkError } = await supabase
+    let duplicateQuery = supabase
       .from('qr_scans')
       .select(`
         *,
         users:scanned_by(id, email, first_name, last_name)
       `)
       .eq('qr_data', qr_data)
-      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
-      .single();
+      .eq('tenant_id', tenantId);
+
+    // If an event is selected, check specifically within that event.
+    if (event_id) {
+       duplicateQuery = duplicateQuery.eq('event_id', event_id);
+    }
+
+    const { data: existingScan, error: checkError } = await duplicateQuery.single();
 
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('❌ Error checking for duplicate:', checkError);
@@ -232,6 +245,7 @@ router.post('/', authenticateToken, async (req, res) => {
           scanner_type: scanner_type || 'mobile',
           device_info: device_info || {},
           scanned_by: user_id,
+          event_id: event_id || null, // ASSIGN TO SPECIFIC RELIEF EVENT
           tenant_id: tenantId, // MULTI-TENANT ASSIGNMENT
           created_at: new Date().toISOString(),
           // Parsed fields for better reporting (must add columns to DB)
@@ -274,7 +288,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // GET /api/qr-scans - Get all QR scans with pagination
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { page = 1, limit = 20, date, qr_data } = req.query;
+    const { page = 1, limit = 20, date, qr_data, event_id } = req.query;
     const offset = (page - 1) * limit;
 
     const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
@@ -286,6 +300,11 @@ router.get('/', authenticateToken, async (req, res) => {
       `)
       .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .order('scan_timestamp', { ascending: false });
+
+    // Filter by event if provided
+    if (event_id) {
+       query = query.eq('event_id', event_id);
+    }
 
     // Filter by date if provided
     if (date) {
@@ -339,9 +358,10 @@ router.get('/', authenticateToken, async (req, res) => {
 // GET /api/qr-scans/duplicates - Get duplicate QR scan attempts
 router.get('/duplicates', authenticateToken, async (req, res) => {
   try {
+    const { event_id } = req.query;
     const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
-    // Get all scans for this tenant and find duplicates in JavaScript
-    const { data: allScans, error: allScansError } = await supabase
+    
+    let scansQuery = supabase
       .from('qr_scans')
       .select(`
         *,
@@ -349,6 +369,13 @@ router.get('/duplicates', authenticateToken, async (req, res) => {
       `)
       .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
       .order('scan_timestamp', { ascending: false });
+
+    if (event_id) {
+       scansQuery = scansQuery.eq('event_id', event_id);
+    }
+
+    // Get all scans for this tenant (and event) and find duplicates in JavaScript
+    const { data: allScans, error: allScansError } = await scansQuery;
 
     if (allScansError) {
       return res.status(500).json({
@@ -448,20 +475,23 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE /api/qr-scans - Clear all scan history
+// DELETE /api/qr-scans - Clear all scan history or history for a specific event
 router.delete('/', authenticateToken, async (req, res) => {
   try {
-    // Only allow admins to clear history (optional but recommended)
-    // if (req.user.role !== 'admin') {
-    //   return res.status(403).json({ success: false, error: 'Unauthorized' });
-    // }
-
+    const { event_id } = req.query;
     const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
-    const { error } = await supabase
+
+    let deleteQuery = supabase
       .from('qr_scans')
       .delete()
-      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
+      .eq('tenant_id', tenantId)
       .neq('id', 0); // Delete all rows where id is not 0 (effectively all rows)
+      
+    if (event_id) {
+       deleteQuery = deleteQuery.eq('event_id', event_id);
+    }
+
+    const { error } = await deleteQuery;
 
     if (error) {
       console.error('❌ Error clearing QR scans:', error);

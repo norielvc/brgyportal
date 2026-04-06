@@ -100,7 +100,7 @@ const authenticateToken = async (req, res, next) => {
  * Middleware to check if user has admin role
  */
 const requireAdmin = (req, res, next) => {
-  const allowedRoles = ['superadmin', 'admin', 'captain', 'secretary'];
+  const allowedRoles = ['superadmin', 'super_admin', 'admin', 'captain', 'secretary', 'staff'];
   if (!allowedRoles.includes(req.user.role)) {
     return res.status(403).json({
       success: false,
@@ -128,7 +128,7 @@ const requireSuperAdmin = (req, res, next) => {
  */
 const requireAdminOrOwner = (req, res, next) => {
   const userId = req.params.id || req.params.userId;
-  const allowedRoles = ['superadmin', 'admin', 'captain', 'secretary'];
+  const allowedRoles = ['superadmin', 'super_admin', 'admin', 'captain', 'secretary', 'staff'];
 
   if (allowedRoles.includes(req.user.role) || req.user._id === userId) {
     return next();

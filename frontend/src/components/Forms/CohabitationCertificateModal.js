@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Heart, Eye, Send, CheckCircle, AlertCircle, Info, Search, Clock, Phone, Mail, Users, MapPin } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 
-// API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 // Default officials data (fallback)
 const defaultOfficials = {
@@ -138,6 +136,22 @@ const Notification = React.memo(({ type, title, message, onClose }) => {
 Notification.displayName = 'Notification';
 
 export default function CohabitationCertificateModal({ isOpen, onClose, isDemo = false }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [isOpen]);
+
     const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [notification, setNotification] = useState(null);
@@ -264,10 +278,23 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
     const handleProceedSubmission = async () => {
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${API_URL}/certificates/cohabitation`, {
+            // POINTED TO NEXT.JS RESILIENCE API
+            const timestamp = Date.now().toString().slice(-6);
+            const refNum = `CH-${new Date().getFullYear()}-${timestamp}`;
+
+            const response = await fetch('/api/portal/submit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, certificate_type: 'barangay_cohabitation' })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-tenant-id': isDemo ? 'demo' : 'ibaoeste'
+                },
+                body: JSON.stringify({ 
+                    type: 'cohabitation',
+                    formData: {
+                        ...formData,
+                        referenceNumber: refNum
+                    }
+                })
             });
             const result = await response.json();
             if (result.success) {
@@ -457,10 +484,10 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
-                                                    <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">Registration Notice / Paunawa</h4>
+                                                    <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">Registration Notice<span class="hidden sm:inline"> / Paunawa</span></h4>
                                                 </div>
                                                 <p className="text-white/80 text-sm font-medium leading-relaxed mb-0.5">If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.</p>
-                                                <p className="text-white/50 text-sm font-medium leading-relaxed italic">Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.</p>
+                                                <p className="text-white/50 text-sm font-medium leading-relaxed italic"><span class="hidden sm:block">Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.</span></p>
                                             </div>
                                         </div>
                                     </div>
@@ -520,15 +547,15 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
 
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                             <div className="space-y-1">
-                                                <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
+                                                <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Email Address (Optional)<span class="hidden sm:inline"> / Email (Opsyonal)</span></label>
                                                 <div className="relative">
                                                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none border-r pr-2 border-gray-100"><Mail className="w-4 h-4 text-[#2d5a3d]/50" /></div>
                                                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="username@example.com" className="w-full pl-12 pr-4 py-2.5 bg-white border-2 border-emerald-100 rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-normal text-gray-800 shadow-sm" />
                                                 </div>
-                                                <p className="text-sm text-gray-400 font-bold italic ml-2">Notifications will be sent here / Dito ipapadala ang mga abiso</p>
+                                                <p className="text-sm text-gray-400 font-bold italic ml-2">Notifications will be sent here<span class="hidden sm:inline"> / Dito ipapadala ang mga abiso</span></p>
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Contact Number / Numero ng Telepono <span className="text-red-500">*</span></label>
+                                                <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Contact Number<span class="hidden sm:inline"> / Numero ng Telepono</span> <span className="text-red-500">*</span></label>
                                                 <div className="relative">
                                                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none border-r pr-2 border-gray-100"><Phone className="w-4 h-4 text-[#2d5a3d]/50" /></div>
                                                     <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full pl-12 pr-4 py-2.5 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-emerald-100'} rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-bold text-gray-800 shadow-sm`} />
@@ -548,7 +575,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
                                 <div className="flex gap-2 w-full sm:w-auto">
                                     <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold uppercase tracking-wide text-sm flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all group">
                                         <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                        Submit Application / Ipadala ang Aplikasyon
+                                        Submit Application<span class="hidden sm:inline"> / Ipadala ang Aplikasyon</span>
                                     </button>
                                 </div>
                             </div>
@@ -600,7 +627,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
                                     <Eye className="w-4 h-4" /> Go Back & Edit / Bumalik sa Pag-edit
                                 </button>
                                 <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-4 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold flex items-center gap-2 shadow-xl transform hover:-translate-y-0.5 transition-all">
-                                    {isSubmitting ? 'Processing... / Pinoproseso...' : 'Confirm & Submit / Kumpirmahin at Ipadala'}
+                                    {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
                                 </button>
                             </div>
                         </div>

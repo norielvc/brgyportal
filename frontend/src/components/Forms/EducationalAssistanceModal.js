@@ -4,6 +4,22 @@ import SignatureInput from '../UI/SignatureInput';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 
 export default function EducationalAssistanceModal({ isOpen, onClose, isDemo = false }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [isOpen]);
+
   const [formData, setFormData] = useState({
     firstName: '',
     middleName: '',
@@ -117,28 +133,38 @@ export default function EducationalAssistanceModal({ isOpen, onClose, isDemo = f
     setSubmitStatus(null);
 
     try {
-      const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+      const timestamp = Date.now().toString().slice(-6);
+      const refNum = `EA-${new Date().getFullYear()}-${timestamp}`;
 
-      const submissionData = {
-        ...formData,
-        fullAddress: generateFullAddress(),
-        age: parseInt(formData.age),
-        gwa: formData.gwa ? parseFloat(formData.gwa) : null,
-        signature: signature // Include signature data
-      };
-
-      const response = await fetch(`${API_URL}/educational-assistance`, {
+      const response = await fetch('/api/portal/submit', {
         method: 'POST',
-        headers: {
+        headers: { 
           'Content-Type': 'application/json',
+          'x-tenant-id': isDemo ? 'demo' : 'ibaoeste'
         },
-        body: JSON.stringify(submissionData)
+        body: JSON.stringify({ 
+          type: 'educational_assistance',
+          formData: {
+            ...formData,
+            fullName: `${formData.firstName} ${formData.middleName} ${formData.lastName}`.trim(),
+            address: generateFullAddress(),
+            referenceNumber: refNum,
+            details: {
+              gwa: formData.gwa ? parseFloat(formData.gwa) : null,
+              schoolToAttend: formData.schoolToAttend,
+              schoolAttending: formData.schoolAttending,
+              yearGrade: formData.yearGrade,
+              academicAwards: formData.academicAwards,
+              signature: signature
+            }
+          }
+        })
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setReferenceNumber(result.data.reference_number);
+        setReferenceNumber(result.referenceNumber);
         setShowSuccessModal(true);
       } else {
         setSubmitStatus('error');
@@ -278,13 +304,13 @@ export default function EducationalAssistanceModal({ isOpen, onClose, isDemo = f
                 <div className="space-y-2.5 flex-1">
                   <div>
                     <h4 className="font-extrabold text-amber-900 uppercase tracking-widest text-sm flex items-center gap-2 mb-1">
-                      Registration Notice / Paunawa
+                      Registration Notice<span class="hidden sm:inline"> / Paunawa</span>
                     </h4>
                     <p className="text-amber-800 text-sm font-bold leading-relaxed mb-1">
                       If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
                     </p>
                     <p className="text-amber-800/80 text-sm font-bold leading-relaxed">
-                      Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.
+                      <span class="hidden sm:block">Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.</span>
                     </p>
                   </div>
                 </div>
@@ -319,7 +345,7 @@ export default function EducationalAssistanceModal({ isOpen, onClose, isDemo = f
                     className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d] hover:text-white rounded-2xl text-sm font-black transition-all duration-300 shadow-sm hover:shadow-emerald-900/10 group"
                   >
                     <Search className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    Search Resident Database / Maghanap sa Database ng Residente
+                    Search Resident Database<span class="hidden sm:inline"> / Maghanap sa Database ng Residente</span>
                   </button>
                 </div>
 
@@ -359,13 +385,13 @@ export default function EducationalAssistanceModal({ isOpen, onClose, isDemo = f
                   <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center font-black text-2xl shadow-sm shrink-0">2</div>
                   <div>
                     <h3 className="text-lg md:text-xl font-black text-white tracking-tight">Notification & Residency</h3>
-                    <p className="text-sm text-white/90 font-bold uppercase tracking-widest">Where to receive your updates / Kung saan matatanggap ang mga update</p>
+                    <p className="text-sm text-white/90 font-bold uppercase tracking-widest">Where to receive your updates<span class="hidden sm:inline"> / Kung saan matatanggap ang mga update</span></p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3 relative group">
-                    <label className="text-sm font-black text-emerald-800 uppercase tracking-widest ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
+                    <label className="text-sm font-black text-emerald-800 uppercase tracking-widest ml-1 block">Email Address (Optional)<span class="hidden sm:inline"> / Email (Opsyonal)</span></label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none border-r pr-3 border-gray-100">
                         <Pen className="w-4 h-4 text-emerald-600/50" />

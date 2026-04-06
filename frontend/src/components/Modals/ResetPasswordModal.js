@@ -1,7 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, KeyRound, AlertCircle, ShieldCheck, RefreshCw } from 'lucide-react';
 
 export default function ResetPasswordModal({ employee, onClose, onSubmit, isLoading: externalIsLoading }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, []);
+
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);

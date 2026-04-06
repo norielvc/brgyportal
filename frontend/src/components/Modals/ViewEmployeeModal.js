@@ -1,6 +1,19 @@
+import { useEffect } from 'react';
 import { X, Mail, Calendar, Clock, Shield, AlertCircle, UserCircle, Briefcase, Activity, Fingerprint } from 'lucide-react';
 
 export default function ViewEmployeeModal({ employee, onClose }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, []);
+
   if (!employee) return null;
 
   const formatDate = (date) => {

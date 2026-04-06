@@ -1,0 +1,94 @@
+{
+  "events": [
+    {
+      "id": "event-1",
+      "title": "Community Health Fair",
+      "date": "2026-04-15",
+      "description": "Free medical check-ups and wellness seminars for all residents of Iba O' Este.",
+      "image": "/images/health-fair.jpg",
+      "tenant_id": "ibaoeste"
+    },
+    {
+      "id": "event-2",
+      "title": "Barangay Cleanup Drive",
+      "date": "2026-04-22",
+      "description": "Join us for our monthly environmental cleanup initiative at the main plaza.",
+      "image": "/images/cleanup.jpg",
+      "tenant_id": "ibaoeste"
+    },
+    {
+      "id": "event-3",
+      "title": "Youth Leadership Seminar",
+      "date": "2026-05-10",
+      "description": "Developing future leaders for the community through strategic workshops.",
+      "image": "/images/youth-leadership.jpg",
+      "tenant_id": "demo"
+    }
+  ],
+  "facilities": [
+    {
+      "id": "fac-1",
+      "name": "Barangay Hall",
+      "description": "Central administrative hub for processing all local documents and permits.",
+      "icon": "Building2",
+      "images": ["/images/hall-1.jpg", "/images/hall-2.jpg"],
+      "tenant_id": "ibaoeste"
+    },
+    {
+      "id": "fac-2",
+      "name": "Iba O' Este Health Center",
+      "description": "Primary healthcare facility providing essential medical services to residents.",
+      "icon": "Stethoscope",
+      "images": ["/images/clinic.jpg"],
+      "tenant_id": "ibaoeste"
+    },
+    {
+      "id": "fac-3",
+      "name": "Multi-Purpose Plaza",
+      "description": "A versatile space for community gatherings, sports, and celebrations.",
+      "icon": "Home",
+      "images": ["/images/plaza.jpg"],
+      "tenant_id": "demo"
+    }
+  ],
+  "officials": [
+    {
+      "id": "off-1",
+      "name": "Hon. Juan Dela Cruz",
+      "position": "Punong Barangay",
+      "position_type": "captain",
+      "description": "Leading with a vision for transparency and inclusive community progress.",
+      "image": "/images/official-1.jpg",
+      "committee": "Peace and Order",
+      "tenant_id": "ibaoeste"
+    },
+    {
+      "id": "off-2",
+      "name": "Hon. Maria Clara Santos",
+      "position": "Barangay Councilor",
+      "position_type": "kagawad",
+      "description": "Specializing in education and community welfare initiatives.",
+      "image": "/images/official-2.jpg",
+      "committee": "Education",
+      "tenant_id": "demo"
+    }
+  ],
+  "achievements": [
+    {
+      "id": "ach-1",
+      "title": "Cleanest Barangay Award",
+      "description": "Recognized by the municipality for exemplary waste management systems.",
+      "color_class": "bg-green-600",
+      "text_color": "green-400",
+      "tenant_id": "ibaoeste"
+    },
+    {
+      "id": "ach-2",
+      "title": "Digital Excellence 2025",
+      "description": "First community to implement a 100% paperless clearance system.",
+      "color_class": "bg-blue-600",
+      "text_color": "blue-300",
+      "tenant_id": "demo"
+    }
+  ]
+}

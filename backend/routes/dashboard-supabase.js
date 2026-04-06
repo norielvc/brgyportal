@@ -282,7 +282,7 @@ router.get('/certificate-analytics', authenticateToken, async (req, res) => {
     if (!tenantId) return res.status(403).json({ success: false, message: 'Tenant context required' });
     const { data: requests, error } = await supabase
       .from('certificate_requests')
-      .select('id, certificate_type, status, created_at, updated_at, applicant_name, reference_number, current_step')
+      .select('id, certificate_type, status, created_at, updated_at, full_name, reference_number, current_step')
       .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
 
     if (error) {
@@ -375,7 +375,7 @@ router.get('/certificate-analytics', authenticateToken, async (req, res) => {
       .map(r => ({
         id: r.id,
         referenceNumber: r.reference_number,
-        applicantName: r.applicant_name,
+        applicantName: r.full_name,
         certificateType: r.certificate_type,
         status: r.status,
         currentStep: r.current_step,

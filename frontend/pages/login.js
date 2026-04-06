@@ -31,8 +31,7 @@ export default function Login() {
     };
   }, []);
 
-  const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api')
-    .replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+  const API_URL = '/api';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -101,7 +100,7 @@ export default function Login() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-br from-amber-100 via-amber-200 to-amber-400 drop-shadow-sm">Desk</span>
               </h1>
               <p className="text-slate-500 text-xs lg:text-lg font-black tracking-[0.2em] lg:tracking-[0.4em] uppercase mt-4 pl-1">
-                Barangay Management Platform
+                BrgyDesk Platform
               </p>
             </div>
 

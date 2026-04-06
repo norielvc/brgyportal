@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, FileText, Eye, Send, Printer, CheckCircle, AlertCircle, Info, Download, Search, Clock, Phone, Users, User, ChevronDown } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 
-// API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 // Default officials data (fallback)
 const defaultOfficials = {
@@ -233,6 +231,22 @@ const SearchableDropdown = ({ items, onSelect, placeholder, label, colorClass, s
 };
 
 export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo = false }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [isOpen]);
+
     const [showPreview, setShowPreview] = useState(false);
     const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -379,14 +393,28 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
     const handleProceedSubmission = async () => {
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${API_URL}/certificates/guardianship`, {
+            // POINTED TO NEXT.JS RESILIENCE API
+            const timestamp = Date.now().toString().slice(-6);
+            const refNum = `GD-${new Date().getFullYear()}-${timestamp}`;
+
+            const response = await fetch('/api/portal/submit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-tenant-id': isDemo ? 'demo' : 'ibaoeste'
+                },
+                body: JSON.stringify({ 
+                    type: 'barangay_guardianship',
+                    formData: {
+                        ...formData,
+                        referenceNumber: refNum
+                    }
+                })
             });
             const result = await response.json();
             if (result.success) {
                 setSubmittedReferenceNumber(result.referenceNumber);
+                setReferenceNumber(result.referenceNumber);
                 setShowConfirmationPopup(false);
                 setShowSuccessModal(true);
             } else {
@@ -512,14 +540,14 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
                                                     <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">
-                                                        Registration Notice / Paunawa
+                                                        Registration Notice<span class="hidden sm:inline"> / Paunawa</span>
                                                     </h4>
                                                 </div>
                                                 <p className="text-white/80 text-sm font-medium leading-relaxed mb-0.5">
                                                     If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
                                                 </p>
                                                 <p className="text-white/50 text-sm font-medium leading-relaxed italic">
-                                                    Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.
+                                                    <span class="hidden sm:block">Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.</span>
                                                 </p>
                                             </div>
                                         </div>
@@ -599,20 +627,20 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
                                                 <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">3</div>
                                                 <div>
                                                     <h3 className="text-base font-bold text-white">Contact Information / Impormasyon sa Pakikipag-ugnayan</h3>
-                                                    <p className="text-sm text-white/90 font-medium tracking-wide">Where to receive your updates / Kung saan matatanggap ang mga update</p>
+                                                    <p className="text-sm text-white/90 font-medium tracking-wide">Where to receive your updates<span class="hidden sm:inline"> / Kung saan matatanggap ang mga update</span></p>
                                                 </div>
                                             </div>
 
                                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                                 <div className="space-y-1 relative group">
-                                                    <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Contact Number / Numero ng Telepono <span className="text-red-500">*</span></label>
+                                                    <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Contact Number<span class="hidden sm:inline"> / Numero ng Telepono</span> <span className="text-red-500">*</span></label>
                                                     <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full px-4 py-2.5 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-emerald-100'} rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-bold text-gray-800 shadow-sm`} />
                                                 </div>
 
                                                 <div className="space-y-1 relative group">
-                                                    <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
+                                                    <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Email Address (Optional)<span class="hidden sm:inline"> / Email (Opsyonal)</span></label>
                                                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="username@example.com" className="w-full px-4 py-2.5 bg-white border-2 border-emerald-100 rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-normal text-gray-800 shadow-sm" />
-                                                    <p className="text-sm text-gray-400 font-bold italic ml-2">Notifications will be sent here / Dito ipapadala ang mga abiso</p>
+                                                    <p className="text-sm text-gray-400 font-bold italic ml-2">Notifications will be sent here<span class="hidden sm:inline"> / Dito ipapadala ang mga abiso</span></p>
                                                 </div>
                                             </div>
                                         </div>
@@ -694,7 +722,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
                                 <div className="flex gap-2 w-full sm:w-auto">
                                     <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold uppercase tracking-wide text-sm flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all group">
                                         <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                        Submit Application / Ipadala ang Aplikasyon
+                                        Submit Application<span class="hidden sm:inline"> / Ipadala ang Aplikasyon</span>
                                     </button>
                                 </div>
                             </div>
@@ -732,7 +760,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
                             <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center no-print">
                                 <button onClick={() => setShowConfirmationPopup(false)} disabled={isSubmitting} className="px-8 py-3.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50">Go Back & Edit / Bumalik sa Pag-edit</button>
                                 <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-8 py-3.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-2xl font-extrabold flex items-center justify-center gap-3 shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-75">
-                                    {isSubmitting ? 'Processing...' : 'Confirm & Submit Application / Ipadala ang Aplikasyon'}
+                                    {isSubmitting ? 'Processing...' : 'Confirm & Submit Application<span class="hidden sm:inline"> / Ipadala ang Aplikasyon</span>'}
                                 </button>
                             </div>
                         </div>

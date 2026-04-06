@@ -3,8 +3,9 @@ import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 
 // Create axios instance
+// MIGRATED: Now routes through internal Next.js /api layer instead of Express port 5005
 const api = axios.create({
-  baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api',
+  baseURL: (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '') + '/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -206,4 +207,4 @@ export const certificatesAPI = {
   },
 };
 
-export default api;// Trigger build 1
+export default api;

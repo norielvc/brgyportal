@@ -3,9 +3,21 @@ import { X, AlertCircle, User, Mail, Shield, UserCircle, Briefcase, Lock, CheckC
 import PasswordStrengthIndicator from '@/components/UI/PasswordStrengthIndicator';
 import { getUserData, getAuthToken } from '@/lib/auth';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+const API_URL = '/api';
 
 export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externalIsLoading }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, []);
+
   const currentUser = getUserData();
   const isSuperAdmin = currentUser?.role === 'superadmin';
 

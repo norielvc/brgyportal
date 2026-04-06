@@ -1,6 +1,19 @@
+import { useEffect } from 'react';
 import { AlertTriangle, X, Trash2, ShieldAlert } from 'lucide-react';
 
 export default function DeleteConfirmModal({ title, message, onConfirm, onCancel, isLoading }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[120] overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">

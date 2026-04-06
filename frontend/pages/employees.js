@@ -29,7 +29,7 @@ import { debounce } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 // API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+const API_URL = '/api';
 
 export default function Employees() {
   const router = useRouter();

@@ -36,11 +36,8 @@ export default function App({ Component, pageProps }) {
       
       const getBaseUrl = () => {
         if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-        if (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
-           // REFINED PRODUCTION BACKEND FROM LIVE LOGS
-           return `https://brgyportal-production.up.railway.app/api`;
-        }
-        return 'http://localhost:5005/api';
+        // Internal Next.js API route — no external server needed
+        return '';
       };
 
       const backendUrl = getBaseUrl().replace(/\/$/, '');

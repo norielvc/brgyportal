@@ -194,7 +194,8 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
 
   const navRef = useRef(null);
   const user = getUserData();
-  const adminRoles = ['SuperAdmin', 'super_admin', 'admin', 'captain', 'secretary', 'SUPERADMIN', 'superadmin'];
+  const role = user?.role?.toLowerCase();
+  const adminRoles = ['superadmin', 'super_admin', 'admin', 'captain', 'secretary', 'staff'];
 
   const handleLogout = () => {
     logout();
@@ -250,7 +251,7 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
   };
 
   const filteredMenuItems = mainMenuItems.filter(item => {
-    if (item.adminOnly && !adminRoles.includes(user?.role)) {
+    if (item.adminOnly && (!role || !adminRoles.includes(role))) {
       return false;
     }
     return true;
@@ -265,8 +266,8 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
             <LayoutDashboard className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-black text-white leading-tight uppercase tracking-tighter">Barangay</h1>
-            <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-[0.2em]">Management System</p>
+            <h1 className="text-sm font-black text-white leading-tight tracking-tight">BrgyDesk</h1>
+            <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-[0.2em]">Management Portal</p>
           </div>
         </div>
         {showClose && (
@@ -361,7 +362,7 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
               {hasChildren && isExpanded && (
                 <div className="pl-4 mt-1 space-y-1 animate-in slide-in-from-top-1 duration-200">
                   {item.children
-                    .filter(child => !child.adminOnly || adminRoles.includes(user?.role))
+                    .filter(child => !child.adminOnly || (role && adminRoles.includes(role)))
                     .map((child) => {
                       const isChildActive = router.pathname === child.href;
                       return (
@@ -416,7 +417,7 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
           </div>
         </div>
 
-        {['superadmin', 'SuperAdmin', 'SUPERADMIN', 'super_admin'].includes(user?.role) && (
+        {role && ['superadmin', 'super_admin'].includes(role) && (
           <button
             type="button"
             onClick={() => router.push('/superadmin')}

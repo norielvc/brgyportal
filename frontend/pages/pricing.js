@@ -28,6 +28,9 @@ function useReveal(immediate = false) {
 
 const GOLD = '#C9A84C';
 const GOLD_DARK = '#A07830';
+const PLATINUM = '#8E9BAE';
+const PLATINUM_DARK = '#5C6B7A';
+const PLATINUM_LIGHT = '#C8D3DE';
 
 const plans = [
   {
@@ -74,7 +77,7 @@ const plans = [
     setup: 8000,
     description: 'Full-featured system for active barangays with complete document processing.',
     icon: Star,
-    highlight: true,
+    highlight: 'platinum',
     requests: '2,000 requests / mo',
     staff: '8 staff + 1 admin',
     support: 'Email · 1–2 days',
@@ -109,7 +112,7 @@ const plans = [
     setup: 10000,
     description: 'For high-volume or urban barangays that need everything, unlimited.',
     icon: Crown,
-    highlight: false,
+    highlight: 'gold',
     requests: 'Unlimited',
     staff: 'Unlimited',
     support: 'Priority · same-day',
@@ -200,8 +203,10 @@ export default function PricingPage() {
         .reveal.revealed { opacity: 1; transform: translateY(0); }
         .plan-card { transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s cubic-bezier(.4,0,.2,1); }
         .plan-card:hover { transform: translateY(-6px); box-shadow: 0 24px 48px -12px rgba(0,0,0,0.10); }
-        .plan-card.highlight { box-shadow: 0 0 0 2px #C9A84C; }
-        .plan-card.highlight:hover { box-shadow: 0 24px 48px -12px rgba(201,168,76,0.25), 0 0 0 2px #C9A84C; }
+        .plan-card.highlight-platinum { box-shadow: 0 0 0 2px #8E9BAE; }
+        .plan-card.highlight-platinum:hover { box-shadow: 0 24px 48px -12px rgba(142,155,174,0.25), 0 0 0 2px #8E9BAE; }
+        .plan-card.highlight-gold { box-shadow: 0 0 0 2px #C9A84C; }
+        .plan-card.highlight-gold:hover { box-shadow: 0 24px 48px -12px rgba(201,168,76,0.25), 0 0 0 2px #C9A84C; }
         .faq-answer { overflow: hidden; max-height: 0; transition: max-height 0.35s cubic-bezier(.4,0,.2,1), opacity 0.3s ease; opacity: 0; }
         .faq-answer.open { max-height: 300px; opacity: 1; }
         .btn-gold { transition: transform 0.2s ease, box-shadow 0.2s ease; }
@@ -264,18 +269,26 @@ export default function PricingPage() {
                 <div
                   key={plan.name}
                   style={{ transitionDelay: `${idx * 0.12}s` }}
-                  className={`plan-card${plan.highlight ? ' highlight' : ''} relative rounded-2xl flex flex-col overflow-hidden bg-white border ${plan.highlight ? 'border-transparent' : 'border-gray-200'} shadow-sm`}
+                  className={`plan-card${plan.highlight === 'platinum' ? ' highlight-platinum' : plan.highlight === 'gold' ? ' highlight-gold' : ''} relative rounded-2xl flex flex-col overflow-hidden bg-white border ${plan.highlight ? 'border-transparent' : 'border-gray-200'} shadow-sm`}
                 >
                   <div className="p-10 flex-1 flex flex-col">
                     {/* Icon + Name */}
                     <div className="flex items-center gap-4 mb-8">
                       <div
                         className="w-12 h-12 rounded-xl flex items-center justify-center"
-                        style={plan.highlight ? { background: `${GOLD}20` } : { background: '#f3f4f6' }}
+                        style={
+                          plan.highlight === 'platinum' ? { background: `${PLATINUM}20` } :
+                          plan.highlight === 'gold' ? { background: `${GOLD}20` } :
+                          { background: '#f3f4f6' }
+                        }
                       >
                         <Icon
                           className="w-6 h-6"
-                          style={plan.highlight ? { color: GOLD_DARK } : { color: '#6b7280' }}
+                          style={
+                            plan.highlight === 'platinum' ? { color: PLATINUM_DARK } :
+                            plan.highlight === 'gold' ? { color: GOLD_DARK } :
+                            { color: '#6b7280' }
+                          }
                         />
                       </div>
                       <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
@@ -292,7 +305,14 @@ export default function PricingPage() {
                     <p className="text-base text-gray-500 mb-10 leading-relaxed">{plan.description}</p>
 
                     {/* CTA */}
-                    {plan.highlight ? (
+                    {plan.highlight === 'platinum' ? (
+                      <button
+                        className="btn-gold w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 mb-10 text-white"
+                        style={{ background: `linear-gradient(135deg, ${PLATINUM_DARK}, ${PLATINUM})` }}
+                      >
+                        Get Started <ArrowRight className="w-5 h-5" />
+                      </button>
+                    ) : plan.highlight === 'gold' ? (
                       <button
                         className="btn-gold w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 mb-10 text-white"
                         style={{ background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})` }}
@@ -324,7 +344,10 @@ export default function PricingPage() {
                     <div className="space-y-3.5">
                       {plan.features.map((f, i) => (
                         <div key={i} className="flex items-start gap-3">
-                          <CheckCircle className="w-5 h-5 mt-0.5 shrink-0" style={{ color: GOLD }} />
+                          <CheckCircle
+                            className="w-5 h-5 mt-0.5 shrink-0"
+                            style={{ color: plan.highlight === 'platinum' ? PLATINUM_DARK : plan.highlight === 'gold' ? GOLD : GOLD }}
+                          />
                           <span className="text-base text-gray-600">{f}</span>
                         </div>
                       ))}

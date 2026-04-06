@@ -103,14 +103,14 @@ export default function LandingPageContent() {
 
       {/* ── NAV ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-[1400px] mx-auto px-8 flex items-center justify-between" style={{ height: 68 }}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
+        <div className="max-w-[1400px] mx-auto px-10 flex items-center justify-between" style={{ height: 84 }}>
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 bg-gray-900 rounded-xl flex items-center justify-center">
+              <Shield className="w-6 h-6 text-white" />
             </div>
             <div className="leading-none">
-              <span className="font-bold text-gray-900 text-lg tracking-tight">BrgyDesk</span>
-              <span className="block text-[9px] font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Barangay Management</span>
+              <span className="font-bold text-gray-900 text-xl tracking-tight">BrgyDesk</span>
+              <span className="block text-[10px] font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Barangay Management</span>
             </div>
           </div>
 
@@ -630,34 +630,6 @@ export default function LandingPageContent() {
       </section>
 
       {/* ── FAQ ── */}
-      <section id="faq" className="py-28 px-8 bg-white">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>FAQ</span>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 tracking-tight">Common questions</h2>
-          </div>
-          <div className="space-y-3">
-            {FAQS.map((faq, i) => (
-              <div key={i} className="border border-gray-100 rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between px-7 py-5 text-left hover:bg-gray-50 transition-colors"
-                >
-                  <span className="font-semibold text-gray-900 text-base pr-4">{faq.q}</span>
-                  {openFaq === i
-                    ? <ChevronUp className="w-5 h-5 text-gray-400 shrink-0" />
-                    : <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
-                  }
-                </button>
-                <div className={`faq-body px-7 text-base text-gray-500 leading-relaxed border-t border-gray-50 pt-4 pb-6 ${openFaq === i ? 'open' : ''}`}>
-                  {faq.a}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── LIVE DEMO ── */}
       <section id="demo" className="py-28 px-8 bg-white">
         <div className="max-w-[1400px] mx-auto">
@@ -737,6 +709,35 @@ export default function LandingPageContent() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section id="faq" className="py-28 px-8 bg-white">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-14">
+            <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: GOLD }}>FAQ</span>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 tracking-tight">Common questions</h2>
+          </div>
+          <div className="space-y-3">
+            {FAQS.map((faq, i) => (
+              <div key={i} className="border border-gray-100 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between px-7 py-5 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <span className="font-semibold text-gray-900 text-base pr-4">{faq.q}</span>
+                  {openFaq === i
+                    ? <ChevronUp className="w-5 h-5 text-gray-400 shrink-0" />
+                    : <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
+                  }
+                </button>
+                <div className={`faq-body px-7 text-base text-gray-500 leading-relaxed border-t border-gray-50 pt-4 pb-6 ${openFaq === i ? 'open' : ''}`}>
+                  {faq.a}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

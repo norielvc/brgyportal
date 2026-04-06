@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { getAuthToken } from '@/lib/auth';
 import {
     Search,
     MapPin,
@@ -34,7 +35,7 @@ export default function Residents() {
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
-    const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+    const API_URL = '/api';
 
     const [residents, setResidents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -142,7 +143,10 @@ export default function Residents() {
 
             const response = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
                 body: JSON.stringify(cleanedData)
             });
 
@@ -165,7 +169,10 @@ export default function Residents() {
         setIsSubmitting(true);
         try {
             const response = await fetch(`${API_URL}/residents/${selectedResident.id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
             });
             const data = await response.json();
             if (data.success) {
@@ -196,16 +203,26 @@ export default function Residents() {
     const fetchResidents = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_URL}/residents/search?name=${encodeURIComponent(searchTerm || '')}&page=${currentPage}&limit=${limit}`);
+            const response = await fetch(`${API_URL}/residents/search?name=${encodeURIComponent(searchTerm || '')}&page=${currentPage}&limit=${limit}`, {
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
+            });
             const data = await response.json();
 
             if (data.success) {
                 setResidents(data.residents);
                 setTotalItems(data.totalItems);
                 setTotalPages(data.totalPages);
+                if (data.residents.length === 0) {
+                    toast.error(`No residents found for tenant: ${currentUser?.tenant_id}`);
+                }
+            } else {
+                toast.error(data.message || 'Failed to fetch residents');
             }
         } catch (error) {
             console.error('Error fetching residents:', error);
+            toast.error('API Connection Error: ' + error.message);
         } finally {
             setIsLoading(false);
         }
@@ -273,30 +290,32 @@ export default function Residents() {
                             }}
                             className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all group cursor-pointer relative overflow-hidden flex flex-col"
                         >
-                            <div className="p-5 flex-1 pt-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="h-14 w-14 bg-indigo-50 border border-indigo-100 group-hover:bg-blue-600 group-hover:border-blue-700 rounded-xl flex items-center justify-center text-indigo-600 group-hover:text-white text-xl font-black transition-all shadow-sm">
+                            <div className="p-6 flex-1 pt-6 bg-gradient-to-br from-white via-white to-gray-50/50 group-hover:to-blue-50/30 transition-all duration-500">
+                                <div className="flex justify-between items-start mb-5">
+                                    <div className="h-16 w-16 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100/50 group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:border-transparent rounded-2xl flex items-center justify-center text-indigo-600 group-hover:text-white text-2xl font-black transition-all duration-300 shadow-sm group-hover:shadow-blue-500/25 group-hover:-translate-y-1">
                                         {resident.last_name?.charAt(0)}
                                     </div>
                                     <div className="text-right">
-                                        <span className={`inline-block px-2.5 py-0.5 rounded-lg text-[9px] font-black tracking-widest uppercase border ${resident.is_deceased ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
+                                        <span className={`inline-block px-3 py-1.5 rounded-xl text-[9px] font-black tracking-[0.2em] uppercase border shadow-sm ${resident.is_deceased ? 'bg-gradient-to-r from-rose-50 to-red-50 text-rose-700 border-rose-200/50' : 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-emerald-200/50'}`}>
                                             {resident.is_deceased ? 'DECEASED' : 'ACTIVE'}
                                         </span>
-                                        <p className="text-[10px] font-mono font-bold text-gray-400 tracking-tighter mt-1">#RID-{String(resident.id).padStart(6, '0')}</p>
+                                        <p className="text-[10px] font-mono font-bold text-gray-400/80 tracking-tighter mt-1.5 group-hover:text-blue-400 transition-colors">#RID-{String(resident.id).padStart(6, '0')}</p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-1 pb-4">
-                                    <h3 className="text-[18px] font-black text-gray-900 group-hover:text-blue-600 uppercase tracking-tight leading-none transition-colors truncate">
-                                        {resident.last_name}, {resident.first_name} {resident.middle_name?.charAt(0)}.
+                                <div className="space-y-1.5 pb-5">
+                                    <h3 className="text-[19px] font-black text-gray-900 group-hover:text-blue-700 uppercase tracking-tight leading-none transition-colors truncate drop-shadow-sm">
+                                        {resident.last_name}, {resident.first_name} {resident.middle_name ? resident.middle_name.charAt(0) + '.' : ''}
                                     </h3>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                        {resident.gender} • {resident.age} YEARS OLD • {resident.civil_status || 'SINGLE'}
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                                        {resident.gender || 'UNKNOWN'} • {resident.age || 'N/A'} Y/O • {resident.civil_status || 'SINGLE'}
                                     </p>
                                     {resident.second_name && (
-                                        <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded border border-blue-100/50 inline-block mt-1">
-                                            AKA: {resident.second_name}
-                                        </p>
+                                        <div className="pt-1">
+                                            <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded inline-block mt-0.5 border border-indigo-100 shadow-sm">
+                                                AKA: {resident.second_name}
+                                            </p>
+                                        </div>
                                     )}
                                 </div>
 
@@ -374,7 +393,7 @@ export default function Residents() {
                         </div>
 
                         {/* Info Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
                             <div className="space-y-3">
                                 <div className="p-5 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
@@ -900,7 +919,7 @@ export default function Residents() {
 Residents.getLayout = (page) => (
     <Layout
         title="Resident Master Database"
-        subtitle="BARANGAY OFFICIAL RECORDS & CENSUS"
+        subtitle="BRGYDESK OFFICIAL RECORDS & CENSUS"
     >
         {page}
     </Layout>

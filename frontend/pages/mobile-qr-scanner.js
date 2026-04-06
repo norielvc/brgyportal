@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { isAuthenticated, getAuthToken } from '@/lib/auth';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+const API_URL = '/api';
 
 export default function MobileQRScannerPage() {
   const router = useRouter();
@@ -18,6 +18,8 @@ export default function MobileQRScannerPage() {
   const [stats, setStats] = useState({ today: 0, total: 0 });
   const [duplicateInfo, setDuplicateInfo] = useState(null);
   const [awaitingAcknowledgment, setAwaitingAcknowledgment] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -26,7 +28,23 @@ export default function MobileQRScannerPage() {
       return;
     }
     loadStats();
+    loadEvents();
   }, []);
+
+  const loadEvents = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/scan-events`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setEvents(data.data.filter(e => e.status === 'ACTIVE') || []);
+      }
+    } catch (err) {
+      console.error('Error loading events:', err);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -216,6 +234,7 @@ export default function MobileQRScannerPage() {
         },
         body: JSON.stringify({
           qr_data: qrData,
+          event_id: selectedEventId,
           scan_timestamp: timestamp.toISOString(),
           scanner_type: 'mobile-qr',
           device_info: {
@@ -319,6 +338,26 @@ export default function MobileQRScannerPage() {
               <div className="text-xl font-bold text-green-600 mb-1">{stats.total}</div>
               <div className="text-xs text-gray-500">Total</div>
             </div>
+          </div>
+
+          {/* Event Selection */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-indigo-100">
+             <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2">
+                Scanning For Event:
+             </label>
+             <select 
+                value={selectedEventId}
+                onChange={(e) => setSelectedEventId(e.target.value)}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+             >
+                <option value="" disabled>-- Select an Active Event --</option>
+                {events.map((evt) => (
+                   <option key={evt.id} value={evt.id}>{evt.name}</option>
+                ))}
+             </select>
+             {events.length === 0 && (
+                <p className="text-red-500 text-xs mt-2 italic">⚠️ No active events found. Please create one on the dashboard.</p>
+             )}
           </div>
 
           {/* Duplicate Warning Modal */}
@@ -436,26 +475,26 @@ export default function MobileQRScannerPage() {
 
                   <h3 className={`text-base font-bold mb-2 ${awaitingAcknowledgment ? 'text-gray-500' : 'text-gray-900'
                     }`}>
-                    {awaitingAcknowledgment ? 'Scanner Disabled' : 'Ready to Scan'}
+                    {awaitingAcknowledgment ? 'Scanner Disabled' : (!selectedEventId ? 'Event Required' : 'Ready to Scan')}
                   </h3>
                   <p className={`mb-3 text-xs ${awaitingAcknowledgment ? 'text-gray-400' : 'text-gray-600'
                     }`}>
                     {awaitingAcknowledgment
                       ? 'Please acknowledge the duplicate warning above to continue'
-                      : 'Tap the button to take a photo of any QR code'
+                      : (!selectedEventId ? 'Please select an event above before scanning' : 'Tap the button to take a photo of any QR code')
                     }
                   </p>
 
                   <button
                     onClick={triggerCamera}
-                    disabled={awaitingAcknowledgment}
-                    className={`w-full py-3 px-6 rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 ${awaitingAcknowledgment
+                    disabled={awaitingAcknowledgment || !selectedEventId}
+                    className={`w-full py-3 px-6 rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 ${awaitingAcknowledgment || !selectedEventId
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white active:scale-95'
                       }`}
                   >
                     <Camera className="w-4 h-4" />
-                    {awaitingAcknowledgment ? 'Scanner Disabled' : 'Take Photo & Scan'}
+                    {awaitingAcknowledgment ? 'Scanner Disabled' : (!selectedEventId ? 'Select Event First' : 'Take Photo & Scan')}
                   </button>
 
                   <p className={`text-xs mt-2 flex items-center justify-center gap-1 ${awaitingAcknowledgment ? 'text-gray-400' : 'text-gray-500'

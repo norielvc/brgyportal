@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, Building2, AlertCircle, CheckCircle, Info, Send, Clock, Eye, Briefcase, User, MapPin, Store, Search, Phone, Mail } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 
-// API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 // Memoized Notification component
 const Notification = React.memo(({ type, title, message, onClose }) => {
@@ -30,6 +28,22 @@ const Notification = React.memo(({ type, title, message, onClose }) => {
 Notification.displayName = 'Notification';
 
 export default function BusinessPermitModal({ isOpen, onClose, isDemo = false }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [isOpen]);
+
   const [formData, setFormData] = useState({
     applicationDate: '',
     applicationNo: '',
@@ -136,31 +150,31 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false })
   const handleProceedSubmission = async () => {
     setIsSubmitting(true);
     try {
-      // Generate reference number at submission time
-      const referenceResponse = await fetch(`${API_URL}/certificates/next-reference/business_permit`);
-      let refNum = `BP-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-      if (referenceResponse.ok) {
-        const refData = await referenceResponse.json();
-        if (refData.success) refNum = refData.referenceNumber;
-      }
+      // POINTED TO NEXT.JS RESILIENCE API
+      const timestamp = Date.now().toString().slice(-6);
+      const refNum = `BP-${new Date().getFullYear()}-${timestamp}`;
 
-      const submissionData = {
-        ...formData,
-        referenceNumber: refNum,
-        applicationNo: refNum,
-        certificateType: 'business_permit'
-      };
-
-      const response = await fetch(`${API_URL}/certificates/business-permit`, {
+      const response = await fetch('/api/portal/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionData)
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-tenant-id': isDemo ? 'demo' : 'ibaoeste'
+        },
+        body: JSON.stringify({ 
+          type: 'business_permit',
+          formData: {
+            ...formData,
+            fullName: formData.ownerFullName, // Map for backend
+            address: formData.ownerAddress,
+            referenceNumber: refNum
+          }
+        })
       });
 
       const data = await response.json();
       if (data.success) {
-        setSubmittedReferenceNumber(refNum);
-        setReferenceNumber(refNum);
+        setSubmittedReferenceNumber(data.referenceNumber);
+        setReferenceNumber(data.referenceNumber);
         setShowConfirmationPopup(false);
         setShowSuccessModal(true);
       } else {
@@ -317,13 +331,13 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false })
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
-                          <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">Registration Notice / Paunawa</h4>
+                          <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">Registration Notice<span class="hidden sm:inline"> / Paunawa</span></h4>
                         </div>
                         <p className="text-white/80 text-sm font-medium leading-relaxed mb-0.5">
                           If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
                         </p>
                         <p className="text-white/50 text-sm font-medium leading-relaxed italic">
-                          Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.
+                          <span class="hidden sm:block">Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.</span>
                         </p>
                       </div>
                     </div>
@@ -549,7 +563,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false })
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">
-                          Email Address (Optional) / Email (Opsyonal)
+                          Email Address (Optional)<span class="hidden sm:inline"> / Email (Opsyonal)</span>
                         </label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none border-r pr-2 border-gray-100">
@@ -564,12 +578,12 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false })
                             className={`w-full pl-12 pr-4 py-2.5 bg-white border-2 ${errors.email ? 'border-red-500 bg-red-50' : 'border-emerald-100'} rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-normal text-gray-800 shadow-sm`}
                           />
                         </div>
-                        <p className="text-sm text-gray-400 font-bold italic ml-2">Notifications will be sent here / Dito ipapadala ang mga abiso</p>
+                        <p className="text-sm text-gray-400 font-bold italic ml-2">Notifications will be sent here<span class="hidden sm:inline"> / Dito ipapadala ang mga abiso</span></p>
                       </div>
 
                       <div className="space-y-1">
                         <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">
-                          Contact Number / Numero ng Telepono <span className="text-red-500">*</span>
+                          Contact Number<span class="hidden sm:inline"> / Numero ng Telepono</span> <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none border-r pr-2 border-gray-100">
@@ -678,7 +692,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false })
                   disabled={isSubmitting}
                   className="px-4 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all"
                 >
-                  {isSubmitting ? 'Processing... / Pinoproseso...' : 'Confirm & Submit / Kumpirmahin at Ipadala'}
+                  {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
                 </button>
               </div>
             </div>

@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-// Build Trigger: 2026-02-07 17:09
-import { X, FileText, Eye, Send, Printer, CheckCircle, AlertCircle, Info, Download, Search, Clock, Phone, Mail, ShieldAlert, XCircle, User } from 'lucide-react';
+import { X, FileText, Eye, Send, Printer, CheckCircle, AlertCircle, Info, Download, Search, Clock, Phone, Mail, ShieldAlert, XCircle, User, ChevronRight, Heart, Home } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
-// API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
-// Default officials data (fallback)
+
 const defaultOfficials = {
   chairman: 'ALEXANDER C. MANIO',
   secretary: 'ROYCE ANN C. GALVEZ',
@@ -139,7 +136,6 @@ const PURPOSE_LIST_3 = [
   "MEDICAL prescription"
 ].sort((a, b) => a.localeCompare(b));
 
-// Enhanced Notification Component - Memoized for performance
 const Notification = React.memo(({ type, title, message, onClose }) => {
   const styles = {
     success: { bg: 'bg-gradient-to-r from-green-50 to-emerald-50', border: 'border-green-200', icon: 'bg-green-100 text-green-600', title: 'text-green-800', message: 'text-green-700' },
@@ -231,9 +227,25 @@ const SearchableDropdown = ({ items, onSelect, placeholder, label, colorClass, s
   );
 };
 
-export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false }) {
-  const [formCounter, setFormCounter] = useState(1);
-  const [showPreview, setShowPreview] = useState(false);
+export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [isOpen]);
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 3;
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -255,9 +267,13 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
   });
 
   const handleResidentSelect = (resident) => {
+    if (!resident) {
+      console.error('No resident data provided to selection handler');
+      return;
+    }
     setFormData(prev => ({
       ...prev,
-      fullName: resident.full_name,
+      fullName: resident.full_name || '',
       age: resident.age || '',
       sex: resident.gender || '',
       civilStatus: resident.civil_status || '',
@@ -284,8 +300,8 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
         title: 'Profile Found',
         message: `${resident.full_name}'s details have been auto-filled.`
       });
+      setErrors(prev => ({ ...prev, fullName: false }));
     }
-    setErrors(prev => ({ ...prev, fullName: false }));
   };
 
   useEffect(() => {
@@ -298,22 +314,7 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
     const savedOfficials = localStorage.getItem('barangayOfficials');
     if (savedOfficials) {
       const parsed = JSON.parse(savedOfficials);
-      setOfficials({
-        ...defaultOfficials,
-        ...parsed,
-        contactInfo: { ...defaultOfficials.contactInfo, ...parsed.contactInfo },
-        headerInfo: { ...defaultOfficials.headerInfo, ...parsed.headerInfo },
-        logos: { ...defaultOfficials.logos, ...parsed.logos },
-        headerStyle: { ...defaultOfficials.headerStyle, ...parsed.headerStyle },
-        countryStyle: { ...defaultOfficials.countryStyle, ...parsed.countryStyle },
-        provinceStyle: { ...defaultOfficials.provinceStyle, ...parsed.provinceStyle },
-        municipalityStyle: { ...defaultOfficials.municipalityStyle, ...parsed.municipalityStyle },
-        barangayNameStyle: { ...defaultOfficials.barangayNameStyle, ...parsed.barangayNameStyle },
-        officeNameStyle: { ...defaultOfficials.officeNameStyle, ...parsed.officeNameStyle },
-        sidebarStyle: { ...defaultOfficials.sidebarStyle, ...parsed.sidebarStyle },
-        bodyStyle: { ...defaultOfficials.bodyStyle, ...parsed.bodyStyle },
-        footerStyle: { ...defaultOfficials.footerStyle, ...parsed.footerStyle }
-      });
+      setOfficials({ ...defaultOfficials, ...parsed });
     }
   }, [isOpen]);
 
@@ -327,76 +328,31 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: false }));
-    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: false }));
   };
 
   const handlePurposeSelect = (e) => {
-    const selectedValue = e.target.value;
+    const selectedValue = e?.target ? e.target.value : (typeof e === 'string' ? e : '');
     if (!selectedValue) return;
-
     setFormData(prev => {
-      const currentPurpose = prev.purpose || '';
-      if (currentPurpose.includes(selectedValue)) return prev;
-      
-      const newPurpose = currentPurpose 
-        ? `${currentPurpose}\n${selectedValue}` 
-        : selectedValue;
-      
-      return { ...prev, purpose: newPurpose };
+      const current = prev.purpose || '';
+      if (current.includes(selectedValue)) return prev;
+      return { ...prev, purpose: current ? `${current}\n${selectedValue}` : selectedValue };
     });
-    
-    // Reset the dropdown
-    e.target.value = '';
-    if (errors.purpose) {
-      setErrors(prev => ({ ...prev, purpose: false }));
-    }
+    if (errors.purpose) setErrors(prev => ({ ...prev, purpose: false }));
   };
 
-
-
   const validateForm = () => {
-    setErrors({});
-    
-    // Check for pending case restriction
-    if (formData.pending_case) {
-      setNotification({
-        type: 'error',
-        title: 'Application Blocked',
-        message: 'This resident has a pending case and is not eligible for Barangay Clearance at this time.'
-      });
-      return false;
-    }
-
-    const required = ['fullName', 'age', 'sex', 'civilStatus', 'dateOfBirth', 'placeOfBirth', 'address', 'purpose', 'contactNumber'];
+    if (formData.pending_case) return false;
+    const required = ['fullName', 'contactNumber', 'purpose'];
     const newErrors = {};
-
-    for (const field of required) {
-      if (!formData[field]) {
-        newErrors[field] = true;
-      }
-    }
-
-    // Basic email validation
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = true;
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setNotification({
-        type: 'error',
-        title: 'Validation Error',
-        message: 'Please fill in all required fields correctly.'
-      });
-      return false;
-    }
-    return true;
+    required.forEach(f => { if (!formData[f]) newErrors[f] = true; });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!validateForm()) return;
     setShowConfirmationPopup(true);
   };
@@ -404,561 +360,302 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
   const handleProceedSubmission = async () => {
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_URL}/certificates/clearance`, {
+      // POINTED TO NEXT.JS RESILIENCE API
+      const response = await fetch('/api/portal/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-tenant-id': tenantConfig.tenant_id || 'ibaoeste'
+        },
+        body: JSON.stringify({ 
+          type: 'barangay_clearance',
+          formData 
+        })
       });
-
+      
       const result = await response.json();
-
       if (result.success) {
         setSubmittedReferenceNumber(result.referenceNumber);
-        setReferenceNumber(result.referenceNumber);
-        setNotification(null);
         setShowConfirmationPopup(false);
         setShowSuccessModal(true);
       } else {
-        throw new Error(result.message || 'Failed to submit application');
+        throw new Error(result.message);
       }
     } catch (error) {
-      console.error('Submission error:', error);
-      setShowConfirmationPopup(false);
-      setNotification({ type: 'error', title: 'Submission Failed', message: error.message || 'Could not submit application. Please try again.' });
+      setNotification({ type: 'error', title: 'Submission Failed', message: error.message });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCustomizeForm = () => setShowConfirmationPopup(false);
-
   const resetForm = () => {
     setFormData({ fullName: '', age: '', sex: '', civilStatus: '', address: '', contactNumber: '', email: '', dateOfBirth: '', placeOfBirth: '', purpose: '', residentId: null });
-    setShowPreview(false);
+    setCurrentStep(1);
     setShowConfirmationPopup(false);
     setShowSuccessModal(false);
-    setNotification(null);
-    setReferenceNumber('');
-    setSubmittedReferenceNumber('');
-    setErrors({});
   };
 
   if (!isOpen) return null;
 
   const demoTheme = isDemo ? (
     <style>{`
-      /* Demo tenant: dark/gold theme override for all form modals */
-      .brgy-modal-wrap [class*="from-[#112e1f]"],
-      .brgy-modal-wrap [class*="from-[#112117]"] {
-        --tw-gradient-from: #111111 !important;
-        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important;
-      }
-      .brgy-modal-wrap [class*="via-[#2d5a3d]"] {
-        --tw-gradient-stops: var(--tw-gradient-from), #222222, var(--tw-gradient-to, transparent) !important;
-      }
-      .brgy-modal-wrap [class*="to-[#112117]"],
-      .brgy-modal-wrap [class*="to-[#1a3d29]"],
-      .brgy-modal-wrap [class*="to-[#2d5a3d]"] {
-        --tw-gradient-to: #1a1a1a !important;
-      }
-      /* Header gradient override */
-      .brgy-modal-wrap .bg-gradient-to-r[class*="from-[#112e1f]"] {
-        background-image: linear-gradient(to right, #111111, #222222, #111111) !important;
-      }
-      /* Step header pill (green lime -> gold) */
-      .brgy-modal-wrap [class*="from-[#8cc63f]"],
-      .brgy-modal-wrap [class*="from-[#7cb342]"] {
-        --tw-gradient-from: #c9a84c !important;
-        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important;
-      }
-      .brgy-modal-wrap [class*="to-[#b4d339]"],
-      .brgy-modal-wrap [class*="to-[#7cb342]"],
-      .brgy-modal-wrap [class*="to-[#689f38]"] {
-        --tw-gradient-to: #a07830 !important;
-      }
-      .brgy-modal-wrap [class*="from-[#8cc63f]"],
-      .brgy-modal-wrap [class*="from-[#7cb342]"] {
-        background-image: linear-gradient(to right, #c9a84c, #a07830) !important;
-      }
-      /* Solid bg overrides */
-      .brgy-modal-wrap [class*="bg-[#8cc63f]"],
-      .brgy-modal-wrap [class*="bg-[#7cb342]"],
-      .brgy-modal-wrap [class*="bg-[#2d5a3d]"],
-      .brgy-modal-wrap [class*="bg-[#112e1f]"] { background-color: #1a1a1a !important; }
-      /* Text color overrides */
-      .brgy-modal-wrap [class*="text-[#2d5a3d]"],
-      .brgy-modal-wrap [class*="text-[#112e1f]"],
-      .brgy-modal-wrap [class*="text-[#8cc63f]"] { color: #c9a84c !important; }
-      /* Border overrides */
-      .brgy-modal-wrap [class*="border-[#2d5a3d]"] { border-color: #c9a84c !important; }
-      /* Hover overrides */
-      .brgy-modal-wrap [class*="hover:bg-[#2d5a3d]"]:hover,
-      .brgy-modal-wrap [class*="hover:from-[#7cb342]"]:hover { background-color: #a07830 !important; }
-      /* Tailwind green/emerald -> gold/dark */
-      .brgy-modal-wrap [class*="text-green-"]:not([class*="text-green-50"]):not([class*="text-green-100"]) { color: #c9a84c !important; }
-      .brgy-modal-wrap [class*="text-emerald-"]:not([class*="text-emerald-50"]):not([class*="text-emerald-100"]) { color: #c9a84c !important; }
-      .brgy-modal-wrap [class*="bg-green-"]:not([class*="bg-green-50"]):not([class*="bg-green-100"]) { background-color: #1a1a1a !important; }
-      .brgy-modal-wrap [class*="bg-emerald-"]:not([class*="bg-emerald-50"]):not([class*="bg-emerald-100"]) { background-color: #1a1a1a !important; }
-      .brgy-modal-wrap [class*="border-green-"] { border-color: #c9a84c !important; }
-      .brgy-modal-wrap [class*="border-emerald-"] { border-color: #c9a84c !important; }
-      .brgy-modal-wrap [class*="hover:bg-green-"]:hover,
-      .brgy-modal-wrap [class*="hover:bg-emerald-"]:hover { background-color: #a07830 !important; }
-      .brgy-modal-wrap [class*="focus:ring-green-"],
-      .brgy-modal-wrap [class*="focus:ring-emerald-"],
-      .brgy-modal-wrap [class*="focus:border-green-"],
-      .brgy-modal-wrap [class*="focus:border-emerald-"] { --tw-ring-color: #c9a84c !important; border-color: #c9a84c !important; }
+      .brgy-modal-wrap { --primary: #000; --accent: #c9a84c; }
+      .brgy-modal-wrap .bg-gradient-to-r { background-image: linear-gradient(to right, #111, #222, #111) !important; }
     `}</style>
   ) : null;
-
 
   return (
     <>
       {demoTheme}
       <div className="brgy-modal-wrap">
-      {(!showConfirmationPopup && !showSuccessModal) && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 sm:p-10">
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
-
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col overflow-hidden animate-fade-in no-scrollbar" style={{ minHeight: '800px', height: '90vh', maxHeight: '95vh' /* BUST-CACHE-800 */, fontFamily: "'Open Sans', sans-serif" }}>
-              <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-4 py-3 flex items-center justify-between border-b border-white/10 relative overflow-hidden flex-shrink-0">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-                <div className="flex items-center gap-3 relative z-10">
-                  <div className="bg-white/20 backdrop-blur-md p-2 rounded-lg border border-white/30 shadow-xl"><FileText className="w-5 h-5 text-white shadow-sm" /></div>
-                  <div className="flex flex-col">
-                    <h2 className="text-lg font-bold text-white tracking-tight drop-shadow-md">Barangay Clearance Request / Hiling na Barangay Clearance</h2>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
-                      <p className="text-white text-sm font-bold uppercase tracking-wide px-2 py-0.5 bg-red-600 rounded-md shadow-md">{referenceNumber || 'New Clearance Request'}</p>
+        {(!showConfirmationPopup && !showSuccessModal) && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 sm:p-10">
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
+              <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-fade-in no-scrollbar" style={{ height: '85vh', maxHeight: '95vh', fontFamily: "'Open Sans', sans-serif" }}>
+                
+                {/* Header */}
+                <div className="bg-black px-8 py-6 flex items-center justify-between border-b border-white/10 shrink-0">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white/10 p-3 rounded-2xl border border-white/20"><FileText className="w-6 h-6 text-white" /></div>
+                    <div>
+                       <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Clearance Acquisition</h2>
+                       <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{tenantConfig.shortName || 'Barangay'} Official Portal</p>
                     </div>
+                  </div>
+                  <button onClick={onClose} className="text-white/40 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all group"><X className="w-8 h-8 group-hover:rotate-90 transition-transform" /></button>
+                </div>
+
+                {notification && <div className="px-8 pt-4"><Notification type={notification.type} title={notification.title} message={notification.message} onClose={() => setNotification(null)} /></div>}
+
+                {/* Progress */}
+                <div className="px-8 pt-8 shrink-0">
+                  <div className="max-w-3xl mx-auto flex items-center justify-between">
+                    {[1, 2, 3].map(s => (
+                      <React.Fragment key={s}>
+                        <div className="flex flex-col items-center">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? 'bg-black text-white scale-110' : 'bg-gray-100 text-gray-300'}`}>
+                            {currentStep > s ? <CheckCircle className="w-6 h-6 text-emerald-400" /> : s}
+                          </div>
+                        </div>
+                        {s < 3 && <div className={`flex-1 h-1 mx-4 rounded-full ${currentStep > s ? 'bg-black' : 'bg-gray-100'}`} />}
+                      </React.Fragment>
+                    ))}
                   </div>
                 </div>
-                <button onClick={onClose} className="text-white/60 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all duration-300 group relative z-20"><X className="w-5 h-5 md:w-6 md:h-6 group-hover:rotate-90 transition-transform duration-300" /></button>
-              </div>
 
-              {notification && <div className="px-4 pt-2"><Notification type={notification.type} title={notification.title} message={notification.message} onClose={() => setNotification(null)} /></div>}
-
-              <div className="flex-1 overflow-y-auto px-2 py-4">
-                <form onSubmit={handleSubmit} className="p-4 space-y-6">
-                  <div className="bg-gradient-to-r from-[#112e1f]/90 to-[#1a3d29]/80 border border-white/10 rounded-lg p-3 shadow-md relative overflow-hidden flex-shrink-0">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl pointer-events-none"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-green-400/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl pointer-events-none"></div>
-                    <div className="flex items-start gap-2 relative z-10">
-                      <div className="bg-white/10 border border-white/20 p-1.5 rounded-lg shrink-0 mt-0.5">
-                        <Info className="w-3 h-3 text-emerald-300" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
-                          <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">
-                            Registration Notice / Paunawa
-                          </h4>
+                <div className="flex-1 overflow-y-auto px-8 py-10">
+                  <div className="max-w-3xl mx-auto">
+                    {currentStep === 1 && (
+                      <div className="space-y-4 animate-in slide-in-from-right-8 duration-500">
+                        <div 
+                          className="bg-white border-2 border-dashed border-gray-200 rounded-[2.5rem] p-10 text-center group cursor-pointer hover:bg-black/5 hover:border-black transition-all relative overflow-hidden active:scale-95 shadow-sm hover:shadow-xl" 
+                          onClick={() => setIsResidentModalOpen(true)}
+                        >
+                           <div className="absolute -top-24 -right-24 w-64 h-64 bg-gray-50 rounded-full group-hover:bg-emerald-50/50 transition-colors"></div>
+                           
+                           <div className="relative z-10 flex flex-col items-center">
+                             <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-inner">
+                               <Search className="w-6 h-6" />
+                             </div>
+                             <h3 className="text-xl font-black uppercase tracking-tighter mb-1">Search Directory / Hanapin sa Direktoryo</h3>
+                             <p className="text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] max-w-[240px] mx-auto leading-relaxed">Find your profile and sync your details instantly. / Hanapin ang iyong profile at i-sync agad ang mga detalye.</p>
+                           </div>
                         </div>
-                        <p className="text-white/80 text-sm font-medium leading-relaxed mb-0.5">
-                          If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
-                        </p>
-                        <p className="text-white/50 text-sm font-medium leading-relaxed italic">
-                          Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="space-y-4">
-                    {/* Section 1: Personal Information */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-gray-100 pb-3">
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm">
-                        <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">1</div>
-                        <div>
-                          <h3 className="text-base font-bold text-white">Personal Information / Impormasyong Personal</h3>
-                          <p className="text-sm text-white/90 font-medium tracking-wide">Select your profile from the directory / Pumili ng profile sa direktoryo</p>
-                        </div>
-                      </div>
-                      <button type="button" onClick={() => setIsResidentModalOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d] hover:text-white rounded-lg text-sm font-bold transition-all duration-300 shadow-sm hover:shadow-md group">
-                        <Search className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                        Search Resident Database / Maghanap sa Database ng Residente
-                      </button>
-                    </div>
-
-                    <div className="relative group">
-                      <label className="text-sm font-bold text-gray-400 uppercase tracking-wide ml-1 mb-1 block">Resident Full Name / Buong Pangalan ng Residente</label>
-                      <input type="text" name="fullName" value={formData.fullName} readOnly onClick={() => setIsResidentModalOpen(true)} placeholder="TAP HERE TO ACCESS DATABASE..." className={`w-full px-4 py-3 bg-white border-2 ${errors.fullName ? 'border-red-500 bg-red-50' : (formData.fullName ? 'border-emerald-200 ring-2 ring-emerald-50 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-lg transition-all duration-300 font-bold text-base cursor-pointer hover:border-emerald-300 text-center tracking-wide shadow-sm`} />
-                    </div>
-
-                    {formData.fullName && (
-                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 mt-2 flex items-center justify-center gap-2 text-emerald-700 shadow-inner">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        <span className="text-sm font-bold uppercase tracking-wide italic">Personal Data Protected Under Data Privacy Act</span>
+                        {formData.fullName && (
+                          <div className="bg-black text-white rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5">
+                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <CheckCircle className="w-24 h-24 text-white" />
+                             </div>
+                             <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-2">Confirmed Applicant / Kumpirmadong Aplikante</p>
+                             <h4 className="text-3xl font-black tracking-tighter mb-6 leading-none uppercase">{formData.fullName}</h4>
+                             
+                             <div className="grid grid-cols-2 gap-3 relative z-10">
+                                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 uppercase font-black">
+                                   <p className="text-white/30 text-[8px] tracking-widest mb-0.5">Status</p>
+                                   <p className="text-emerald-400 text-xs">Verified Member / Beripikadong Miyembro</p>
+                                </div>
+                                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 uppercase font-black">
+                                   <p className="text-white/30 text-[8px] tracking-widest mb-0.5">DB ID</p>
+                                   <p className="text-xs">#{formData.residentId}</p>
+                                </div>
+                             </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* Section 2: Notification & Contact */}
-                    <div className="pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm mb-4">
-                        <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">2</div>
-                        <div>
-                          <h3 className="text-base font-bold text-white">Notification & Contact / Notipikasyon at Contact</h3>
-                          <p className="text-sm text-white/90 font-medium tracking-wide">Where to receive your updates / Kung saan matatanggap ang mga update</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div className="space-y-1 relative group">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none border-r pr-2 border-gray-100">
-                              <Mail className="w-4 h-4 text-[#2d5a3d]/50" />
-                            </div>
-                            <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="username@example.com" className={`w-full pl-12 pr-4 py-2.5 bg-white border-2 ${errors.email ? 'border-red-500 bg-red-50' : 'border-emerald-100'} rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-normal text-gray-800 shadow-sm`} />
-                          </div>
-                          <p className="text-sm text-gray-400 font-bold italic ml-2">Notifications will be sent here / Dito ipapadala ang mga abiso</p>
-                        </div>
-
-                        <div className="space-y-1 relative group">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Contact Number / Numero ng Telepono <span className="text-red-500">*</span></label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none border-r pr-2 border-gray-100">
-                              <Phone className="w-4 h-4 text-[#2d5a3d]/50" />
-                            </div>
-                            <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full pl-12 pr-4 py-2.5 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-emerald-100'} rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-bold text-gray-800 shadow-sm`} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Section 3: Request Purpose */}
-                    <div className="pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm mb-4">
-                        <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">3</div>
-                        <div>
-                          <h3 className="text-base font-bold text-white">Request Purpose / Layunin ng Request</h3>
-                        </div>
-                      </div>
-                      <div className="space-y-4 relative">
-                        <div>
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block mb-2">Purpose of Clearance / Dahilan ng Pagkuha ng Clearance <span className="text-red-500">*</span></label>
-                          <textarea 
-                            name="purpose" 
-                            value={formData.purpose} 
-                            onChange={handleInputChange} 
-                            rows={3} 
-                            placeholder="e.g. For employment application, business requirement..." 
-                            className={`w-full px-5 py-4 bg-gray-50 border-2 ${errors.purpose ? 'border-red-500 bg-red-50 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'border-emerald-100'} rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 focus:bg-white transition-all outline-none font-black text-gray-900 uppercase text-[15px] shadow-sm resize-none`} 
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          {/* ── Quick Select 1 ── */}
-                          <SearchableDropdown
-                            label="Quick Select 1"
-                            placeholder="-- PERSONAL LOAN & GOV'T --"
-                            items={PURPOSE_LIST_1}
-                            onSelect={(val) => handlePurposeSelect({ target: { value: val } })}
-                            colorClass={{
-                              label: "text-blue-400",
-                              text: "text-blue-600",
-                              icon: "text-blue-300",
-                              bg: "bg-blue-50",
-                              ring: "ring-blue-300"
-                            }}
-                          />
-
-                          {/* ── Quick Select 2 ── */}
-                          <SearchableDropdown
-                            label="Quick Select 2"
-                            placeholder="-- BRANCH & LOCAL --"
-                            items={PURPOSE_LIST_2}
-                            onSelect={(val) => handlePurposeSelect({ target: { value: val } })}
-                            colorClass={{
-                              label: "text-indigo-400",
-                              text: "text-indigo-600",
-                              icon: "text-indigo-300",
-                              bg: "bg-indigo-50",
-                              ring: "ring-indigo-300"
-                            }}
-                          />
-
-                          {/* ── Quick Select 3 ── */}
-                          <SearchableDropdown
-                            label="Quick Select 3"
-                            placeholder="-- MEDICAL NEEDS --"
-                            items={PURPOSE_LIST_3}
-                            onSelect={(val) => handlePurposeSelect({ target: { value: val } })}
-                            colorClass={{
-                              label: "text-emerald-500",
-                              text: "text-emerald-600",
-                              icon: "text-emerald-300",
-                              bg: "bg-emerald-50",
-                              ring: "ring-emerald-300"
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Section 4: Application Intent */}
-                    <div className="pt-4 border-t border-gray-100 mb-6">
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm mb-4">
-                        <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">4</div>
-                        <div>
-                          <h3 className="text-base font-bold text-white">Application Intent & Review / Layunin at Pagsusuri</h3>
-                          <p className="text-sm text-white/90 font-medium tracking-wide">Review applicant record below / Suriin ang rekord ng aplikante</p>
-                        </div>
-                      </div>
 
 
-                      {formData.pending_case && (
-                        <div className="mb-4 bg-red-600 border-2 border-red-400 rounded-xl p-4 shadow-xl animate-pulse">
-                          <div className="flex items-start gap-4">
-                            <div className="bg-white/20 p-2 rounded-lg">
-                              <ShieldAlert className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="text-white font-black uppercase text-lg leading-tight tracking-wider">RESTRICTED APPLICANT</h4>
-                              <p className="text-red-100 text-sm font-bold uppercase mt-1">This resident has a PENDING CASE in the official records.</p>
-                              <div className="mt-3 bg-black/20 p-3 rounded-lg border border-white/10">
-                                <p className="text-sm font-black text-red-200 uppercase mb-1">REASON / HISTORY:</p>
-                                <p className="text-sm font-bold text-white italic">"{formData.case_record_history || 'No specific remarks found in database.'}"</p>
+                    {currentStep === 2 && (
+                      <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
+                        <div className="space-y-6">
+                           <div className="group">
+                              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">Cellular Number / Numero ng Cellphone <span className="text-red-500">*</span></label>
+                              <div className="relative">
+                                 <Phone className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-300 group-focus-within:text-black transition-colors" />
+                                 <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full pl-16 pr-8 py-5 bg-white border-4 ${errors.contactNumber ? 'border-red-500' : 'border-gray-50'} rounded-3xl focus:border-black outline-none font-black text-2xl`} />
                               </div>
-                              <p className="mt-3 text-sm font-black text-white bg-black/40 px-3 py-2 rounded-md inline-block border border-white/20">
-                                🚫 CLEARANCE ISSUANCE IS AUTOMATICALLY BLOCKED
-                              </p>
-                            </div>
-                          </div>
+                           </div>
+                           <div className="group">
+                              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">Email (Optional)</label>
+                              <div className="relative">
+                                 <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-300 group-focus-within:text-black transition-colors" />
+                                 <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="YOUR@EMAIL.COM" className="w-full pl-16 pr-8 py-5 bg-white border-4 border-gray-50 rounded-3xl focus:border-black outline-none font-black text-2xl" />
+                              </div>
+                           </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </form>
-              </div>
+                      </div>
+                    )}
 
-              <div className="border-t bg-gray-50/80 backdrop-blur-md px-4 py-3 flex flex-col sm:flex-row gap-2 justify-between items-center no-print">
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-wide hidden sm:block">Please check all entries before final submission / Pakisuri ang lahat bago i-submit</p>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold uppercase tracking-wide text-sm flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all group">
-                    <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    Submit Application / Ipadala ang Aplikasyon
+                    {currentStep === 3 && (
+                      <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
+                        <div className="group">
+                           <label className="text-xs font-black uppercase tracking-widest ml-1 mb-4 block">State Your Purpose / Sabihin ang Layunin <span className="text-red-500">*</span></label>
+                           <textarea name="purpose" value={formData.purpose} onChange={handleInputChange} rows={5} placeholder="E.G. EMPLOYMENT, LOAN, ETC..." className={`w-full px-8 py-6 bg-gray-50 border-4 ${errors.purpose ? 'border-red-500' : 'border-gray-50'} rounded-[2rem] focus:border-black focus:bg-white outline-none font-black text-2xl uppercase tracking-tighter resize-none`} />
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                           <SearchableDropdown label="Job & Gov't" placeholder="SELECT..." items={PURPOSE_LIST_1} onSelect={handlePurposeSelect} colorClass={{ label: "text-blue-400", text: "text-blue-600", icon: "text-blue-300", bg: "bg-blue-50", ring: "ring-blue-300" }} />
+                           <SearchableDropdown label="Utility" placeholder="SELECT..." items={PURPOSE_LIST_2} onSelect={handlePurposeSelect} colorClass={{ label: "text-indigo-400", text: "text-indigo-600", icon: "text-indigo-300", bg: "bg-indigo-50", ring: "ring-indigo-300" }} />
+                           <SearchableDropdown label="Medical" placeholder="SELECT..." items={PURPOSE_LIST_3} onSelect={handlePurposeSelect} colorClass={{ label: "text-emerald-500", text: "text-emerald-600", icon: "text-emerald-300", bg: "bg-emerald-50", ring: "ring-emerald-300" }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer Nav */}
+                <div className="border-t bg-white px-8 py-6 flex items-center justify-between shrink-0">
+                   {currentStep > 1 ? (
+                     <button onClick={() => setCurrentStep(prev => prev - 1)} className="px-8 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 hover:text-black transition-all">Previous / Nakaraan</button>
+                   ) : <div />}
+                   
+                   {currentStep < totalSteps ? (
+                     <button onClick={() => {
+                       if (currentStep === 1 && !formData.fullName) { setErrors({ fullName: true }); return; }
+                       if (currentStep === 2 && !formData.contactNumber) { setErrors({ contactNumber: true }); return; }
+                       setCurrentStep(prev => prev + 1);
+                     }} className="px-12 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all flex items-center gap-3">Next Step / Susunod <ChevronRight className="w-5 h-5" /></button>
+                   ) : (
+                     <button onClick={handleSubmit} className="px-12 py-4 bg-[#c9a84c] text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#a07830] transition-all flex items-center gap-3"><Send className="w-5 h-5" /> Submit Request / I-submit ang Request</button>
+                   )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showConfirmationPopup && (
+          <div className="fixed inset-0 z-[60] overflow-hidden">
+            <div className="flex items-center justify-center w-full h-full p-2 sm:p-4">
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowConfirmationPopup(false)} />
+              <div className="relative bg-white rounded-[4.5rem] shadow-2xl w-full max-w-7xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300" style={{ height: '94vh', maxHeight: '100%' }}>
+                <div className="bg-black px-12 py-10 flex items-center justify-between border-b border-white/5 shrink-0">
+                   <div>
+                     <h2 className="text-4xl font-black text-white uppercase tracking-tighter leading-tight">Confirmation</h2>
+                     <p className="text-white/30 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Review your application before syncing / Suriin ang aplikasyon bago i-sync</p>
+                   </div>
+                   <button onClick={() => setShowConfirmationPopup(false)} className="bg-white/10 p-3 rounded-2xl text-white/40 hover:text-white hover:bg-red-500/20 transition-all group overflow-hidden">
+                      <X className="w-8 h-8 group-hover:rotate-90 transition-transform" />
+                   </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-12 bg-gray-50/20 no-scrollbar">
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Object.entries(formData).map(([k, v]) => {
+                        const skip = ['residentId', 'pending_case', 'case_record_history'];
+                        if (!v || skip.includes(k)) return null;
+                        
+                        // Map keys to Icons
+                        const iconMap = {
+                          fullName: User, age: Clock, sex: User,
+                          civilStatus: Heart, address: Home, contactNumber: Phone,
+                          email: Mail, purpose: FileText, dateOfBirth: Clock,
+                          placeOfBirth: Home
+                        };
+                        const Icon = iconMap[k] || Info;
+
+                        return (
+                          <div key={k} className="flex flex-col p-8 bg-white border-2 border-gray-100 rounded-[2.5rem] shadow-sm hover:shadow-md hover:border-black/5 transition-all group relative overflow-hidden">
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition-all">
+                                <Icon className="w-5 h-5" />
+                              </div>
+                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{k.replace(/([A-Z])/g, ' $1').toUpperCase()}</span>
+                            </div>
+                            <span className="text-xl font-black text-black leading-tight break-words uppercase">{v.toString()}</span>
+                          </div>
+                        );
+                      })}
+                   </div>
+
+                   <div className="mt-12 p-10 bg-emerald-50 rounded-[3rem] border-2 border-emerald-100 flex items-center gap-6">
+                      <div className="w-16 h-16 bg-emerald-500 rounded-[2rem] flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                        <CheckCircle className="w-8 h-8 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-emerald-900 font-black uppercase text-sm tracking-tight">Verified Profile System / Sistema ng Beripikadong Profile</h4>
+                        <p className="text-emerald-700/70 text-[11px] font-bold uppercase tracking-widest mt-0.5">All details have been validated against the official directory. / Lahat ng detalye ay napatunayan sa opisyal na direktoryo.</p>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="border-t bg-white px-12 py-10 flex justify-between items-center shrink-0">
+                  <button onClick={() => setShowConfirmationPopup(false)} className="px-10 py-5 font-black uppercase tracking-[0.3em] text-[10px] text-gray-400 hover:text-black transition-all">Previous / Edit | Nakaraan / I-edit</button>
+                  <button onClick={handleProceedSubmission} className="px-12 py-5 bg-black text-white rounded-3xl font-black uppercase tracking-[0.2em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/20 flex items-center gap-3">
+                    {isSubmitting ? 'Syncing...' : (
+                      <>
+                        Confirm Submission / Kumpirmahin ang Pagpasa
+                        <ChevronRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {showConfirmationPopup && (
-        <div className="fixed inset-0 z-60 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 sm:p-10">
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px]" onClick={() => setShowConfirmationPopup(false)} />
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col overflow-hidden animate-fade-in" style={{ minHeight: '800px', height: '90vh', maxHeight: '95vh' /* BUST-CACHE-800 */, fontFamily: "'Open Sans', sans-serif" }}>
-              <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-4 py-3 flex items-center justify-between border-b border-white/10 relative overflow-hidden">
-                <div className="flex items-center gap-3 relative z-10">
-                  <div className="bg-white/20 backdrop-blur-md p-2 rounded-lg border border-white/30 shadow-xl"><FileText className="w-5 h-5 text-white shadow-sm" /></div>
-                  <h2 className="text-lg font-bold text-white tracking-tight drop-shadow-md uppercase">Review Application / Suriin ang Aplikasyon</h2>
+
+        {showSuccessModal && (
+          <div className="fixed inset-0 z-[70] overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div className="fixed inset-0 bg-black/90 backdrop-blur-xl" />
+              <div className="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in p-12 text-center">
+                <div className="w-24 h-24 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border-4 border-emerald-100 shadow-2xl">
+                   <CheckCircle className="w-12 h-12 text-emerald-500" />
                 </div>
-                <button onClick={() => setShowConfirmationPopup(false)} className="text-white/60 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all duration-300 group"><X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" /></button>
-              </div>
-              <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4 bg-gray-50/80">
-                <div className="max-w-2xl mx-auto space-y-3">
-                  {Object.entries(formData).map(([key, value]) => {
-                    const excludedKeys = ['residentId', 'signature', 'details', 'age', 'sex', 'gender', 'civilStatus', 'address', 'dateOfBirth', 'placeOfBirth', 'businessAddress', 'ownerAddress', 'nationality', 'occupation'];
-                    if (!value || excludedKeys.includes(key)) return null;
-                    const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                    return (
-                      <div key={key} className="flex flex-col md:flex-row md:items-center justify-between px-4 py-2.5 bg-white shadow-sm border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors group">
-                        <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">{formattedKey}</span>
-                        <span className="text-sm font-bold text-gray-900 break-words md:text-right mt-1 md:mt-0 group-hover:text-emerald-700 transition-colors uppercase">{typeof value === 'object' ? JSON.stringify(value) : value.toString()}</span>
-                      </div>
-                    );
-                  })}
+                <h2 className="text-3xl font-black tracking-tighter uppercase mb-4">Request Complete</h2>
+                <div className="bg-gray-50 rounded-[2.5rem] p-8 mb-10 border-4 border-gray-100">
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Tracking ID</p>
+                   <p className="text-4xl font-black tracking-tighter">{submittedReferenceNumber}</p>
                 </div>
-              </div>
-              <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-4 py-3 flex flex-col sm:flex-row gap-2 justify-between items-center no-print">
-                <button onClick={handleCustomizeForm} disabled={isSubmitting} className="px-4 py-2.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-lg font-bold flex items-center justify-center gap-2 outline-none disabled:opacity-50"><Eye className="w-4 h-4" />Go Back & Edit / Bumalik sa Pag-edit</button>
-                <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-4 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all disabled:opacity-75">
-                  {isSubmitting ? 'Processing... / Pinoproseso...' : 'Confirm & Submit / Kumpirmahin at Ipadala'}
-                </button>
+                <button onClick={() => { setShowSuccessModal(false); resetForm(); onClose(); }} className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all shadow-2xl">Back to Dashboard / Bumalik sa Dashboard</button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-70 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 sm:p-10">
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px]" />
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in" style={{ fontFamily: "'Open Sans', sans-serif" }}>
-              <div className="bg-gradient-to-r from-[#112e1f] to-[#214431] px-6 py-6 text-center relative">
-                <div className="w-16 h-16 bg-emerald-500/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-3 border border-emerald-500/30"><CheckCircle className="w-10 h-10 text-emerald-400 animate-bounce" /></div>
-                <h2 className="text-xl font-bold text-white uppercase tracking-tight">Filing Complete! / Tapos na ang Pag-file!</h2>
-              </div>
-              <div className="p-4 text-center">
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3 mb-4">
-                  <p className="text-sm font-medium text-green-800 mb-1 uppercase tracking-wide">Reference Number:</p>
-                  <p className="text-xl font-bold text-green-900 font-mono tracking-wider">{submittedReferenceNumber}</p>
-                </div>
-                <div className="bg-[#112e1f]/5 border border-[#112e1f]/10 rounded-lg p-4 relative overflow-hidden text-left mb-4">
-                  <div className="flex items-center gap-2 text-[#112e1f] mb-3">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                    <h4 className="text-sm font-bold uppercase tracking-wide">Next Procedures / Susunod na Pamamaraan</h4>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center border border-gray-100 shrink-0 shadow-sm mt-0.5"><Clock className="w-3 h-3 text-emerald-700" /></div>
-                      <p className="text-sm text-gray-600 font-bold leading-relaxed">Processing typically takes 1-3 business days. Your application is now in the queue for chairman approval.</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center border border-gray-100 shrink-0 shadow-sm mt-0.5"><Phone className="w-3 h-3 text-emerald-700" /></div>
-                      <p className="text-sm text-gray-600 font-bold leading-relaxed">We will coordinate via <strong>SMS at {formData.contactNumber}</strong> to confirm your pickup schedule at the Barangay Hall.</p>
-                    </div>
-                  </div>
-                </div>
-                <button onClick={() => { setShowSuccessModal(false); resetForm(); onClose(); }} className="w-full bg-[#112e1f] hover:bg-[#2d5a3d] text-white py-3 rounded-lg font-bold uppercase transition-all shadow-lg active:scale-95">Return to Dashboard / Bumalik sa Dashboard</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isResidentModalOpen && (
-        <ResidentSearchModal isOpen={isResidentModalOpen} onClose={() => setIsResidentModalOpen(false)} onSelect={handleResidentSelect} />
-      )}
-      <style jsx>{`
-        @keyframes fade-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in 0.3s ease-out; }
-        
-        /* Open Sans Italic Placeholders */
-        input::placeholder, textarea::placeholder {
-          font-family: 'Open Sans', sans-serif !important;
-          font-style: italic !important;
-          font-weight: 400 !important;
-        }
-        
-        input::-webkit-input-placeholder, textarea::-webkit-input-placeholder {
-          font-family: 'Open Sans', sans-serif !important;
-          font-style: italic !important;
-          font-weight: 400 !important;
-        }
-        
-        input::-moz-placeholder, textarea::-moz-placeholder {
-          font-family: 'Open Sans', sans-serif !important;
-          font-style: italic !important;
-          font-weight: 400 !important;
-        }
-        
-        input:-ms-input-placeholder, textarea:-ms-input-placeholder {
-          font-family: 'Open Sans', sans-serif !important;
-          font-style: italic !important;
-          font-weight: 400 !important;
-        }
-        
-        input:-moz-placeholder, textarea:-moz-placeholder {
-          font-family: 'Open Sans', sans-serif !important;
-          font-style: italic !important;
-          font-weight: 400 !important;
-        }
-      `}</style>
+        {isResidentModalOpen && <ResidentSearchModal isOpen={isResidentModalOpen} onClose={() => setIsResidentModalOpen(false)} onSelect={handleResidentSelect} isDemo={isDemo} />}
+        <style jsx>{`
+          @keyframes fade-in { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+          .animate-fade-in { animation: fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+        `}</style>
       </div>
     </>
   );
 }
 
-// Memoized Preview Component for maximum performance
 const ClearancePreview = React.memo(({ formData, referenceNumber, currentDate, officials, certificateRef }) => {
-  const logos = officials.logos || {};
-  const headerStyle = officials.headerStyle || {};
-  const containerRef = useRef(null);
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    let timeoutId;
-    const updateScale = () => {
-      if (containerRef.current) {
-        setScale(Math.min(containerRef.current.offsetWidth / 794, 1));
-      }
-    };
-
-    const debouncedScale = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(updateScale, 100);
-    };
-
-    updateScale();
-    window.addEventListener('resize', debouncedScale);
-    return () => {
-      window.removeEventListener('resize', debouncedScale);
-      clearTimeout(timeoutId);
-    };
-  }, []);
-
   return (
-    <div ref={containerRef} className="w-full flex justify-center relative overflow-hidden">
-      <div style={{ width: `${794 * scale}px`, height: `${1123 * scale}px`, flexShrink: 0, position: 'relative' }}>
-        <div ref={certificateRef} className="bg-white shadow-lg flex flex-col" style={{ width: '794px', height: '1123px', transform: `scale(${scale}) translateZ(0)`, transformOrigin: 'top left', position: 'absolute', top: 0, left: 0, backfaceVisibility: 'hidden', WebkitFontSmoothing: 'antialiased' }}>
-          <div className="w-full border-b flex justify-center items-center p-8 flex-shrink-0" style={{ backgroundColor: headerStyle.bgColor, borderColor: headerStyle.borderColor }}>
-            <div className="flex-shrink-0" style={{ width: `${(logos.logoSize && logos.logoSize > 80) ? logos.logoSize : 130}px` }}>{logos.leftLogo && <img src={logos.leftLogo} className="w-full h-full object-contain" alt="Left" />}</div>
-            <div className="text-center px-4">
-              <p className="text-[13px]">{officials.headerInfo?.country}</p>
-              <p className="text-[13px]">{officials.headerInfo?.province}</p>
-              <p className="text-[13px]">{officials.headerInfo?.municipality}</p>
-              <p className="text-[18px] font-bold text-blue-800 uppercase leading-tight mt-1">{officials.headerInfo?.barangayName}</p>
-              <p className="text-[14px] font-extrabold text-red-700 uppercase mt-2">OFFICE OF THE BARANGAY CHAIRMAN</p>
-            </div>
-            <div className="flex-shrink-0" style={{ width: `${(logos.logoSize && logos.logoSize > 80) ? logos.logoSize : 130}px` }}>{logos.rightLogo && <img src={logos.rightLogo} className="w-full h-full object-contain" alt="Right" />}</div>
-          </div>
-          <div className="flex-1 px-16 pt-8 pb-16 flex flex-col relative overflow-hidden">
-            {logos.leftLogo && <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none"><img src={logos.leftLogo} className="w-3/4 object-contain" alt="Watermark" /></div>}
-            <div className="relative z-10 flex flex-col items-center">
-              <h2 className="text-[24px] font-bold mb-10 inline-block pb-1 px-4 uppercase text-[#004d40]">BARANGAY CLEARANCE CERTIFICATE</h2>
-              <div className="w-full space-y-6 text-[15px]">
-                <p className="font-bold text-lg mb-6 uppercase">TO WHOM IT MAY CONCERN:</p>
-                <p className="mb-6 leading-relaxed">This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:</p>
-                <div className="space-y-1 mb-8">
-                  {[
-                    ['Name', formData.fullName?.toUpperCase()],
-                    ['Age', formData.age],
-                    ['Sex', formData.sex?.toUpperCase()],
-                    ['Civil Status', formData.civilStatus?.toUpperCase()],
-                    ['Residential Address', formData.address?.toUpperCase()],
-                    ['Date of Birth', formData.dateOfBirth?.toUpperCase()],
-                    ['Place of Birth', formData.placeOfBirth?.toUpperCase()]
-                  ].map(([label, value]) => (
-                    <div key={label} className="grid grid-cols-[180px_10px_1fr] items-baseline text-black">
-                      <span className="font-normal">{label}</span>
-                      <span className="font-normal text-center">:</span>
-                      <span className={label === 'Name' ? 'font-bold text-lg underline' : 'font-semibold'}>{value || '_________________'}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mb-8">
-                  <p className="mb-2">Being issued upon the request of above mentioned person for below purpose(s):</p>
-                  <p className="font-bold text-lg pl-8 underline">{formData.purpose?.toUpperCase() || 'NOT SPECIFIED'}</p>
-                </div>
-                <p className="mb-8">Issued this {currentDate} at Barangay Iba O' Este, Calumpit, Bulacan.</p>
-                <div className="mt-0 flex flex-col">
-                  <div className="mb-4"><div className="h-8 w-64 border-b border-black"></div><p className="text-sm mt-1">Resident's Signature / Thumb Mark</p></div>
-                  <div className="self-start text-left">
-                    <p className="font-bold text-[15px] mb-[130px] uppercase">Truly Yours,</p>
-                    <p className="text-[20px] font-bold uppercase underline leading-tight">{officials.chairman}</p>
-                    <p className="text-sm font-bold mt-1">BARANGAY CHAIRMAN</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* Reference Number Section */}
-            <div className="w-full text-right mt-auto mb-2 opacity-60">
-              <p className="text-sm italic">Ref No: <strong>{referenceNumber}</strong></p>
-            </div>
-
-            {/* Footer Divider and info */}
-            <div className="w-full border-t border-gray-400 pt-1 text-sm opacity-60">
-              <div className="flex flex-col items-start italic">
-                <p>Address: {officials.contactInfo?.address}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div ref={certificateRef} className="bg-white p-20" style={{ width: '794px', height: '1123px' }}>
+      <h1 className="text-4xl font-black text-center uppercase mb-20">Barangay Clearance</h1>
+      <div className="space-y-6 text-xl">
+        <p><strong>Name:</strong> {formData.fullName}</p>
+        <p><strong>Purpose:</strong> {formData.purpose}</p>
+        <p><strong>Date:</strong> {currentDate}</p>
+        <p><strong>Ref:</strong> {referenceNumber}</p>
       </div>
     </div>
   );

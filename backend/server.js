@@ -19,6 +19,7 @@ const educationalAssistanceRoutes = require('./routes/educational-assistance-sup
 const employeeScansRoutes = require('./routes/employee-scans-supabase');
 const employeesQRRoutes = require('./routes/employees-qr-supabase');
 const qrScansRoutes = require('./routes/qr-scans-supabase');
+const scanEventsRoutes = require('./routes/scan-events-supabase');
 const pickupRoutes = require('./routes/pickup-supabase');
 const signatureRoutes = require('./routes/signatures');
 const physicalInspectionRoutes = require('./routes/physical-inspection-supabase');
@@ -149,8 +150,8 @@ app.use('/api/dashboard', authenticateToken, dashboardRoutes);
 app.use('/api/official-receipts/files', express.static(path.join(__dirname, 'generated-receipts')));
 app.use('/api/certificates/files', express.static(path.join(__dirname, 'generated-certificates')));
 app.use('/api/official-receipts', authenticateToken, officialReceiptRoutes); 
-app.use('/api/residents/search', optionalAuthenticateToken, residentRoutes); // public search
-app.use('/api/residents', authenticateToken, residentRoutes); 
+// app.get('/api/residents/search', optionalAuthenticateToken, residentRoutes); // public search handler - CONFLICTS WITH ADMIN ROUTE BELOW
+app.use('/api/residents', authenticateToken, residentRoutes); // administrative routes
 app.use('/api/achievements', optionalAuthenticateToken, achievementRoutes); 
 app.use('/api/programs', optionalAuthenticateToken, programRoutes); 
 app.use('/api/tenants', authenticateToken, tenantRoutes); 
@@ -166,6 +167,7 @@ app.use('/api/educational-assistance', educationalAssistanceRoutes);
 app.use('/api/employee-scans', authenticateToken, employeeScansRoutes); 
 app.use('/api/employees', authenticateToken, employeesQRRoutes); 
 app.use('/api/qr-scans', authenticateToken, qrScansRoutes); 
+app.use('/api/scan-events', authenticateToken, scanEventsRoutes);
 app.use('/api/user/signatures', authenticateToken, signatureRoutes); 
 app.use('/api/physical-inspection', authenticateToken, physicalInspectionRoutes); 
 

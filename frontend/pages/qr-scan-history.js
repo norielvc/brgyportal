@@ -5,11 +5,11 @@ import Layout from '@/components/Layout/Layout';
 import {
   History, Search, Calendar, User, Clock,
   Smartphone, RefreshCw, Eye, Trash2, Download, CheckCircle, AlertCircle, X,
-  MapPin, Activity, HardDrive, Info
+  MapPin, Activity, HardDrive, Info, Plus, FolderSync
 } from 'lucide-react';
 import { isAuthenticated, getAuthToken } from '@/lib/auth';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+const API_URL = '/api';
 
 // Helper to parse complex QR scan data
 const parseQRData = (qrData) => {
@@ -81,6 +81,13 @@ export default function QRScanHistoryPage() {
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
 
+  // Events API states
+  const [events, setEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState({ name: '', date: '', description: '' });
+  const [savingEvent, setSavingEvent] = useState(false);
+
   const [selectedScan, setSelectedScan] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -119,16 +126,76 @@ export default function QRScanHistoryPage() {
       router.push('/login');
       return;
     }
-    loadScans();
-    loadStats();
-    loadDuplicates();
-  }, [currentPage, searchTerm, selectedDate]);
+    loadEvents();
+  }, []);
+
+  useEffect(() => {
+    if (selectedEventId) {
+      loadScans();
+      loadStats();
+      loadDuplicates();
+    } else {
+      // Clear data if no event is selected
+      setScans([]);
+      setDuplicates([]);
+      setStats({ today: 0, total: 0 });
+    }
+  }, [currentPage, searchTerm, selectedDate, selectedEventId]);
+
+  const loadEvents = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/scan-events`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setEvents(data.data || []);
+        if (data.data && data.data.length > 0 && !selectedEventId) {
+           setSelectedEventId(data.data[0].id); // Auto-select first event
+        }
+      }
+    } catch (err) {
+      console.error('Error loading events:', err);
+    }
+  };
+
+  const handleCreateEvent = async (e) => {
+    e.preventDefault();
+    try {
+       setSavingEvent(true);
+       const token = getAuthToken();
+       const response = await fetch(`${API_URL}/scan-events`, {
+          method: 'POST',
+          headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(newEvent)
+       });
+       const data = await response.json();
+       if (data.success) {
+          toast.success('Event Created!');
+          setNewEvent({ name: '', date: '', description: '' });
+          setIsEventModalOpen(false);
+          await loadEvents();
+          setSelectedEventId(data.data.id);
+       } else {
+          toast.error('Failed to create event');
+       }
+    } catch (err) {
+       toast.error('System error');
+    } finally {
+       setSavingEvent(false);
+    }
+  };
 
   const loadDuplicates = async () => {
     try {
+      if (!selectedEventId) return;
       setDuplicatesLoading(true);
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/qr-scans/duplicates`, {
+      const response = await fetch(`${API_URL}/qr-scans/duplicates?event_id=${selectedEventId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -147,8 +214,9 @@ export default function QRScanHistoryPage() {
 
   const loadStats = async () => {
     try {
+      if (!selectedEventId) return;
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/qr-scans/stats`, {
+      const response = await fetch(`${API_URL}/qr-scans/stats?event_id=${selectedEventId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -163,6 +231,10 @@ export default function QRScanHistoryPage() {
   const loadScans = async () => {
     try {
       setLoading(true);
+      if (!selectedEventId) {
+         setLoading(false);
+         return;
+      }
       const token = getAuthToken();
 
       const params = new URLSearchParams({
@@ -172,6 +244,7 @@ export default function QRScanHistoryPage() {
 
       if (searchTerm) params.append('qr_data', searchTerm);
       if (selectedDate) params.append('date', selectedDate);
+      params.append('event_id', selectedEventId);
 
       const response = await fetch(`${API_URL}/qr-scans?${params}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -203,11 +276,12 @@ export default function QRScanHistoryPage() {
     return data;
   };
 
-  const handleClearHistory = async () => {
-    try {
-      setClearing(true);
-      const token = getAuthToken();
-      const response = await fetch(`${API_URL}/qr-scans`, {
+    const handleClearHistory = async () => {
+      try {
+        if (!selectedEventId) return;
+        setClearing(true);
+        const token = getAuthToken();
+        const response = await fetch(`${API_URL}/qr-scans?event_id=${selectedEventId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -281,10 +355,38 @@ export default function QRScanHistoryPage() {
             <History className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">QR Scan History</h1>
-            <p className="text-sm text-gray-500">View and manage scanned QR codes</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Event Scans & Relief Operations</h1>
+            <p className="text-sm text-gray-500">Manage separate scan databases for each community event</p>
           </div>
         </div>
+      </div>
+
+      {/* Event Selection Header */}
+      <div className="bg-white rounded-2xl shadow-sm border border-indigo-100 p-4 sm:p-6 mb-6">
+         <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            <div className="flex-1 space-y-2">
+               <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                  Active Event Database
+               </label>
+               <select 
+                  value={selectedEventId}
+                  onChange={(e) => setSelectedEventId(e.target.value)}
+                  className="w-full text-base font-semibold text-gray-800 bg-gray-50 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+               >
+                  <option value="" disabled>-- Select Event Context --</option>
+                  {events.map((evt) => (
+                     <option key={evt.id} value={evt.id}>{evt.name} ({new Date(evt.date).toLocaleDateString()})</option>
+                  ))}
+               </select>
+            </div>
+            <button 
+               onClick={() => setIsEventModalOpen(true)}
+               className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-colors"
+            >
+               <Plus className="w-5 h-5" />
+               New Event
+            </button>
+         </div>
       </div>
 
       {/* Stats */}
@@ -634,6 +736,140 @@ export default function QRScanHistoryPage() {
           </div>
         )}
       </div>
+
+      {/* CREATE EVENT MODAL */}
+      {isEventModalOpen && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setIsEventModalOpen(false)}
+            />
+
+            {/* Modal Content */}
+            <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-in fade-in zoom-in duration-300">
+              {/* Header with Gradient */}
+              <div className="px-8 py-8 bg-gradient-to-r from-indigo-600 to-blue-700 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                <div className="flex items-center space-x-4 relative z-10">
+                  <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/30 shadow-lg">
+                    <Plus className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black tracking-tight">Create Tracking Event</h3>
+                    <p className="text-indigo-100 text-sm font-medium opacity-90">Initialize a new secure scan database</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsEventModalOpen(false)}
+                  className="absolute top-6 right-6 p-2 hover:bg-white/20 rounded-xl transition-all text-white/80 hover:text-white"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Form Body */}
+              <div className="p-8 sm:p-10">
+                <form onSubmit={handleCreateEvent} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">Event Title / Name</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <FolderSync className="w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={newEvent.name}
+                        onChange={e => setNewEvent({ ...newEvent, name: e.target.value })}
+                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-gray-900 font-bold placeholder:text-gray-300 placeholder:font-medium focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
+                        placeholder="e.g. Typhoon Relief Operation"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">Event Date</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Calendar className="w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                        </div>
+                        <input
+                          type="date"
+                          required
+                          value={newEvent.date}
+                          onChange={e => setNewEvent({ ...newEvent, date: e.target.value })}
+                          className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-gray-900 font-bold focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">Access Level</label>
+                      <div className="w-full px-4 py-4 bg-blue-50 border border-blue-100 rounded-2xl text-blue-700 font-bold text-sm flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                         Secure DB Scoping
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">Detailed Description (Optional)</label>
+                    <textarea
+                      value={newEvent.description}
+                      onChange={e => setNewEvent({ ...newEvent, description: e.target.value })}
+                      className="w-full p-5 bg-gray-50 border border-gray-100 rounded-3xl text-gray-900 font-medium placeholder:text-gray-300 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all resize-none"
+                      rows="4"
+                      placeholder="Add specific instructions for scanning staff or relief distribution details..."
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsEventModalOpen(false)}
+                      className="flex-1 py-4 text-sm font-bold text-gray-500 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-gray-100 hover:text-gray-700 transition-all active:scale-95"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingEvent}
+                      className="flex-[2] py-4 text-sm font-black text-white bg-indigo-600 rounded-2xl hover:bg-indigo-700 active:scale-95 shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {savingEvent ? (
+                        <>
+                          <RefreshCw className="w-5 h-5 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-5 h-5" />
+                          Initialize Event Database
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Security Badge */}
+              <div className="bg-gray-50 px-10 py-5 border-t border-gray-100 flex items-center lg:justify-between text-center lg:text-left">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">
+                    Multi-Tenant Isolation Active
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Scan History Table */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden" style={{ display: 'none' }}>

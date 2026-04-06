@@ -7,7 +7,7 @@ export default function TestImageDisplay() {
   const [testImage, setTestImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api';
+  const API_URL = '/api';
 
   const createTestImage = () => {
     // Create a simple test image

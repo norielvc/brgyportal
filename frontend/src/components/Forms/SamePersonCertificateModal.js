@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, FileText, Eye, Send, CheckCircle, AlertCircle, Info, Search, Clock, Phone } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 
-// API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
 
 // Default officials data (fallback)
 const defaultOfficials = {
@@ -219,6 +217,22 @@ const SearchableDropdown = ({ items, onSelect, placeholder, label, colorClass, s
   );
 };
 export default function SamePersonCertificateModal({ isOpen, onClose, isDemo = false }) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [isOpen]);
+
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -338,10 +352,20 @@ export default function SamePersonCertificateModal({ isOpen, onClose, isDemo = f
   const handleProceedSubmission = async () => {
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_URL}/certificates/same-person`, {
+      // POINTED TO NEXT.JS RESILIENCE API
+      const timestamp = Date.now().toString().slice(-6);
+      const refNum = `SP-${new Date().getFullYear()}-${timestamp}`;
+
+      const response = await fetch('/api/portal/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-tenant-id': isDemo ? 'demo' : 'ibaoeste'
+        },
+        body: JSON.stringify({ 
+          type: 'same_person',
+          formData 
+        })
       });
 
       const result = await response.json();
@@ -491,14 +515,14 @@ export default function SamePersonCertificateModal({ isOpen, onClose, isDemo = f
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
                           <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">
-                            Registration Notice / Paunawa
+                            Registration Notice<span class="hidden sm:inline"> / Paunawa</span>
                           </h4>
                         </div>
                         <p className="text-white/80 text-sm font-medium leading-relaxed mb-0.5">
                           If no record is found in the resident directory, please visit the Barangay Hall and coordinate with the staff to register.
                         </p>
                         <p className="text-white/50 text-sm font-medium leading-relaxed italic">
-                          Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.
+                          <span class="hidden sm:block">Kung walang rekord sa direktoryo ng residente, mangyaring pumunta sa Barangay Hall upang magparehistro sa ating mga kawani.</span>
                         </p>
                       </div>
                     </div>
@@ -509,17 +533,17 @@ export default function SamePersonCertificateModal({ isOpen, onClose, isDemo = f
                       <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm">
                         <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">1</div>
                         <div>
-                          <h3 className="text-base font-bold text-white">Personal Information / Impormasyong Personal</h3>
+                          <h3 className="text-base font-bold text-white">Personal Information<span class="hidden sm:inline"> / Impormasyong Personal</span></h3>
                           <p className="text-sm text-white/90 font-medium tracking-wide">Verify your registered details / I-verify ang inyong mga detalye</p>
                         </div>
                       </div>
                       <button type="button" onClick={() => setIsResidentModalOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d] hover:text-white rounded-lg text-sm font-bold transition-all duration-300 shadow-sm hover:shadow-md group">
                         <Search className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                        Search Resident Database / Maghanap sa Database ng Residente
+                        Search Resident Database<span class="hidden sm:inline"> / Maghanap sa Database ng Residente</span>
                       </button>
                     </div>
                     <div className="relative group">
-                      <label className="text-sm font-bold text-gray-400 uppercase tracking-wide ml-1 mb-1 block">Resident Full Name / Buong Pangalan ng Residente</label>
+                      <label className="text-sm font-bold text-gray-400 uppercase tracking-wide ml-1 mb-1 block">Resident Full Name<span class="hidden sm:inline"> / Buong Pangalan ng Residente</span></label>
                       <input type="text" name="fullName" value={formData.fullName} readOnly onClick={() => setIsResidentModalOpen(true)} placeholder="TAP HERE TO SELECT FROM RESIDENT / PUMILI MULA SA RESIDENTE DIRECTORY..." className={`w-full px-4 py-3 bg-white border-2 ${errors.fullName ? 'border-red-500 bg-red-50' : (formData.fullName ? 'border-emerald-200 ring-2 ring-emerald-50 text-emerald-900' : 'border-gray-100 text-gray-400 italic')} rounded-lg transition-all duration-300 font-bold text-base cursor-pointer hover:border-emerald-300 text-center tracking-wide shadow-sm`} />
                     </div>
 
@@ -556,11 +580,11 @@ export default function SamePersonCertificateModal({ isOpen, onClose, isDemo = f
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Contact Number / Numero ng Telepono <span className="text-red-500">*</span></label>
+                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Contact Number<span class="hidden sm:inline"> / Numero ng Telepono</span> <span className="text-red-500">*</span></label>
                           <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full px-4 py-2.5 bg-white border-2 ${errors.contactNumber ? 'border-red-500 bg-red-50' : 'border-emerald-100'} rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-bold text-emerald-900 shadow-sm`} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Email Address (Optional) / Email (Opsyonal)</label>
+                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">Email Address (Optional)<span class="hidden sm:inline"> / Email (Opsyonal)</span></label>
                           <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="username@example.com" className="w-full px-4 py-2.5 bg-white border-2 border-emerald-100 rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-normal text-emerald-900 shadow-sm" />
                         </div>
                       </div>
@@ -641,7 +665,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose, isDemo = f
                 <div className="flex gap-2 w-full sm:w-auto">
                   <button type="submit" onClick={handleSubmit} className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold uppercase tracking-wide text-sm flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all group">
                     <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    Submit Application / Ipadala ang Aplikasyon
+                    Submit Application<span class="hidden sm:inline"> / Ipadala ang Aplikasyon</span>
                   </button>
                 </div>
               </div>
@@ -679,7 +703,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose, isDemo = f
               <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-4 py-3 flex flex-col sm:flex-row gap-2 justify-between items-center no-print">
                 <button onClick={handleCustomizeForm} disabled={isSubmitting} className="px-4 py-2.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-lg font-bold flex items-center justify-center gap-2 outline-none"><Eye className="w-4 h-4" />Go Back & Edit / Bumalik sa Pag-edit</button>
                 <button onClick={handleProceedSubmission} disabled={isSubmitting} className="px-4 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all">
-                  {isSubmitting ? 'Processing... / Pinoproseso...' : 'Confirm & Submit / Kumpirmahin at Ipadala'}
+                  {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
                 </button>
               </div>
             </div>

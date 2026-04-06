@@ -10,7 +10,7 @@ import { getAuthToken } from '@/lib/auth';
 import Layout from '@/components/Layout/Layout';
 
 // API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+const API_URL = '/api';
 
 export default function VerifyPickupPage() {
   const router = useRouter();

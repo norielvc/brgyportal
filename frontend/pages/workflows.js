@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { isAuthenticated, getUserData, getAuthToken } from '@/lib/auth';
 // API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+const API_URL = '/api';
 const MASTER_WORKFLOW_ID = 'master_certificate_flow';
 
 // Certificate types
@@ -66,7 +66,10 @@ export default function WorkflowsPage() {
       return;
     }
     const user = getUserData();
-    if (user?.role !== 'admin') {
+    const role = user?.role?.toLowerCase();
+    const adminRoles = ['superadmin', 'super_admin', 'admin', 'captain', 'secretary', 'staff'];
+    
+    if (!role || !adminRoles.includes(role)) {
       router.push('/dashboard');
       return;
     }
@@ -1314,3 +1317,12 @@ function AssignUsersModal({ step, users, onSave, onClose }) {
     </div>
   );
 }
+
+WorkflowsPage.getLayout = (page) => (
+  <Layout
+    title="Approval Workflows"
+    subtitle="Configure the multi-step approval process for certificate requests"
+  >
+    {page}
+  </Layout>
+);

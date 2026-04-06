@@ -10,7 +10,7 @@ import {
 import { getAuthToken } from '@/lib/auth';
 
 // API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+const API_URL = '/api';
 
 export default function PickupManagementPage() {
   const router = useRouter();

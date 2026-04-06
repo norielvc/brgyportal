@@ -14,7 +14,7 @@ import { getAuthToken, getUserData } from '@/lib/auth';
 import Modal from '@/components/UI/Modal';
 import SignaturePad from '@/components/UI/SignaturePad';
 // API Configuration
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api').replace(/\/$/, '').replace(/\/api$/, '') + '/api';
+const API_URL = '/api';
 
 const PURPOSE_LIST_1 = [
   "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (CITY OF MALOLOS, BULACAN)",
@@ -449,7 +449,8 @@ export default function RequestsPage() {
   // Check if current user is assigned to approve a request at its current step
   const isUserAssignedToRequest = (request, activeWorkflows = workflows, activeUser = currentUser) => {
     if (!activeUser) return false;
-    if (activeUser.role === 'admin') return true;
+    const adminRoles = ['superadmin', 'super_admin', 'admin', 'captain', 'secretary', 'staff'];
+    if (adminRoles.includes(activeUser.role?.toLowerCase())) return true;
 
     // If request is in a completed/final status, no one should have action buttons
     const completedStatuses = ['ready', 'ready_for_pickup', 'released', 'cancelled', 'rejected'];
