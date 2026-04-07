@@ -211,6 +211,11 @@ export default function ResidentSearchModal({ isOpen, onClose, onSelect, isDemo 
                                                 <div className={`w-2 h-2 rounded-full ${isDemo ? 'bg-zinc-200' : 'bg-emerald-200'}`}></div>
                                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] italic">Validated Record Verified 2026</span>
                                             </div>
+                                            {resident.residential_address && (
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">{resident.residential_address}</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className={`shrink-0 flex items-center gap-3 ${isDemo ? 'text-black' : 'text-emerald-600'} font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-8 group-hover:translate-x-0`}>
