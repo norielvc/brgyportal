@@ -412,24 +412,24 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 sm:p-10">
               <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
-              <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-fade-in no-scrollbar" style={{ height: '85vh', maxHeight: '95vh', fontFamily: "'Open Sans', sans-serif" }}>
+              <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-fade-in no-scrollbar" style={{ height: '92vh', maxHeight: '95vh', fontFamily: "'Open Sans', sans-serif" }}>
                 
                 {/* Header */}
-                <div className="bg-black px-8 py-6 flex items-center justify-between border-b border-white/10 shrink-0">
+                <div className="bg-black px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0">
                   <div className="flex items-center gap-4">
-                    <div className="bg-white/10 p-3 rounded-2xl border border-white/20"><FileText className="w-6 h-6 text-white" /></div>
+                    <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20"><FileText className="w-5 h-5 text-white" /></div>
                     <div>
-                       <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Clearance Acquisition</h2>
+                       <h2 className="text-xl font-black text-white uppercase tracking-tighter">Clearance Acquisition</h2>
                        <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{tenantConfig.shortName || 'Barangay'} Official Portal</p>
                     </div>
                   </div>
-                  <button onClick={onClose} className="text-white/40 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all group"><X className="w-8 h-8 group-hover:rotate-90 transition-transform" /></button>
+                  <button onClick={onClose} className="text-white/40 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all group"><X className="w-6 h-6 group-hover:rotate-90 transition-transform" /></button>
                 </div>
 
                 {notification && <div className="px-8 pt-4"><Notification type={notification.type} title={notification.title} message={notification.message} onClose={() => setNotification(null)} /></div>}
 
                 {/* Progress */}
-                <div className="px-8 pt-8 shrink-0">
+                <div className="px-8 pt-5 shrink-0">
                   <div className="max-w-3xl mx-auto flex items-center justify-between">
                     {[1, 2, 3].map(s => (
                       <React.Fragment key={s}>
@@ -444,39 +444,36 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-8 py-10">
+                <div className="flex-1 overflow-y-auto px-8 py-6">
                   <div className="max-w-3xl mx-auto">
                     {currentStep === 1 && (
-                      <div className="space-y-4 animate-in slide-in-from-right-8 duration-500">
+                      <div className="space-y-3 animate-in slide-in-from-right-8 duration-500">
                         <div 
-                          className="bg-white border-2 border-dashed border-gray-200 rounded-[2.5rem] p-10 text-center group cursor-pointer hover:bg-black/5 hover:border-black transition-all relative overflow-hidden active:scale-95 shadow-sm hover:shadow-xl" 
+                          className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer hover:bg-black/5 hover:border-black transition-all relative overflow-hidden active:scale-95 shadow-sm hover:shadow-xl" 
                           onClick={() => setIsResidentModalOpen(true)}
                         >
-                           <div className="absolute -top-24 -right-24 w-64 h-64 bg-gray-50 rounded-full group-hover:bg-emerald-50/50 transition-colors"></div>
-                           
                            <div className="relative z-10 flex flex-col items-center">
-                             <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-inner">
-                               <Search className="w-6 h-6" />
+                             <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-inner">
+                               <Search className="w-5 h-5" />
                              </div>
-                             <h3 className="text-xl font-black uppercase tracking-tighter mb-1">Search Directory / Hanapin sa Direktoryo</h3>
+                             <h3 className="text-base font-black uppercase tracking-tighter mb-1">Search Directory / Hanapin sa Direktoryo</h3>
                              <p className="text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] max-w-[240px] mx-auto leading-relaxed">Find your profile and sync your details instantly. / Hanapin ang iyong profile at i-sync agad ang mga detalye.</p>
                            </div>
                         </div>
 
                         {formData.fullName && (
-                          <div className="bg-black text-white rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5">
-                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <CheckCircle className="w-24 h-24 text-white" />
+                          <div className="bg-black text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5">
+                             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <CheckCircle className="w-16 h-16 text-white" />
                              </div>
-                             <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-2">Confirmed Applicant / Kumpirmadong Aplikante</p>
-                             <h4 className="text-3xl font-black tracking-tighter mb-6 leading-none uppercase">{formData.fullName}</h4>
-                             
-                             <div className="grid grid-cols-2 gap-3 relative z-10">
-                                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 uppercase font-black">
+                             <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">Confirmed Applicant / Kumpirmadong Aplikante</p>
+                             <h4 className="text-2xl font-black tracking-tighter mb-4 leading-none uppercase">{formData.fullName}</h4>
+                             <div className="grid grid-cols-2 gap-2 relative z-10">
+                                <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
                                    <p className="text-white/30 text-[8px] tracking-widest mb-0.5">Status</p>
                                    <p className="text-emerald-400 text-xs">Verified Member / Beripikadong Miyembro</p>
                                 </div>
-                                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 uppercase font-black">
+                                <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
                                    <p className="text-white/30 text-[8px] tracking-widest mb-0.5">DB ID</p>
                                    <p className="text-xs">#{formData.residentId}</p>
                                 </div>
@@ -489,20 +486,20 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
 
 
                     {currentStep === 2 && (
-                      <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
-                        <div className="space-y-6">
+                      <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
+                        <div className="space-y-4">
                            <div className="group">
-                              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">Cellular Number / Numero ng Cellphone <span className="text-red-500">*</span></label>
+                              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Cellular Number / Numero ng Cellphone <span className="text-red-500">*</span></label>
                               <div className="relative">
-                                 <Phone className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-300 group-focus-within:text-black transition-colors" />
-                                 <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full pl-16 pr-8 py-5 bg-white border-4 ${errors.contactNumber ? 'border-red-500' : 'border-gray-50'} rounded-3xl focus:border-black outline-none font-black text-2xl`} />
+                                 <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
+                                 <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.contactNumber ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl`} />
                               </div>
                            </div>
                            <div className="group">
-                              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">Email (Optional)</label>
+                              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Email (Optional)</label>
                               <div className="relative">
-                                 <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-300 group-focus-within:text-black transition-colors" />
-                                 <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="YOUR@EMAIL.COM" className="w-full pl-16 pr-8 py-5 bg-white border-4 border-gray-50 rounded-3xl focus:border-black outline-none font-black text-2xl" />
+                                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
+                                 <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="YOUR@EMAIL.COM" className="w-full pl-14 pr-6 py-4 bg-white border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl" />
                               </div>
                            </div>
                         </div>
@@ -510,12 +507,12 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
                     )}
 
                     {currentStep === 3 && (
-                      <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
+                      <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
                         <div className="group">
-                           <label className="text-xs font-black uppercase tracking-widest ml-1 mb-4 block">State Your Purpose / Sabihin ang Layunin <span className="text-red-500">*</span></label>
-                           <textarea name="purpose" value={formData.purpose} onChange={handleInputChange} rows={5} placeholder="E.G. EMPLOYMENT, LOAN, ETC..." className={`w-full px-8 py-6 bg-gray-50 border-4 ${errors.purpose ? 'border-red-500' : 'border-gray-50'} rounded-[2rem] focus:border-black focus:bg-white outline-none font-black text-2xl uppercase tracking-tighter resize-none`} />
+                           <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">State Your Purpose / Sabihin ang Layunin <span className="text-red-500">*</span></label>
+                           <textarea name="purpose" value={formData.purpose} onChange={handleInputChange} rows={4} placeholder="E.G. EMPLOYMENT, LOAN, ETC..." className={`w-full px-6 py-4 bg-gray-50 border-4 ${errors.purpose ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black focus:bg-white outline-none font-black text-xl uppercase tracking-tighter resize-none`} />
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-3 gap-3">
                            <SearchableDropdown label="Job & Gov't" placeholder="SELECT..." items={PURPOSE_LIST_1} onSelect={handlePurposeSelect} colorClass={{ label: "text-blue-400", text: "text-blue-600", icon: "text-blue-300", bg: "bg-blue-50", ring: "ring-blue-300" }} />
                            <SearchableDropdown label="Utility" placeholder="SELECT..." items={PURPOSE_LIST_2} onSelect={handlePurposeSelect} colorClass={{ label: "text-indigo-400", text: "text-indigo-600", icon: "text-indigo-300", bg: "bg-indigo-50", ring: "ring-indigo-300" }} />
                            <SearchableDropdown label="Medical" placeholder="SELECT..." items={PURPOSE_LIST_3} onSelect={handlePurposeSelect} colorClass={{ label: "text-emerald-500", text: "text-emerald-600", icon: "text-emerald-300", bg: "bg-emerald-50", ring: "ring-emerald-300" }} />
@@ -526,7 +523,7 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
                 </div>
 
                 {/* Footer Nav */}
-                <div className="border-t bg-white px-8 py-6 flex items-center justify-between shrink-0">
+                <div className="border-t bg-white px-8 py-4 flex items-center justify-between shrink-0">
                    {currentStep > 1 ? (
                      <button onClick={() => setCurrentStep(prev => prev - 1)} className="px-8 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 hover:text-black transition-all">Previous / Nakaraan</button>
                    ) : <div />}
