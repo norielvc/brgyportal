@@ -380,7 +380,7 @@ export default function RequestsPage() {
         );
         const data = await response.json();
         if (data.success) {
-          setRequestHistory(Array.isArray(data.history) ? data.history : []);
+          setRequestHistory(Array.isArray(data.data) ? data.data : (Array.isArray(data.history) ? data.history : []));
         }
       } catch (error) {
         console.error("Error fetching history:", error);
@@ -1067,7 +1067,7 @@ export default function RequestsPage() {
         );
         const historyData = await historyRes.json();
         if (historyData.success) {
-          setRequestHistory(historyData.history || []);
+          setRequestHistory(historyData.data || historyData.history || []);
         }
         return true;
       }
@@ -1843,12 +1843,8 @@ function RequestDetailsModal({
   const [isSyncing, setIsSyncing] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const isBusinessPermit = request.certificate_type === "business_permit";
-  const isClearanceWithInspection =
-    request.certificate_type === "barangay_clearance" &&
-    (request.status === "physical_inspection" ||
-      request.status === "secretary_approval");
-  const requiresPhysicalInspection =
-    isBusinessPermit || isClearanceWithInspection;
+  const isClearanceWithInspection = false; // Physical inspection is business permit only
+  const requiresPhysicalInspection = isBusinessPermit;
 
   const [inspectionData, setInspectionData] = useState({
     areas: {
@@ -3165,7 +3161,7 @@ function RequestDetailsModal({
                 <div
                   className={`grid gap-6 ${isMedicoLegal ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
                 >
-                  {(isBusinessPermit || isClearanceWithInspection) &&
+                  {isBusinessPermit &&
                     (request.status === "physical_inspection" ||
                       request.status === "secretary_approval") && (
                       <div className="col-span-full">
@@ -3723,10 +3719,7 @@ function RequestDetailsModal({
                 </h3>
               </div>
 
-              {/* Comment Input */}
-              <AddCommentBox requestId={request.id} onCommentAdded={(newHistory) => {
-                if (onHistoryRefresh) onHistoryRefresh(newHistory);
-              }} />
+              {/* Comment Input removed - use the approval modal to add notes */}
 
               {Array.isArray(history) && history.length > 0 ? (
                 <div className="space-y-4">
@@ -5105,14 +5098,14 @@ function ActionModal({
             {actionType === "approve" && canUseEsign ? (
               <>
                 <button
-                  onClick={() => onSubmit(null)}
+                  onClick={() => onSubmit(null, null, null, comment)}
                   disabled={processing}
                   className="px-6 py-3 rounded-xl border-2 border-gray-100 text-[11px] font-black text-gray-600 uppercase tracking-widest hover:border-gray-300 hover:bg-gray-50 transition-all"
                 >
                   Approve w/o Signature
                 </button>
                 <button
-                  onClick={() => onSubmit(tempSignature || userSignature)}
+                  onClick={() => onSubmit(tempSignature || userSignature, null, null, comment)}
                   disabled={processing || (!tempSignature && !userSignature)}
                   className="px-8 py-3 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 hover:shadow-blue-300 transform active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
