@@ -51,11 +51,13 @@ export default function ResidentSearchModal({ isOpen, onClose, onSelect, isDemo 
 
         try {
             const tenantId = typeof window !== 'undefined'
-                ? (window.location.pathname.split('/').pop() || 'ibaoeste')
+                ? (new URLSearchParams(window.location.search).get('tenant') ||
+                   window.location.pathname.replace(/^\//, '').split('/')[0] ||
+                   'ibaoeste')
                 : 'ibaoeste';
 
             const response = await fetch(`/api/residents/search?name=${encodeURIComponent(searchTerm)}`, { 
-              headers: { 'x-tenant-id': tenantId === 'demo' ? 'demo' : 'ibaoeste' } 
+              headers: { 'x-tenant-id': tenantId }
             });
             
             const data = await response.json();
@@ -65,7 +67,7 @@ export default function ResidentSearchModal({ isOpen, onClose, onSelect, isDemo 
                 // Secondary fallback: Filter from local backup if API is empty or failing
                 const filtered = localBackup.filter(r => 
                     r.full_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-                    (r.tenant_id === tenantId || tenantId === 'demo' && r.tenant_id === 'demo')
+                    r.tenant_id === tenantId
                 );
                 setResults(filtered);
             }
