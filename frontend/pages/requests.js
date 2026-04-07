@@ -1411,6 +1411,16 @@ export default function RequestsPage() {
                 <RotateCcw className="w-4 h-4" />
                 <span>Reset</span>
               </button>
+              {/* Refresh Button */}
+              <button
+                onClick={() => fetchRequests(workflows, currentUser)}
+                disabled={loading}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all disabled:opacity-50"
+                title="Refresh requests"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
             </div>
           </div>
         </div>
