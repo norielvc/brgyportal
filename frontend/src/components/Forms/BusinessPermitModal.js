@@ -1,1110 +1,439 @@
-import React, { useState, useEffect } from "react";
-import {
-  X,
-  Building2,
-  AlertCircle,
-  CheckCircle,
-  Info,
-  Send,
-  Clock,
-  Eye,
-  Briefcase,
-  User,
-  MapPin,
-  Store,
-  Search,
-  Phone,
-  Mail,
-} from "lucide-react";
-import ResidentSearchModal from "../Modals/ResidentSearchModal";
+import React, { useState, useEffect, useRef } from 'react';
+import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, AlertCircle, Building2, MapPin, Store } from 'lucide-react';
+import ResidentSearchModal from '../Modals/ResidentSearchModal';
 
-// Memoized Notification component
-const Notification = React.memo(({ type, title, message, onClose }) => {
-  const styles = {
-    success: {
-      bg: "bg-gradient-to-r from-green-50 to-emerald-50",
-      border: "border-green-200",
-      icon: "bg-green-100 text-green-600",
-      title: "text-green-800",
-      message: "text-green-700",
-    },
-    error: {
-      bg: "bg-gradient-to-r from-red-50 to-rose-50",
-      border: "border-red-200",
-      icon: "bg-red-100 text-red-600",
-      title: "text-red-800",
-      message: "text-red-700",
-    },
-    info: {
-      bg: "bg-gradient-to-r from-blue-50 to-indigo-50",
-      border: "border-blue-200",
-      icon: "bg-blue-100 text-blue-600",
-      title: "text-blue-800",
-      message: "text-blue-700",
-    },
-  };
-  const s = styles[type] || styles.info;
-  const Icon =
-    type === "success" ? CheckCircle : type === "error" ? AlertCircle : Info;
-  return (
-    <div
-      className={`${s.bg} ${s.border} border rounded-xl p-4 shadow-sm animate-fade-in`}
-    >
-      <div className="flex items-start gap-3">
-        <div className={`${s.icon} p-2 rounded-lg flex-shrink-0`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className={`${s.title} font-semibold text-sm`}>{title}</h4>
-          <p className={`${s.message} text-sm mt-0.5`}>{message}</p>
-        </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-});
-Notification.displayName = "Notification";
+const BUSINESS_TYPES = [
+  'SARI-SARI STORE', 'CARINDERIA / EATERY', 'BAKERY', 'SALON / BARBERSHOP',
+  'REPAIR SHOP', 'INTERNET CAFE', 'PHARMACY / DRUGSTORE', 'HARDWARE STORE',
+  'CLOTHING / BOUTIQUE', 'GROCERY STORE', 'WATER REFILLING STATION',
+  'LAUNDRY SHOP', 'PRINTING / PHOTOCOPYING', 'RICE DEALER', 'LIVESTOCK / POULTRY',
+  'CONSTRUCTION MATERIALS', 'FOOD STALL / KIOSK', 'TRANSPORT / TRICYCLE OPERATOR',
+  'LENDING / FINANCING', 'OTHER RETAIL BUSINESS', 'OTHER SERVICE BUSINESS',
+].sort((a, b) => a.localeCompare(b));
 
-export default function BusinessPermitModal({
-  isOpen,
-  onClose,
-  isDemo = false,
-  tenantConfig = {},
-}) {
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (isOpen) {
-        document.body.style.overflow = "hidden";
-      } else {
-        document.body.style.overflow = "";
-      }
-    }
-    return () => {
-      if (typeof window !== "undefined") {
-        document.body.style.overflow = "";
-      }
-    };
-  }, [isOpen]);
+export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [notification, setNotification] = useState(null);
 
   const [formData, setFormData] = useState({
-    applicationDate: "",
-    applicationNo: "",
-    ownerFullName: "",
-    ownerAddress: "",
-    residentId: null,
-    age: 0,
-    businessName: "",
-    natureOfBusiness: "",
-    businessAddress: "",
-    contactPerson: "",
-    contactNumber: "",
-    email: "",
-    sex: "",
-    civilStatus: "",
-    dateOfBirth: "",
-    placeOfBirth: "",
-    clearanceType: "new",
+    // Owner info
+    ownerFullName: '', residentId: null, age: '', sex: '', civilStatus: '',
+    ownerAddress: '', dateOfBirth: '', placeOfBirth: '',
+    contactNumber: '', email: '',
+    // Business info
+    businessName: '', natureOfBusiness: '', businessAddress: '',
+    clearanceType: 'NEW', applicationDate: new Date().toISOString().split('T')[0],
+    purpose: 'BUSINESS PERMIT / CLEARANCE',
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [referenceNumber, setReferenceNumber] = useState("");
-  const [submittedReferenceNumber, setSubmittedReferenceNumber] = useState("");
-  const [errors, setErrors] = useState({});
-  const [notification, setNotification] = useState(null);
-  const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
-
-  const handleResidentSelect = (resident) => {
-    setFormData((prev) => ({
-      ...prev,
-      ownerFullName: resident.full_name || "",
-      ownerAddress: resident.residential_address || "",
-      contactPerson: resident.full_name || "",
-      contactNumber: resident.contact_number || "",
-      email: resident.email || resident.email_address || "",
-      residentId: resident.id,
-      age: resident.age || 0,
-      sex: resident.gender || "",
-      civilStatus: resident.civil_status || "",
-      dateOfBirth: resident.date_of_birth || "",
-      placeOfBirth: resident.place_of_birth || "",
-    }));
-    setIsResidentModalOpen(false);
-    setErrors((prev) => ({ ...prev, ownerFullName: false }));
-    setNotification({
-      type: "success",
-      title: "Profile Found",
-      message: `${resident.full_name}'s details have been auto-filled.`,
-    });
-  };
-
   useEffect(() => {
-    if (!isOpen) return;
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    setFormData((prev) => ({
-      ...prev,
-      applicationDate: `${yyyy}-${mm}-${dd}`,
-      applicationNo: "",
-    }));
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+    }
+    return () => { if (typeof window !== 'undefined') document.body.style.overflow = ''; };
   }, [isOpen]);
 
   useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 5000);
-      return () => clearTimeout(timer);
+    if (!isOpen) {
+      setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
+      setErrors({}); setNotification(null);
+      setFormData({
+        ownerFullName: '', residentId: null, age: '', sex: '', civilStatus: '',
+        ownerAddress: '', dateOfBirth: '', placeOfBirth: '',
+        contactNumber: '', email: '',
+        businessName: '', natureOfBusiness: '', businessAddress: '',
+        clearanceType: 'NEW', applicationDate: new Date().toISOString().split('T')[0],
+        purpose: 'BUSINESS PERMIT / CLEARANCE',
+      });
     }
-  }, [notification]);
+  }, [isOpen]);
+
+  const handleResidentSelect = (resident) => {
+    setFormData(prev => ({
+      ...prev,
+      ownerFullName: resident.full_name || '',
+      residentId: resident.id,
+      age: resident.age || '',
+      sex: resident.gender || resident.sex || '',
+      civilStatus: resident.civil_status || '',
+      ownerAddress: resident.residential_address || '',
+      dateOfBirth: resident.date_of_birth || '',
+      placeOfBirth: resident.place_of_birth || '',
+    }));
+    setIsResidentModalOpen(false);
+    setErrors(prev => ({ ...prev, ownerFullName: false }));
+    setNotification({ type: 'success', title: 'Profile Found', message: `${resident.full_name}'s details have been auto-filled.` });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: false }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: false }));
   };
 
-  const validateForm = () => {
-    const required = [
-      "ownerFullName",
-      "ownerAddress",
-      "businessName",
-      "natureOfBusiness",
-      "businessAddress",
-      "contactNumber",
-    ];
-    const newErrors = {};
-    required.forEach((field) => {
-      if (!formData[field]) newErrors[field] = true;
-    });
-
-    if (!formData.residentId) {
-      setNotification({
-        type: "error",
-        title: "Resident Required",
-        message:
-          "Please search and select the business owner from the Resident Directory.",
-      });
-      return false;
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setNotification({
-        type: "error",
-        title: "Validation Error",
-        message: "Please fill in all required fields correctly.",
-      });
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = (e) => {
-    if (e) e.preventDefault();
-    if (!validateForm()) return;
-    setShowConfirmationPopup(true);
-  };
-
-  const handleProceedSubmission = async () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // POINTED TO NEXT.JS RESILIENCE API
-      const timestamp = Date.now().toString().slice(-6);
-      const refNum = `BP-${new Date().getFullYear()}-${timestamp}`;
-
-      const response = await fetch("/api/portal/submit", {
-        method: "POST",
+      const response = await fetch('/api/portal/submit', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          "x-tenant-id":
-            tenantConfig?.tenant_id || (isDemo ? "demo" : "ibaoeste"),
+          'Content-Type': 'application/json',
+          'x-tenant-id': tenantConfig?.tenant_id || (isDemo ? 'demo' : 'ibaoeste'),
         },
         body: JSON.stringify({
-          type: "business_permit",
-          formData: {
-            ...formData,
-            fullName: formData.ownerFullName, // Map for backend
-            address: formData.ownerAddress,
-            referenceNumber: refNum,
-          },
+          type: 'business_permit',
+          formData: { ...formData, fullName: formData.ownerFullName, address: formData.ownerAddress },
         }),
       });
-
-      const data = await response.json();
-      if (data.success) {
-        setSubmittedReferenceNumber(data.referenceNumber);
-        setReferenceNumber(data.referenceNumber);
-        setShowConfirmationPopup(false);
-        setShowSuccessModal(true);
+      const result = await response.json();
+      if (result.success) {
+        setReferenceNumber(result.referenceNumber);
+        setShowConfirmation(false);
+        setShowSuccess(true);
       } else {
-        throw new Error(data.message || "Failed to submit application.");
+        throw new Error(result.message || 'Submission failed');
       }
-    } catch (error) {
-      setShowConfirmationPopup(false);
-      setNotification({
-        type: "error",
-        title: "Submission Failed",
-        message: error.message || "Network error. Please try again.",
-      });
+    } catch (err) {
+      setNotification({ type: 'error', title: 'Submission Failed', message: err.message });
+      setShowConfirmation(false);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      applicationDate: "",
-      applicationNo: "",
-      ownerFullName: "",
-      ownerAddress: "",
-      residentId: null,
-      age: 0,
-      businessName: "",
-      natureOfBusiness: "",
-      businessAddress: "",
-      contactPerson: "",
-      contactNumber: "",
-      email: "",
-      sex: "",
-      civilStatus: "",
-      dateOfBirth: "",
-      placeOfBirth: "",
-      clearanceType: "new",
-    });
-    setNotification(null);
-    setReferenceNumber("");
-    setSubmittedReferenceNumber("");
-    setErrors({});
-  };
+  const accentColor = tenantConfig.primaryColor || '#059669';
 
   if (!isOpen) return null;
 
-  const demoTheme = isDemo ? (
-    <style>{`
-      /* Demo tenant: dark/gold theme override for all form modals */
-      .brgy-modal-wrap [class*="from-[#112e1f]"],
-      .brgy-modal-wrap [class*="from-[#112117]"] {
-        --tw-gradient-from: #111111 !important;
-        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important;
-      }
-      .brgy-modal-wrap [class*="via-[#2d5a3d]"] {
-        --tw-gradient-stops: var(--tw-gradient-from), #222222, var(--tw-gradient-to, transparent) !important;
-      }
-      .brgy-modal-wrap [class*="to-[#112117]"],
-      .brgy-modal-wrap [class*="to-[#1a3d29]"],
-      .brgy-modal-wrap [class*="to-[#2d5a3d]"] {
-        --tw-gradient-to: #1a1a1a !important;
-      }
-      /* Header gradient override */
-      .brgy-modal-wrap .bg-gradient-to-r[class*="from-[#112e1f]"] {
-        background-image: linear-gradient(to right, #111111, #222222, #111111) !important;
-      }
-      /* Step header pill (green lime -> gold) */
-      .brgy-modal-wrap [class*="from-[#8cc63f]"],
-      .brgy-modal-wrap [class*="from-[#7cb342]"] {
-        --tw-gradient-from: #c9a84c !important;
-        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important;
-      }
-      .brgy-modal-wrap [class*="to-[#b4d339]"],
-      .brgy-modal-wrap [class*="to-[#7cb342]"],
-      .brgy-modal-wrap [class*="to-[#689f38]"] {
-        --tw-gradient-to: #a07830 !important;
-      }
-      .brgy-modal-wrap [class*="from-[#8cc63f]"],
-      .brgy-modal-wrap [class*="from-[#7cb342]"] {
-        background-image: linear-gradient(to right, #c9a84c, #a07830) !important;
-      }
-      /* Solid bg overrides */
-      .brgy-modal-wrap [class*="bg-[#8cc63f]"],
-      .brgy-modal-wrap [class*="bg-[#7cb342]"],
-      .brgy-modal-wrap [class*="bg-[#2d5a3d]"],
-      .brgy-modal-wrap [class*="bg-[#112e1f]"] { background-color: #1a1a1a !important; }
-      /* Text color overrides */
-      .brgy-modal-wrap [class*="text-[#2d5a3d]"],
-      .brgy-modal-wrap [class*="text-[#112e1f]"],
-      .brgy-modal-wrap [class*="text-[#8cc63f]"] { color: #c9a84c !important; }
-      /* Border overrides */
-      .brgy-modal-wrap [class*="border-[#2d5a3d]"] { border-color: #c9a84c !important; }
-      /* Hover overrides */
-      .brgy-modal-wrap [class*="hover:bg-[#2d5a3d]"]:hover,
-      .brgy-modal-wrap [class*="hover:from-[#7cb342]"]:hover { background-color: #a07830 !important; }
-      /* Tailwind green/emerald -> gold/dark */
-      .brgy-modal-wrap [class*="text-green-"]:not([class*="text-green-50"]):not([class*="text-green-100"]) { color: #c9a84c !important; }
-      .brgy-modal-wrap [class*="text-emerald-"]:not([class*="text-emerald-50"]):not([class*="text-emerald-100"]) { color: #c9a84c !important; }
-      .brgy-modal-wrap [class*="bg-green-"]:not([class*="bg-green-50"]):not([class*="bg-green-100"]) { background-color: #1a1a1a !important; }
-      .brgy-modal-wrap [class*="bg-emerald-"]:not([class*="bg-emerald-50"]):not([class*="bg-emerald-100"]) { background-color: #1a1a1a !important; }
-      .brgy-modal-wrap [class*="border-green-"] { border-color: #c9a84c !important; }
-      .brgy-modal-wrap [class*="border-emerald-"] { border-color: #c9a84c !important; }
-      .brgy-modal-wrap [class*="hover:bg-green-"]:hover,
-      .brgy-modal-wrap [class*="hover:bg-emerald-"]:hover { background-color: #a07830 !important; }
-      .brgy-modal-wrap [class*="focus:ring-green-"],
-      .brgy-modal-wrap [class*="focus:ring-emerald-"],
-      .brgy-modal-wrap [class*="focus:border-green-"],
-      .brgy-modal-wrap [class*="focus:border-emerald-"] { --tw-ring-color: #c9a84c !important; border-color: #c9a84c !important; }
-    `}</style>
-  ) : null;
+  // Success
+  if (showSuccess) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 text-center animate-in zoom-in-95 duration-300">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${accentColor}20` }}>
+            <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
+          </div>
+          <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">Request Submitted!</h3>
+          <p className="text-gray-500 text-sm mb-4">Your business permit application has been received.</p>
+          <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+            <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Reference Number</p>
+            <p className="text-2xl font-black font-mono" style={{ color: accentColor }}>{referenceNumber}</p>
+          </div>
+          <button onClick={onClose} className="w-full py-3 text-white rounded-2xl font-black uppercase tracking-widest text-sm" style={{ backgroundColor: accentColor }}>
+            Close / Isara
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  const inputClass = (field) =>
-    `w-full px-4 py-2.5 bg-white border-2 ${errors[field] ? "border-red-500 bg-red-50" : "border-emerald-100"} rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-bold text-gray-800 shadow-sm`;
+  // Confirmation
+  if (showConfirmation) {
+    const fields = [
+      { label: 'Owner Name', value: formData.ownerFullName },
+      { label: 'Contact No.', value: formData.contactNumber },
+      { label: 'Email', value: formData.email },
+      { label: 'Business Name', value: formData.businessName },
+      { label: 'Nature of Business', value: formData.natureOfBusiness },
+      { label: 'Business Address', value: formData.businessAddress },
+      { label: 'Permit Type', value: formData.clearanceType },
+    ].filter(f => f.value);
 
-  const selectClass = (field) =>
-    `w-full px-4 py-2.5 bg-white border-2 ${errors[field] ? "border-red-500 bg-red-50" : "border-emerald-100"} rounded-lg focus:border-emerald-500 transition-all outline-none font-bold text-gray-800 shadow-sm cursor-pointer`;
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+          <div className="bg-black px-10 py-7 flex items-center justify-between shrink-0">
+            <div>
+              <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Confirmation</h2>
+              <p className="text-white/40 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">Review your application before submitting</p>
+            </div>
+            <button onClick={() => setShowConfirmation(false)} className="bg-white/10 p-3 rounded-2xl text-white/40 hover:text-white hover:bg-red-500/20 transition-all group">
+              <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+            </button>
+          </div>
+          <div className="p-8 bg-gray-50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {fields.map(({ label, value }) => (
+                <div key={label} className={`flex items-start gap-4 p-5 bg-white border-2 border-gray-100 rounded-3xl shadow-sm ${label === 'Business Address' || label === 'Email' ? 'sm:col-span-2' : ''}`}>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">{label}</span>
+                    <span className="text-lg font-black text-black leading-tight break-words uppercase">{value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 p-5 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-4">
+              <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />
+              <p className="text-emerald-700 text-[11px] font-bold uppercase tracking-wide">All details validated. Please ensure business information is accurate.</p>
+            </div>
+          </div>
+          <div className="border-t bg-white px-8 py-6 flex justify-between items-center shrink-0">
+            <button onClick={() => setShowConfirmation(false)} className="px-6 py-3 font-black uppercase tracking-[0.2em] text-[10px] text-gray-400 hover:text-black transition-all">← Back / Edit</button>
+            <button onClick={handleSubmit} disabled={isSubmitting} className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50">
+              {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
+              Confirm Submission
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const stepLabels = ['Owner Info', 'Business Details', 'Permit Type'];
 
   return (
     <>
-      {demoTheme}
-      <div className="brgy-modal-wrap">
-        {!showConfirmationPopup && !showSuccessModal && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 sm:p-10">
-              <div
-                className="fixed inset-0 bg-black/60 backdrop-blur-[2px]"
-                onClick={onClose}
-              />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-10">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
+        <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 no-scrollbar" style={{ height: '92vh', maxHeight: '95vh' }}>
 
-              <div
-                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col overflow-hidden animate-fade-in"
-                style={{
-                  minHeight: "800px",
-                  height: "90vh",
-                  maxHeight: "95vh" /* BUST-CACHE-800 */,
-                  fontFamily: "'Open Sans', sans-serif",
-                }}
-              >
-                {/* Header */}
-                <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-4 py-3 flex items-center justify-between border-b border-white/10 relative overflow-hidden flex-shrink-0">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-                  <div className="flex items-center gap-3 relative z-10">
-                    <div className="bg-white/20 backdrop-blur-md p-2 rounded-lg border border-white/30 shadow-xl">
-                      <Building2 className="w-5 h-5 text-white shadow-sm" />
-                    </div>
-                    <div className="flex flex-col">
-                      <h2 className="text-lg font-bold text-white tracking-tight drop-shadow-md">
-                        Business Clearance / Clearance ng Negosyo
-                      </h2>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
-                        <p className="text-white text-sm font-bold uppercase tracking-wide px-2 py-0.5 bg-red-600 rounded-md shadow-md">
-                          {referenceNumber || "Commercial Permit Portal"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={onClose}
-                    className="text-white/60 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all duration-300 group relative z-20"
-                  >
-                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-                  </button>
+          {/* Header */}
+          <div className="bg-black px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20">
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white uppercase tracking-tighter">Business Permit Application</h2>
+                <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{tenantConfig.shortName || 'Barangay'} Official Portal</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="text-white/40 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all group">
+              <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+            </button>
+          </div>
+
+          {/* Notification */}
+          {notification && (
+            <div className="px-8 pt-4 shrink-0">
+              <div className={`flex items-start gap-3 p-4 rounded-xl border ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                {notification.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
+                <div className="flex-1">
+                  <p className={`font-semibold text-sm ${notification.type === 'success' ? 'text-emerald-800' : 'text-red-800'}`}>{notification.title}</p>
+                  <p className={`text-sm mt-0.5 ${notification.type === 'success' ? 'text-emerald-700' : 'text-red-700'}`}>{notification.message}</p>
                 </div>
+                <button onClick={() => setNotification(null)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+              </div>
+            </div>
+          )}
 
-                {notification && (
-                  <div className="px-4 pt-2">
-                    <Notification
-                      type={notification.type}
-                      title={notification.title}
-                      message={notification.message}
-                      onClose={() => setNotification(null)}
-                    />
+          {/* Progress */}
+          <div className="px-8 pt-5 shrink-0">
+            <div className="max-w-3xl mx-auto flex items-center justify-between">
+              {[1, 2, 3].map((s) => (
+                <React.Fragment key={s}>
+                  <div className="flex flex-col items-center">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? 'bg-black text-white scale-110' : 'bg-gray-100 text-gray-300'}`}>
+                      {currentStep > s ? <CheckCircle className="w-6 h-6 text-emerald-400" /> : s}
+                    </div>
+                    <p className={`text-[9px] font-black uppercase tracking-widest mt-1.5 ${currentStep >= s ? 'text-gray-700' : 'text-gray-300'}`}>{stepLabels[s-1]}</p>
                   </div>
-                )}
+                  {s < 3 && <div className={`flex-1 h-1 mx-4 rounded-full mb-5 ${currentStep > s ? 'bg-black' : 'bg-gray-100'}`} />}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
 
-                {/* Scrollable Body */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  <form onSubmit={handleSubmit} className="p-4 space-y-6">
-                    {/* Registration Notice */}
-                    <div className="bg-gradient-to-r from-[#112e1f]/90 to-[#1a3d29]/80 border border-white/10 rounded-lg p-3 shadow-md relative overflow-hidden flex-shrink-0">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl pointer-events-none"></div>
-                      <div className="absolute bottom-0 left-0 w-24 h-24 bg-green-400/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl pointer-events-none"></div>
-                      <div className="flex items-start gap-2 relative z-10">
-                        <div className="bg-white/10 border border-white/20 p-1.5 rounded-lg shrink-0 mt-0.5">
-                          <Info className="w-3 h-3 text-emerald-300" />
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto px-8 py-6">
+            <div className="max-w-3xl mx-auto">
+
+              {/* Step 1: Owner Info */}
+              {currentStep === 1 && (
+                <div className="space-y-3 animate-in slide-in-from-right-8 duration-500">
+                  <div className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer hover:bg-black/5 hover:border-black transition-all active:scale-95 shadow-sm hover:shadow-xl"
+                    onClick={() => setIsResidentModalOpen(true)}>
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-inner">
+                        <Search className="w-5 h-5" />
+                      </div>
+                      <h3 className="text-base font-black uppercase tracking-tighter mb-1">Search Owner / Hanapin ang May-ari</h3>
+                      <p className="text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] max-w-[240px] mx-auto leading-relaxed">
+                        Find the business owner's profile from the resident directory.
+                      </p>
+                    </div>
+                  </div>
+
+                  {errors.ownerFullName && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+                      <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                      <p className="text-red-600 text-xs font-bold uppercase">Please select the business owner from the directory.</p>
+                    </div>
+                  )}
+
+                  {formData.ownerFullName && (
+                    <div className="bg-black text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5">
+                      <div className="absolute top-0 right-0 p-3 opacity-10"><CheckCircle className="w-16 h-16 text-white" /></div>
+                      <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">Business Owner / May-ari ng Negosyo</p>
+                      <h4 className="text-2xl font-black tracking-tighter mb-4 leading-none uppercase">{formData.ownerFullName}</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
+                          <p className="text-white/30 text-[8px] tracking-widest mb-0.5">Status</p>
+                          <p className="text-emerald-400 text-xs">Verified Resident</p>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
-                            <h4 className="font-bold text-emerald-300 uppercase tracking-wide text-sm">
-                              Registration Notice
-                              <span class="hidden sm:inline"> / Paunawa</span>
-                            </h4>
-                          </div>
-                          <p className="text-white/80 text-sm font-medium leading-relaxed mb-0.5">
-                            If no record is found in the resident directory,
-                            please visit the Barangay Hall and coordinate with
-                            the staff to register.
-                          </p>
-                          <p className="text-white/50 text-sm font-medium leading-relaxed italic">
-                            <span class="hidden sm:block">
-                              Kung walang rekord sa direktoryo ng residente,
-                              mangyaring pumunta sa Barangay Hall upang
-                              magparehistro sa ating mga kawani.
-                            </span>
-                          </p>
+                        <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
+                          <p className="text-white/30 text-[8px] tracking-widest mb-0.5">Address</p>
+                          <p className="text-xs truncate">{formData.ownerAddress || 'On file'}</p>
                         </div>
                       </div>
                     </div>
+                  )}
 
-                    {/* Section 1: Application Info */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm">
-                        <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
-                          1
-                        </div>
-                        <div>
-                          <h3 className="text-base font-bold text-white">
-                            Application Info / Impormasyon ng Aplikasyon
-                          </h3>
-                          <p className="text-sm text-white/90 font-medium tracking-wide">
-                            Date and type of clearance being requested
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> Date of Application
-                          </label>
-                          <input
-                            type="text"
-                            value={
-                              formData.applicationDate
-                                ? new Date(
-                                    formData.applicationDate + "T00:00:00",
-                                  ).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })
-                                : ""
-                            }
-                            readOnly
-                            className="w-full px-4 py-2.5 bg-white border-2 border-emerald-100 rounded-lg outline-none font-bold text-gray-700 shadow-sm cursor-default"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block flex items-center gap-1">
-                            <Briefcase className="w-3 h-3" /> Application No.
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.applicationNo || "NEW APPLICATION"}
-                            readOnly
-                            className="w-full px-4 py-2.5 bg-emerald-50 border-2 border-emerald-200 rounded-lg outline-none font-black text-emerald-800 cursor-default tracking-widest shadow-sm"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Clearance Type Toggle */}
-                      <div className="pt-2 border-t border-gray-100">
-                        <label className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3 block text-center">
-                          Select Purpose of Application / Layunin ng Paghiling
+                  {/* Contact in Step 1 for BP */}
+                  {formData.ownerFullName && (
+                    <div className="space-y-4 pt-2">
+                      <div className="group">
+                        <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
+                          Contact Number <span className="text-red-500">*</span>
                         </label>
-                        <div className="flex flex-col md:flex-row gap-3">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                clearanceType: "new",
-                              }))
-                            }
-                            className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all duration-300 ${
-                              formData.clearanceType === "new"
-                                ? "bg-[#2d5a3d] border-[#2d5a3d] text-white shadow-lg"
-                                : "bg-white border-emerald-100 text-gray-700 hover:border-[#2d5a3d]/30"
-                            }`}
-                          >
-                            <div
-                              className={`w-6 h-6 rounded-full flex items-center justify-center border-2 flex-shrink-0 ${formData.clearanceType === "new" ? "border-white bg-white/20" : "border-emerald-200"}`}
-                            >
-                              {formData.clearanceType === "new" && (
-                                <CheckCircle className="w-4 h-4 text-white" />
-                              )}
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-black uppercase tracking-tight">
-                                New Business Clearance
-                              </p>
-                              <p
-                                className={`text-sm font-bold uppercase opacity-70 ${formData.clearanceType === "new" ? "text-white" : "text-emerald-700"}`}
-                              >
-                                Bagong Clearance
-                              </p>
-                            </div>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                clearanceType: "renewal",
-                              }))
-                            }
-                            className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all duration-300 ${
-                              formData.clearanceType === "renewal"
-                                ? "bg-[#2d5a3d] border-[#2d5a3d] text-white shadow-lg"
-                                : "bg-white border-emerald-100 text-gray-700 hover:border-[#2d5a3d]/30"
-                            }`}
-                          >
-                            <div
-                              className={`w-6 h-6 rounded-full flex items-center justify-center border-2 flex-shrink-0 ${formData.clearanceType === "renewal" ? "border-white bg-white/20" : "border-emerald-200"}`}
-                            >
-                              {formData.clearanceType === "renewal" && (
-                                <CheckCircle className="w-4 h-4 text-white" />
-                              )}
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-black uppercase tracking-tight">
-                                Renewal of Existing Clearance
-                              </p>
-                              <p
-                                className={`text-sm font-bold uppercase opacity-70 ${formData.clearanceType === "renewal" ? "text-white" : "text-emerald-700"}`}
-                              >
-                                Pag-renew ng Clearance
-                              </p>
-                            </div>
-                          </button>
+                        <div className="relative">
+                          <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
+                          <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange}
+                            placeholder="09XX XXX XXXX"
+                            className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.contactNumber ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl`} />
+                        </div>
+                      </div>
+                      <div className="group">
+                        <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Email (Optional)</label>
+                        <div className="relative">
+                          <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
+                          <input type="email" name="email" value={formData.email} onChange={handleInputChange}
+                            placeholder="YOUR@EMAIL.COM"
+                            className="w-full pl-14 pr-6 py-4 bg-white border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl" />
                         </div>
                       </div>
                     </div>
+                  )}
+                </div>
+              )}
 
-                    {/* Section 2: Owner Details */}
-                    <div className="space-y-4 pt-4 border-t border-gray-100">
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-gray-100 pb-3">
-                        <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm">
-                          <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
-                            2
-                          </div>
-                          <div>
-                            <h3 className="text-base font-bold text-white">
-                              Owner's Details / Detalye ng May-ari
-                            </h3>
-                            <p className="text-sm text-white/90 font-medium tracking-wide">
-                              Select from resident directory / Pumili mula sa
-                              direktoryo
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsResidentModalOpen(true)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d] hover:text-white rounded-lg text-sm font-bold transition-all duration-300 shadow-sm hover:shadow-md group"
-                        >
-                          <Search className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                          Access Resident Directory / Mag-access sa Directory ng
-                          Residente
+              {/* Step 2: Business Details */}
+              {currentStep === 2 && (
+                <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
+                      Business Name / Pangalan ng Negosyo <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Store className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                      <input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange}
+                        placeholder="ENTER BUSINESS NAME..."
+                        className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.businessName ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl uppercase`} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
+                      Nature of Business / Uri ng Negosyo <span className="text-red-500">*</span>
+                    </label>
+                    <select name="natureOfBusiness" value={formData.natureOfBusiness} onChange={handleInputChange}
+                      className={`w-full px-6 py-4 bg-gray-50 border-4 ${errors.natureOfBusiness ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl uppercase`}>
+                      <option value="">SELECT TYPE OF BUSINESS...</option>
+                      {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
+                      Business Address / Lokasyon ng Negosyo <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-5 top-4 w-5 h-5 text-gray-300" />
+                      <textarea name="businessAddress" value={formData.businessAddress} onChange={handleInputChange}
+                        placeholder="COMPLETE BUSINESS ADDRESS..."
+                        rows={3}
+                        className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.businessAddress ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl uppercase resize-none`} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Permit Type */}
+              {currentStep === 3 && (
+                <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">
+                      Permit Type / Uri ng Permit <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {['NEW', 'RENEWAL', 'AMENDMENT', 'CLOSURE'].map(type => (
+                        <button key={type} type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, clearanceType: type }))}
+                          className={`p-6 rounded-3xl border-4 font-black text-lg uppercase tracking-tight transition-all ${formData.clearanceType === type ? 'bg-black text-white border-black scale-105 shadow-xl' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300 hover:text-gray-700'}`}>
+                          {type}
                         </button>
-                      </div>
-
-                      {/* Owner Name (read-only, click to search) */}
-                      <div className="relative group">
-                        <label
-                          className="text-sm font-bold text-gray-400 uppercase tracking-wide ml-1 mb-1 block"
-                          style={{ fontFamily: "Open Sans, sans-serif" }}
-                        >
-                          Business Owner Full Name / Buong Pangalan ng May-ari{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          name="ownerFullName"
-                          value={formData.ownerFullName}
-                          readOnly
-                          onClick={() => setIsResidentModalOpen(true)}
-                          placeholder="TAP HERE TO SELECT FROM RESIDENT / PUMILI MULA SA RESIDENTE DIRECTORY..."
-                          style={{ fontFamily: "Open Sans, sans-serif" }}
-                          className={`w-full px-4 py-3 bg-white border-2 ${errors.ownerFullName ? "border-red-500 bg-red-50" : formData.ownerFullName ? "border-emerald-200 ring-2 ring-emerald-50 text-emerald-900" : "border-gray-100 text-gray-400 italic"} rounded-lg transition-all duration-300 font-bold text-base cursor-pointer hover:border-emerald-300 text-center tracking-wide shadow-sm`}
-                        />
-                      </div>
-
-                      {formData.ownerFullName && (
-                        <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex items-center justify-center gap-2 text-emerald-700 shadow-inner">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <rect
-                              x="3"
-                              y="11"
-                              width="18"
-                              height="11"
-                              rx="2"
-                              ry="2"
-                            ></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                          </svg>
-                          <span className="text-sm font-bold uppercase tracking-wide italic">
-                            Personal Data Protected Under Data Privacy Act
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Owner Address */}
-                      <div className="space-y-1">
-                        <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> Owner Complete Address
-                          / Kumpletong Tirahan{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          name="ownerAddress"
-                          value={formData.ownerAddress}
-                          onChange={handleInputChange}
-                          placeholder="Auto-filled or type manually..."
-                          className={inputClass("ownerAddress")}
-                        />
-                      </div>
+                      ))}
                     </div>
-
-                    {/* Section 3: Business Details */}
-                    <div className="space-y-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm mb-4">
-                        <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
-                          3
-                        </div>
-                        <div>
-                          <h3 className="text-base font-bold text-white">
-                            Business Details / Detalye ng Negosyo
-                          </h3>
-                          <p className="text-sm text-white/90 font-medium tracking-wide">
-                            Information about the business establishment
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block flex items-center gap-1">
-                            <Store className="w-3 h-3" /> Business Name /
-                            Pangalan ng Negosyo{" "}
-                            <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            name="businessName"
-                            value={formData.businessName}
-                            onChange={handleInputChange}
-                            placeholder="e.g. Juan's Sari-Sari Store"
-                            className={inputClass("businessName")}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block flex items-center gap-1">
-                            <Briefcase className="w-3 h-3" /> Nature of Business
-                            / Uri ng Negosyo{" "}
-                            <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            name="natureOfBusiness"
-                            value={formData.natureOfBusiness}
-                            onChange={handleInputChange}
-                            className={selectClass("natureOfBusiness")}
-                          >
-                            <option value="">
-                              -- Select Nature of Business --
-                            </option>
-                            {[
-                              "Retail / Tingian",
-                              "Food & Beverage / Pagkain at Inumin",
-                              "Service / Serbisyo",
-                              "Manufacturing / Pagawaan",
-                              "Wholesale / Pakyawan",
-                              "Trading / Pangangalakal",
-                              "Online / Online Business",
-                              "Contracting / Kontratista",
-                              "Repair Shop / Tindahan ng Pagaayos",
-                              "Salon / Beauty Shop / Parlor",
-                              "Carinderia / Eatery / Kainan",
-                              "Buy & Sell / Pagbili at Pagbenta",
-                              "Other / Iba pa",
-                            ].map((type) => (
-                              <option key={type} value={type}>
-                                {type}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> Business Address /
-                          Address ng Negosyo{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          name="businessAddress"
-                          value={formData.businessAddress}
-                          onChange={handleInputChange}
-                          placeholder="Purok / Street / Barangay where business is located..."
-                          className={inputClass("businessAddress")}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Section 4: Contact Information */}
-                    <div className="space-y-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-[#8cc63f] to-[#b4d339] rounded-l-full rounded-r-lg p-1.5 pr-4 shadow-sm mb-4">
-                        <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
-                          4
-                        </div>
-                        <div>
-                          <h3 className="text-base font-bold text-white">
-                            Notification & Contact / Notipikasyon at Kontak
-                          </h3>
-                          <p className="text-sm text-white/90 font-medium tracking-wide">
-                            Where to receive updates about your application
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">
-                            Email Address (Optional)
-                            <span class="hidden sm:inline">
-                              {" "}
-                              / Email (Opsyonal)
-                            </span>
-                          </label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none border-r pr-2 border-gray-100">
-                              <Mail className="w-4 h-4 text-[#2d5a3d]/50" />
-                            </div>
-                            <input
-                              type="email"
-                              name="email"
-                              value={formData.email}
-                              onChange={handleInputChange}
-                              placeholder="username@example.com"
-                              className={`w-full pl-12 pr-4 py-2.5 bg-white border-2 ${errors.email ? "border-red-500 bg-red-50" : "border-emerald-100"} rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-normal text-gray-800 shadow-sm`}
-                            />
-                          </div>
-                          <p className="text-sm text-gray-400 font-bold italic ml-2">
-                            Notifications will be sent here
-                            <span class="hidden sm:inline">
-                              {" "}
-                              / Dito ipapadala ang mga abiso
-                            </span>
-                          </p>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-sm font-bold text-[#2d5a3d] uppercase tracking-wide ml-1 block">
-                            Contact Number
-                            <span class="hidden sm:inline">
-                              {" "}
-                              / Numero ng Telepono
-                            </span>{" "}
-                            <span className="text-red-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none border-r pr-2 border-gray-100">
-                              <Phone className="w-4 h-4 text-[#2d5a3d]/50" />
-                            </div>
-                            <input
-                              type="tel"
-                              name="contactNumber"
-                              value={formData.contactNumber}
-                              onChange={handleInputChange}
-                              placeholder="09XX XXX XXXX"
-                              className={`w-full pl-12 pr-4 py-2.5 bg-white border-2 ${errors.contactNumber ? "border-red-500 bg-red-50" : "border-emerald-100"} rounded-lg focus:border-emerald-500 focus:shadow-lg transition-all outline-none font-bold text-gray-800 shadow-sm`}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Footer */}
-                <div className="border-t bg-gray-50/80 backdrop-blur-md px-4 py-3 flex flex-col sm:flex-row gap-2 justify-between items-center no-print flex-shrink-0">
-                  <p className="text-sm font-bold text-gray-400 uppercase tracking-wide hidden sm:block">
-                    Please verify all data for commercial accuracy / Pakisuri
-                    ang lahat ng datos para sa katumpakan
-                  </p>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <button
-                      onClick={onClose}
-                      className="flex-1 sm:flex-none px-5 py-2.5 border-2 border-gray-200 text-gray-500 hover:bg-white hover:text-[#112e1f] hover:border-[#112e1f]/20 rounded-lg font-bold uppercase tracking-wide text-sm transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      onClick={handleSubmit}
-                      className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold uppercase tracking-wide text-sm flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all group"
-                    >
-                      <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                      Submit Business Filing
-                    </button>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Confirmation Popup */}
-        {showConfirmationPopup && (
-          <div className="fixed inset-0 z-[60] overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 sm:p-10">
-              <div
-                className="fixed inset-0 bg-black/70 backdrop-blur-[2px]"
-                onClick={() => setShowConfirmationPopup(false)}
-              />
-              <div
-                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col overflow-hidden animate-fade-in"
-                style={{
-                  minHeight: "800px",
-                  height: "90vh",
-                  maxHeight: "95vh" /* BUST-CACHE-800 */,
-                  fontFamily: "'Open Sans', sans-serif",
-                }}
-              >
-                <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-4 py-3 flex items-center justify-between border-b border-white/10 relative overflow-hidden">
-                  <div className="flex items-center gap-3 relative z-10">
-                    <div className="bg-white/20 backdrop-blur-md p-2 rounded-lg border border-white/30 shadow-xl">
-                      <Building2 className="w-5 h-5 text-white shadow-sm" />
-                    </div>
-                    <h2 className="text-lg font-bold text-white tracking-tight drop-shadow-md uppercase">
-                      Review Application / Suriin ang Aplikasyon
-                    </h2>
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Application Date</label>
+                    <input type="date" name="applicationDate" value={formData.applicationDate} onChange={handleInputChange}
+                      className="w-full px-6 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl" />
                   </div>
-                  <button
-                    onClick={() => setShowConfirmationPopup(false)}
-                    className="text-white/60 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all group"
-                  >
-                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                  </button>
-                </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4 bg-gray-50/80">
-                  <div className="max-w-2xl mx-auto space-y-3">
-                    {Object.entries(formData).map(([key, value]) => {
-                      const excludedKeys = [
-                        "residentId",
-                        "age",
-                        "sex",
-                        "civilStatus",
-                        "dateOfBirth",
-                        "placeOfBirth",
-                        "applicationDate",
-                        "applicationNo",
-                        "contactPerson",
-                      ];
-                      if (!value || excludedKeys.includes(key)) return null;
-                      const labelMap = {
-                        ownerFullName: "Owner Full Name",
-                        ownerAddress: "Owner Address",
-                        businessName: "Business Name",
-                        natureOfBusiness: "Nature of Business",
-                        businessAddress: "Business Address",
-                        contactNumber: "Contact Number",
-                        email: "Email Address",
-                        clearanceType: "Clearance Type",
-                      };
-                      const formattedKey =
-                        labelMap[key] ||
-                        key
-                          .replace(/([A-Z])/g, " $1")
-                          .replace(/^./, (str) => str.toUpperCase());
-                      return (
-                        <div
-                          key={key}
-                          className="flex flex-col md:flex-row md:items-center justify-between px-4 py-2.5 bg-white shadow-sm border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors group"
-                        >
-                          <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">
-                            {formattedKey}
-                          </span>
-                          <span className="text-sm font-bold text-gray-900 break-words md:text-right mt-1 md:mt-0 group-hover:text-emerald-700 transition-colors uppercase">
-                            {typeof value === "object"
-                              ? JSON.stringify(value)
-                              : value.toString()}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="border-t bg-gray-50/80 backdrop-blur-[2px] px-4 py-3 flex flex-col sm:flex-row gap-2 justify-between items-center no-print">
-                  <button
-                    onClick={() => setShowConfirmationPopup(false)}
-                    disabled={isSubmitting}
-                    className="px-4 py-2.5 border-2 border-[#2d5a3d]/20 text-[#2d5a3d] hover:bg-[#2d5a3d]/5 rounded-lg font-bold flex items-center justify-center gap-2 outline-none"
-                  >
-                    <Eye className="w-4 h-4" /> Go Back & Edit / Bumalik sa
-                    Pag-edit
-                  </button>
-                  <button
-                    onClick={handleProceedSubmission}
-                    disabled={isSubmitting}
-                    className="px-4 py-2.5 bg-gradient-to-r from-[#8cc63f] to-[#7cb342] hover:from-[#7cb342] hover:to-[#689f38] text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-xl hover:shadow-emerald-900/20 transform hover:-translate-y-0.5 transition-all"
-                  >
-                    {isSubmitting ? "Processing..." : "Confirm & Submit"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Success Modal */}
-        {showSuccessModal && (
-          <div className="fixed inset-0 z-[70] overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 sm:p-10">
-              <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px]" />
-              <div
-                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in"
-                style={{ fontFamily: "'Open Sans', sans-serif" }}
-              >
-                <div className="bg-gradient-to-r from-[#112e1f] to-[#214431] px-6 py-6 text-center relative">
-                  <div className="w-16 h-16 bg-emerald-500/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-3 border border-emerald-500/30">
-                    <CheckCircle className="w-10 h-10 text-emerald-400 animate-bounce" />
-                  </div>
-                  <h2 className="text-xl font-bold text-white uppercase tracking-tight">
-                    Filing Complete! / Tapos na ang Pag-file!
-                  </h2>
-                </div>
-                <div className="p-4 text-center">
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3 mb-4">
-                    <p className="text-sm font-medium text-green-800 mb-1">
-                      REFERENCE NO:
-                    </p>
-                    <p className="text-xl font-bold text-green-900 font-mono tracking-wider">
-                      {submittedReferenceNumber}
+                  <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100">
+                    <p className="text-amber-800 text-xs font-bold uppercase tracking-wide">
+                      📋 After submission, a physical inspection will be scheduled. Please prepare your business premises for the inspection committee.
                     </p>
                   </div>
-                  <div className="bg-[#112e1f]/5 border border-[#112e1f]/10 rounded-lg p-4 relative overflow-hidden text-left mb-4">
-                    <div className="flex items-center gap-2 text-[#112e1f] mb-3">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                      <h4 className="text-sm font-bold uppercase tracking-wide">
-                        Next Procedures / Susunod na Pamamaraan
-                      </h4>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center border border-gray-100 shrink-0 shadow-sm mt-0.5">
-                          <Clock className="w-3 h-3 text-emerald-700" />
-                        </div>
-                        <p className="text-sm text-gray-600 font-bold leading-relaxed">
-                          Processing typically takes 3-5 business days for
-                          commercial background verification.
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center border border-gray-100 shrink-0 shadow-sm mt-0.5">
-                          <Phone className="w-3 h-3 text-emerald-700" />
-                        </div>
-                        <p className="text-sm text-gray-600 font-bold leading-relaxed">
-                          We will coordinate via{" "}
-                          <strong>SMS at {formData.contactNumber}</strong> once
-                          your permit is ready for collection.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowSuccessModal(false);
-                      resetForm();
-                      onClose();
-                    }}
-                    className="w-full bg-[#112e1f] text-white py-3 rounded-lg font-bold uppercase transition-all shadow-lg active:scale-95"
-                  >
-                    Return to Dashboard / Bumalik sa Dashboard
-                  </button>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        )}
 
-        {isResidentModalOpen && (
-          <ResidentSearchModal
-            isOpen={isResidentModalOpen}
-            onClose={() => setIsResidentModalOpen(false)}
-            onSelect={handleResidentSelect}
-          />
-        )}
+          {/* Footer */}
+          <div className="border-t bg-white px-8 py-4 flex items-center justify-between shrink-0">
+            {currentStep > 1 ? (
+              <button onClick={() => setCurrentStep(p => p - 1)} className="px-8 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 hover:text-black transition-all">
+                Previous / Nakaraan
+              </button>
+            ) : <div />}
 
-        <style jsx>{`
-          @keyframes fade-in {
-            from {
-              opacity: 0;
-              transform: translateY(-10px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          .animate-fade-in {
-            animation: fade-in 0.3s ease-out;
-          }
-          .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #555;
-          }
-
-          input::placeholder,
-          textarea::placeholder,
-          select::placeholder {
-            font-family: "Open Sans", sans-serif !important;
-            font-style: italic !important;
-            font-weight: 400 !important;
-          }
-          input::-webkit-input-placeholder,
-          textarea::-webkit-input-placeholder {
-            font-family: "Open Sans", sans-serif !important;
-            font-style: italic !important;
-            font-weight: 400 !important;
-          }
-          input::-moz-placeholder,
-          textarea::-moz-placeholder {
-            font-family: "Open Sans", sans-serif !important;
-            font-style: italic !important;
-            font-weight: 400 !important;
-          }
-          input:-ms-input-placeholder,
-          textarea:-ms-input-placeholder {
-            font-family: "Open Sans", sans-serif !important;
-            font-style: italic !important;
-            font-weight: 400 !important;
-          }
-        `}</style>
+            {currentStep < 3 ? (
+              <button onClick={() => {
+                if (currentStep === 1) {
+                  if (!formData.ownerFullName) { setErrors({ ownerFullName: true }); return; }
+                  if (!formData.contactNumber) { setErrors({ contactNumber: true }); return; }
+                }
+                if (currentStep === 2) {
+                  const e = {};
+                  if (!formData.businessName) e.businessName = true;
+                  if (!formData.natureOfBusiness) e.natureOfBusiness = true;
+                  if (!formData.businessAddress) e.businessAddress = true;
+                  if (Object.keys(e).length) { setErrors(e); return; }
+                }
+                setCurrentStep(p => p + 1);
+              }} className="px-12 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all flex items-center gap-3">
+                Next Step / Susunod <ChevronRight className="w-5 h-5" />
+              </button>
+            ) : (
+              <button onClick={() => setShowConfirmation(true)}
+                className="px-12 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-3 hover:opacity-90 active:scale-95"
+                style={{ backgroundColor: accentColor }}>
+                <Send className="w-5 h-5" /> Submit Application
+              </button>
+            )}
+          </div>
+        </div>
       </div>
+
+      {isResidentModalOpen && (
+        <ResidentSearchModal
+          isOpen={isResidentModalOpen}
+          onClose={() => setIsResidentModalOpen(false)}
+          onSelect={handleResidentSelect}
+          isDemo={isDemo}
+          tenantConfig={tenantConfig}
+        />
+      )}
     </>
   );
 }
