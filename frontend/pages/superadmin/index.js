@@ -564,9 +564,9 @@ export default function SuperAdminDashboard() {
             {
               icon: Settings,
               color: "orange",
-              label: "Monthly Requests",
+              label: "Total Requests",
               value: tenants
-                .reduce((s, t) => s + (t.requests_this_month || 0), 0)
+                .reduce((s, t) => s + (t.requests_total || t.requests_this_month || 0), 0)
                 .toLocaleString(),
             },
           ].map(({ icon: Icon, color, label, value }) => (
@@ -655,15 +655,19 @@ export default function SuperAdminDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-semibold text-gray-900 text-sm">
-                          {tenant.requests_this_month?.toLocaleString() || 0}
-                        </span>
-                        <span className="text-gray-400 text-xs ml-1">
-                          this mo.
-                        </span>
+                        <div>
+                          <span className="font-semibold text-gray-900 text-sm">
+                            {tenant.requests_total?.toLocaleString() || 0}
+                          </span>
+                          <span className="text-gray-400 text-xs ml-1">total</span>
+                        </div>
+                        <div className="text-xs text-blue-600 font-medium mt-0.5">
+                          {tenant.requests_this_month || 0} this month
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {tenant.staff_count} members
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-gray-900">{tenant.staff_count}</span>
+                        <span className="text-xs text-gray-400 ml-1">active staff</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <button className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50">
