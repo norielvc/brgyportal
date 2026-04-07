@@ -18,3 +18,4 @@ export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
     }
   }
 });
+// Vercel Force Sync: 04/07/2026 09:29:55
