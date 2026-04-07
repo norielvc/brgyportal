@@ -1,50 +1,124 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, FileText, Eye, Send, Printer, CheckCircle, AlertCircle, Info, Download, Search, Clock, Phone, Mail, ShieldAlert, XCircle, User, ChevronRight, Heart, Home } from 'lucide-react';
-import ResidentSearchModal from '../Modals/ResidentSearchModal';
-
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import {
+  X,
+  FileText,
+  Eye,
+  Send,
+  Printer,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  Download,
+  Search,
+  Clock,
+  Phone,
+  Mail,
+  ShieldAlert,
+  XCircle,
+  User,
+  ChevronRight,
+  Heart,
+  Home,
+} from "lucide-react";
+import ResidentSearchModal from "../Modals/ResidentSearchModal";
 
 const defaultOfficials = {
-  chairman: 'ALEXANDER C. MANIO',
-  secretary: 'ROYCE ANN C. GALVEZ',
-  treasurer: 'MA. LUZ S. REYES',
-  skChairman: 'JOHN RUZZEL C. SANTOS',
+  chairman: "ALEXANDER C. MANIO",
+  secretary: "ROYCE ANN C. GALVEZ",
+  treasurer: "MA. LUZ S. REYES",
+  skChairman: "JOHN RUZZEL C. SANTOS",
   councilors: [
-    'JOELITO C. MANIO',
-    'ENGELBERT M. INDUCTIVO',
-    'NORMANDO T. SANTOS',
-    'JOPHET M. TURLA',
-    'JOHN BRYAN C. CRUZ',
-    'ARNEL D. BERNARDINO',
-    'LORENA G. LOPEZ'
+    "JOELITO C. MANIO",
+    "ENGELBERT M. INDUCTIVO",
+    "NORMANDO T. SANTOS",
+    "JOPHET M. TURLA",
+    "JOHN BRYAN C. CRUZ",
+    "ARNEL D. BERNARDINO",
+    "LORENA G. LOPEZ",
   ],
-  administrator: 'ROBERT D. SANTOS',
-  assistantSecretary: 'PERLITA C. DE JESUS',
-  assistantAdministrator: 'KHINZ JANZL V. BARROGA',
-  recordKeeper: 'EMIL D. ROBLES',
-  clerk: 'CIELITO B. DE LEON',
+  administrator: "ROBERT D. SANTOS",
+  assistantSecretary: "PERLITA C. DE JESUS",
+  assistantAdministrator: "KHINZ JANZL V. BARROGA",
+  recordKeeper: "EMIL D. ROBLES",
+  clerk: "CIELITO B. DE LEON",
   contactInfo: {
-    address: 'Purok 2 (Sitio Banawe) Barangay Iba O\' Este, Calumpit, Bulacan',
-    contactPerson: 'Sec. Royce Ann C. Galvez',
-    telephone: '0967 631 9168',
-    email: 'anneseriousme@gmail.com'
+    address: "Purok 2 (Sitio Banawe) Barangay Iba O' Este, Calumpit, Bulacan",
+    contactPerson: "Sec. Royce Ann C. Galvez",
+    telephone: "0967 631 9168",
+    email: "anneseriousme@gmail.com",
   },
   headerInfo: {
-    country: 'Republic of the Philippines',
-    province: 'Province of Bulacan',
-    municipality: 'Municipality of Calumpit',
-    barangayName: 'BARANGAY IBA O\' ESTE',
-    officeName: 'Office of the Punong Barangay'
+    country: "Republic of the Philippines",
+    province: "Province of Bulacan",
+    municipality: "Municipality of Calumpit",
+    barangayName: "BARANGAY IBA O' ESTE",
+    officeName: "Office of the Punong Barangay",
   },
-  logos: { leftLogo: '/iba-o-este.png', rightLogo: '/calumpit.png', logoSize: 115, captainImage: '/images/brgycaptain.png' },
-  headerStyle: { bgColor: '#ffffff', borderColor: '#1e40af', fontFamily: 'default' },
-  countryStyle: { color: '#4b5563', size: 12, fontWeight: 'normal', fontFamily: 'default' },
-  provinceStyle: { color: '#4b5563', size: 12, fontWeight: 'normal', fontFamily: 'default' },
-  municipalityStyle: { color: '#4b5563', size: 12, fontWeight: 'normal', fontFamily: 'default' },
-  barangayNameStyle: { color: '#1e40af', size: 20, fontWeight: 'bold', fontFamily: 'default' },
-  officeNameStyle: { color: '#6b7280', size: 11, fontWeight: 'normal', fontFamily: 'default' },
-  sidebarStyle: { bgColor: '#1e40af', gradientEnd: '#1e3a8a', textColor: '#ffffff', labelColor: '#fde047', titleSize: 14, textSize: 11, fontFamily: 'default' },
-  bodyStyle: { bgColor: '#ffffff', textColor: '#1f2937', titleColor: '#1e3a8a', titleSize: 24, textSize: 14, fontFamily: 'default' },
-  footerStyle: { bgColor: '#f9fafb', textColor: '#374151', borderColor: '#d1d5db', textSize: 9, fontFamily: 'default' }
+  logos: {
+    leftLogo: "/iba-o-este.png",
+    rightLogo: "/calumpit.png",
+    logoSize: 115,
+    captainImage: "/images/brgycaptain.png",
+  },
+  headerStyle: {
+    bgColor: "#ffffff",
+    borderColor: "#1e40af",
+    fontFamily: "default",
+  },
+  countryStyle: {
+    color: "#4b5563",
+    size: 12,
+    fontWeight: "normal",
+    fontFamily: "default",
+  },
+  provinceStyle: {
+    color: "#4b5563",
+    size: 12,
+    fontWeight: "normal",
+    fontFamily: "default",
+  },
+  municipalityStyle: {
+    color: "#4b5563",
+    size: 12,
+    fontWeight: "normal",
+    fontFamily: "default",
+  },
+  barangayNameStyle: {
+    color: "#1e40af",
+    size: 20,
+    fontWeight: "bold",
+    fontFamily: "default",
+  },
+  officeNameStyle: {
+    color: "#6b7280",
+    size: 11,
+    fontWeight: "normal",
+    fontFamily: "default",
+  },
+  sidebarStyle: {
+    bgColor: "#1e40af",
+    gradientEnd: "#1e3a8a",
+    textColor: "#ffffff",
+    labelColor: "#fde047",
+    titleSize: 14,
+    textSize: 11,
+    fontFamily: "default",
+  },
+  bodyStyle: {
+    bgColor: "#ffffff",
+    textColor: "#1f2937",
+    titleColor: "#1e3a8a",
+    titleSize: 24,
+    textSize: 14,
+    fontFamily: "default",
+  },
+  footerStyle: {
+    bgColor: "#f9fafb",
+    textColor: "#374151",
+    borderColor: "#d1d5db",
+    textSize: 9,
+    fontFamily: "default",
+  },
 };
 
 const PURPOSE_LIST_1 = [
@@ -108,7 +182,7 @@ const PURPOSE_LIST_1 = [
   "BANK TRANSACTION - OPEN ACCOUNT",
   "APPLICATION FOR BUILDING PERMIT REQUIREMENT",
   "POLICE CLEARANCE REQUIREMENT - WORK / JOB APPLICATION",
-  "FOR SCHOOL ADMISSION REQUIREMENT"
+  "FOR SCHOOL ADMISSION REQUIREMENT",
 ].sort((a, b) => a.localeCompare(b));
 
 const PURPOSE_LIST_2 = [
@@ -127,43 +201,80 @@ const PURPOSE_LIST_2 = [
   "IKABUHI",
   "DAKILA MALOLOS, BULACAN BRANCH",
   "CALUMPIT, BULACAN",
-  "LICENSE TO OWN AND POSSESS FIREARMS"
+  "LICENSE TO OWN AND POSSESS FIREARMS",
 ].sort((a, b) => a.localeCompare(b));
 
 const PURPOSE_LIST_3 = [
   "Medical Bill",
   "Medical abstract",
-  "MEDICAL prescription"
+  "MEDICAL prescription",
 ].sort((a, b) => a.localeCompare(b));
 
 const Notification = React.memo(({ type, title, message, onClose }) => {
   const styles = {
-    success: { bg: 'bg-gradient-to-r from-green-50 to-emerald-50', border: 'border-green-200', icon: 'bg-green-100 text-green-600', title: 'text-green-800', message: 'text-green-700' },
-    error: { bg: 'bg-gradient-to-r from-red-50 to-rose-50', border: 'border-red-200', icon: 'bg-red-100 text-red-600', title: 'text-red-800', message: 'text-red-700' },
-    info: { bg: 'bg-gradient-to-r from-blue-50 to-indigo-50', border: 'border-blue-200', icon: 'bg-blue-100 text-blue-600', title: 'text-blue-800', message: 'text-blue-700' }
+    success: {
+      bg: "bg-gradient-to-r from-green-50 to-emerald-50",
+      border: "border-green-200",
+      icon: "bg-green-100 text-green-600",
+      title: "text-green-800",
+      message: "text-green-700",
+    },
+    error: {
+      bg: "bg-gradient-to-r from-red-50 to-rose-50",
+      border: "border-red-200",
+      icon: "bg-red-100 text-red-600",
+      title: "text-red-800",
+      message: "text-red-700",
+    },
+    info: {
+      bg: "bg-gradient-to-r from-blue-50 to-indigo-50",
+      border: "border-blue-200",
+      icon: "bg-blue-100 text-blue-600",
+      title: "text-blue-800",
+      message: "text-blue-700",
+    },
   };
   const s = styles[type] || styles.info;
-  const Icon = type === 'success' ? CheckCircle : type === 'error' ? AlertCircle : Info;
+  const Icon =
+    type === "success" ? CheckCircle : type === "error" ? AlertCircle : Info;
 
   return (
-    <div className={`${s.bg} ${s.border} border rounded-xl p-4 shadow-sm animate-fade-in`}>
+    <div
+      className={`${s.bg} ${s.border} border rounded-xl p-4 shadow-sm animate-fade-in`}
+    >
       <div className="flex items-start gap-3">
-        <div className={`${s.icon} p-2 rounded-lg flex-shrink-0`}><Icon className="w-5 h-5" /></div>
+        <div className={`${s.icon} p-2 rounded-lg flex-shrink-0`}>
+          <Icon className="w-5 h-5" />
+        </div>
         <div className="flex-1 min-w-0">
           <h4 className={`${s.title} font-semibold text-sm`}>{title}</h4>
           <p className={`${s.message} text-sm mt-0.5`}>{message}</p>
         </div>
-        {onClose && <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );
 });
 
-Notification.displayName = 'Notification';
+Notification.displayName = "Notification";
 
-const SearchableDropdown = ({ items, onSelect, placeholder, label, colorClass, searchPlaceholder = "Search..." }) => {
+const SearchableDropdown = ({
+  items,
+  onSelect,
+  placeholder,
+  label,
+  colorClass,
+  searchPlaceholder = "Search...",
+}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -172,34 +283,44 @@ const SearchableDropdown = ({ items, onSelect, placeholder, label, colorClass, s
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredItems = items.filter(p => !search || p.toUpperCase().includes(search.toUpperCase()));
+  const filteredItems = items.filter(
+    (p) => !search || p.toUpperCase().includes(search.toUpperCase()),
+  );
 
   return (
     <div className="space-y-1 relative" ref={dropdownRef}>
-      <p className={`text-sm font-bold ${colorClass.label} uppercase tracking-widest ml-1`}>{label}</p>
+      <p
+        className={`text-sm font-bold ${colorClass.label} uppercase tracking-widest ml-1`}
+      >
+        {label}
+      </p>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full text-sm p-2 bg-white border border-gray-200 rounded-lg font-bold ${colorClass.text} flex items-center justify-between shadow-sm hover:bg-gray-50 transition-all uppercase outline-none focus:ring-2 focus:ring-emerald-500/20`}
       >
         <span className="truncate">{placeholder}</span>
-        <Search className={`w-3 h-3 ml-2 ${colorClass.icon} ${isOpen ? 'rotate-180' : ''} transition-transform`} />
+        <Search
+          className={`w-3 h-3 ml-2 ${colorClass.icon} ${isOpen ? "rotate-180" : ""} transition-transform`}
+        />
       </button>
 
       {isOpen && (
         <div className="absolute z-[100] bottom-full mb-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden animate-fade-in flex flex-col min-w-[200px]">
           <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
             <div className="relative">
-              <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 ${colorClass.icon} pointer-events-none`} />
+              <Search
+                className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 ${colorClass.icon} pointer-events-none`}
+              />
               <input
                 type="text"
                 autoFocus
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder={searchPlaceholder}
                 className={`w-full pl-8 pr-3 py-1.5 text-sm ${colorClass.bg} border border-gray-100 rounded-md outline-none focus:ring-2 ${colorClass.ring} ${colorClass.text} placeholder-gray-400 font-medium`}
               />
@@ -211,14 +332,20 @@ const SearchableDropdown = ({ items, onSelect, placeholder, label, colorClass, s
                 <button
                   key={i}
                   type="button"
-                  onClick={() => { onSelect(item); setIsOpen(false); setSearch(''); }}
+                  onClick={() => {
+                    onSelect(item);
+                    setIsOpen(false);
+                    setSearch("");
+                  }}
                   className={`w-full text-left px-4 py-2 text-sm font-bold ${colorClass.text} hover:${colorClass.bg} transition-colors uppercase border-b border-gray-50 last:border-0`}
                 >
                   {item}
                 </button>
               ))
             ) : (
-              <div className="px-4 py-3 text-sm text-gray-400 italic text-center">No matches found</div>
+              <div className="px-4 py-3 text-sm text-gray-400 italic text-center">
+                No matches found
+              </div>
             )}
           </div>
         </div>
@@ -227,19 +354,23 @@ const SearchableDropdown = ({ items, onSelect, placeholder, label, colorClass, s
   );
 };
 
-export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
-
+export default function BarangayClearanceModal({
+  isOpen,
+  onClose,
+  isDemo = false,
+  tenantConfig = {},
+}) {
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       if (isOpen) {
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow = "hidden";
       } else {
-        document.body.style.overflow = '';
+        document.body.style.overflow = "";
       }
     }
     return () => {
-      if (typeof window !== 'undefined') {
-        document.body.style.overflow = '';
+      if (typeof window !== "undefined") {
+        document.body.style.overflow = "";
       }
     };
   }, [isOpen]);
@@ -251,67 +382,78 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
   const [notification, setNotification] = useState(null);
   const [officials, setOfficials] = useState(defaultOfficials);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [currentDate, setCurrentDate] = useState('');
-  const [referenceNumber, setReferenceNumber] = useState('');
-  const [submittedReferenceNumber, setSubmittedReferenceNumber] = useState('');
+  const [currentDate, setCurrentDate] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [submittedReferenceNumber, setSubmittedReferenceNumber] = useState("");
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const certificateRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    fullName: '', age: '', sex: '', civilStatus: '',
-    address: '', contactNumber: '', email: '',
-    dateOfBirth: '', placeOfBirth: '', purpose: '', residentId: null,
-    pending_case: false, case_record_history: ''
+    fullName: "",
+    age: "",
+    sex: "",
+    civilStatus: "",
+    address: "",
+    contactNumber: "",
+    email: "",
+    dateOfBirth: "",
+    placeOfBirth: "",
+    purpose: "",
+    residentId: null,
+    pending_case: false,
+    case_record_history: "",
   });
 
   const handleResidentSelect = (resident) => {
     if (!resident) {
-      console.error('No resident data provided to selection handler');
+      console.error("No resident data provided to selection handler");
       return;
     }
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      fullName: resident.full_name || '',
-      age: resident.age || '',
-      sex: resident.gender || '',
-      civilStatus: resident.civil_status || '',
-      address: resident.residential_address || '',
-      dateOfBirth: resident.date_of_birth ? new Date(resident.date_of_birth).toISOString().split('T')[0] : '',
-      placeOfBirth: resident.place_of_birth || '',
+      fullName: resident.full_name || "",
+      age: resident.age || "",
+      sex: resident.gender || "",
+      civilStatus: resident.civil_status || "",
+      address: resident.residential_address || "",
+      dateOfBirth: resident.date_of_birth
+        ? new Date(resident.date_of_birth).toISOString().split("T")[0]
+        : "",
+      placeOfBirth: resident.place_of_birth || "",
       contactNumber: resident.contact_number || prev.contactNumber,
       email: resident.email || prev.email,
       residentId: resident.id,
       pending_case: resident.pending_case || false,
-      case_record_history: resident.case_record_history || ''
+      case_record_history: resident.case_record_history || "",
     }));
     setIsResidentModalOpen(false);
-    
+
     if (resident.pending_case) {
       setNotification({
-        type: 'error',
-        title: 'RESTRICTED PROFILE',
-        message: `NOTICE: ${resident.full_name} has a pending case record. Barangay Clearance issuance is restricted.`
+        type: "error",
+        title: "RESTRICTED PROFILE",
+        message: `NOTICE: ${resident.full_name} has a pending case record. Barangay Clearance issuance is restricted.`,
       });
     } else {
       setNotification({
-        type: 'success',
-        title: 'Profile Found',
-        message: `${resident.full_name}'s details have been auto-filled.`
+        type: "success",
+        title: "Profile Found",
+        message: `${resident.full_name}'s details have been auto-filled.`,
       });
-      setErrors(prev => ({ ...prev, fullName: false }));
+      setErrors((prev) => ({ ...prev, fullName: false }));
     }
   };
 
   useEffect(() => {
     const now = new Date();
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    setCurrentDate(now.toLocaleDateString('en-US', options));
+    const options = { year: "numeric", month: "long", day: "numeric" };
+    setCurrentDate(now.toLocaleDateString("en-US", options));
   }, [isOpen]);
 
   useEffect(() => {
-    const savedOfficials = localStorage.getItem('barangayOfficials');
+    const savedOfficials = localStorage.getItem("barangayOfficials");
     if (savedOfficials) {
       const parsed = JSON.parse(savedOfficials);
       setOfficials({ ...defaultOfficials, ...parsed });
@@ -327,26 +469,35 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: false }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: false }));
   };
 
   const handlePurposeSelect = (e) => {
-    const selectedValue = e?.target ? e.target.value : (typeof e === 'string' ? e : '');
+    const selectedValue = e?.target
+      ? e.target.value
+      : typeof e === "string"
+        ? e
+        : "";
     if (!selectedValue) return;
-    setFormData(prev => {
-      const current = prev.purpose || '';
+    setFormData((prev) => {
+      const current = prev.purpose || "";
       if (current.includes(selectedValue)) return prev;
-      return { ...prev, purpose: current ? `${current}\n${selectedValue}` : selectedValue };
+      return {
+        ...prev,
+        purpose: current ? `${current}\n${selectedValue}` : selectedValue,
+      };
     });
-    if (errors.purpose) setErrors(prev => ({ ...prev, purpose: false }));
+    if (errors.purpose) setErrors((prev) => ({ ...prev, purpose: false }));
   };
 
   const validateForm = () => {
     if (formData.pending_case) return false;
-    const required = ['fullName', 'contactNumber', 'purpose'];
+    const required = ["fullName", "contactNumber", "purpose"];
     const newErrors = {};
-    required.forEach(f => { if (!formData[f]) newErrors[f] = true; });
+    required.forEach((f) => {
+      if (!formData[f]) newErrors[f] = true;
+    });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -361,18 +512,18 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
     setIsSubmitting(true);
     try {
       // POINTED TO NEXT.JS RESILIENCE API
-      const response = await fetch('/api/portal/submit', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-tenant-id': tenantConfig.tenant_id || 'ibaoeste'
+      const response = await fetch("/api/portal/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-tenant-id": tenantConfig.tenant_id || "ibaoeste",
         },
-        body: JSON.stringify({ 
-          type: 'barangay_clearance',
-          formData 
-        })
+        body: JSON.stringify({
+          type: "barangay_clearance",
+          formData,
+        }),
       });
-      
+
       const result = await response.json();
       if (result.success) {
         setSubmittedReferenceNumber(result.referenceNumber);
@@ -382,14 +533,30 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
         throw new Error(result.message);
       }
     } catch (error) {
-      setNotification({ type: 'error', title: 'Submission Failed', message: error.message });
+      setNotification({
+        type: "error",
+        title: "Submission Failed",
+        message: error.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const resetForm = () => {
-    setFormData({ fullName: '', age: '', sex: '', civilStatus: '', address: '', contactNumber: '', email: '', dateOfBirth: '', placeOfBirth: '', purpose: '', residentId: null });
+    setFormData({
+      fullName: "",
+      age: "",
+      sex: "",
+      civilStatus: "",
+      address: "",
+      contactNumber: "",
+      email: "",
+      dateOfBirth: "",
+      placeOfBirth: "",
+      purpose: "",
+      residentId: null,
+    });
     setCurrentStep(1);
     setShowConfirmationPopup(false);
     setShowSuccessModal(false);
@@ -408,37 +575,76 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
     <>
       {demoTheme}
       <div className="brgy-modal-wrap">
-        {(!showConfirmationPopup && !showSuccessModal) && (
+        {!showConfirmationPopup && !showSuccessModal && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 sm:p-10">
-              <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
-              <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-fade-in no-scrollbar" style={{ height: '92vh', maxHeight: '95vh', fontFamily: "'Open Sans', sans-serif" }}>
-                
+              <div
+                className="fixed inset-0 bg-black/60 backdrop-blur-[2px]"
+                onClick={onClose}
+              />
+              <div
+                className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-fade-in no-scrollbar"
+                style={{
+                  height: "92vh",
+                  maxHeight: "95vh",
+                  fontFamily: "'Open Sans', sans-serif",
+                }}
+              >
                 {/* Header */}
                 <div className="bg-black px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0">
                   <div className="flex items-center gap-4">
-                    <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20"><FileText className="w-5 h-5 text-white" /></div>
+                    <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
                     <div>
-                       <h2 className="text-xl font-black text-white uppercase tracking-tighter">Clearance Acquisition</h2>
-                       <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{tenantConfig.shortName || 'Barangay'} Official Portal</p>
+                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">
+                        Clearance Acquisition
+                      </h2>
+                      <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">
+                        {tenantConfig.shortName || "Barangay"} Official Portal
+                      </p>
                     </div>
                   </div>
-                  <button onClick={onClose} className="text-white/40 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all group"><X className="w-6 h-6 group-hover:rotate-90 transition-transform" /></button>
+                  <button
+                    onClick={onClose}
+                    className="text-white/40 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all group"
+                  >
+                    <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                  </button>
                 </div>
 
-                {notification && <div className="px-8 pt-4"><Notification type={notification.type} title={notification.title} message={notification.message} onClose={() => setNotification(null)} /></div>}
+                {notification && (
+                  <div className="px-8 pt-4">
+                    <Notification
+                      type={notification.type}
+                      title={notification.title}
+                      message={notification.message}
+                      onClose={() => setNotification(null)}
+                    />
+                  </div>
+                )}
 
                 {/* Progress */}
                 <div className="px-8 pt-5 shrink-0">
                   <div className="max-w-3xl mx-auto flex items-center justify-between">
-                    {[1, 2, 3].map(s => (
+                    {[1, 2, 3].map((s) => (
                       <React.Fragment key={s}>
                         <div className="flex flex-col items-center">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? 'bg-black text-white scale-110' : 'bg-gray-100 text-gray-300'}`}>
-                            {currentStep > s ? <CheckCircle className="w-6 h-6 text-emerald-400" /> : s}
+                          <div
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? "bg-black text-white scale-110" : "bg-gray-100 text-gray-300"}`}
+                          >
+                            {currentStep > s ? (
+                              <CheckCircle className="w-6 h-6 text-emerald-400" />
+                            ) : (
+                              s
+                            )}
                           </div>
                         </div>
-                        {s < 3 && <div className={`flex-1 h-1 mx-4 rounded-full ${currentStep > s ? 'bg-black' : 'bg-gray-100'}`} />}
+                        {s < 3 && (
+                          <div
+                            className={`flex-1 h-1 mx-4 rounded-full ${currentStep > s ? "bg-black" : "bg-gray-100"}`}
+                          />
+                        )}
                       </React.Fragment>
                     ))}
                   </div>
@@ -448,60 +654,95 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
                   <div className="max-w-3xl mx-auto">
                     {currentStep === 1 && (
                       <div className="space-y-3 animate-in slide-in-from-right-8 duration-500">
-                        <div 
-                          className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer hover:bg-black/5 hover:border-black transition-all relative overflow-hidden active:scale-95 shadow-sm hover:shadow-xl" 
+                        <div
+                          className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer hover:bg-black/5 hover:border-black transition-all relative overflow-hidden active:scale-95 shadow-sm hover:shadow-xl"
                           onClick={() => setIsResidentModalOpen(true)}
                         >
-                           <div className="relative z-10 flex flex-col items-center">
-                             <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-inner">
-                               <Search className="w-5 h-5" />
-                             </div>
-                             <h3 className="text-base font-black uppercase tracking-tighter mb-1">Search Directory / Hanapin sa Direktoryo</h3>
-                             <p className="text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] max-w-[240px] mx-auto leading-relaxed">Find your profile and sync your details instantly. / Hanapin ang iyong profile at i-sync agad ang mga detalye.</p>
-                           </div>
+                          <div className="relative z-10 flex flex-col items-center">
+                            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-inner">
+                              <Search className="w-5 h-5" />
+                            </div>
+                            <h3 className="text-base font-black uppercase tracking-tighter mb-1">
+                              Search Directory / Hanapin sa Direktoryo
+                            </h3>
+                            <p className="text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] max-w-[240px] mx-auto leading-relaxed">
+                              Find your profile and sync your details instantly.
+                              / Hanapin ang iyong profile at i-sync agad ang mga
+                              detalye.
+                            </p>
+                          </div>
                         </div>
 
                         {formData.fullName && (
                           <div className="bg-black text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5">
-                             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <CheckCircle className="w-16 h-16 text-white" />
-                             </div>
-                             <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">Confirmed Applicant / Kumpirmadong Aplikante</p>
-                             <h4 className="text-2xl font-black tracking-tighter mb-4 leading-none uppercase">{formData.fullName}</h4>
-                             <div className="grid grid-cols-2 gap-2 relative z-10">
-                                <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
-                                   <p className="text-white/30 text-[8px] tracking-widest mb-0.5">Status</p>
-                                   <p className="text-emerald-400 text-xs">Verified Member / Beripikadong Miyembro</p>
-                                </div>
-                                <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
-                                   <p className="text-white/30 text-[8px] tracking-widest mb-0.5">DB ID</p>
-                                   <p className="text-xs">#{formData.residentId}</p>
-                                </div>
-                             </div>
+                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                              <CheckCircle className="w-16 h-16 text-white" />
+                            </div>
+                            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">
+                              Confirmed Applicant / Kumpirmadong Aplikante
+                            </p>
+                            <h4 className="text-2xl font-black tracking-tighter mb-4 leading-none uppercase">
+                              {formData.fullName}
+                            </h4>
+                            <div className="grid grid-cols-2 gap-2 relative z-10">
+                              <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
+                                <p className="text-white/30 text-[8px] tracking-widest mb-0.5">
+                                  Status
+                                </p>
+                                <p className="text-emerald-400 text-xs">
+                                  Verified Member / Beripikadong Miyembro
+                                </p>
+                              </div>
+                              <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
+                                <p className="text-white/30 text-[8px] tracking-widest mb-0.5">
+                                  DB ID
+                                </p>
+                                <p className="text-xs">
+                                  #{formData.residentId}
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
                     )}
 
-
-
                     {currentStep === 2 && (
                       <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
                         <div className="space-y-4">
-                           <div className="group">
-                              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Cellular Number / Numero ng Cellphone <span className="text-red-500">*</span></label>
-                              <div className="relative">
-                                 <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
-                                 <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder="09XX XXX XXXX" className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.contactNumber ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl`} />
-                              </div>
-                           </div>
-                           <div className="group">
-                              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Email (Optional)</label>
-                              <div className="relative">
-                                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
-                                 <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="YOUR@EMAIL.COM" className="w-full pl-14 pr-6 py-4 bg-white border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl" />
-                              </div>
-                           </div>
+                          <div className="group">
+                            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
+                              Cellular Number / Numero ng Cellphone{" "}
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
+                              <input
+                                type="tel"
+                                name="contactNumber"
+                                value={formData.contactNumber}
+                                onChange={handleInputChange}
+                                placeholder="09XX XXX XXXX"
+                                className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.contactNumber ? "border-red-500" : "border-gray-50"} rounded-2xl focus:border-black outline-none font-black text-xl`}
+                              />
+                            </div>
+                          </div>
+                          <div className="group">
+                            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
+                              Email (Optional)
+                            </label>
+                            <div className="relative">
+                              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
+                              <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="YOUR@EMAIL.COM"
+                                className="w-full pl-14 pr-6 py-4 bg-white border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -509,13 +750,59 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
                     {currentStep === 3 && (
                       <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
                         <div className="group">
-                           <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">State Your Purpose / Sabihin ang Layunin <span className="text-red-500">*</span></label>
-                           <textarea name="purpose" value={formData.purpose} onChange={handleInputChange} rows={4} placeholder="E.G. EMPLOYMENT, LOAN, ETC..." className={`w-full px-6 py-4 bg-gray-50 border-4 ${errors.purpose ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black focus:bg-white outline-none font-black text-xl uppercase tracking-tighter resize-none`} />
+                          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">
+                            State Your Purpose / Sabihin ang Layunin{" "}
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <textarea
+                            name="purpose"
+                            value={formData.purpose}
+                            onChange={handleInputChange}
+                            rows={4}
+                            placeholder="E.G. EMPLOYMENT, LOAN, ETC..."
+                            className={`w-full px-6 py-4 bg-gray-50 border-4 ${errors.purpose ? "border-red-500" : "border-gray-50"} rounded-2xl focus:border-black focus:bg-white outline-none font-black text-xl uppercase tracking-tighter resize-none`}
+                          />
                         </div>
                         <div className="grid grid-cols-3 gap-3">
-                           <SearchableDropdown label="Job & Gov't" placeholder="SELECT..." items={PURPOSE_LIST_1} onSelect={handlePurposeSelect} colorClass={{ label: "text-blue-400", text: "text-blue-600", icon: "text-blue-300", bg: "bg-blue-50", ring: "ring-blue-300" }} />
-                           <SearchableDropdown label="Utility" placeholder="SELECT..." items={PURPOSE_LIST_2} onSelect={handlePurposeSelect} colorClass={{ label: "text-indigo-400", text: "text-indigo-600", icon: "text-indigo-300", bg: "bg-indigo-50", ring: "ring-indigo-300" }} />
-                           <SearchableDropdown label="Medical" placeholder="SELECT..." items={PURPOSE_LIST_3} onSelect={handlePurposeSelect} colorClass={{ label: "text-emerald-500", text: "text-emerald-600", icon: "text-emerald-300", bg: "bg-emerald-50", ring: "ring-emerald-300" }} />
+                          <SearchableDropdown
+                            label="Job & Gov't"
+                            placeholder="SELECT..."
+                            items={PURPOSE_LIST_1}
+                            onSelect={handlePurposeSelect}
+                            colorClass={{
+                              label: "text-blue-400",
+                              text: "text-blue-600",
+                              icon: "text-blue-300",
+                              bg: "bg-blue-50",
+                              ring: "ring-blue-300",
+                            }}
+                          />
+                          <SearchableDropdown
+                            label="Utility"
+                            placeholder="SELECT..."
+                            items={PURPOSE_LIST_2}
+                            onSelect={handlePurposeSelect}
+                            colorClass={{
+                              label: "text-indigo-400",
+                              text: "text-indigo-600",
+                              icon: "text-indigo-300",
+                              bg: "bg-indigo-50",
+                              ring: "ring-indigo-300",
+                            }}
+                          />
+                          <SearchableDropdown
+                            label="Medical"
+                            placeholder="SELECT..."
+                            items={PURPOSE_LIST_3}
+                            onSelect={handlePurposeSelect}
+                            colorClass={{
+                              label: "text-emerald-500",
+                              text: "text-emerald-600",
+                              icon: "text-emerald-300",
+                              bg: "bg-emerald-50",
+                              ring: "ring-emerald-300",
+                            }}
+                          />
                         </div>
                       </div>
                     )}
@@ -524,19 +811,43 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
 
                 {/* Footer Nav */}
                 <div className="border-t bg-white px-8 py-4 flex items-center justify-between shrink-0">
-                   {currentStep > 1 ? (
-                     <button onClick={() => setCurrentStep(prev => prev - 1)} className="px-8 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 hover:text-black transition-all">Previous / Nakaraan</button>
-                   ) : <div />}
-                   
-                   {currentStep < totalSteps ? (
-                     <button onClick={() => {
-                       if (currentStep === 1 && !formData.fullName) { setErrors({ fullName: true }); return; }
-                       if (currentStep === 2 && !formData.contactNumber) { setErrors({ contactNumber: true }); return; }
-                       setCurrentStep(prev => prev + 1);
-                     }} className="px-12 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all flex items-center gap-3">Next Step / Susunod <ChevronRight className="w-5 h-5" /></button>
-                   ) : (
-                     <button onClick={handleSubmit} className="px-12 py-4 bg-[#c9a84c] text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#a07830] transition-all flex items-center gap-3"><Send className="w-5 h-5" /> Submit Request / I-submit ang Request</button>
-                   )}
+                  {currentStep > 1 ? (
+                    <button
+                      onClick={() => setCurrentStep((prev) => prev - 1)}
+                      className="px-8 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 hover:text-black transition-all"
+                    >
+                      Previous / Nakaraan
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+
+                  {currentStep < totalSteps ? (
+                    <button
+                      onClick={() => {
+                        if (currentStep === 1 && !formData.fullName) {
+                          setErrors({ fullName: true });
+                          return;
+                        }
+                        if (currentStep === 2 && !formData.contactNumber) {
+                          setErrors({ contactNumber: true });
+                          return;
+                        }
+                        setCurrentStep((prev) => prev + 1);
+                      }}
+                      className="px-12 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all flex items-center gap-3"
+                    >
+                      Next Step / Susunod <ChevronRight className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSubmit}
+                      className="px-12 py-4 bg-[#c9a84c] text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#a07830] transition-all flex items-center gap-3"
+                    >
+                      <Send className="w-5 h-5" /> Submit Request / I-submit ang
+                      Request
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -546,58 +857,103 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
         {showConfirmationPopup && (
           <div className="fixed inset-0 z-[60] overflow-hidden">
             <div className="flex items-center justify-center w-full h-full p-4">
-              <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowConfirmationPopup(false)} />
+              <div
+                className="fixed inset-0 bg-black/80 backdrop-blur-md"
+                onClick={() => setShowConfirmationPopup(false)}
+              />
               <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
                 {/* Header */}
                 <div className="bg-black px-10 py-7 flex items-center justify-between shrink-0">
-                   <div>
-                     <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-tight">Confirmation</h2>
-                     <p className="text-white/40 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">Review your application before submitting</p>
-                   </div>
-                   <button onClick={() => setShowConfirmationPopup(false)} className="bg-white/10 p-3 rounded-2xl text-white/40 hover:text-white hover:bg-red-500/20 transition-all group">
-                      <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
-                   </button>
+                  <div>
+                    <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-tight">
+                      Confirmation
+                    </h2>
+                    <p className="text-white/40 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">
+                      Review your application before submitting
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowConfirmationPopup(false)}
+                    className="bg-white/10 p-3 rounded-2xl text-white/40 hover:text-white hover:bg-red-500/20 transition-all group"
+                  >
+                    <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                  </button>
                 </div>
 
                 {/* Cards */}
                 <div className="p-8 bg-gray-50">
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {Object.entries(formData).map(([k, v]) => {
-                        const skip = ['residentId', 'pending_case', 'case_record_history', 'age', 'sex', 'civilStatus', 'address', 'dateOfBirth', 'placeOfBirth'];
-                        if (!v || skip.includes(k)) return null;
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {Object.entries(formData).map(([k, v]) => {
+                      const skip = [
+                        "residentId",
+                        "pending_case",
+                        "case_record_history",
+                        "age",
+                        "sex",
+                        "civilStatus",
+                        "address",
+                        "dateOfBirth",
+                        "placeOfBirth",
+                      ];
+                      if (!v || skip.includes(k)) return null;
 
-                        const iconMap = {
-                          fullName: User, contactNumber: Phone,
-                          email: Mail, purpose: FileText,
-                        };
-                        const Icon = iconMap[k] || Info;
-                        const label = k.replace(/([A-Z])/g, ' $1').toUpperCase();
+                      const iconMap = {
+                        fullName: User,
+                        contactNumber: Phone,
+                        email: Mail,
+                        purpose: FileText,
+                      };
+                      const Icon = iconMap[k] || Info;
+                      const label = k.replace(/([A-Z])/g, " $1").toUpperCase();
 
-                        return (
-                          <div key={k} className={`flex items-start gap-4 p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group ${k === 'purpose' ? 'sm:col-span-2' : ''}`}>
-                            <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition-all shrink-0">
-                              <Icon className="w-5 h-5" />
-                            </div>
-                            <div className="min-w-0">
-                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">{label}</span>
-                              <span className="text-lg font-black text-black leading-tight break-words uppercase">{v.toString()}</span>
-                            </div>
+                      return (
+                        <div
+                          key={k}
+                          className={`flex items-start gap-4 p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group ${k === "purpose" ? "sm:col-span-2" : ""}`}
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition-all shrink-0">
+                            <Icon className="w-5 h-5" />
                           </div>
-                        );
-                      })}
-                   </div>
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">
+                              {label}
+                            </span>
+                            <span className="text-lg font-black text-black leading-tight break-words uppercase">
+                              {v.toString()}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
 
-                   <div className="mt-4 p-5 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-4">
-                      <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />
-                      <p className="text-emerald-700 text-[11px] font-bold uppercase tracking-wide">All details validated against the official directory.</p>
-                   </div>
+                  <div className="mt-4 p-5 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-4">
+                    <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />
+                    <p className="text-emerald-700 text-[11px] font-bold uppercase tracking-wide">
+                      All details validated against the official directory.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Footer */}
                 <div className="border-t bg-white px-8 py-6 flex justify-between items-center shrink-0">
-                  <button onClick={() => setShowConfirmationPopup(false)} className="px-6 py-3 font-black uppercase tracking-[0.2em] text-[10px] text-gray-400 hover:text-black transition-all">← Back / Edit</button>
-                  <button onClick={handleProceedSubmission} className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3">
-                    {isSubmitting ? 'Submitting...' : (<>Confirm Submission <ChevronRight className="w-4 h-4" /></>)}
+                  <button
+                    onClick={() => setShowConfirmationPopup(false)}
+                    className="px-6 py-3 font-black uppercase tracking-[0.2em] text-[10px] text-gray-400 hover:text-black transition-all"
+                  >
+                    ← Back / Edit
+                  </button>
+                  <button
+                    onClick={handleProceedSubmission}
+                    className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3"
+                  >
+                    {isSubmitting ? (
+                      "Submitting..."
+                    ) : (
+                      <>
+                        Confirm Submission <ChevronRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -605,48 +961,96 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
           </div>
         )}
 
-
         {showSuccessModal && (
           <div className="fixed inset-0 z-[70] overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4">
               <div className="fixed inset-0 bg-black/90 backdrop-blur-xl" />
               <div className="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in p-12 text-center">
                 <div className="w-24 h-24 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border-4 border-emerald-100 shadow-2xl">
-                   <CheckCircle className="w-12 h-12 text-emerald-500" />
+                  <CheckCircle className="w-12 h-12 text-emerald-500" />
                 </div>
-                <h2 className="text-3xl font-black tracking-tighter uppercase mb-4">Request Complete</h2>
+                <h2 className="text-3xl font-black tracking-tighter uppercase mb-4">
+                  Request Complete
+                </h2>
                 <div className="bg-gray-50 rounded-[2.5rem] p-8 mb-10 border-4 border-gray-100">
-                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Tracking ID</p>
-                   <p className="text-4xl font-black tracking-tighter">{submittedReferenceNumber}</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                    Tracking ID
+                  </p>
+                  <p className="text-4xl font-black tracking-tighter">
+                    {submittedReferenceNumber}
+                  </p>
                 </div>
-                <button onClick={() => { setShowSuccessModal(false); resetForm(); onClose(); }} className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all shadow-2xl">Back to Dashboard / Bumalik sa Dashboard</button>
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    resetForm();
+                    onClose();
+                  }}
+                  className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all shadow-2xl"
+                >
+                  Back to Dashboard / Bumalik sa Dashboard
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {isResidentModalOpen && <ResidentSearchModal isOpen={isResidentModalOpen} onClose={() => setIsResidentModalOpen(false)} onSelect={handleResidentSelect} isDemo={isDemo} />}
+        {isResidentModalOpen && (
+          <ResidentSearchModal
+            isOpen={isResidentModalOpen}
+            onClose={() => setIsResidentModalOpen(false)}
+            onSelect={handleResidentSelect}
+            isDemo={isDemo}
+          />
+        )}
         <style jsx>{`
-          @keyframes fade-in { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-          .animate-fade-in { animation: fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+          @keyframes fade-in {
+            from {
+              opacity: 0;
+              transform: translateY(-20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .animate-fade-in {
+            animation: fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+          }
         `}</style>
       </div>
     </>
   );
 }
 
-const ClearancePreview = React.memo(({ formData, referenceNumber, currentDate, officials, certificateRef }) => {
-  return (
-    <div ref={certificateRef} className="bg-white p-20" style={{ width: '794px', height: '1123px' }}>
-      <h1 className="text-4xl font-black text-center uppercase mb-20">Barangay Clearance</h1>
-      <div className="space-y-6 text-xl">
-        <p><strong>Name:</strong> {formData.fullName}</p>
-        <p><strong>Purpose:</strong> {formData.purpose}</p>
-        <p><strong>Date:</strong> {currentDate}</p>
-        <p><strong>Ref:</strong> {referenceNumber}</p>
+const ClearancePreview = React.memo(
+  ({ formData, referenceNumber, currentDate, officials, certificateRef }) => {
+    return (
+      <div
+        ref={certificateRef}
+        className="bg-white p-20"
+        style={{ width: "794px", height: "1123px" }}
+      >
+        <h1 className="text-4xl font-black text-center uppercase mb-20">
+          Barangay Clearance
+        </h1>
+        <div className="space-y-6 text-xl">
+          <p>
+            <strong>Name:</strong> {formData.fullName}
+          </p>
+          <p>
+            <strong>Purpose:</strong> {formData.purpose}
+          </p>
+          <p>
+            <strong>Date:</strong> {currentDate}
+          </p>
+          <p>
+            <strong>Ref:</strong> {referenceNumber}
+          </p>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
-ClearancePreview.displayName = 'ClearancePreview';
+ClearancePreview.displayName = "ClearancePreview";

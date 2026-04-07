@@ -15,8 +15,7 @@ export default function DeleteConfirmModal({ title, message, onConfirm, onCancel
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[120] overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
@@ -72,8 +71,8 @@ export default function DeleteConfirmModal({ title, message, onConfirm, onCancel
             <p className="text-[8px] font-black text-rose-400 uppercase tracking-widest">Crucial: This action is permanent and irreversible</p>
           </div>
         </div>
-      </div>
     </div>
   );
 }
+
 

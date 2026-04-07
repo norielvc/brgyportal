@@ -1,18 +1,18 @@
-import jwt from 'jsonwebtoken';
-import { supabase } from '../../lib/supabase';
+import jwt from "jsonwebtoken";
+import { supabase } from "../../lib/supabase";
 
 /**
  * Middleware-like helper for Next.js API routes to authenticate JWT tokens
  */
 export const authenticateToken = async (req, res) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
     if (!token) {
       res.status(401).json({
         success: false,
-        message: 'Access token is required'
+        message: "Access token is required",
       });
       return null;
     }
@@ -23,23 +23,23 @@ export const authenticateToken = async (req, res) => {
 
     // Find the user in Supabase
     const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', decoded.userId)
+      .from("users")
+      .select("*")
+      .eq("id", decoded.userId)
       .single();
 
     if (error || !user) {
       res.status(401).json({
         success: false,
-        message: 'Invalid token - user not found'
+        message: "Invalid token - user not found",
       });
       return null;
     }
 
-    if (user.status !== 'active') {
+    if (user.status !== "active") {
       res.status(401).json({
         success: false,
-        message: 'Account is not active'
+        message: "Account is not active",
       });
       return null;
     }
@@ -51,15 +51,15 @@ export const authenticateToken = async (req, res) => {
       lastName: user.last_name,
       email: user.email,
       role: user.role,
-      tenant_id: user.tenant_id
+      tenant_id: user.tenant_id,
     };
 
     return sessionUser;
   } catch (error) {
-    console.error('API Auth Error:', error);
+    console.error("API Auth Error:", error);
     res.status(401).json({
       success: false,
-      message: 'Authentication failed'
+      message: "Authentication failed",
     });
     return null;
   }

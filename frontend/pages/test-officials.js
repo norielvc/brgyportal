@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export default function TestOfficials() {
   const [officials, setOfficials] = useState([]);
@@ -8,28 +8,28 @@ export default function TestOfficials() {
   useEffect(() => {
     const fetchOfficials = async () => {
       try {
-        console.log('🔍 Testing officials API...');
-        const API_URL = '/api';
-        console.log('🔍 API URL:', API_URL);
+        console.log("🔍 Testing officials API...");
+        const API_URL = "/api";
+        console.log("🔍 API URL:", API_URL);
 
         const response = await fetch(`${API_URL}/officials`);
-        console.log('📊 Response status:', response.status);
+        console.log("📊 Response status:", response.status);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('📋 API Response:', data);
+        console.log("📋 API Response:", data);
 
         if (data.success && data.data) {
           setOfficials(data.data);
-          console.log('✅ Officials loaded:', data.data.length);
+          console.log("✅ Officials loaded:", data.data.length);
         } else {
-          setError('Invalid API response format');
+          setError("Invalid API response format");
         }
       } catch (err) {
-        console.error('❌ Error:', err);
+        console.error("❌ Error:", err);
         setError(err.message);
       } finally {
         setLoading(false);

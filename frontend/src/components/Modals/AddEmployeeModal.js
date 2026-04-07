@@ -115,8 +115,7 @@ export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externa
   };
 
   return (
-    <div className="fixed inset-0 z-[110] overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
@@ -369,8 +368,8 @@ export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externa
             </div>
           </form>
         </div>
-      </div>
     </div>
   );
 }
+
 

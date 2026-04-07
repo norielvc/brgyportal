@@ -1,41 +1,41 @@
 // Token management
 export const setAuthToken = (token) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('token', token);
+  if (typeof window !== "undefined") {
+    localStorage.setItem("token", token);
   }
 };
 
 export const getAuthToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("token");
   }
   return null;
 };
 
 export const removeAuthToken = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('token');
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("token");
   }
 };
 
 // User data management
 export const setUserData = (user) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('user', JSON.stringify(user));
+  if (typeof window !== "undefined") {
+    localStorage.setItem("user", JSON.stringify(user));
   }
 };
 
 export const getUserData = () => {
-  if (typeof window !== 'undefined') {
-    const userData = localStorage.getItem('user');
+  if (typeof window !== "undefined") {
+    const userData = localStorage.getItem("user");
     return userData ? JSON.parse(userData) : null;
   }
   return null;
 };
 
 export const removeUserData = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('user');
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("user");
   }
 };
 
@@ -49,7 +49,7 @@ export const isAuthenticated = () => {
 // Check if user has admin role
 export const isAdmin = () => {
   const user = getUserData();
-  return user?.role === 'admin';
+  return user?.role === "admin";
 };
 
 // Get user role
@@ -73,9 +73,9 @@ export const login = (token, user) => {
 // Logout helper
 export const logout = () => {
   clearAuthData();
-  
+
   // Redirect to login page
-  if (typeof window !== 'undefined') {
-    window.location.href = '/login';
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
   }
 };

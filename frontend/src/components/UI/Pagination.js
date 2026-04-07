@@ -1,13 +1,13 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export default function Pagination({ 
-  currentPage, 
-  totalPages, 
+export default function Pagination({
+  currentPage,
+  totalPages,
   onPageChange,
   showInfo = true,
   totalItems = 0,
-  itemsPerPage = 10
+  itemsPerPage = 10,
 }) {
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -15,34 +15,37 @@ export default function Pagination({
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+      const startPage = Math.max(
+        1,
+        currentPage - Math.floor(maxVisiblePages / 2),
+      );
       const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-      
+
       if (startPage > 1) {
         pages.push(1);
         if (startPage > 2) {
-          pages.push('...');
+          pages.push("...");
         }
       }
-      
+
       for (let i = startPage; i <= endPage; i++) {
         pages.push(i);
       }
-      
+
       if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
-          pages.push('...');
+          pages.push("...");
         }
         pages.push(totalPages);
       }
     }
-    
+
     return pages;
   };
 
@@ -73,13 +76,13 @@ export default function Pagination({
         {showInfo && (
           <div>
             <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{startItem}</span> to{' '}
-              <span className="font-medium">{endItem}</span> of{' '}
+              Showing <span className="font-medium">{startItem}</span> to{" "}
+              <span className="font-medium">{endItem}</span> of{" "}
               <span className="font-medium">{totalItems}</span> results
             </p>
           </div>
         )}
-        
+
         <div>
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
             {/* Previous button */}
@@ -95,15 +98,15 @@ export default function Pagination({
             {getPageNumbers().map((page, index) => (
               <button
                 key={index}
-                onClick={() => typeof page === 'number' && onPageChange(page)}
-                disabled={page === '...'}
+                onClick={() => typeof page === "number" && onPageChange(page)}
+                disabled={page === "..."}
                 className={cn(
-                  'relative inline-flex items-center px-4 py-2 text-sm font-medium border',
+                  "relative inline-flex items-center px-4 py-2 text-sm font-medium border",
                   page === currentPage
-                    ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
-                    : page === '...'
-                    ? 'bg-white border-gray-300 text-gray-700 cursor-default'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    ? "z-10 bg-primary-50 border-primary-500 text-primary-600"
+                    : page === "..."
+                      ? "bg-white border-gray-300 text-gray-700 cursor-default"
+                      : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50",
                 )}
               >
                 {page}

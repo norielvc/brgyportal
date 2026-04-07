@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { 
-  Users, 
-  UserCheck, 
-  UserX, 
+import { useState, useEffect } from "react";
+import {
+  Users,
+  UserCheck,
+  UserX,
   TrendingUp,
   Activity,
-  Calendar
-} from 'lucide-react';
+  Calendar,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -22,14 +22,14 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
-} from 'recharts';
-import Layout from '@/components/Layout/Layout';
-import { LoadingCard } from '@/components/UI/LoadingSpinner';
-import { dashboardAPI } from '@/lib/api';
-import { formatNumber, formatDate, formatRelativeTime } from '@/lib/utils';
+  ResponsiveContainer,
+} from "recharts";
+import Layout from "@/components/Layout/Layout";
+import { LoadingCard } from "@/components/UI/LoadingSpinner";
+import { dashboardAPI } from "@/lib/api";
+import { formatNumber, formatDate, formatRelativeTime } from "@/lib/utils";
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"];
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -46,7 +46,7 @@ export default function Dashboard() {
         setStats(response.data);
       }
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      console.error("Error fetching dashboard stats:", error);
     } finally {
       setIsLoading(false);
     }
@@ -60,12 +60,12 @@ export default function Dashboard() {
     );
   }
 
-  const StatCard = ({ title, value, icon: Icon, change, color = 'blue' }) => {
+  const StatCard = ({ title, value, icon: Icon, change, color = "blue" }) => {
     const colorClasses = {
-      blue: 'bg-blue-500',
-      green: 'bg-green-500',
-      yellow: 'bg-yellow-500',
-      red: 'bg-red-500',
+      blue: "bg-blue-500",
+      green: "bg-green-500",
+      yellow: "bg-yellow-500",
+      red: "bg-red-500",
     };
 
     return (
@@ -73,16 +73,23 @@ export default function Dashboard() {
         <div className="card-body">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className={`w-12 h-12 rounded-lg ${colorClasses[color]} flex items-center justify-center`}>
+              <div
+                className={`w-12 h-12 rounded-lg ${colorClasses[color]} flex items-center justify-center`}
+              >
                 <Icon className="w-6 h-6 text-white" />
               </div>
             </div>
             <div className="ml-4 flex-1">
               <p className="text-sm font-medium text-gray-500">{title}</p>
-              <p className="text-2xl font-semibold text-gray-900">{formatNumber(value)}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {formatNumber(value)}
+              </p>
               {change !== undefined && (
-                <p className={`text-sm ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {change >= 0 ? '+' : ''}{change}% from last month
+                <p
+                  className={`text-sm ${change >= 0 ? "text-green-600" : "text-red-600"}`}
+                >
+                  {change >= 0 ? "+" : ""}
+                  {change}% from last month
                 </p>
               )}
             </div>
@@ -130,7 +137,9 @@ export default function Dashboard() {
           <div className="card">
             <div className="card-header">
               <h3 className="text-lg font-medium text-gray-900">User Growth</h3>
-              <p className="text-sm text-gray-500">New user registrations over time</p>
+              <p className="text-sm text-gray-500">
+                New user registrations over time
+              </p>
             </div>
             <div className="card-body">
               <ResponsiveContainer width="100%" height={300}>
@@ -154,8 +163,12 @@ export default function Dashboard() {
           {/* Login Activity Chart */}
           <div className="card">
             <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Login Activity</h3>
-              <p className="text-sm text-gray-500">Daily login activity (last 7 days)</p>
+              <h3 className="text-lg font-medium text-gray-900">
+                Login Activity
+              </h3>
+              <p className="text-sm text-gray-500">
+                Daily login activity (last 7 days)
+              </p>
             </div>
             <div className="card-body">
               <ResponsiveContainer width="100%" height={300}>
@@ -176,7 +189,9 @@ export default function Dashboard() {
           {/* Role Distribution */}
           <div className="card">
             <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Role Distribution</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Role Distribution
+              </h3>
             </div>
             <div className="card-body">
               <ResponsiveContainer width="100%" height={250}>
@@ -186,15 +201,22 @@ export default function Dashboard() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ role, count, percent }) => `${role}: ${count} (${(percent * 100).toFixed(0)}%)`}
+                    label={({ role, count, percent }) =>
+                      `${role}: ${count} (${(percent * 100).toFixed(0)}%)`
+                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="count"
                     nameKey="role"
                   >
-                    {(stats?.charts?.roleDistribution || []).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
+                    {(stats?.charts?.roleDistribution || []).map(
+                      (entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ),
+                    )}
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -205,7 +227,9 @@ export default function Dashboard() {
           {/* Status Distribution */}
           <div className="card">
             <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Status Distribution</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Status Distribution
+              </h3>
             </div>
             <div className="card-body">
               <ResponsiveContainer width="100%" height={250}>
@@ -215,15 +239,22 @@ export default function Dashboard() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ status, count, percent }) => `${status}: ${count} (${(percent * 100).toFixed(0)}%)`}
+                    label={({ status, count, percent }) =>
+                      `${status}: ${count} (${(percent * 100).toFixed(0)}%)`
+                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="count"
                     nameKey="status"
                   >
-                    {(stats?.charts?.statusDistribution || []).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
+                    {(stats?.charts?.statusDistribution || []).map(
+                      (entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ),
+                    )}
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -237,7 +268,9 @@ export default function Dashboard() {
           {/* Recent Users */}
           <div className="card">
             <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Recent Users</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Recent Users
+              </h3>
               <p className="text-sm text-gray-500">Latest user registrations</p>
             </div>
             <div className="card-body">
@@ -246,17 +279,21 @@ export default function Dashboard() {
                   <div key={user._id} className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-white">
-                        {user.firstName?.charAt(0) || 'U'}
+                        {user.firstName?.charAt(0) || "U"}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {user.firstName} {user.lastName}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {user.email}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <span className={`badge ${user.role === 'admin' ? 'badge-info' : 'badge-success'}`}>
+                      <span
+                        className={`badge ${user.role === "admin" ? "badge-info" : "badge-success"}`}
+                      >
                         {user.role}
                       </span>
                       <p className="text-xs text-gray-500 mt-1">
@@ -272,8 +309,12 @@ export default function Dashboard() {
           {/* Most Active Users */}
           <div className="card">
             <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Most Active Users</h3>
-              <p className="text-sm text-gray-500">Users with highest login counts</p>
+              <h3 className="text-lg font-medium text-gray-900">
+                Most Active Users
+              </h3>
+              <p className="text-sm text-gray-500">
+                Users with highest login counts
+              </p>
             </div>
             <div className="card-body">
               <div className="space-y-4">
@@ -281,14 +322,16 @@ export default function Dashboard() {
                   <div key={user._id} className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-white">
-                        {user.firstName?.charAt(0) || 'U'}
+                        {user.firstName?.charAt(0) || "U"}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {user.firstName} {user.lastName}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {user.email}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-gray-900">

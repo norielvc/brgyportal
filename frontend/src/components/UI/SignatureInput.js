@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Pen, Upload, Check } from 'lucide-react';
-import SignaturePad from './SignaturePad';
-import SignatureUpload from './SignatureUpload';
+import { useState } from "react";
+import { Pen, Upload, Check } from "lucide-react";
+import SignaturePad from "./SignaturePad";
+import SignatureUpload from "./SignatureUpload";
 
 export default function SignatureInput({
   onSignatureChange,
   required = false,
   label = "Digital Signature",
-  defaultMethod = 'draw' // 'draw' or 'upload'
+  defaultMethod = "draw", // 'draw' or 'upload'
 }) {
   const [method, setMethod] = useState(defaultMethod);
   const [signature, setSignature] = useState(null);
@@ -34,22 +34,24 @@ export default function SignatureInput({
         <div className="flex bg-emerald-900/5 rounded-2xl p-1.5 w-full sm:w-fit border border-emerald-900/5">
           <button
             type="button"
-            onClick={() => switchMethod('draw')}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${method === 'draw'
-                ? 'bg-white text-emerald-700 shadow-md ring-1 ring-emerald-900/5'
-                : 'text-emerald-900/40 hover:text-emerald-900'
-              }`}
+            onClick={() => switchMethod("draw")}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+              method === "draw"
+                ? "bg-white text-emerald-700 shadow-md ring-1 ring-emerald-900/5"
+                : "text-emerald-900/40 hover:text-emerald-900"
+            }`}
           >
             <Pen className="w-3.5 h-3.5" />
             Manual Drawing
           </button>
           <button
             type="button"
-            onClick={() => switchMethod('upload')}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${method === 'upload'
-                ? 'bg-white text-emerald-700 shadow-md ring-1 ring-emerald-900/5'
-                : 'text-emerald-900/40 hover:text-emerald-900'
-              }`}
+            onClick={() => switchMethod("upload")}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+              method === "upload"
+                ? "bg-white text-emerald-700 shadow-md ring-1 ring-emerald-900/5"
+                : "text-emerald-900/40 hover:text-emerald-900"
+            }`}
           >
             <Upload className="w-3.5 h-3.5" />
             File Upload
@@ -59,7 +61,7 @@ export default function SignatureInput({
 
       {/* Signature Input Component */}
       <div className="signature-input-area">
-        {method === 'draw' ? (
+        {method === "draw" ? (
           <SignaturePad
             onSignatureChange={handleSignatureChange}
             width={400}

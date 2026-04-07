@@ -1,9 +1,11 @@
-import { authenticateToken } from '../../../src/lib/api-auth';
-import { supabase } from '../../../lib/supabase';
+import { authenticateToken } from "../../../src/lib/api-auth";
+import { supabase } from "../../../lib/supabase";
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  if (req.method !== "GET") {
+    return res
+      .status(405)
+      .json({ success: false, message: "Method not allowed" });
   }
 
   const userRes = await authenticateToken(req, res);
@@ -11,15 +13,15 @@ export default async function handler(req, res) {
 
   try {
     const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userRes._id)
+      .from("users")
+      .select("*")
+      .eq("id", userRes._id)
       .single();
 
     if (error || !user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
@@ -35,17 +37,17 @@ export default async function handler(req, res) {
       lastLogin: user.last_login,
       loginCount: user.login_count,
       createdAt: user.created_at,
-      updatedAt: user.updated_at
+      updatedAt: user.updated_at,
     };
 
     res.status(200).json({
       success: true,
       data: {
-        user: userResponse
-      }
+        user: userResponse,
+      },
     });
   } catch (err) {
-    console.error('API /me error:', err);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    console.error("API /me error:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }

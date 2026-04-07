@@ -470,8 +470,7 @@ PickupManagementPage.getLayout = (page) => (
 // Certificate Details Modal Component
 function CertificateDetailsModal({ certificate, onClose, getStatusColor, getTypeLabel, formatDate, openPickupVerification, handleManualRelease }) {
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden">
@@ -597,7 +596,6 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 }
@@ -605,8 +603,7 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
 // Confirm Pickup Modal Component
 function ConfirmPickupModal({ certificate, onClose, onConfirm, pickupName, setPickupName, confirming, getTypeLabel }) {
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -692,7 +689,6 @@ function ConfirmPickupModal({ certificate, onClose, onConfirm, pickupName, setPi
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

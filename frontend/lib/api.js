@@ -1,6 +1,6 @@
 // API Configuration
 // API Configuration
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export const getApiUrl = (endpoint) => {
   return `${API_URL}${endpoint}`;

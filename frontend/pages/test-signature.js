@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import Layout from '@/components/Layout/Layout';
-import SignatureInput from '@/components/UI/SignatureInput';
-import { Save, Eye, EyeOff } from 'lucide-react';
+import { useState } from "react";
+import Layout from "@/components/Layout/Layout";
+import SignatureInput from "@/components/UI/SignatureInput";
+import { Save, Eye, EyeOff } from "lucide-react";
 
 export default function TestSignature() {
   const [signature, setSignature] = useState(null);
@@ -9,10 +9,10 @@ export default function TestSignature() {
 
   const handleSave = () => {
     if (signature) {
-      console.log('Signature data:', signature);
-      alert('Signature saved! Check console for data.');
+      console.log("Signature data:", signature);
+      alert("Signature saved! Check console for data.");
     } else {
-      alert('Please create a signature first.');
+      alert("Please create a signature first.");
     }
   };
 
@@ -45,15 +45,21 @@ export default function TestSignature() {
                 onClick={() => setShowPreview(!showPreview)}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                {showPreview ? 'Hide Preview' : 'Show Preview'}
+                {showPreview ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+                {showPreview ? "Hide Preview" : "Show Preview"}
               </button>
             )}
           </div>
 
           {signature && showPreview && (
             <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Signature Preview:</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                Signature Preview:
+              </h3>
               <img
                 src={signature}
                 alt="Signature preview"
@@ -66,7 +72,9 @@ export default function TestSignature() {
           )}
 
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="text-sm font-semibold text-blue-800 mb-2">Instructions:</h3>
+            <h3 className="text-sm font-semibold text-blue-800 mb-2">
+              Instructions:
+            </h3>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• Choose between drawing or uploading a signature</li>
               <li>• For drawing: Use your mouse or finger to sign</li>

@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { useRouter } from 'next/router';
-import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
-import Layout from '@/components/Layout/Layout';
-import { usersAPI } from '@/lib/api';
-import { getUserData } from '@/lib/auth';
+import { useState } from "react";
+import { useRouter } from "next/router";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { ArrowLeft, Save, Eye, EyeOff } from "lucide-react";
+import Layout from "@/components/Layout/Layout";
+import { usersAPI } from "@/lib/api";
+import { getUserData } from "@/lib/auth";
 
 export default function CreateUser() {
   const router = useRouter();
@@ -14,8 +14,8 @@ export default function CreateUser() {
   const [showPassword, setShowPassword] = useState(false);
 
   // Check if current user is admin
-  if (currentUser?.role !== 'admin') {
-    router.push('/dashboard');
+  if (currentUser?.role !== "admin") {
+    router.push("/dashboard");
     return null;
   }
 
@@ -26,23 +26,23 @@ export default function CreateUser() {
     watch,
   } = useForm({
     defaultValues: {
-      role: 'user',
-      status: 'active',
+      role: "user",
+      status: "active",
     },
   });
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    
+
     try {
       const response = await usersAPI.createUser(data);
-      
+
       if (response.success) {
-        toast.success('User created successfully!');
-        router.push('/users');
+        toast.success("User created successfully!");
+        router.push("/users");
       }
     } catch (error) {
-      console.error('Create user error:', error);
+      console.error("Create user error:", error);
       // Error is handled by axios interceptor
     } finally {
       setIsLoading(false);
@@ -64,11 +64,18 @@ export default function CreateUser() {
 
         <div className="card">
           <div className="card-header">
-            <h2 className="text-xl font-semibold text-gray-900">User Information</h2>
-            <p className="text-sm text-gray-500">Fill in the details for the new user</p>
+            <h2 className="text-xl font-semibold text-gray-900">
+              User Information
+            </h2>
+            <p className="text-sm text-gray-500">
+              Fill in the details for the new user
+            </p>
           </div>
-          
-          <form onSubmit={handleSubmit(onSubmit)} className="card-body space-y-6">
+
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="card-body space-y-6"
+          >
             {/* Personal Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -76,19 +83,21 @@ export default function CreateUser() {
                   First Name *
                 </label>
                 <input
-                  {...register('firstName', {
-                    required: 'First name is required',
+                  {...register("firstName", {
+                    required: "First name is required",
                     maxLength: {
                       value: 50,
-                      message: 'First name must be less than 50 characters',
+                      message: "First name must be less than 50 characters",
                     },
                   })}
                   type="text"
-                  className={errors.firstName ? 'input-error' : 'input'}
+                  className={errors.firstName ? "input-error" : "input"}
                   placeholder="Enter first name"
                 />
                 {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.firstName.message}
+                  </p>
                 )}
               </div>
 
@@ -97,19 +106,21 @@ export default function CreateUser() {
                   Last Name *
                 </label>
                 <input
-                  {...register('lastName', {
-                    required: 'Last name is required',
+                  {...register("lastName", {
+                    required: "Last name is required",
                     maxLength: {
                       value: 50,
-                      message: 'Last name must be less than 50 characters',
+                      message: "Last name must be less than 50 characters",
                     },
                   })}
                   type="text"
-                  className={errors.lastName ? 'input-error' : 'input'}
+                  className={errors.lastName ? "input-error" : "input"}
                   placeholder="Enter last name"
                 />
                 {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.lastName.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -120,19 +131,21 @@ export default function CreateUser() {
                 Email Address *
               </label>
               <input
-                {...register('email', {
-                  required: 'Email is required',
+                {...register("email", {
+                  required: "Email is required",
                   pattern: {
                     value: /^\S+@\S+$/i,
-                    message: 'Invalid email address',
+                    message: "Invalid email address",
                   },
                 })}
                 type="email"
-                className={errors.email ? 'input-error' : 'input'}
+                className={errors.email ? "input-error" : "input"}
                 placeholder="Enter email address"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
@@ -143,19 +156,22 @@ export default function CreateUser() {
               </label>
               <div className="relative">
                 <input
-                  {...register('password', {
-                    required: 'Password is required',
+                  {...register("password", {
+                    required: "Password is required",
                     minLength: {
                       value: 6,
-                      message: 'Password must be at least 6 characters',
+                      message: "Password must be at least 6 characters",
                     },
                     pattern: {
                       value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                      message: 'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+                      message:
+                        "Password must contain at least one lowercase letter, one uppercase letter, and one number",
                     },
                   })}
-                  type={showPassword ? 'text' : 'password'}
-                  className={errors.password ? 'input-error pr-10' : 'input pr-10'}
+                  type={showPassword ? "text" : "password"}
+                  className={
+                    errors.password ? "input-error pr-10" : "input pr-10"
+                  }
                   placeholder="Enter password"
                 />
                 <button
@@ -171,10 +187,13 @@ export default function CreateUser() {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
               <p className="mt-1 text-sm text-gray-500">
-                Password must contain at least one lowercase letter, one uppercase letter, and one number
+                Password must contain at least one lowercase letter, one
+                uppercase letter, and one number
               </p>
             </div>
 
@@ -185,14 +204,16 @@ export default function CreateUser() {
                   Role *
                 </label>
                 <select
-                  {...register('role', { required: 'Role is required' })}
-                  className={errors.role ? 'input-error' : 'input'}
+                  {...register("role", { required: "Role is required" })}
+                  className={errors.role ? "input-error" : "input"}
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
                 </select>
                 {errors.role && (
-                  <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.role.message}
+                  </p>
                 )}
               </div>
 
@@ -201,15 +222,17 @@ export default function CreateUser() {
                   Status *
                 </label>
                 <select
-                  {...register('status', { required: 'Status is required' })}
-                  className={errors.status ? 'input-error' : 'input'}
+                  {...register("status", { required: "Status is required" })}
+                  className={errors.status ? "input-error" : "input"}
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                   <option value="suspended">Suspended</option>
                 </select>
                 {errors.status && (
-                  <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.status.message}
+                  </p>
                 )}
               </div>
             </div>

@@ -1,14 +1,14 @@
-import { useRef, useEffect, useState } from 'react';
-import { Pen, RotateCcw, Check, X, Info } from 'lucide-react';
+import { useRef, useEffect, useState } from "react";
+import { Pen, RotateCcw, Check, X, Info } from "lucide-react";
 
 export default function SignaturePad({
   onSignatureChange,
   width = 400,
   height = 200,
-  penColor = '#112e1f',
-  backgroundColor = '#ffffff',
+  penColor = "#112e1f",
+  backgroundColor = "#ffffff",
   required = false,
-  label = "Digital Signature"
+  label = "Digital Signature",
 }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -19,13 +19,13 @@ export default function SignaturePad({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, width, height);
     ctx.strokeStyle = penColor;
     ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
   }, [width, height, penColor, backgroundColor]);
 
   const getCoordinates = (e) => {
@@ -38,12 +38,12 @@ export default function SignaturePad({
     if (e.touches && e.touches[0]) {
       return {
         x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY
+        y: (e.touches[0].clientY - rect.top) * scaleY,
       };
     }
     return {
       x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
+      y: (e.clientY - rect.top) * scaleY,
     };
   };
 
@@ -53,7 +53,7 @@ export default function SignaturePad({
     const coords = getCoordinates(e);
     setLastPoint(coords);
 
-    const ctx = canvasRef.current.getContext('2d');
+    const ctx = canvasRef.current.getContext("2d");
     ctx.beginPath();
     ctx.moveTo(coords.x, coords.y);
   };
@@ -63,7 +63,7 @@ export default function SignaturePad({
     e.preventDefault();
 
     const coords = getCoordinates(e);
-    const ctx = canvasRef.current.getContext('2d');
+    const ctx = canvasRef.current.getContext("2d");
 
     ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
@@ -78,13 +78,13 @@ export default function SignaturePad({
 
     // Convert canvas to base64 and notify parent
     const canvas = canvasRef.current;
-    const signatureData = canvas.toDataURL('image/png');
+    const signatureData = canvas.toDataURL("image/png");
     onSignatureChange(signatureData);
   };
 
   const clearSignature = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, width, height);
     setHasSignature(false);
@@ -112,7 +112,7 @@ export default function SignaturePad({
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
-          style={{ maxWidth: '100%', height: 'auto' }}
+          style={{ maxWidth: "100%", height: "auto" }}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
@@ -127,10 +127,11 @@ export default function SignaturePad({
             <button
               type="button"
               onClick={clearSignature}
-              className={`flex items-center gap-2 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${hasSignature
-                  ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700'
-                  : 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-50'
-                }`}
+              className={`flex items-center gap-2 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${
+                hasSignature
+                  ? "bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"
+                  : "bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
+              }`}
               disabled={!hasSignature}
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -155,8 +156,19 @@ export default function SignaturePad({
       </div>
 
       <style jsx>{`
-        .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .animate-scale-in {
+          animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
       `}</style>
     </div>
   );

@@ -1,33 +1,49 @@
-import { useState, useEffect, useRef } from 'react';
-import Layout from '@/components/Layout/Layout';
+import { useState, useEffect, useRef } from "react";
+import Layout from "@/components/Layout/Layout";
 import {
-  Save, Plus, Edit2, Trash2, Image, Building2,
-  ChevronUp, ChevronDown, Eye, X, Check, AlertCircle, CheckCircle,
-  Upload, Loader2, Heart, Baby, Home, Award
-} from 'lucide-react';
-import { getAuthToken } from '@/lib/auth';
+  Save,
+  Plus,
+  Edit2,
+  Trash2,
+  Image,
+  Building2,
+  ChevronUp,
+  ChevronDown,
+  Eye,
+  X,
+  Check,
+  AlertCircle,
+  CheckCircle,
+  Upload,
+  Loader2,
+  Heart,
+  Baby,
+  Home,
+  Award,
+} from "lucide-react";
+import { getAuthToken } from "@/lib/auth";
 
-const API_URL = '/api';
+const API_URL = "/api";
 
 const defaultFacilities = [];
 
 const iconOptions = [
-  { name: 'Heart', component: Heart },
-  { name: 'Building2', component: Building2 },
-  { name: 'Baby', component: Baby },
-  { name: 'Home', component: Home },
-  { name: 'Award', component: Award }
+  { name: "Heart", component: Heart },
+  { name: "Building2", component: Building2 },
+  { name: "Baby", component: Baby },
+  { name: "Home", component: Home },
+  { name: "Award", component: Award },
 ];
 
 const colorOptions = [
-  { name: 'Red', value: 'bg-red-500' },
-  { name: 'Blue', value: 'bg-blue-500' },
-  { name: 'Green', value: 'bg-green-500' },
-  { name: 'Orange', value: 'bg-orange-500' },
-  { name: 'Pink', value: 'bg-pink-500' },
-  { name: 'Purple', value: 'bg-purple-500' },
-  { name: 'Yellow', value: 'bg-yellow-500' },
-  { name: 'Indigo', value: 'bg-indigo-500' }
+  { name: "Red", value: "bg-red-500" },
+  { name: "Blue", value: "bg-blue-500" },
+  { name: "Green", value: "bg-green-500" },
+  { name: "Orange", value: "bg-orange-500" },
+  { name: "Pink", value: "bg-pink-500" },
+  { name: "Purple", value: "bg-purple-500" },
+  { name: "Yellow", value: "bg-yellow-500" },
+  { name: "Indigo", value: "bg-indigo-500" },
 ];
 
 export default function FacilitiesPage() {
@@ -42,12 +58,12 @@ export default function FacilitiesPage() {
   const fileInputRefs = useRef({});
 
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    icon: 'Building2',
-    color: 'bg-blue-500',
-    images: ['/background.jpg'],
-    features: ['']
+    name: "",
+    description: "",
+    icon: "Building2",
+    color: "bg-blue-500",
+    images: ["/background.jpg"],
+    features: [""],
   });
 
   // Fetch facilities from API
@@ -67,7 +83,7 @@ export default function FacilitiesPage() {
         setFacilities([]);
       }
     } catch (error) {
-      console.error('Error fetching facilities:', error);
+      console.error("Error fetching facilities:", error);
       setFacilities(defaultFacilities);
     } finally {
       setLoading(false);
@@ -96,26 +112,36 @@ export default function FacilitiesPage() {
       const token = getAuthToken();
 
       const response = await fetch(`${API_URL}/facilities/bulk/update`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ facilities })
+        body: JSON.stringify({ facilities }),
       });
 
       const data = await response.json();
 
       if (data.success) {
         setHasChanges(false);
-        setNotification({ type: 'success', message: 'Facilities saved! Changes will appear on homepage for everyone.' });
+        setNotification({
+          type: "success",
+          message:
+            "Facilities saved! Changes will appear on homepage for everyone.",
+        });
         fetchFacilities();
       } else {
-        setNotification({ type: 'error', message: data.message || 'Failed to save facilities' });
+        setNotification({
+          type: "error",
+          message: data.message || "Failed to save facilities",
+        });
       }
     } catch (error) {
-      console.error('Error saving facilities:', error);
-      setNotification({ type: 'error', message: 'Failed to save facilities. Please try again.' });
+      console.error("Error saving facilities:", error);
+      setNotification({
+        type: "error",
+        message: "Failed to save facilities. Please try again.",
+      });
     } finally {
       setSaving(false);
     }
@@ -127,12 +153,12 @@ export default function FacilitiesPage() {
       const token = getAuthToken();
 
       const response = await fetch(`${API_URL}/facilities/bulk/update`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ facilities: defaultFacilities })
+        body: JSON.stringify({ facilities: defaultFacilities }),
       });
 
       const data = await response.json();
@@ -140,14 +166,20 @@ export default function FacilitiesPage() {
       if (data.success) {
         setFacilities(defaultFacilities);
         setHasChanges(false);
-        setNotification({ type: 'success', message: 'Reset to default facilities' });
+        setNotification({
+          type: "success",
+          message: "Reset to default facilities",
+        });
         fetchFacilities();
       } else {
-        setNotification({ type: 'error', message: 'Failed to reset facilities' });
+        setNotification({
+          type: "error",
+          message: "Failed to reset facilities",
+        });
       }
     } catch (error) {
-      console.error('Error resetting facilities:', error);
-      setNotification({ type: 'error', message: 'Failed to reset facilities' });
+      console.error("Error resetting facilities:", error);
+      setNotification({ type: "error", message: "Failed to reset facilities" });
     } finally {
       setSaving(false);
     }
@@ -159,13 +191,19 @@ export default function FacilitiesPage() {
 
     // Check file size (1MB = 1024 * 1024 bytes)
     if (file.size > 1024 * 1024) {
-      setNotification({ type: 'error', message: 'Image size must be less than 1MB' });
+      setNotification({
+        type: "error",
+        message: "Image size must be less than 1MB",
+      });
       return;
     }
 
     // Check file type
-    if (!file.type.startsWith('image/')) {
-      setNotification({ type: 'error', message: 'Please select an image file' });
+    if (!file.type.startsWith("image/")) {
+      setNotification({
+        type: "error",
+        message: "Please select an image file",
+      });
       return;
     }
 
@@ -180,7 +218,10 @@ export default function FacilitiesPage() {
         newImages[imageIndex] = reader.result;
         setFormData({ ...formData, images: newImages });
       }
-      setNotification({ type: 'success', message: 'Image uploaded successfully' });
+      setNotification({
+        type: "success",
+        message: "Image uploaded successfully",
+      });
     };
     reader.readAsDataURL(file);
   };
@@ -195,26 +236,32 @@ export default function FacilitiesPage() {
 
   const openAddModal = () => {
     setFormData({
-      name: '',
-      description: '',
-      icon: 'Building2',
-      color: 'bg-blue-500',
-      images: ['/background.jpg'],
-      features: ['']
+      name: "",
+      description: "",
+      icon: "Building2",
+      color: "bg-blue-500",
+      images: ["/background.jpg"],
+      features: [""],
     });
     setShowAddModal(true);
   };
 
   const addFacility = () => {
     if (!formData.name.trim() || !formData.description.trim()) {
-      setNotification({ type: 'error', message: 'Please fill in name and description' });
+      setNotification({
+        type: "error",
+        message: "Please fill in name and description",
+      });
       return;
     }
     const newFacility = { ...formData, id: Date.now() };
     setFacilities([...facilities, newFacility]);
     setShowAddModal(false);
     setHasChanges(true);
-    setNotification({ type: 'success', message: 'Facility added. Click "Save All" to publish.' });
+    setNotification({
+      type: "success",
+      message: 'Facility added. Click "Save All" to publish.',
+    });
   };
 
   const startEditing = (facility) => {
@@ -223,39 +270,61 @@ export default function FacilitiesPage() {
 
   const saveEdit = () => {
     if (!editingFacility.name.trim() || !editingFacility.description.trim()) {
-      setNotification({ type: 'error', message: 'Please fill in name and description' });
+      setNotification({
+        type: "error",
+        message: "Please fill in name and description",
+      });
       return;
     }
-    setFacilities(facilities.map(f => f.id === editingFacility.id ? editingFacility : f));
+    setFacilities(
+      facilities.map((f) =>
+        f.id === editingFacility.id ? editingFacility : f,
+      ),
+    );
     setEditingFacility(null);
     setHasChanges(true);
-    setNotification({ type: 'success', message: 'Facility updated. Click "Save All" to publish.' });
+    setNotification({
+      type: "success",
+      message: 'Facility updated. Click "Save All" to publish.',
+    });
   };
 
   const deleteFacility = (id) => {
     if (facilities.length <= 1) {
-      setNotification({ type: 'error', message: 'Must have at least one facility' });
+      setNotification({
+        type: "error",
+        message: "Must have at least one facility",
+      });
       return;
     }
-    setFacilities(facilities.filter(f => f.id !== id));
+    setFacilities(facilities.filter((f) => f.id !== id));
     setHasChanges(true);
-    setNotification({ type: 'success', message: 'Facility deleted. Click "Save All" to publish.' });
+    setNotification({
+      type: "success",
+      message: 'Facility deleted. Click "Save All" to publish.',
+    });
   };
 
   const moveFacility = (index, direction) => {
     const newFacilities = [...facilities];
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= facilities.length) return;
-    [newFacilities[index], newFacilities[newIndex]] = [newFacilities[newIndex], newFacilities[index]];
+    [newFacilities[index], newFacilities[newIndex]] = [
+      newFacilities[newIndex],
+      newFacilities[index],
+    ];
     setFacilities(newFacilities);
     setHasChanges(true);
   };
 
   const addFeature = (isEditing = false) => {
     if (isEditing && editingFacility) {
-      setEditingFacility({ ...editingFacility, features: [...editingFacility.features, ''] });
+      setEditingFacility({
+        ...editingFacility,
+        features: [...editingFacility.features, ""],
+      });
     } else {
-      setFormData({ ...formData, features: [...formData.features, ''] });
+      setFormData({ ...formData, features: [...formData.features, ""] });
     }
   };
 
@@ -273,7 +342,9 @@ export default function FacilitiesPage() {
 
   const removeFeature = (index, isEditing = false) => {
     if (isEditing && editingFacility) {
-      const newFeatures = editingFacility.features.filter((_, i) => i !== index);
+      const newFeatures = editingFacility.features.filter(
+        (_, i) => i !== index,
+      );
       setEditingFacility({ ...editingFacility, features: newFeatures });
     } else {
       const newFeatures = formData.features.filter((_, i) => i !== index);
@@ -295,28 +366,53 @@ export default function FacilitiesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Barangay Facilities</h1>
-          <p className="text-gray-600 mt-1">Manage facilities displayed on the homepage</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Barangay Facilities
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Manage facilities displayed on the homepage
+          </p>
         </div>
         <div className="flex gap-3">
-          <button onClick={resetToDefault} disabled={saving} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+          <button
+            onClick={resetToDefault}
+            disabled={saving}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
             Reset
           </button>
-          <button onClick={openAddModal} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2">
-            <Plus className="w-5 h-5" />Add Facility
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Add Facility
           </button>
-          <button onClick={saveAllChanges} disabled={!hasChanges || saving}
-            className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${hasChanges && !saving ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}>
-            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-            {saving ? 'Saving...' : 'Save All'}
+          <button
+            onClick={saveAllChanges}
+            disabled={!hasChanges || saving}
+            className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${hasChanges && !saving ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
+          >
+            {saving ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Save className="w-5 h-5" />
+            )}
+            {saving ? "Saving..." : "Save All"}
           </button>
         </div>
       </div>
 
       {/* Notifications */}
       {notification && (
-        <div className={`flex items-center gap-3 p-4 rounded-xl border ${notification.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
-          {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+        <div
+          className={`flex items-center gap-3 p-4 rounded-xl border ${notification.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}
+        >
+          {notification.type === "success" ? (
+            <CheckCircle className="w-5 h-5" />
+          ) : (
+            <AlertCircle className="w-5 h-5" />
+          )}
           <span className="font-medium">{notification.message}</span>
         </div>
       )}
@@ -324,7 +420,10 @@ export default function FacilitiesPage() {
       {hasChanges && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600" />
-          <span className="text-amber-800 font-medium">Unsaved changes. Click "Save All" to publish to homepage for everyone.</span>
+          <span className="text-amber-800 font-medium">
+            Unsaved changes. Click "Save All" to publish to homepage for
+            everyone.
+          </span>
         </div>
       )}
 
@@ -337,62 +436,101 @@ export default function FacilitiesPage() {
           </h2>
 
           {facilities.map((facility, index) => {
-            const IconComponent = iconOptions.find(opt => opt.name === facility.icon)?.component || Building2;
+            const IconComponent =
+              iconOptions.find((opt) => opt.name === facility.icon)
+                ?.component || Building2;
 
             return (
-              <div key={facility.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-all">
+              <div
+                key={facility.id}
+                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-all"
+              >
                 {editingFacility?.id === facility.id ? (
                   <div className="p-4 space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">Name</label>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">
+                        Name
+                      </label>
                       <input
                         type="text"
                         value={editingFacility.name}
-                        onChange={(e) => setEditingFacility({ ...editingFacility, name: e.target.value })}
+                        onChange={(e) =>
+                          setEditingFacility({
+                            ...editingFacility,
+                            name: e.target.value,
+                          })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">Description</label>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">
+                        Description
+                      </label>
                       <textarea
                         value={editingFacility.description}
-                        onChange={(e) => setEditingFacility({ ...editingFacility, description: e.target.value })}
+                        onChange={(e) =>
+                          setEditingFacility({
+                            ...editingFacility,
+                            description: e.target.value,
+                          })
+                        }
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700 block mb-1">Icon</label>
+                        <label className="text-sm font-medium text-gray-700 block mb-1">
+                          Icon
+                        </label>
                         <select
                           value={editingFacility.icon}
-                          onChange={(e) => setEditingFacility({ ...editingFacility, icon: e.target.value })}
+                          onChange={(e) =>
+                            setEditingFacility({
+                              ...editingFacility,
+                              icon: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         >
-                          {iconOptions.map(option => (
-                            <option key={option.name} value={option.name}>{option.name}</option>
+                          {iconOptions.map((option) => (
+                            <option key={option.name} value={option.name}>
+                              {option.name}
+                            </option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 block mb-1">Color</label>
+                        <label className="text-sm font-medium text-gray-700 block mb-1">
+                          Color
+                        </label>
                         <select
                           value={editingFacility.color}
-                          onChange={(e) => setEditingFacility({ ...editingFacility, color: e.target.value })}
+                          onChange={(e) =>
+                            setEditingFacility({
+                              ...editingFacility,
+                              color: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         >
-                          {colorOptions.map(option => (
-                            <option key={option.value} value={option.value}>{option.name}</option>
+                          {colorOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.name}
+                            </option>
                           ))}
                         </select>
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">Images</label>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">
+                        Images
+                      </label>
                       {editingFacility.images.map((image, idx) => (
                         <div key={idx} className="flex gap-2 mb-2">
                           <div className="flex-1 flex gap-2">
-                            {image.startsWith('data:') && (
+                            {image.startsWith("data:") && (
                               <div className="w-12 h-12 flex-shrink-0">
                                 <img
                                   src={image}
@@ -403,17 +541,24 @@ export default function FacilitiesPage() {
                             )}
                             <input
                               type="text"
-                              value={image.startsWith('data:') ? `Uploaded Image ${idx + 1}` : image}
+                              value={
+                                image.startsWith("data:")
+                                  ? `Uploaded Image ${idx + 1}`
+                                  : image
+                              }
                               onChange={(e) => {
-                                if (!e.target.value.startsWith('data:')) {
+                                if (!e.target.value.startsWith("data:")) {
                                   const newImages = [...editingFacility.images];
                                   newImages[idx] = e.target.value;
-                                  setEditingFacility({ ...editingFacility, images: newImages });
+                                  setEditingFacility({
+                                    ...editingFacility,
+                                    images: newImages,
+                                  });
                                 }
                               }}
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                               placeholder="Image URL or click upload"
-                              readOnly={image.startsWith('data:')}
+                              readOnly={image.startsWith("data:")}
                             />
                             <button
                               type="button"
@@ -425,7 +570,9 @@ export default function FacilitiesPage() {
                             </button>
                             <input
                               type="file"
-                              ref={el => fileInputRefs.current[`edit-${idx}`] = el}
+                              ref={(el) =>
+                                (fileInputRefs.current[`edit-${idx}`] = el)
+                              }
                               onChange={(e) => handleImageUpload(e, true, idx)}
                               accept="image/*"
                               className="hidden"
@@ -433,9 +580,15 @@ export default function FacilitiesPage() {
                           </div>
                           <button
                             onClick={() => {
-                              const newImages = editingFacility.images.filter((_, i) => i !== idx);
-                              if (newImages.length === 0) newImages.push('/background.jpg');
-                              setEditingFacility({ ...editingFacility, images: newImages });
+                              const newImages = editingFacility.images.filter(
+                                (_, i) => i !== idx,
+                              );
+                              if (newImages.length === 0)
+                                newImages.push("/background.jpg");
+                              setEditingFacility({
+                                ...editingFacility,
+                                images: newImages,
+                              });
                             }}
                             className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
                           >
@@ -445,8 +598,14 @@ export default function FacilitiesPage() {
                       ))}
                       <button
                         onClick={() => {
-                          const newImages = [...editingFacility.images, '/background.jpg'];
-                          setEditingFacility({ ...editingFacility, images: newImages });
+                          const newImages = [
+                            ...editingFacility.images,
+                            "/background.jpg",
+                          ];
+                          setEditingFacility({
+                            ...editingFacility,
+                            images: newImages,
+                          });
                         }}
                         className="text-blue-600 hover:text-blue-800 text-sm mb-3"
                       >
@@ -454,31 +613,49 @@ export default function FacilitiesPage() {
                       </button>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">Features</label>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">
+                        Features
+                      </label>
                       {editingFacility.features.map((feature, idx) => (
                         <div key={idx} className="flex gap-2 mb-2">
                           <input
                             type="text"
                             value={feature}
-                            onChange={(e) => updateFeature(idx, e.target.value, true)}
+                            onChange={(e) =>
+                              updateFeature(idx, e.target.value, true)
+                            }
                             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             placeholder="Feature name"
                           />
-                          <button onClick={() => removeFeature(idx, true)} className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                          <button
+                            onClick={() => removeFeature(idx, true)}
+                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          >
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
-                      <button onClick={() => addFeature(true)} className="text-blue-600 hover:text-blue-800 text-sm">
+                      <button
+                        onClick={() => addFeature(true)}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
                         + Add Feature
                       </button>
                     </div>
                     <div className="flex gap-2 pt-2">
-                      <button onClick={saveEdit} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
-                        <Check className="w-4 h-4" />Save
+                      <button
+                        onClick={saveEdit}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                      >
+                        <Check className="w-4 h-4" />
+                        Save
                       </button>
-                      <button onClick={() => setEditingFacility(null)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center justify-center gap-2">
-                        <X className="w-4 h-4" />Cancel
+                      <button
+                        onClick={() => setEditingFacility(null)}
+                        className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center justify-center gap-2"
+                      >
+                        <X className="w-4 h-4" />
+                        Cancel
                       </button>
                     </div>
                   </div>
@@ -490,7 +667,7 @@ export default function FacilitiesPage() {
                         alt={facility.name}
                         className="w-full h-full object-cover rounded-l-xl"
                         onError={(e) => {
-                          e.target.src = '/background.jpg';
+                          e.target.src = "/background.jpg";
                         }}
                       />
                       {facility.images.length > 1 && (
@@ -506,34 +683,57 @@ export default function FacilitiesPage() {
                             <div className={`${facility.color} p-1 rounded`}>
                               <IconComponent className="w-4 h-4 text-white" />
                             </div>
-                            <h3 className="font-semibold text-gray-900 truncate">{facility.name}</h3>
+                            <h3 className="font-semibold text-gray-900 truncate">
+                              {facility.name}
+                            </h3>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">{facility.description}</p>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                            {facility.description}
+                          </p>
                           <div className="flex flex-wrap gap-1">
-                            {facility.features.slice(0, 3).map((feature, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                {feature}
-                              </span>
-                            ))}
+                            {facility.features
+                              .slice(0, 3)
+                              .map((feature, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
+                                >
+                                  {feature}
+                                </span>
+                              ))}
                           </div>
                         </div>
                         <div className="flex flex-col gap-1 ml-2">
-                          <button onClick={() => moveFacility(index, 'up')} disabled={index === 0}
-                            className={`p-1 rounded ${index === 0 ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-100'}`}>
+                          <button
+                            onClick={() => moveFacility(index, "up")}
+                            disabled={index === 0}
+                            className={`p-1 rounded ${index === 0 ? "text-gray-300" : "text-gray-500 hover:bg-gray-100"}`}
+                          >
                             <ChevronUp className="w-4 h-4" />
                           </button>
-                          <button onClick={() => moveFacility(index, 'down')} disabled={index === facilities.length - 1}
-                            className={`p-1 rounded ${index === facilities.length - 1 ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-100'}`}>
+                          <button
+                            onClick={() => moveFacility(index, "down")}
+                            disabled={index === facilities.length - 1}
+                            className={`p-1 rounded ${index === facilities.length - 1 ? "text-gray-300" : "text-gray-500 hover:bg-gray-100"}`}
+                          >
                             <ChevronDown className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
                       <div className="flex gap-2 mt-2">
-                        <button onClick={() => startEditing(facility)} className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center gap-1">
-                          <Edit2 className="w-3 h-3" />Edit
+                        <button
+                          onClick={() => startEditing(facility)}
+                          className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          Edit
                         </button>
-                        <button onClick={() => deleteFacility(facility.id)} className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 flex items-center gap-1">
-                          <Trash2 className="w-3 h-3" />Delete
+                        <button
+                          onClick={() => deleteFacility(facility.id)}
+                          className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -554,19 +754,31 @@ export default function FacilitiesPage() {
             <div className="p-4">
               <div className="grid grid-cols-1 gap-4">
                 {facilities.slice(0, 3).map((facility, index) => {
-                  const IconComponent = iconOptions.find(opt => opt.name === facility.icon)?.component || Building2;
+                  const IconComponent =
+                    iconOptions.find((opt) => opt.name === facility.icon)
+                      ?.component || Building2;
                   return (
-                    <div key={facility.id} className="bg-gray-50 rounded-lg p-4">
+                    <div
+                      key={facility.id}
+                      className="bg-gray-50 rounded-lg p-4"
+                    >
                       <div className="flex items-center gap-3 mb-2">
                         <div className={`${facility.color} p-2 rounded-lg`}>
                           <IconComponent className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="font-semibold text-gray-900">{facility.name}</h3>
+                        <h3 className="font-semibold text-gray-900">
+                          {facility.name}
+                        </h3>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{facility.description}</p>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {facility.description}
+                      </p>
                       <div className="flex flex-wrap gap-1">
                         {facility.features.map((feature, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-white text-gray-600 text-xs rounded border">
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-white text-gray-600 text-xs rounded border"
+                          >
                             {feature}
                           </span>
                         ))}
@@ -589,7 +801,10 @@ export default function FacilitiesPage() {
               <li>• Use descriptive names and clear descriptions</li>
               <li>• Choose appropriate icons and colors</li>
               <li>• Add relevant features for each facility</li>
-              <li>• <strong>Images:</strong> Click "Upload" to select photos (max 1MB) or use URLs</li>
+              <li>
+                • <strong>Images:</strong> Click "Upload" to select photos (max
+                1MB) or use URLs
+              </li>
               <li>• Multiple images create a carousel effect on homepage</li>
               <li>• Supported formats: JPG, PNG, GIF, WebP</li>
               <li>• Click "Save All" to publish changes for everyone</li>
@@ -604,28 +819,41 @@ export default function FacilitiesPage() {
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Add New Facility</h2>
-                <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Add New Facility
+                </h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Facility Name *</label>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  Facility Name *
+                </label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="e.g., Community Center"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Description *</label>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  Description *
+                </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows={3}
                   placeholder="Describe the facility..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
@@ -633,36 +861,50 @@ export default function FacilitiesPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Icon</label>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                    Icon
+                  </label>
                   <select
                     value={formData.icon}
-                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, icon: e.target.value })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    {iconOptions.map(option => (
-                      <option key={option.name} value={option.name}>{option.name}</option>
+                    {iconOptions.map((option) => (
+                      <option key={option.name} value={option.name}>
+                        {option.name}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Color</label>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                    Color
+                  </label>
                   <select
                     value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, color: e.target.value })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    {colorOptions.map(option => (
-                      <option key={option.value} value={option.value}>{option.name}</option>
+                    {colorOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.name}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Images</label>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  Images
+                </label>
                 {formData.images.map((image, idx) => (
                   <div key={idx} className="flex gap-2 mb-2">
                     <div className="flex-1 flex gap-2">
-                      {image.startsWith('data:') && (
+                      {image.startsWith("data:") && (
                         <div className="w-12 h-12 flex-shrink-0">
                           <img
                             src={image}
@@ -673,9 +915,13 @@ export default function FacilitiesPage() {
                       )}
                       <input
                         type="text"
-                        value={image.startsWith('data:') ? `Uploaded Image ${idx + 1}` : image}
+                        value={
+                          image.startsWith("data:")
+                            ? `Uploaded Image ${idx + 1}`
+                            : image
+                        }
                         onChange={(e) => {
-                          if (!e.target.value.startsWith('data:')) {
+                          if (!e.target.value.startsWith("data:")) {
                             const newImages = [...formData.images];
                             newImages[idx] = e.target.value;
                             setFormData({ ...formData, images: newImages });
@@ -683,7 +929,7 @@ export default function FacilitiesPage() {
                         }}
                         className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         placeholder="Image URL or click upload"
-                        readOnly={image.startsWith('data:')}
+                        readOnly={image.startsWith("data:")}
                       />
                       <button
                         type="button"
@@ -695,7 +941,7 @@ export default function FacilitiesPage() {
                       </button>
                       <input
                         type="file"
-                        ref={el => fileInputRefs.current[`add-${idx}`] = el}
+                        ref={(el) => (fileInputRefs.current[`add-${idx}`] = el)}
                         onChange={(e) => handleImageUpload(e, false, idx)}
                         accept="image/*"
                         className="hidden"
@@ -703,8 +949,11 @@ export default function FacilitiesPage() {
                     </div>
                     <button
                       onClick={() => {
-                        const newImages = formData.images.filter((_, i) => i !== idx);
-                        if (newImages.length === 0) newImages.push('/background.jpg');
+                        const newImages = formData.images.filter(
+                          (_, i) => i !== idx,
+                        );
+                        if (newImages.length === 0)
+                          newImages.push("/background.jpg");
                         setFormData({ ...formData, images: newImages });
                       }}
                       className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
@@ -715,7 +964,7 @@ export default function FacilitiesPage() {
                 ))}
                 <button
                   onClick={() => {
-                    const newImages = [...formData.images, '/background.jpg'];
+                    const newImages = [...formData.images, "/background.jpg"];
                     setFormData({ ...formData, images: newImages });
                   }}
                   className="text-blue-600 hover:text-blue-800 text-sm mb-4"
@@ -724,7 +973,9 @@ export default function FacilitiesPage() {
                 </button>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Features</label>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  Features
+                </label>
                 {formData.features.map((feature, idx) => (
                   <div key={idx} className="flex gap-2 mb-2">
                     <input
@@ -734,22 +985,35 @@ export default function FacilitiesPage() {
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       placeholder="Feature name"
                     />
-                    <button onClick={() => removeFeature(idx)} className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                    <button
+                      onClick={() => removeFeature(idx)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
-                <button onClick={() => addFeature()} className="text-blue-600 hover:text-blue-800 text-sm">
+                <button
+                  onClick={() => addFeature()}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
                   + Add Feature
                 </button>
               </div>
             </div>
             <div className="p-6 border-t border-gray-200 flex gap-3">
-              <button onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
                 Cancel
               </button>
-              <button onClick={addFacility} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2">
-                <Plus className="w-4 h-4" />Add Facility
+              <button
+                onClick={addFacility}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Facility
               </button>
             </div>
           </div>
@@ -760,7 +1024,10 @@ export default function FacilitiesPage() {
 }
 
 FacilitiesPage.getLayout = (page) => (
-  <Layout title="Facilities Management" subtitle="Customize barangay facilities">
+  <Layout
+    title="Facilities Management"
+    subtitle="Customize barangay facilities"
+  >
     {page}
   </Layout>
 );

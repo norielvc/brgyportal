@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
-import Layout from '@/components/Layout/Layout';
-import { authAPI } from '@/lib/api';
-import { login, isAuthenticated } from '@/lib/auth';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { Eye, EyeOff, LogIn } from "lucide-react";
+import Layout from "@/components/Layout/Layout";
+import { authAPI } from "@/lib/api";
+import { login, isAuthenticated } from "@/lib/auth";
 
 export default function Login() {
   const router = useRouter();
@@ -20,23 +20,23 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      router.push('/dashboard');
+      router.push("/dashboard");
     }
   }, [router]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    
+
     try {
       const response = await authAPI.login(data);
-      
+
       if (response.success) {
         login(response.data.token, response.data.user);
-        toast.success('Login successful!');
-        router.push('/dashboard');
+        toast.success("Login successful!");
+        router.push("/dashboard");
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       // Error is handled by axios interceptor
     } finally {
       setIsLoading(false);
@@ -58,7 +58,7 @@ export default function Login() {
               Welcome to BrgyDesk
             </p>
           </div>
-          
+
           <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4">
               <div>
@@ -66,20 +66,22 @@ export default function Login() {
                   Email address
                 </label>
                 <input
-                  {...register('email', {
-                    required: 'Email is required',
+                  {...register("email", {
+                    required: "Email is required",
                     pattern: {
                       value: /^\S+@\S+$/i,
-                      message: 'Invalid email address',
+                      message: "Invalid email address",
                     },
                   })}
                   type="email"
                   autoComplete="email"
-                  className={errors.email ? 'input-error' : 'input'}
+                  className={errors.email ? "input-error" : "input"}
                   placeholder="Enter your email"
                 />
                 {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
 
@@ -89,16 +91,18 @@ export default function Login() {
                 </label>
                 <div className="relative">
                   <input
-                    {...register('password', {
-                      required: 'Password is required',
+                    {...register("password", {
+                      required: "Password is required",
                       minLength: {
                         value: 6,
-                        message: 'Password must be at least 6 characters',
+                        message: "Password must be at least 6 characters",
                       },
                     })}
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    className={errors.password ? 'input-error pr-10' : 'input pr-10'}
+                    className={
+                      errors.password ? "input-error pr-10" : "input pr-10"
+                    }
                     placeholder="Enter your password"
                   />
                   <button
@@ -114,7 +118,9 @@ export default function Login() {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -128,7 +134,7 @@ export default function Login() {
                 {isLoading ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 ) : (
-                  'Sign in'
+                  "Sign in"
                 )}
               </button>
             </div>
@@ -139,14 +145,18 @@ export default function Login() {
                   <div className="w-full border-t border-gray-300" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-gray-50 text-gray-500">Demo Credentials</span>
+                  <span className="px-2 bg-gray-50 text-gray-500">
+                    Demo Credentials
+                  </span>
                 </div>
               </div>
-              
+
               <div className="mt-4 space-y-2 text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span>Admin:</span>
-                  <span className="font-mono">admin@example.com / admin123</span>
+                  <span className="font-mono">
+                    admin@example.com / admin123
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>User:</span>

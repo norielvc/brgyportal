@@ -739,8 +739,7 @@ export default function QRScanHistoryPage() {
 
       {/* CREATE EVENT MODAL */}
       {isEventModalOpen && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
               className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
@@ -1226,8 +1225,7 @@ QRScanHistoryPage.getLayout = (page) => (
 // Clear History Confirmation Modal Component
 function ClearHistoryModal({ onClose, onConfirm, processing }) {
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"

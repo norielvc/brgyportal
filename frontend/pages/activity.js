@@ -1,21 +1,50 @@
-import { useState, useEffect } from 'react';
-import { Search, Filter, Download, Clock, User, Shield, LogIn, LogOut } from 'lucide-react';
-import Layout from '@/components/Layout/Layout';
-import { getAuthToken } from '@/lib/auth';
+import { useState, useEffect } from "react";
+import {
+  Search,
+  Filter,
+  Download,
+  Clock,
+  User,
+  Shield,
+  LogIn,
+  LogOut,
+} from "lucide-react";
+import Layout from "@/components/Layout/Layout";
+import { getAuthToken } from "@/lib/auth";
 
 export default function ActivityLogs() {
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
 
   const activityTypes = [
-    { id: 'login', label: 'Login', icon: LogIn, color: 'text-green-600' },
-    { id: 'logout', label: 'Logout', icon: LogOut, color: 'text-blue-600' },
-    { id: 'user_created', label: 'User Created', icon: User, color: 'text-purple-600' },
-    { id: 'user_updated', label: 'User Updated', icon: User, color: 'text-orange-600' },
-    { id: 'user_deleted', label: 'User Deleted', icon: User, color: 'text-red-600' },
-    { id: 'role_changed', label: 'Role Changed', icon: Shield, color: 'text-indigo-600' }
+    { id: "login", label: "Login", icon: LogIn, color: "text-green-600" },
+    { id: "logout", label: "Logout", icon: LogOut, color: "text-blue-600" },
+    {
+      id: "user_created",
+      label: "User Created",
+      icon: User,
+      color: "text-purple-600",
+    },
+    {
+      id: "user_updated",
+      label: "User Updated",
+      icon: User,
+      color: "text-orange-600",
+    },
+    {
+      id: "user_deleted",
+      label: "User Deleted",
+      icon: User,
+      color: "text-red-600",
+    },
+    {
+      id: "role_changed",
+      label: "Role Changed",
+      icon: Shield,
+      color: "text-indigo-600",
+    },
   ];
 
   useEffect(() => {
@@ -24,58 +53,58 @@ export default function ActivityLogs() {
     const mockLogs = [
       {
         id: 1,
-        type: 'login',
-        user: 'Admin User',
-        email: 'admin@example.com',
-        description: 'Logged in successfully',
+        type: "login",
+        user: "Admin User",
+        email: "admin@example.com",
+        description: "Logged in successfully",
         timestamp: new Date(Date.now() - 5 * 60000),
-        ipAddress: '192.168.1.100'
+        ipAddress: "192.168.1.100",
       },
       {
         id: 2,
-        type: 'user_created',
-        user: 'Admin User',
-        email: 'admin@example.com',
-        description: 'Created new user: John Doe',
+        type: "user_created",
+        user: "Admin User",
+        email: "admin@example.com",
+        description: "Created new user: John Doe",
         timestamp: new Date(Date.now() - 15 * 60000),
-        ipAddress: '192.168.1.100'
+        ipAddress: "192.168.1.100",
       },
       {
         id: 3,
-        type: 'user_updated',
-        user: 'Admin User',
-        email: 'admin@example.com',
-        description: 'Updated user: Jane Smith',
+        type: "user_updated",
+        user: "Admin User",
+        email: "admin@example.com",
+        description: "Updated user: Jane Smith",
         timestamp: new Date(Date.now() - 30 * 60000),
-        ipAddress: '192.168.1.100'
+        ipAddress: "192.168.1.100",
       },
       {
         id: 4,
-        type: 'role_changed',
-        user: 'Admin User',
-        email: 'admin@example.com',
-        description: 'Changed role for: Mike Johnson (user → admin)',
+        type: "role_changed",
+        user: "Admin User",
+        email: "admin@example.com",
+        description: "Changed role for: Mike Johnson (user → admin)",
         timestamp: new Date(Date.now() - 1 * 3600000),
-        ipAddress: '192.168.1.100'
+        ipAddress: "192.168.1.100",
       },
       {
         id: 5,
-        type: 'login',
-        user: 'John Doe',
-        email: 'user@example.com',
-        description: 'Logged in successfully',
+        type: "login",
+        user: "John Doe",
+        email: "user@example.com",
+        description: "Logged in successfully",
         timestamp: new Date(Date.now() - 2 * 3600000),
-        ipAddress: '192.168.1.101'
+        ipAddress: "192.168.1.101",
       },
       {
         id: 6,
-        type: 'logout',
-        user: 'John Doe',
-        email: 'user@example.com',
-        description: 'Logged out',
+        type: "logout",
+        user: "John Doe",
+        email: "user@example.com",
+        description: "Logged out",
         timestamp: new Date(Date.now() - 3 * 3600000),
-        ipAddress: '192.168.1.101'
-      }
+        ipAddress: "192.168.1.101",
+      },
     ];
 
     setLogs(mockLogs);
@@ -83,18 +112,18 @@ export default function ActivityLogs() {
   }, []);
 
   const getActivityIcon = (type) => {
-    const activity = activityTypes.find(a => a.id === type);
+    const activity = activityTypes.find((a) => a.id === type);
     return activity ? activity.icon : Clock;
   };
 
   const getActivityColor = (type) => {
-    const activity = activityTypes.find(a => a.id === type);
-    return activity ? activity.color : 'text-gray-600';
+    const activity = activityTypes.find((a) => a.id === type);
+    return activity ? activity.color : "text-gray-600";
   };
 
   const getActivityLabel = (type) => {
-    const activity = activityTypes.find(a => a.id === type);
-    return activity ? activity.label : 'Activity';
+    const activity = activityTypes.find((a) => a.id === type);
+    return activity ? activity.label : "Activity";
   };
 
   const formatTime = (date) => {
@@ -104,20 +133,20 @@ export default function ActivityLogs() {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'Just now';
+    if (minutes < 1) return "Just now";
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
     if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString();
   };
 
-  const filteredLogs = logs.filter(log => {
+  const filteredLogs = logs.filter((log) => {
     const matchesSearch =
       log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesFilter = filterType === 'all' || log.type === filterType;
+    const matchesFilter = filterType === "all" || log.type === filterType;
 
     return matchesSearch && matchesFilter;
   });
@@ -159,8 +188,10 @@ export default function ActivityLogs() {
             className="input pl-10 w-full"
           >
             <option value="all">All Activities</option>
-            {activityTypes.map(type => (
-              <option key={type.id} value={type.id}>{type.label}</option>
+            {activityTypes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.label}
+              </option>
             ))}
           </select>
         </div>
@@ -186,7 +217,9 @@ export default function ActivityLogs() {
                 <div key={log.id} className="p-4 hover:bg-gray-50 transition">
                   <div className="flex items-start gap-4">
                     {/* Icon */}
-                    <div className={`p-2 rounded-lg bg-gray-100 flex-shrink-0 ${getActivityColor(log.type)}`}>
+                    <div
+                      className={`p-2 rounded-lg bg-gray-100 flex-shrink-0 ${getActivityColor(log.type)}`}
+                    >
                       <IconComponent className="w-5 h-5" />
                     </div>
 
@@ -194,9 +227,12 @@ export default function ActivityLogs() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <p className="font-medium text-gray-900">{log.description}</p>
+                          <p className="font-medium text-gray-900">
+                            {log.description}
+                          </p>
                           <p className="text-sm text-gray-600 mt-1">
-                            By <span className="font-medium">{log.user}</span> ({log.email})
+                            By <span className="font-medium">{log.user}</span> (
+                            {log.email})
                           </p>
                         </div>
                         <div className="text-right flex-shrink-0">
@@ -231,15 +267,25 @@ export default function ActivityLogs() {
         </div>
         <div className="card p-4">
           <p className="text-gray-600 text-sm">Logins</p>
-          <p className="text-2xl font-bold text-green-600">{logs.filter(l => l.type === 'login').length}</p>
+          <p className="text-2xl font-bold text-green-600">
+            {logs.filter((l) => l.type === "login").length}
+          </p>
         </div>
         <div className="card p-4">
           <p className="text-gray-600 text-sm">Users Created</p>
-          <p className="text-2xl font-bold text-purple-600">{logs.filter(l => l.type === 'user_created').length}</p>
+          <p className="text-2xl font-bold text-purple-600">
+            {logs.filter((l) => l.type === "user_created").length}
+          </p>
         </div>
         <div className="card p-4">
           <p className="text-gray-600 text-sm">Changes</p>
-          <p className="text-2xl font-bold text-orange-600">{logs.filter(l => l.type.includes('updated') || l.type.includes('changed')).length}</p>
+          <p className="text-2xl font-bold text-orange-600">
+            {
+              logs.filter(
+                (l) => l.type.includes("updated") || l.type.includes("changed"),
+              ).length
+            }
+          </p>
         </div>
       </div>
     </div>
@@ -247,10 +293,7 @@ export default function ActivityLogs() {
 }
 
 ActivityLogs.getLayout = (page) => (
-  <Layout
-    title="Activity Logs"
-    subtitle="System activity and user actions"
-  >
+  <Layout title="Activity Logs" subtitle="System activity and user actions">
     {page}
   </Layout>
 );

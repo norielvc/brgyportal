@@ -1,59 +1,84 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OR Modal Test</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .modal { border: 1px solid #ccc; padding: 20px; margin: 20px 0; }
-        .buttons { display: flex; gap: 10px; margin: 10px 0; }
-        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
-        .print { background: #3b82f6; color: white; }
-        .download { background: #7c3aed; color: white; }
-        .close { background: #f3f4f6; color: #374151; }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      .modal {
+        border: 1px solid #ccc;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .buttons {
+        display: flex;
+        gap: 10px;
+        margin: 10px 0;
+      }
+      button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .print {
+        background: #3b82f6;
+        color: white;
+      }
+      .download {
+        background: #7c3aed;
+        color: white;
+      }
+      .close {
+        background: #f3f4f6;
+        color: #374151;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>OR Modal Preview Test</h1>
     <p>This simulates how the OR will appear in the modal popup:</p>
-    
+
     <div class="modal">
-        <div class="buttons">
-            <button class="print" onclick="testPrint()">🖨️ Print OR</button>
-            <button class="download" onclick="testDownload()">📥 Download</button>
-            <button class="close" onclick="testClose()">❌ Close</button>
-        </div>
-        
-        <div style="border: 1px solid #ddd; padding: 10px; background: white;">
-            <p><strong>Official Receipt Preview</strong></p>
-            <p>OR No: 26-000003</p>
-            <p>Amount: ₱100.00</p>
-            <p>Payor: NEIL MAMARIL CRUZ</p>
-            <p>Business: TEST</p>
-            <p>Date: March 5, 2026</p>
-        </div>
+      <div class="buttons">
+        <button class="print" onclick="testPrint()">🖨️ Print OR</button>
+        <button class="download" onclick="testDownload()">📥 Download</button>
+        <button class="close" onclick="testClose()">❌ Close</button>
+      </div>
+
+      <div style="border: 1px solid #ddd; padding: 10px; background: white">
+        <p><strong>Official Receipt Preview</strong></p>
+        <p>OR No: 26-000003</p>
+        <p>Amount: ₱100.00</p>
+        <p>Payor: NEIL MAMARIL CRUZ</p>
+        <p>Business: TEST</p>
+        <p>Date: March 5, 2026</p>
+      </div>
     </div>
-    
+
     <script>
-        function testPrint() {
-            console.log('✅ Print function would open print dialog');
-            alert('Print dialog would open here');
-        }
-        
-        function testDownload() {
-            console.log('✅ Download function would save OR file');
-            alert('OR file would be downloaded');
-        }
-        
-        function testClose() {
-            console.log('✅ Close function would close modal and refresh data');
-            alert('Modal would close and data would refresh');
-        }
-        
-        console.log('🧾 OR Modal Test Page Loaded');
-        console.log('✅ No console errors');
-        console.log('✅ All functions working');
+      function testPrint() {
+        console.log("✅ Print function would open print dialog");
+        alert("Print dialog would open here");
+      }
+
+      function testDownload() {
+        console.log("✅ Download function would save OR file");
+        alert("OR file would be downloaded");
+      }
+
+      function testClose() {
+        console.log("✅ Close function would close modal and refresh data");
+        alert("Modal would close and data would refresh");
+      }
+
+      console.log("🧾 OR Modal Test Page Loaded");
+      console.log("✅ No console errors");
+      console.log("✅ All functions working");
     </script>
-</body>
+  </body>
 </html>

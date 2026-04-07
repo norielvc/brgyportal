@@ -1,15 +1,23 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import Layout from '@/components/Layout/Layout';
-import SignatureInput from '@/components/UI/SignatureInput';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Layout from "@/components/Layout/Layout";
+import SignatureInput from "@/components/UI/SignatureInput";
 import {
-  Save, Trash2, Eye, EyeOff, User, Shield,
-  CheckCircle, AlertCircle, Info, Pen
-} from 'lucide-react';
-import { getAuthToken, getUserData } from '@/lib/auth';
+  Save,
+  Trash2,
+  Eye,
+  EyeOff,
+  User,
+  Shield,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  Pen,
+} from "lucide-react";
+import { getAuthToken, getUserData } from "@/lib/auth";
 
 // API Configuration
-const API_URL = '/api';
+const API_URL = "/api";
 
 export default function SignatureSettings() {
   const router = useRouter();
@@ -25,7 +33,7 @@ export default function SignatureSettings() {
   useEffect(() => {
     const user = getUserData();
     if (!user) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
     setCurrentUser(user);
@@ -38,9 +46,9 @@ export default function SignatureSettings() {
       const token = getAuthToken();
       const response = await fetch(`${API_URL}/user/signatures`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
       const data = await response.json();
@@ -49,11 +57,11 @@ export default function SignatureSettings() {
         setDefaultSignatureId(data.defaultSignatureId);
       }
     } catch (error) {
-      console.error('Error fetching signatures:', error);
+      console.error("Error fetching signatures:", error);
       setNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to load signatures'
+        type: "error",
+        title: "Error",
+        message: "Failed to load signatures",
       });
     } finally {
       setLoading(false);
@@ -63,9 +71,9 @@ export default function SignatureSettings() {
   const saveSignature = async () => {
     if (!newSignature) {
       setNotification({
-        type: 'error',
-        title: 'No Signature',
-        message: 'Please create a signature first'
+        type: "error",
+        title: "No Signature",
+        message: "Please create a signature first",
       });
       return;
     }
@@ -74,16 +82,16 @@ export default function SignatureSettings() {
     try {
       const token = getAuthToken();
       const response = await fetch(`${API_URL}/user/signatures`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           signatureData: newSignature,
           name: `Signature ${signatures.length + 1}`,
-          isDefault: signatures.length === 0 // First signature becomes default
-        })
+          isDefault: signatures.length === 0, // First signature becomes default
+        }),
       });
 
       const data = await response.json();
@@ -91,23 +99,23 @@ export default function SignatureSettings() {
         setNewSignature(null);
         fetchSignatures();
         setNotification({
-          type: 'success',
-          title: 'Success',
-          message: 'Signature saved successfully'
+          type: "success",
+          title: "Success",
+          message: "Signature saved successfully",
         });
       } else {
         setNotification({
-          type: 'error',
-          title: 'Error',
-          message: data.message || 'Failed to save signature'
+          type: "error",
+          title: "Error",
+          message: data.message || "Failed to save signature",
         });
       }
     } catch (error) {
-      console.error('Error saving signature:', error);
+      console.error("Error saving signature:", error);
       setNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to save signature'
+        type: "error",
+        title: "Error",
+        message: "Failed to save signature",
       });
     } finally {
       setSaving(false);
@@ -115,39 +123,42 @@ export default function SignatureSettings() {
   };
 
   const deleteSignature = async (signatureId) => {
-    if (!confirm('Are you sure you want to delete this signature?')) return;
+    if (!confirm("Are you sure you want to delete this signature?")) return;
 
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/user/signatures/${signatureId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await fetch(
+        `${API_URL}/user/signatures/${signatureId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
 
       const data = await response.json();
       if (data.success) {
         fetchSignatures();
         setNotification({
-          type: 'success',
-          title: 'Success',
-          message: 'Signature deleted successfully'
+          type: "success",
+          title: "Success",
+          message: "Signature deleted successfully",
         });
       } else {
         setNotification({
-          type: 'error',
-          title: 'Error',
-          message: data.message || 'Failed to delete signature'
+          type: "error",
+          title: "Error",
+          message: data.message || "Failed to delete signature",
         });
       }
     } catch (error) {
-      console.error('Error deleting signature:', error);
+      console.error("Error deleting signature:", error);
       setNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to delete signature'
+        type: "error",
+        title: "Error",
+        message: "Failed to delete signature",
       });
     }
   };
@@ -155,37 +166,40 @@ export default function SignatureSettings() {
   const setDefaultSignature = async (signatureId) => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/user/signatures/${signatureId}/default`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await fetch(
+        `${API_URL}/user/signatures/${signatureId}/default`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
 
       const data = await response.json();
       if (data.success) {
         setDefaultSignatureId(signatureId);
         setNotification({
-          type: 'success',
-          title: 'Success',
-          message: 'Default signature updated'
+          type: "success",
+          title: "Success",
+          message: "Default signature updated",
         });
       }
     } catch (error) {
-      console.error('Error setting default signature:', error);
+      console.error("Error setting default signature:", error);
       setNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to update default signature'
+        type: "error",
+        title: "Error",
+        message: "Failed to update default signature",
       });
     }
   };
 
   const togglePreview = (signatureId) => {
-    setShowPreview(prev => ({
+    setShowPreview((prev) => ({
       ...prev,
-      [signatureId]: !prev[signatureId]
+      [signatureId]: !prev[signatureId],
     }));
   };
 
@@ -214,24 +228,35 @@ export default function SignatureSettings() {
             <Pen className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Signature Settings</h1>
-            <p className="text-gray-600">Manage your digital signatures for document signing</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Signature Settings
+            </h1>
+            <p className="text-gray-600">
+              Manage your digital signatures for document signing
+            </p>
           </div>
         </div>
       </div>
 
       {/* Notification */}
       {notification && (
-        <div className={`mb-6 p-4 rounded-lg border ${notification.type === 'success'
-          ? 'bg-green-50 border-green-200 text-green-800'
-          : notification.type === 'error'
-            ? 'bg-red-50 border-red-200 text-red-800'
-            : 'bg-blue-50 border-blue-200 text-blue-800'
-          }`}>
+        <div
+          className={`mb-6 p-4 rounded-lg border ${
+            notification.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : notification.type === "error"
+                ? "bg-red-50 border-red-200 text-red-800"
+                : "bg-blue-50 border-blue-200 text-blue-800"
+          }`}
+        >
           <div className="flex items-center gap-2">
-            {notification.type === 'success' && <CheckCircle className="w-5 h-5" />}
-            {notification.type === 'error' && <AlertCircle className="w-5 h-5" />}
-            {notification.type === 'info' && <Info className="w-5 h-5" />}
+            {notification.type === "success" && (
+              <CheckCircle className="w-5 h-5" />
+            )}
+            {notification.type === "error" && (
+              <AlertCircle className="w-5 h-5" />
+            )}
+            {notification.type === "info" && <Info className="w-5 h-5" />}
             <div>
               <h4 className="font-semibold">{notification.title}</h4>
               <p className="text-sm">{notification.message}</p>
@@ -242,7 +267,9 @@ export default function SignatureSettings() {
 
       {/* Create New Signature */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Create New Signature</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Create New Signature
+        </h2>
 
         <SignatureInput
           onSignatureChange={setNewSignature}
@@ -261,7 +288,7 @@ export default function SignatureSettings() {
             ) : (
               <Save className="w-4 h-4" />
             )}
-            {saving ? 'Saving...' : 'Save Signature'}
+            {saving ? "Saving..." : "Save Signature"}
           </button>
         </div>
       </div>
@@ -283,10 +310,11 @@ export default function SignatureSettings() {
             {signatures.map((signature) => (
               <div
                 key={signature.id}
-                className={`border rounded-lg p-4 ${signature.id === defaultSignatureId
-                  ? 'border-blue-200 bg-blue-50'
-                  : 'border-gray-200'
-                  }`}
+                className={`border rounded-lg p-4 ${
+                  signature.id === defaultSignatureId
+                    ? "border-blue-200 bg-blue-50"
+                    : "border-gray-200"
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -313,7 +341,8 @@ export default function SignatureSettings() {
                         )}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        Created {new Date(signature.createdAt).toLocaleDateString()}
+                        Created{" "}
+                        {new Date(signature.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -322,7 +351,11 @@ export default function SignatureSettings() {
                     <button
                       onClick={() => togglePreview(signature.id)}
                       className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                      title={showPreview[signature.id] ? 'Hide preview' : 'Show preview'}
+                      title={
+                        showPreview[signature.id]
+                          ? "Hide preview"
+                          : "Show preview"
+                      }
                     >
                       {showPreview[signature.id] ? (
                         <EyeOff className="w-4 h-4" />
@@ -364,7 +397,9 @@ export default function SignatureSettings() {
             <ul className="space-y-1 text-blue-700">
               <li>• Your signatures are securely stored and encrypted</li>
               <li>• Default signature will be used automatically in forms</li>
-              <li>• You can create multiple signatures for different purposes</li>
+              <li>
+                • You can create multiple signatures for different purposes
+              </li>
               <li>• Signatures are legally binding for barangay documents</li>
             </ul>
           </div>
@@ -374,8 +409,4 @@ export default function SignatureSettings() {
   );
 }
 
-SignatureSettings.getLayout = (page) => (
-  <Layout>
-    {page}
-  </Layout>
-);
+SignatureSettings.getLayout = (page) => <Layout>{page}</Layout>;

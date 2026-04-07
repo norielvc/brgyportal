@@ -1,53 +1,53 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Edit, 
-  Trash2, 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import {
+  Plus,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
   MoreVertical,
-  UserPlus
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import Layout from '@/components/Layout/Layout';
-import { LoadingCard } from '@/components/UI/LoadingSpinner';
-import Pagination from '@/components/UI/Pagination';
-import Modal, { ConfirmModal } from '@/components/UI/Modal';
-import { usersAPI } from '@/lib/api';
-import { getUserData } from '@/lib/auth';
-import { 
-  formatDate, 
-  formatRelativeTime, 
-  getStatusColor, 
+  UserPlus,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import Layout from "@/components/Layout/Layout";
+import { LoadingCard } from "@/components/UI/LoadingSpinner";
+import Pagination from "@/components/UI/Pagination";
+import Modal, { ConfirmModal } from "@/components/UI/Modal";
+import { usersAPI } from "@/lib/api";
+import { getUserData } from "@/lib/auth";
+import {
+  formatDate,
+  formatRelativeTime,
+  getStatusColor,
   getRoleColor,
   getInitials,
-  debounce 
-} from '@/lib/utils';
+  debounce,
+} from "@/lib/utils";
 
 export default function Users() {
   const router = useRouter();
   const currentUser = getUserData();
-  
+
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState({});
-  
+
   // Filters and search
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Modals
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
 
   // Check if current user is admin
-  if (currentUser?.role !== 'admin') {
-    router.push('/dashboard');
+  if (currentUser?.role !== "admin") {
+    router.push("/dashboard");
     return null;
   }
 
@@ -74,7 +74,7 @@ export default function Users() {
         setPagination(response.data.pagination);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
     } finally {
       setIsLoading(false);
     }
@@ -87,10 +87,10 @@ export default function Users() {
 
   const handleSort = (field) => {
     if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
-      setSortOrder('asc');
+      setSortOrder("asc");
     }
     setCurrentPage(1);
   };
@@ -101,11 +101,11 @@ export default function Users() {
     try {
       const response = await usersAPI.deleteUser(userToDelete._id);
       if (response.success) {
-        toast.success('User deleted successfully');
+        toast.success("User deleted successfully");
         fetchUsers();
       }
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
     }
   };
 
@@ -116,9 +116,7 @@ export default function Users() {
     >
       <span>{children}</span>
       {sortBy === field && (
-        <span className="text-xs">
-          {sortOrder === 'asc' ? '↑' : '↓'}
-        </span>
+        <span className="text-xs">{sortOrder === "asc" ? "↑" : "↓"}</span>
       )}
     </button>
   );
@@ -139,7 +137,7 @@ export default function Users() {
               />
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             {/* Filters */}
             <select
@@ -154,7 +152,7 @@ export default function Users() {
               <option value="admin">Admin</option>
               <option value="user">User</option>
             </select>
-            
+
             <select
               value={statusFilter}
               onChange={(e) => {
@@ -170,7 +168,7 @@ export default function Users() {
             </select>
 
             <button
-              onClick={() => router.push('/users/create')}
+              onClick={() => router.push("/users/create")}
               className="btn-primary"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -230,7 +228,9 @@ export default function Users() {
                         </div>
                       </td>
                       <td className="table-cell">
-                        <div className="text-sm text-gray-900">{user.email}</div>
+                        <div className="text-sm text-gray-900">
+                          {user.email}
+                        </div>
                       </td>
                       <td className="table-cell">
                         <span className={`badge ${getRoleColor(user.role)}`}>
@@ -238,13 +238,17 @@ export default function Users() {
                         </span>
                       </td>
                       <td className="table-cell">
-                        <span className={`badge ${getStatusColor(user.status)}`}>
+                        <span
+                          className={`badge ${getStatusColor(user.status)}`}
+                        >
                           {user.status}
                         </span>
                       </td>
                       <td className="table-cell">
                         <div className="text-sm text-gray-900">
-                          {user.lastLogin ? formatRelativeTime(user.lastLogin) : 'Never'}
+                          {user.lastLogin
+                            ? formatRelativeTime(user.lastLogin)
+                            : "Never"}
                         </div>
                       </td>
                       <td className="table-cell">
@@ -255,7 +259,9 @@ export default function Users() {
                       <td className="table-cell">
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => router.push(`/users/${user._id}/edit`)}
+                            onClick={() =>
+                              router.push(`/users/${user._id}/edit`)
+                            }
                             className="p-1 text-gray-400 hover:text-gray-600"
                             title="Edit user"
                           >

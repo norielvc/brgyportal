@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import {
   LayoutDashboard,
   Users,
@@ -23,167 +23,171 @@ import {
   ChevronRight,
   Package,
   PenTool,
-  Award
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { logout, getUserData } from '@/lib/auth';
+  Award,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { logout, getUserData } from "@/lib/auth";
 
 const mainMenuItems = [
   {
-    name: 'Dashboard',
-    href: '/dashboard',
+    name: "Dashboard",
+    href: "/dashboard",
     icon: LayoutDashboard,
-    description: 'Overview & Analytics'
+    description: "Overview & Analytics",
   },
   {
-    name: 'Resident Database',
-    href: '/residents',
+    name: "Resident Database",
+    href: "/residents",
     icon: Users,
-    description: 'Master Census Record'
+    description: "Master Census Record",
   },
   {
-    name: 'Certificate Requests',
-    href: '/requests',
+    name: "Certificate Requests",
+    href: "/requests",
     icon: ClipboardList,
-    description: 'Manage requests'
+    description: "Manage requests",
   },
   {
-    name: 'Pickup Management',
-    href: '/pickup-management',
+    name: "Pickup Management",
+    href: "/pickup-management",
     icon: Package,
-    description: 'Certificate pickups'
+    description: "Certificate pickups",
   },
   {
-    name: 'My Signature',
-    href: '/signature-settings',
+    name: "My Signature",
+    href: "/signature-settings",
     icon: PenTool,
-    description: 'Manage your signature'
+    description: "Manage your signature",
   },
   {
-    name: 'QR Scanner',
+    name: "QR Scanner",
     icon: Smartphone,
-    description: 'QR code scanning tools',
+    description: "QR code scanning tools",
     children: [
       {
-        name: 'Mobile Scanner',
-        href: '/mobile-qr-scanner',
+        name: "Mobile Scanner",
+        href: "/mobile-qr-scanner",
         icon: Smartphone,
-        description: 'Scan QR codes'
+        description: "Scan QR codes",
       },
       {
-        name: 'Scan History',
-        href: '/qr-scan-history',
+        name: "Scan History",
+        href: "/qr-scan-history",
         icon: History,
-        description: 'View scanned codes'
-      }
-    ]
+        description: "View scanned codes",
+      },
+    ],
   },
   {
-    name: 'Management',
+    name: "Management",
     icon: UserCog,
-    description: 'Content management',
+    description: "Content management",
     adminOnly: true,
     children: [
       {
-        name: 'Employees',
-        href: '/employees',
+        name: "Employees",
+        href: "/employees",
         icon: Users,
         adminOnly: true,
-        description: 'Manage team'
+        description: "Manage team",
       },
       {
-        name: 'Officials',
-        href: '/officials',
+        name: "Officials",
+        href: "/officials",
         icon: UserCog,
         adminOnly: true,
-        description: 'Barangay officials'
+        description: "Barangay officials",
       },
       {
-        name: 'Facilities',
-        href: '/facilities',
+        name: "Facilities",
+        href: "/facilities",
         icon: Building2,
         adminOnly: true,
-        description: 'Manage facilities'
+        description: "Manage facilities",
       },
       {
-        name: 'Certificate Layout',
-        href: '/certificate-layout',
+        name: "Certificate Layout",
+        href: "/certificate-layout",
         icon: FileText,
         adminOnly: true,
-        description: 'Edit PDF design'
+        description: "Edit PDF design",
       },
       {
-        name: 'Events',
-        href: '/events',
+        name: "Events",
+        href: "/events",
         icon: Calendar,
         adminOnly: true,
-        description: 'Homepage events'
+        description: "Homepage events",
       },
       {
-        name: 'Achievements',
-        href: '/achievements',
+        name: "Achievements",
+        href: "/achievements",
         icon: Award,
         adminOnly: true,
-        description: 'Awards & Recognition'
+        description: "Awards & Recognition",
       },
       {
-        name: 'Programs',
-        href: '/programs',
+        name: "Programs",
+        href: "/programs",
         icon: Activity,
         adminOnly: true,
-        description: 'Barangay Initiatives'
-      }
-    ]
+        description: "Barangay Initiatives",
+      },
+    ],
   },
   {
-    name: 'System',
+    name: "System",
     icon: Settings,
-    description: 'System configuration',
+    description: "System configuration",
     adminOnly: true,
     children: [
       {
-        name: 'Workflows',
-        href: '/workflows',
+        name: "Workflows",
+        href: "/workflows",
         icon: GitBranch,
         adminOnly: true,
-        description: 'Approval flow'
+        description: "Approval flow",
       },
       {
-        name: 'Roles',
-        href: '/roles',
+        name: "Roles",
+        href: "/roles",
         icon: Shield,
         adminOnly: true,
-        description: 'Access control'
+        description: "Access control",
       },
       {
-        name: 'Activity',
-        href: '/activity',
+        name: "Activity",
+        href: "/activity",
         icon: Activity,
-        description: 'System logs'
+        description: "System logs",
       },
       {
-        name: 'Reports',
-        href: '/reports',
+        name: "Reports",
+        href: "/reports",
         icon: FileText,
-        description: 'Analytics'
+        description: "Analytics",
       },
       {
-        name: 'Settings',
-        href: '/settings',
+        name: "Settings",
+        href: "/settings",
         icon: Settings,
-        description: 'Configuration'
-      }
-    ]
-  }
+        description: "Configuration",
+      },
+    ],
+  },
 ];
 
-export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOpen }) {
+export default function Sidebar({
+  className,
+  isMobileMenuOpen,
+  setIsMobileMenuOpen,
+}) {
   const router = useRouter();
   // Persist expanded state across re-mounts (page navigations)
   const [expandedItems, setExpandedItems] = useState(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        const saved = sessionStorage.getItem('sidebarExpandedItems');
+        const saved = sessionStorage.getItem("sidebarExpandedItems");
         return saved ? JSON.parse(saved) : {};
       } catch (e) {
         return {};
@@ -195,21 +199,31 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
   const navRef = useRef(null);
   const user = getUserData();
   const role = user?.role?.toLowerCase();
-  const adminRoles = ['superadmin', 'super_admin', 'admin', 'captain', 'secretary', 'staff'];
+  const adminRoles = [
+    "superadmin",
+    "super_admin",
+    "admin",
+    "captain",
+    "secretary",
+    "staff",
+  ];
 
   const handleLogout = () => {
     logout();
   };
 
   const toggleExpanded = (itemName) => {
-    setExpandedItems(prev => {
+    setExpandedItems((prev) => {
       const newState = {
         ...prev,
-        [itemName]: !prev[itemName]
+        [itemName]: !prev[itemName],
       };
       // Save to sessionStorage
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('sidebarExpandedItems', JSON.stringify(newState));
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(
+          "sidebarExpandedItems",
+          JSON.stringify(newState),
+        );
       }
       return newState;
     });
@@ -217,8 +231,8 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
 
   // Restore scroll position on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedScrollPos = sessionStorage.getItem('sidebarScrollPos');
+    if (typeof window !== "undefined") {
+      const savedScrollPos = sessionStorage.getItem("sidebarScrollPos");
       if (savedScrollPos && navRef.current) {
         // Use a small timeout to ensure DOM is ready and rendered
         setTimeout(() => {
@@ -231,15 +245,18 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
   }, []);
 
   const handleScroll = (e) => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('sidebarScrollPos', e.currentTarget.scrollTop.toString());
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(
+        "sidebarScrollPos",
+        e.currentTarget.scrollTop.toString(),
+      );
     }
   };
 
   // Check if any child item is active to auto-expand parent
   const isParentActive = (item) => {
     if (!item.children) return false;
-    return item.children.some(child => router.pathname === child.href);
+    return item.children.some((child) => router.pathname === child.href);
   };
 
   // Helper to check expansion state
@@ -250,7 +267,7 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
     return isParentActive(item);
   };
 
-  const filteredMenuItems = mainMenuItems.filter(item => {
+  const filteredMenuItems = mainMenuItems.filter((item) => {
     if (item.adminOnly && (!role || !adminRoles.includes(role))) {
       return false;
     }
@@ -266,8 +283,12 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
             <LayoutDashboard className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-black text-white leading-tight tracking-tight">BrgyDesk</h1>
-            <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-[0.2em]">Management Portal</p>
+            <h1 className="text-sm font-black text-white leading-tight tracking-tight">
+              BrgyDesk
+            </h1>
+            <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-[0.2em]">
+              Management Portal
+            </p>
           </div>
         </div>
         {showClose && (
@@ -306,22 +327,30 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
                   type="button"
                   onClick={() => toggleExpanded(item.name)}
                   className={cn(
-                    'group flex items-center w-full px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300',
+                    "group flex items-center w-full px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300",
                     isParentActive(item)
-                      ? 'bg-white/10 text-white shadow-lg shadow-black/20'
-                      : 'text-blue-100/60 hover:bg-white/5 hover:text-white'
+                      ? "bg-white/10 text-white shadow-lg shadow-black/20"
+                      : "text-blue-100/60 hover:bg-white/5 hover:text-white",
                   )}
                 >
-                  <item.icon className={cn(
-                    "w-5 h-5 mr-3 transition-all",
-                    isParentActive(item) ? "text-blue-400 scale-110" : "text-white/20 group-hover:text-blue-300"
-                  )} />
+                  <item.icon
+                    className={cn(
+                      "w-5 h-5 mr-3 transition-all",
+                      isParentActive(item)
+                        ? "text-blue-400 scale-110"
+                        : "text-white/20 group-hover:text-blue-300",
+                    )}
+                  />
                   <div className="flex-1 min-w-0 text-left">
                     <div className="text-sm truncate">{item.name}</div>
-                    <div className={cn(
-                      "text-[10px] truncate transition-colors",
-                      isParentActive(item) ? "text-blue-300" : "text-blue-200/30 group-hover:text-blue-200/50"
-                    )}>
+                    <div
+                      className={cn(
+                        "text-[10px] truncate transition-colors",
+                        isParentActive(item)
+                          ? "text-blue-300"
+                          : "text-blue-200/30 group-hover:text-blue-200/50",
+                      )}
+                    >
                       {item.description}
                     </div>
                   </div>
@@ -335,23 +364,31 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
                 <Link
                   href={item.href}
                   className={cn(
-                    'group flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300',
+                    "group flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300",
                     isDirectActive
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-black'
-                      : 'text-blue-100/60 hover:bg-white/5 hover:text-white'
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-black"
+                      : "text-blue-100/60 hover:bg-white/5 hover:text-white",
                   )}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <item.icon className={cn(
-                    "w-5 h-5 mr-3 transition-all",
-                    isDirectActive ? "text-white scale-110" : "text-white/20 group-hover:text-blue-300"
-                  )} />
+                  <item.icon
+                    className={cn(
+                      "w-5 h-5 mr-3 transition-all",
+                      isDirectActive
+                        ? "text-white scale-110"
+                        : "text-white/20 group-hover:text-blue-300",
+                    )}
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm truncate">{item.name}</div>
-                    <div className={cn(
-                      "text-[10px] truncate",
-                      isDirectActive ? "text-blue-100/70" : "text-blue-200/30 group-hover:text-blue-200/50"
-                    )}>
+                    <div
+                      className={cn(
+                        "text-[10px] truncate",
+                        isDirectActive
+                          ? "text-blue-100/70"
+                          : "text-blue-200/30 group-hover:text-blue-200/50",
+                      )}
+                    >
                       {item.description}
                     </div>
                   </div>
@@ -362,7 +399,10 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
               {hasChildren && isExpanded && (
                 <div className="pl-4 mt-1 space-y-1 animate-in slide-in-from-top-1 duration-200">
                   {item.children
-                    .filter(child => !child.adminOnly || (role && adminRoles.includes(role)))
+                    .filter(
+                      (child) =>
+                        !child.adminOnly || (role && adminRoles.includes(role)),
+                    )
                     .map((child) => {
                       const isChildActive = router.pathname === child.href;
                       return (
@@ -370,21 +410,23 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
                           key={child.name}
                           href={child.href}
                           className={cn(
-                            'group flex items-center px-4 py-2 text-[12px] font-bold rounded-lg transition-all',
+                            "group flex items-center px-4 py-2 text-[12px] font-bold rounded-lg transition-all",
                             isChildActive
-                              ? 'bg-white/10 text-white'
-                              : 'text-blue-100/40 hover:bg-white/5 hover:text-white'
+                              ? "bg-white/10 text-white"
+                              : "text-blue-100/40 hover:bg-white/5 hover:text-white",
                           )}
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          <child.icon className={cn(
-                            "w-4 h-4 mr-3 transition-all",
-                            isChildActive ? "text-blue-400" : "text-white/10 group-hover:text-blue-300"
-                          )} />
+                          <child.icon
+                            className={cn(
+                              "w-4 h-4 mr-3 transition-all",
+                              isChildActive
+                                ? "text-blue-400"
+                                : "text-white/10 group-hover:text-blue-300",
+                            )}
+                          />
                           <div className="flex-1 min-w-0">
-                            <div className="truncate">
-                              {child.name}
-                            </div>
+                            <div className="truncate">{child.name}</div>
                           </div>
                         </Link>
                       );
@@ -402,7 +444,7 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
           <div className="flex-shrink-0">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
               <span className="text-sm font-black text-white">
-                {user?.firstName?.charAt(0) || 'U'}
+                {user?.firstName?.charAt(0) || "U"}
               </span>
             </div>
           </div>
@@ -417,10 +459,10 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
           </div>
         </div>
 
-        {role && ['superadmin', 'super_admin'].includes(role) && (
+        {role && ["superadmin", "super_admin"].includes(role) && (
           <button
             type="button"
-            onClick={() => router.push('/superadmin')}
+            onClick={() => router.push("/superadmin")}
             className="flex items-center w-full px-4 py-3 mb-1 text-sm font-bold text-amber-400/80 rounded-xl hover:bg-amber-500/10 hover:text-amber-400 transition-all duration-300 group"
           >
             <ShieldAlert className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
@@ -443,30 +485,41 @@ export default function Sidebar({ className, isMobileMenuOpen, setIsMobileMenuOp
   return (
     <>
       {/* Mobile sidebar overlay with sliding effect */}
-      <div className={cn(
-        "lg:hidden fixed inset-0 z-50 transition-all duration-500 overflow-hidden",
-        isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-      )}>
+      <div
+        className={cn(
+          "lg:hidden fixed inset-0 z-50 transition-all duration-500 overflow-hidden",
+          isMobileMenuOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
+        )}
+      >
         {/* Backdrop */}
         <div
           className={cn(
             "absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-500",
-            isMobileMenuOpen ? "opacity-100" : "opacity-0"
+            isMobileMenuOpen ? "opacity-100" : "opacity-0",
           )}
           onClick={() => setIsMobileMenuOpen(false)}
         />
 
         {/* Sidebar Container */}
-        <div className={cn(
-          "absolute inset-y-0 left-0 w-[280px] bg-[#03254c] shadow-2xl transition-transform duration-500 ease-out flex flex-col",
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        )}>
+        <div
+          className={cn(
+            "absolute inset-y-0 left-0 w-[280px] bg-[#03254c] shadow-2xl transition-transform duration-500 ease-out flex flex-col",
+            isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+          )}
+        >
           {renderNav(true)}
         </div>
       </div>
 
       {/* Desktop sidebar */}
-      <div className={cn("hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-[#03254c] border-r border-white/5", className)}>
+      <div
+        className={cn(
+          "hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-[#03254c] border-r border-white/5",
+          className,
+        )}
+      >
         {renderNav(false)}
       </div>
     </>

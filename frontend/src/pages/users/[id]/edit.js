@@ -1,26 +1,26 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
-import Layout from '@/components/Layout/Layout';
-import { LoadingCard } from '@/components/UI/LoadingSpinner';
-import { usersAPI } from '@/lib/api';
-import { getUserData } from '@/lib/auth';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { ArrowLeft, Save, Eye, EyeOff } from "lucide-react";
+import Layout from "@/components/Layout/Layout";
+import { LoadingCard } from "@/components/UI/LoadingSpinner";
+import { usersAPI } from "@/lib/api";
+import { getUserData } from "@/lib/auth";
 
 export default function EditUser() {
   const router = useRouter();
   const { id } = router.query;
   const currentUser = getUserData();
-  
+
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Check permissions
-  const canEdit = currentUser?.role === 'admin' || currentUser?._id === id;
-  const isAdmin = currentUser?.role === 'admin';
+  const canEdit = currentUser?.role === "admin" || currentUser?._id === id;
+  const isAdmin = currentUser?.role === "admin";
 
   const {
     register,
@@ -51,8 +51,8 @@ export default function EditUser() {
         });
       }
     } catch (error) {
-      console.error('Error fetching user:', error);
-      router.push('/users');
+      console.error("Error fetching user:", error);
+      router.push("/users");
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +60,7 @@ export default function EditUser() {
 
   const onSubmit = async (data) => {
     setIsSaving(true);
-    
+
     try {
       // Remove password if it's empty
       const updateData = { ...data };
@@ -69,18 +69,18 @@ export default function EditUser() {
       }
 
       const response = await usersAPI.updateUser(id, updateData);
-      
+
       if (response.success) {
-        toast.success('User updated successfully!');
+        toast.success("User updated successfully!");
         if (isAdmin) {
-          router.push('/users');
+          router.push("/users");
         } else {
           // If user is editing their own profile, update local user data
           fetchUser();
         }
       }
     } catch (error) {
-      console.error('Update user error:', error);
+      console.error("Update user error:", error);
       // Error is handled by axios interceptor
     } finally {
       setIsSaving(false);
@@ -88,7 +88,7 @@ export default function EditUser() {
   };
 
   if (!canEdit) {
-    router.push('/dashboard');
+    router.push("/dashboard");
     return null;
   }
 
@@ -111,7 +111,10 @@ export default function EditUser() {
   }
 
   return (
-    <Layout title="Edit User" subtitle={`Update ${user.firstName} ${user.lastName}'s information`}>
+    <Layout
+      title="Edit User"
+      subtitle={`Update ${user.firstName} ${user.lastName}'s information`}
+    >
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <button
@@ -119,19 +122,26 @@ export default function EditUser() {
             className="flex items-center text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {isAdmin ? 'Back to Users' : 'Back to Dashboard'}
+            {isAdmin ? "Back to Users" : "Back to Dashboard"}
           </button>
         </div>
 
         <div className="card">
           <div className="card-header">
-            <h2 className="text-xl font-semibold text-gray-900">User Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              User Information
+            </h2>
             <p className="text-sm text-gray-500">
-              {isAdmin ? 'Update user details and permissions' : 'Update your profile information'}
+              {isAdmin
+                ? "Update user details and permissions"
+                : "Update your profile information"}
             </p>
           </div>
-          
-          <form onSubmit={handleSubmit(onSubmit)} className="card-body space-y-6">
+
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="card-body space-y-6"
+          >
             {/* Personal Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -139,19 +149,21 @@ export default function EditUser() {
                   First Name *
                 </label>
                 <input
-                  {...register('firstName', {
-                    required: 'First name is required',
+                  {...register("firstName", {
+                    required: "First name is required",
                     maxLength: {
                       value: 50,
-                      message: 'First name must be less than 50 characters',
+                      message: "First name must be less than 50 characters",
                     },
                   })}
                   type="text"
-                  className={errors.firstName ? 'input-error' : 'input'}
+                  className={errors.firstName ? "input-error" : "input"}
                   placeholder="Enter first name"
                 />
                 {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.firstName.message}
+                  </p>
                 )}
               </div>
 
@@ -160,19 +172,21 @@ export default function EditUser() {
                   Last Name *
                 </label>
                 <input
-                  {...register('lastName', {
-                    required: 'Last name is required',
+                  {...register("lastName", {
+                    required: "Last name is required",
                     maxLength: {
                       value: 50,
-                      message: 'Last name must be less than 50 characters',
+                      message: "Last name must be less than 50 characters",
                     },
                   })}
                   type="text"
-                  className={errors.lastName ? 'input-error' : 'input'}
+                  className={errors.lastName ? "input-error" : "input"}
                   placeholder="Enter last name"
                 />
                 {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.lastName.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -183,19 +197,21 @@ export default function EditUser() {
                 Email Address *
               </label>
               <input
-                {...register('email', {
-                  required: 'Email is required',
+                {...register("email", {
+                  required: "Email is required",
                   pattern: {
                     value: /^\S+@\S+$/i,
-                    message: 'Invalid email address',
+                    message: "Invalid email address",
                   },
                 })}
                 type="email"
-                className={errors.email ? 'input-error' : 'input'}
+                className={errors.email ? "input-error" : "input"}
                 placeholder="Enter email address"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
@@ -206,18 +222,21 @@ export default function EditUser() {
               </label>
               <div className="relative">
                 <input
-                  {...register('password', {
+                  {...register("password", {
                     minLength: {
                       value: 6,
-                      message: 'Password must be at least 6 characters',
+                      message: "Password must be at least 6 characters",
                     },
                     pattern: {
                       value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                      message: 'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+                      message:
+                        "Password must contain at least one lowercase letter, one uppercase letter, and one number",
                     },
                   })}
-                  type={showPassword ? 'text' : 'password'}
-                  className={errors.password ? 'input-error pr-10' : 'input pr-10'}
+                  type={showPassword ? "text" : "password"}
+                  className={
+                    errors.password ? "input-error pr-10" : "input pr-10"
+                  }
                   placeholder="Leave blank to keep current password"
                 />
                 <button
@@ -233,10 +252,14 @@ export default function EditUser() {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
               <p className="mt-1 text-sm text-gray-500">
-                Leave blank to keep current password. If changing, password must contain at least one lowercase letter, one uppercase letter, and one number.
+                Leave blank to keep current password. If changing, password must
+                contain at least one lowercase letter, one uppercase letter, and
+                one number.
               </p>
             </div>
 
@@ -248,15 +271,17 @@ export default function EditUser() {
                     Role *
                   </label>
                   <select
-                    {...register('role', { required: 'Role is required' })}
-                    className={errors.role ? 'input-error' : 'input'}
+                    {...register("role", { required: "Role is required" })}
+                    className={errors.role ? "input-error" : "input"}
                     disabled={user._id === currentUser._id} // Prevent admin from changing their own role
                   >
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                   </select>
                   {errors.role && (
-                    <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.role.message}
+                    </p>
                   )}
                   {user._id === currentUser._id && (
                     <p className="mt-1 text-sm text-gray-500">
@@ -270,8 +295,8 @@ export default function EditUser() {
                     Status *
                   </label>
                   <select
-                    {...register('status', { required: 'Status is required' })}
-                    className={errors.status ? 'input-error' : 'input'}
+                    {...register("status", { required: "Status is required" })}
+                    className={errors.status ? "input-error" : "input"}
                     disabled={user._id === currentUser._id} // Prevent admin from changing their own status
                   >
                     <option value="active">Active</option>
@@ -279,7 +304,9 @@ export default function EditUser() {
                     <option value="suspended">Suspended</option>
                   </select>
                   {errors.status && (
-                    <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.status.message}
+                    </p>
                   )}
                   {user._id === currentUser._id && (
                     <p className="mt-1 text-sm text-gray-500">
@@ -292,7 +319,9 @@ export default function EditUser() {
 
             {/* User Stats (Read-only) */}
             <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Account Statistics</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-3">
+                Account Statistics
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500">Total Logins</p>
@@ -301,16 +330,22 @@ export default function EditUser() {
                 <div>
                   <p className="text-gray-500">Last Login</p>
                   <p className="font-medium">
-                    {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                    {user.lastLogin
+                      ? new Date(user.lastLogin).toLocaleDateString()
+                      : "Never"}
                   </p>
                 </div>
                 <div>
                   <p className="text-gray-500">Created</p>
-                  <p className="font-medium">{new Date(user.createdAt).toLocaleDateString()}</p>
+                  <p className="font-medium">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500">Updated</p>
-                  <p className="font-medium">{new Date(user.updatedAt).toLocaleDateString()}</p>
+                  <p className="font-medium">
+                    {new Date(user.updatedAt).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -325,11 +360,7 @@ export default function EditUser() {
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={isSaving}
-              >
+              <button type="submit" className="btn-primary" disabled={isSaving}>
                 {isSaving ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 ) : (

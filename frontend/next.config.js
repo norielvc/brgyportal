@@ -7,26 +7,23 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '**' },
-      { protocol: 'http', hostname: '**' },
+      { protocol: "https", hostname: "**" },
+      { protocol: "http", hostname: "**" },
     ],
-    formats: ['image/webp'],
+    formats: ["image/webp"],
     minimumCacheTTL: 3600,
   },
   async headers() {
     return [
       {
-        source: '/:path*',
-        headers: [
-          { key: 'X-DNS-Prefetch-Control', value: 'on' },
-        ],
+        source: "/:path*",
+        headers: [{ key: "X-DNS-Prefetch-Control", value: "on" }],
       },
     ];
   },
   async rewrites() {
     return [];
   },
-
 };
 
 module.exports = nextConfig;
