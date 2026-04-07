@@ -28,10 +28,29 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error.message });
 
   // Flatten: attach workflow_assignment info onto the certificate record
+  // Also filter out stale assignments where the cert has moved past this step
+  const stepToStatuses = {
+    'staff_review': ['staff_review', 'pending', 'submitted', 'returned'],
+    'secretary_approval': ['processing', 'secretary_approval'],
+    'captain_approval': ['captain_approval'],
+    'oic_review': ['oic_review'],
+    'Treasury': ['Treasury'],
+    'physical_inspection': ['physical_inspection'],
+  };
+
   const certificates = (data || [])
     .map((assignment) => {
       const cert = assignment.certificate_requests;
       if (!cert) return null;
+
+      // Filter out stale: if cert status doesn't match this step's expected statuses, skip
+      const expectedStatuses = stepToStatuses[assignment.step_id] || stepToStatuses[assignment.step_name?.toLowerCase().includes('staff') ? 'staff_review' : assignment.step_name?.toLowerCase().includes('secretary') ? 'secretary_approval' : assignment.step_name?.toLowerCase().includes('captain') ? 'captain_approval' : ''] || null;
+      if (expectedStatuses && !expectedStatuses.includes(cert.status)) {
+        // Auto-clean stale assignment in background
+        supabase.from('workflow_assignments').update({ status: 'approved', updated_at: new Date().toISOString() }).eq('id', assignment.id).eq('tenant_id', tenantId).then(() => {});
+        return null;
+      }
+
       return {
         ...cert,
         workflow_assignment: {
