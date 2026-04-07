@@ -982,7 +982,7 @@ export default function PortalPageContent({ initialTenantId }) {
           color: ${tenantConfig.accentColor} !important;
         }
       `}</style>
-      {/* Large Portal Header with Date/Time and Weather */}
+      {/* Portal Header */}
       <div
         className="py-3 md:py-4 relative overflow-hidden"
         style={tenantConfig.colorStyle}
@@ -991,10 +991,10 @@ export default function PortalPageContent({ initialTenantId }) {
           <div className="absolute top-[-50%] left-[-10%] w-[120%] h-[200%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/20 via-transparent to-transparent blur-3xl animate-pulse"></div>
         </div>
 
-        <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row items-center justify-between px-6 lg:px-8 relative z-10">
+        <div className="max-w-[1800px] mx-auto flex items-center justify-between px-4 lg:px-8 relative z-10">
           {/* Left Side - Logo and Title */}
-          <div className="flex items-center gap-4 lg:gap-6">
-            <div className="relative group">
+          <div className="flex items-center gap-3 lg:gap-6">
+            <div className="relative group shrink-0">
               <div className="absolute -inset-1 bg-white/20 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-500"></div>
               <img
                 src={tenantConfig.logo}
@@ -1002,32 +1002,43 @@ export default function PortalPageContent({ initialTenantId }) {
                 className="relative h-14 w-14 md:h-16 md:w-16 lg:h-24 lg:w-24 object-contain drop-shadow-2xl brightness-110"
               />
             </div>
-            <div className="text-center md:text-left">
+            <div>
               <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight drop-shadow-xl leading-tight">
                 {tenantConfig.name}
               </h1>
-              <p className="text-xs md:text-sm lg:text-base text-white/70 font-semibold uppercase tracking-[0.2em] mt-1">
+              <p className="text-[11px] sm:text-xs md:text-sm lg:text-base text-white/70 font-semibold uppercase tracking-[0.15em] mt-0.5">
                 {tenantConfig.subtitle}
               </p>
             </div>
           </div>
 
-          {/* Right Side - Date/Time and Weather */}
-          <div className="flex flex-col items-center md:items-end gap-2 mt-6 md:mt-0 text-white">
-            <div className="flex items-center gap-3 px-4 py-1.5 bg-white/10 rounded-full border border-white/10 drop-shadow-sm">
-              <Clock className="w-4 h-4 text-white/80" />
-              <span className="text-[11px] lg:text-xs font-bold tracking-wider">
+          {/* Right Side - Date/Time and Weather — hidden on small mobile */}
+          <div className="hidden sm:flex flex-col items-end gap-1.5 text-white">
+            <div className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/10">
+              <Clock className="w-3 h-3 text-white/80 shrink-0" />
+              <span className="text-[10px] lg:text-xs font-bold tracking-wider truncate max-w-[200px] lg:max-w-none">
                 {currentTime || "Loading..."}
               </span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-1.5 bg-white/10 rounded-full border border-white/10 drop-shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/10">
               {weatherInfo.icon &&
                 React.createElement(weatherInfo.icon, {
-                  className: `w-4 h-4 ${weatherInfo.color}`,
+                  className: `w-3 h-3 ${weatherInfo.color} shrink-0`,
                 })}
-              <span className="text-[11px] lg:text-xs font-bold tracking-wider uppercase">
-                Weather: {weatherInfo.text}
+              <span className="text-[10px] lg:text-xs font-bold tracking-wider uppercase">
+                {weatherInfo.text}
               </span>
+            </div>
+          </div>
+
+          {/* Mobile: show only weather icon + time compact */}
+          <div className="flex sm:hidden items-center gap-2 text-white">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-full border border-white/10">
+              {weatherInfo.icon &&
+                React.createElement(weatherInfo.icon, {
+                  className: `w-3 h-3 ${weatherInfo.color}`,
+                })}
+              <span className="text-[9px] font-bold uppercase">{weatherInfo.text}</span>
             </div>
           </div>
         </div>
