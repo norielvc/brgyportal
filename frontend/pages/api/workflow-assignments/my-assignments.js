@@ -28,26 +28,35 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error.message });
 
   // Flatten: attach workflow_assignment info onto the certificate record
-  // Also filter out stale assignments where the cert has moved past this step
-  const stepToStatuses = {
-    'staff_review': ['staff_review', 'pending', 'submitted', 'returned'],
-    'secretary_approval': ['processing', 'secretary_approval'],
-    'captain_approval': ['captain_approval'],
-    'oic_review': ['oic_review'],
-    'Treasury': ['Treasury'],
-    'physical_inspection': ['physical_inspection'],
-  };
-
+  // Filter out stale assignments where the cert has already moved past this step
   const certificates = (data || [])
     .map((assignment) => {
       const cert = assignment.certificate_requests;
       if (!cert) return null;
 
-      // Filter out stale: if cert status doesn't match this step's expected statuses, skip
-      const expectedStatuses = stepToStatuses[assignment.step_id] || stepToStatuses[assignment.step_name?.toLowerCase().includes('staff') ? 'staff_review' : assignment.step_name?.toLowerCase().includes('secretary') ? 'secretary_approval' : assignment.step_name?.toLowerCase().includes('captain') ? 'captain_approval' : ''] || null;
-      if (expectedStatuses && !expectedStatuses.includes(cert.status)) {
-        // Auto-clean stale assignment in background
-        supabase.from('workflow_assignments').update({ status: 'approved', updated_at: new Date().toISOString() }).eq('id', assignment.id).eq('tenant_id', tenantId).then(() => {});
+      const stepName = (assignment.step_name || '').toLowerCase();
+      const certStatus = cert.status || '';
+
+      // Determine if this assignment is stale based on step name vs cert status
+      let isStale = false;
+      if (stepName.includes('review request') || stepName.includes('staff')) {
+        // Step 1 is only valid when cert is at staff_review, pending, submitted, or returned
+        isStale = !['staff_review', 'pending', 'submitted', 'returned'].includes(certStatus);
+      } else if (stepName.includes('secretary')) {
+        isStale = !['processing', 'secretary_approval'].includes(certStatus);
+      } else if (stepName.includes('captain')) {
+        isStale = certStatus !== 'captain_approval';
+      } else if (stepName.includes('releasing') || stepName.includes('oic')) {
+        isStale = !['oic_review', 'ready', 'ready_for_pickup'].includes(certStatus);
+      }
+
+      if (isStale) {
+        // Auto-clean in background
+        supabase.from('workflow_assignments')
+          .update({ status: 'approved', updated_at: new Date().toISOString() })
+          .eq('id', assignment.id)
+          .eq('tenant_id', tenantId)
+          .then(() => {});
         return null;
       }
 
