@@ -5390,7 +5390,7 @@ const defaultOfficials = {
 // Certificate Preview Modal Component
 function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
   const certificateRef = useRef(null);
-  const [officials, setOfficials] = useState(defaultOfficials);
+  const [officials, setOfficials] = useState(null); // null = loading, prevents flash of wrong data
   const [isDownloading, setIsDownloading] = useState(false);
   const [history, setHistory] = useState([]);
   const [currentDate, setCurrentDate] = useState("");
@@ -5479,16 +5479,9 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
         const data = await response.json();
 
         if (data.success && data.data) {
-          // Merge with defaults to ensure structure
-          setOfficials((prev) => ({ ...defaultOfficials, ...data.data }));
-
-          // Also update localStorage to keep it fresh
-          localStorage.setItem(
-            "barangayOfficials",
-            JSON.stringify({ ...defaultOfficials, ...data.data }),
-          );
+          setOfficials(data.data);
+          localStorage.setItem("barangayOfficials", JSON.stringify(data.data));
         } else {
-          // Fallback to localStorage
           loadFromLocalStorage();
         }
       } catch (error) {
@@ -5502,10 +5495,13 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
       if (savedOfficials) {
         try {
           const parsed = JSON.parse(savedOfficials);
-          setOfficials((prev) => ({ ...defaultOfficials, ...parsed }));
+          setOfficials(parsed);
         } catch (e) {
           console.error("Error parsing saved officials", e);
+          setOfficials(defaultOfficials); // last resort fallback
         }
+      } else {
+        setOfficials(defaultOfficials); // last resort fallback
       }
     };
 
@@ -5691,16 +5687,25 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
 
           {/* Certificate Preview */}
           <div className="p-6 bg-gray-100 overflow-y-auto max-h-[calc(100vh-150px)]">
-            <ClearancePreviewForRequests
-              request={request}
-              currentDate={currentDate}
-              officials={officials}
-              certificateRef={certificateRef}
-              history={history}
-              inspectionData={inspectionData}
-              selectedTemplate={selectedTemplate}
-              orData={orData}
-            />
+            {!officials ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm font-medium text-gray-500">Loading certificate template...</p>
+                </div>
+              </div>
+            ) : (
+              <ClearancePreviewForRequests
+                request={request}
+                currentDate={currentDate}
+                officials={officials}
+                certificateRef={certificateRef}
+                history={history}
+                inspectionData={inspectionData}
+                selectedTemplate={selectedTemplate}
+                orData={orData}
+              />
+            )}
           </div>
         </div>
       </div>

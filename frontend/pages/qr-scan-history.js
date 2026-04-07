@@ -867,7 +867,6 @@ export default function QRScanHistoryPage() {
               </div>
             </div>
           </div>
-        </div>
       )}
 
       {/* Scan History Table */}
@@ -1289,7 +1288,6 @@ function ClearHistoryModal({ onClose, onConfirm, processing }) {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }
