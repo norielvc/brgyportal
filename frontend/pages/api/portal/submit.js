@@ -1,6 +1,33 @@
 import path from "path";
 import fs from "fs/promises";
 
+// In-memory rate limiter (resets on server restart — good enough for Vercel serverless)
+const ipSubmissions = new Map();
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000; // 1 hour window
+  const maxPerWindow = 5; // max 5 submissions per IP per hour
+
+  const record = ipSubmissions.get(ip) || { count: 0, resetAt: now + windowMs };
+
+  if (now > record.resetAt) {
+    // Window expired, reset
+    record.count = 1;
+    record.resetAt = now + windowMs;
+  } else {
+    record.count += 1;
+  }
+
+  ipSubmissions.set(ip, record);
+
+  if (record.count > maxPerWindow) {
+    const minutesLeft = Math.ceil((record.resetAt - now) / 60000);
+    return { blocked: true, minutesLeft };
+  }
+  return { blocked: false };
+}
+
 /**
  * UNIFIED CERTIFICATE SUBMISSION API (Next.js)
  * ------------------------------------------
@@ -9,26 +36,28 @@ import fs from "fs/promises";
  */
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res
-      .status(405)
-      .json({ success: false, message: "Method Not Allowed" });
+    return res.status(405).json({ success: false, message: "Method Not Allowed" });
+  }
+
+  // 1. Rate limit by IP
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+  const rateCheck = checkRateLimit(ip);
+  if (rateCheck.blocked) {
+    return res.status(429).json({
+      success: false,
+      message: `Too many requests. Please wait ${rateCheck.minutesLeft} minute(s) before submitting again.`,
+      code: 'RATE_LIMITED'
+    });
   }
 
   const { type, formData } = req.body;
   const tenantId = req.headers["x-tenant-id"] || formData?.tenantId;
 
   if (!type || !formData) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing type or formData" });
+    return res.status(400).json({ success: false, message: "Missing type or formData" });
   }
   if (!tenantId) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Missing tenant context (x-tenant-id header)",
-      });
+    return res.status(400).json({ success: false, message: "Missing tenant context (x-tenant-id header)" });
   }
 
   /**
@@ -72,6 +101,53 @@ export default async function handler(req, res) {
     );
 
     console.log(`📡 Cloud Submit [${canonicalType}] for tenant: ${tenantId}`);
+
+    // 2. Duplicate check — block if same resident has a pending request of same type
+    if (formData.residentId) {
+      const { data: existing } = await supabase
+        .from("certificate_requests")
+        .select("id, reference_number, status, created_at")
+        .eq("tenant_id", tenantId)
+        .eq("certificate_type", canonicalType)
+        .eq("resident_id", formData.residentId)
+        .not("status", "in", '("released","rejected","cancelled")')
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: `You already have a pending ${canonicalType.replace(/_/g, ' ')} request (Ref: ${existing.reference_number}). Please wait for it to be processed before submitting a new one.`,
+          code: 'DUPLICATE_REQUEST',
+          existingRef: existing.reference_number,
+          existingStatus: existing.status,
+        });
+      }
+
+      // 3. Cooldown check — same type within last 30 days (released/rejected can reapply)
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: recent } = await supabase
+        .from("certificate_requests")
+        .select("id, reference_number, created_at")
+        .eq("tenant_id", tenantId)
+        .eq("certificate_type", canonicalType)
+        .eq("resident_id", formData.residentId)
+        .eq("status", "released")
+        .gte("created_at", thirtyDaysAgo)
+        .limit(1)
+        .single();
+
+      if (recent) {
+        const daysAgo = Math.floor((Date.now() - new Date(recent.created_at).getTime()) / 86400000);
+        const daysLeft = 30 - daysAgo;
+        return res.status(429).json({
+          success: false,
+          message: `You recently received this certificate (${daysAgo} days ago). You can reapply in ${daysLeft} day(s).`,
+          code: 'COOLDOWN_ACTIVE',
+        });
+      }
+    }
 
     const insertData = {
       tenant_id: tenantId,

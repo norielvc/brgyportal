@@ -164,6 +164,16 @@ export default function UnifiedCertModal({
         setReferenceNumber(result.referenceNumber);
         setShowConfirmation(false);
         setShowSuccess(true);
+      } else if (result.code === 'DUPLICATE_REQUEST') {
+        setShowConfirmation(false);
+        setNotification({
+          type: 'error',
+          title: 'Existing Request Found',
+          message: result.message + (result.existingRef ? ` Track it using: ${result.existingRef}` : ''),
+        });
+      } else if (result.code === 'RATE_LIMITED' || result.code === 'COOLDOWN_ACTIVE') {
+        setShowConfirmation(false);
+        setNotification({ type: 'error', title: 'Request Blocked', message: result.message });
       } else {
         throw new Error(result.message || 'Submission failed');
       }

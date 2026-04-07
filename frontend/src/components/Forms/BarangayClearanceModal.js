@@ -529,6 +529,9 @@ export default function BarangayClearanceModal({
         setSubmittedReferenceNumber(result.referenceNumber);
         setShowConfirmationPopup(false);
         setShowSuccessModal(true);
+      } else if (result.code === 'DUPLICATE_REQUEST' || result.code === 'RATE_LIMITED' || result.code === 'COOLDOWN_ACTIVE') {
+        setShowConfirmationPopup(false);
+        setNotification({ type: 'error', title: result.code === 'DUPLICATE_REQUEST' ? 'Existing Request Found' : 'Request Blocked', message: result.message });
       } else {
         throw new Error(result.message);
       }

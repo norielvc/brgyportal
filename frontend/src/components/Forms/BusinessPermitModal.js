@@ -97,6 +97,9 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
         setReferenceNumber(result.referenceNumber);
         setShowConfirmation(false);
         setShowSuccess(true);
+      } else if (result.code === 'DUPLICATE_REQUEST' || result.code === 'RATE_LIMITED' || result.code === 'COOLDOWN_ACTIVE') {
+        setShowConfirmation(false);
+        setNotification({ type: 'error', title: result.code === 'DUPLICATE_REQUEST' ? 'Existing Request Found' : 'Request Blocked', message: result.message });
       } else {
         throw new Error(result.message || 'Submission failed');
       }
