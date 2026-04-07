@@ -550,21 +550,21 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
           <div className="fixed inset-0 z-[60] overflow-hidden">
             <div className="flex items-center justify-center w-full h-full p-4">
               <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowConfirmationPopup(false)} />
-              <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+              <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
                 {/* Header */}
-                <div className="bg-black px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="bg-black px-10 py-7 flex items-center justify-between shrink-0">
                    <div>
-                     <h2 className="text-lg font-black text-white uppercase tracking-tighter leading-tight">Confirmation</h2>
-                     <p className="text-white/40 text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5">Review your application before submitting</p>
+                     <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-tight">Confirmation</h2>
+                     <p className="text-white/40 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">Review your application before submitting</p>
                    </div>
-                   <button onClick={() => setShowConfirmationPopup(false)} className="bg-white/10 p-2 rounded-xl text-white/40 hover:text-white hover:bg-red-500/20 transition-all group">
-                      <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                   <button onClick={() => setShowConfirmationPopup(false)} className="bg-white/10 p-3 rounded-2xl text-white/40 hover:text-white hover:bg-red-500/20 transition-all group">
+                      <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
                    </button>
                 </div>
 
                 {/* Cards */}
-                <div className="p-5 bg-gray-50">
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-8 bg-gray-50">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {Object.entries(formData).map(([k, v]) => {
                         const skip = ['residentId', 'pending_case', 'case_record_history', 'age', 'sex', 'civilStatus', 'address', 'dateOfBirth', 'placeOfBirth'];
                         if (!v || skip.includes(k)) return null;
@@ -577,30 +577,30 @@ export default function BarangayClearanceModal({ isOpen, onClose, isDemo = false
                         const label = k.replace(/([A-Z])/g, ' $1').toUpperCase();
 
                         return (
-                          <div key={k} className={`flex items-start gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm ${k === 'purpose' ? 'sm:col-span-2' : ''}`}>
-                            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
-                              <Icon className="w-4 h-4" />
+                          <div key={k} className={`flex items-start gap-4 p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group ${k === 'purpose' ? 'sm:col-span-2' : ''}`}>
+                            <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition-all shrink-0">
+                              <Icon className="w-5 h-5" />
                             </div>
                             <div className="min-w-0">
-                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] block">{label}</span>
-                              <span className="text-sm font-black text-black leading-tight break-words uppercase">{v.toString()}</span>
+                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">{label}</span>
+                              <span className="text-lg font-black text-black leading-tight break-words uppercase">{v.toString()}</span>
                             </div>
                           </div>
                         );
                       })}
                    </div>
 
-                   <div className="mt-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                      <p className="text-emerald-700 text-[10px] font-bold uppercase tracking-wide">All details validated against the official directory.</p>
+                   <div className="mt-4 p-5 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-4">
+                      <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />
+                      <p className="text-emerald-700 text-[11px] font-bold uppercase tracking-wide">All details validated against the official directory.</p>
                    </div>
                 </div>
 
                 {/* Footer */}
-                <div className="border-t bg-white px-5 py-4 flex justify-between items-center shrink-0">
-                  <button onClick={() => setShowConfirmationPopup(false)} className="px-4 py-2 font-black uppercase tracking-[0.2em] text-[9px] text-gray-400 hover:text-black transition-all">← Back / Edit</button>
-                  <button onClick={handleProceedSubmission} className="px-6 py-3 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2">
-                    {isSubmitting ? 'Submitting...' : (<>Confirm Submission <ChevronRight className="w-3.5 h-3.5" /></>)}
+                <div className="border-t bg-white px-8 py-6 flex justify-between items-center shrink-0">
+                  <button onClick={() => setShowConfirmationPopup(false)} className="px-6 py-3 font-black uppercase tracking-[0.2em] text-[10px] text-gray-400 hover:text-black transition-all">← Back / Edit</button>
+                  <button onClick={handleProceedSubmission} className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3">
+                    {isSubmitting ? 'Submitting...' : (<>Confirm Submission <ChevronRight className="w-4 h-4" /></>)}
                   </button>
                 </div>
               </div>
