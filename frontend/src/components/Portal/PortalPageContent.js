@@ -1055,6 +1055,15 @@ export default function PortalPageContent({ initialTenantId }) {
                   {link.label}
                 </a>
               ))}
+              {/* Track Request */}
+              <a
+                href="#track"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all hover:-translate-y-0.5"
+                style={{ color: tenantConfig.primaryColor, borderColor: `${tenantConfig.primaryColor}40`, backgroundColor: `${tenantConfig.primaryColor}08` }}
+              >
+                <Search className="w-3.5 h-3.5" />
+                Track Request
+              </a>
               <button
                 onClick={() => router.push("/login")}
                 className="group relative px-7 py-2.5 rounded-full text-sm font-bold text-white overflow-hidden transition-all shadow-[0_10px_20px_-5px_rgba(0,0,0,0.15)] hover:shadow-[0_15px_25px_-5px_rgba(0,0,0,0.2)] transform hover:-translate-y-0.5 active:scale-95 ml-2"
@@ -1098,6 +1107,15 @@ export default function PortalPageContent({ initialTenantId }) {
                 {item}
               </a>
             ))}
+            <a
+              href="#track"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 py-3 font-bold text-lg border-b border-gray-50"
+              style={{ color: tenantConfig.primaryColor }}
+            >
+              <Search className="w-5 h-5" />
+              Track My Request
+            </a>
             <button
               onClick={() => router.push("/login")}
               className="w-full text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl mt-4"
@@ -1541,6 +1559,23 @@ export default function PortalPageContent({ initialTenantId }) {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      </section>
+
+      {/* Track Your Request Section */}
+      <section id="track" className="py-16 md:py-20 w-full border-t border-gray-100" style={{ background: `linear-gradient(135deg, ${tenantConfig.primaryColor}08 0%, ${tenantConfig.accentColor}05 100%)` }}>
+        <div className="max-w-[1600px] mx-auto px-8 md:px-12 lg:px-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest mb-4 border" style={{ color: tenantConfig.primaryColor, borderColor: `${tenantConfig.primaryColor}30`, backgroundColor: `${tenantConfig.primaryColor}08` }}>
+              <Search className="w-3.5 h-3.5" />
+              Request Tracker
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight mb-3">
+              Track Your <span style={{ color: tenantConfig.accentColor }}>Certificate</span>
+            </h2>
+            <p className="text-gray-500 text-base mb-8">Enter your reference number to check the current status of your certificate request.</p>
+            <TrackRequestWidget tenantId={tenantId} tenantConfig={tenantConfig} />
           </div>
         </div>
       </section>
@@ -3429,6 +3464,163 @@ export default function PortalPageContent({ initialTenantId }) {
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
       `}</style>
+    </div>
+  );
+}
+
+
+// Track Request Widget Component
+function TrackRequestWidget({ tenantId, tenantConfig }) {
+  const [refNumber, setRefNumber] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [result, setResult] = React.useState(null);
+  const [error, setError] = React.useState('');
+
+  const statusConfig = {
+    staff_review:     { label: 'Under Review',        color: 'bg-blue-100 text-blue-700',   step: 1 },
+    processing:       { label: 'Processing',           color: 'bg-indigo-100 text-indigo-700', step: 2 },
+    secretary_approval: { label: 'Secretary Approval', color: 'bg-purple-100 text-purple-700', step: 3 },
+    captain_approval: { label: 'Captain Approval',    color: 'bg-violet-100 text-violet-700', step: 4 },
+    oic_review:       { label: 'Ready for Release',   color: 'bg-teal-100 text-teal-700',   step: 5 },
+    ready:            { label: 'Ready for Pickup',    color: 'bg-green-100 text-green-700', step: 6 },
+    ready_for_pickup: { label: 'Ready for Pickup',    color: 'bg-green-100 text-green-700', step: 6 },
+    released:         { label: 'Released / Claimed',  color: 'bg-gray-100 text-gray-600',   step: 7 },
+    rejected:         { label: 'Rejected',            color: 'bg-red-100 text-red-700',     step: 0 },
+    returned:         { label: 'Returned for Revision', color: 'bg-orange-100 text-orange-700', step: 1 },
+    cancelled:        { label: 'Cancelled',           color: 'bg-gray-100 text-gray-500',   step: 0 },
+  };
+
+  const steps = ['Submitted', 'Under Review', 'Processing', 'Approval', 'Ready', 'Released'];
+
+  const handleTrack = async (e) => {
+    e.preventDefault();
+    if (!refNumber.trim()) return;
+    setLoading(true);
+    setError('');
+    setResult(null);
+    try {
+      const res = await fetch(`/api/portal/track?ref=${encodeURIComponent(refNumber.trim())}`, {
+        headers: { 'x-tenant-id': tenantId }
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setResult(data.data);
+      } else {
+        setError('Reference number not found. Please check and try again.');
+      }
+    } catch {
+      setError('Unable to check status. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cfg = result ? (statusConfig[result.status] || { label: result.status, color: 'bg-gray-100 text-gray-600', step: 1 }) : null;
+
+  return (
+    <div className="w-full">
+      <form onSubmit={handleTrack} className="flex gap-3 mb-6">
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={refNumber}
+            onChange={e => { setRefNumber(e.target.value); setError(''); setResult(null); }}
+            placeholder="e.g. BC-2026-00001"
+            className="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:border-transparent shadow-sm"
+            style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !refNumber.trim()}
+          className="px-6 py-3.5 text-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-md transition-all active:scale-95 disabled:opacity-50"
+          style={{ backgroundColor: tenantConfig.primaryColor }}
+        >
+          {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search className="w-4 h-4" />}
+          {loading ? 'Checking...' : 'Track'}
+        </button>
+      </form>
+
+      {error && (
+        <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-600 font-medium">
+          {error}
+        </div>
+      )}
+
+      {result && cfg && (
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden text-left animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Status Header */}
+          <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mb-1">Reference Number</p>
+              <p className="text-lg font-bold text-gray-900 font-mono">{result.reference_number}</p>
+            </div>
+            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
+          </div>
+
+          {/* Applicant Info */}
+          <div className="px-6 py-4 border-b border-gray-50 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">Applicant</p>
+              <p className="text-sm font-semibold text-gray-800">{result.full_name || result.applicant_name || '—'}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">Certificate Type</p>
+              <p className="text-sm font-semibold text-gray-800 capitalize">{result.certificate_type?.replace(/_/g, ' ')}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">Date Submitted</p>
+              <p className="text-sm font-semibold text-gray-800">{result.created_at ? new Date(result.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">Last Updated</p>
+              <p className="text-sm font-semibold text-gray-800">{result.updated_at ? new Date(result.updated_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
+            </div>
+          </div>
+
+          {/* Progress Steps */}
+          {!['rejected', 'cancelled'].includes(result.status) && (
+            <div className="px-6 py-5">
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-4">Progress</p>
+              <div className="flex items-center gap-0">
+                {steps.map((step, i) => {
+                  const stepNum = i + 1;
+                  const isComplete = cfg.step > stepNum;
+                  const isCurrent = cfg.step === stepNum || (stepNum === 1 && cfg.step >= 1);
+                  const isActive = cfg.step >= stepNum;
+                  return (
+                    <React.Fragment key={step}>
+                      <div className="flex flex-col items-center">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${isComplete ? 'text-white' : isCurrent ? 'text-white' : 'bg-gray-100 text-gray-400'}`}
+                          style={isActive ? { backgroundColor: tenantConfig.primaryColor } : {}}>
+                          {isComplete ? '✓' : stepNum}
+                        </div>
+                        <p className={`text-[9px] font-medium mt-1.5 text-center w-14 leading-tight ${isActive ? 'text-gray-700' : 'text-gray-400'}`}>{step}</p>
+                      </div>
+                      {i < steps.length - 1 && (
+                        <div className={`flex-1 h-0.5 mb-5 mx-1 rounded-full transition-all`}
+                          style={{ backgroundColor: cfg.step > stepNum ? tenantConfig.primaryColor : '#e5e7eb' }} />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {result.status === 'rejected' && (
+            <div className="px-6 py-4 bg-red-50 border-t border-red-100">
+              <p className="text-sm text-red-600 font-medium">Your request was not approved. Please visit the Barangay Hall for more information.</p>
+            </div>
+          )}
+          {['ready', 'ready_for_pickup', 'oic_review'].includes(result.status) && (
+            <div className="px-6 py-4 border-t border-gray-50" style={{ backgroundColor: `${tenantConfig.primaryColor}08` }}>
+              <p className="text-sm font-semibold" style={{ color: tenantConfig.primaryColor }}>🎉 Your certificate is ready! Please visit the Barangay Hall to claim it. Bring a valid ID.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

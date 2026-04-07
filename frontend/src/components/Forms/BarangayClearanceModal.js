@@ -909,18 +909,31 @@ export default function BarangayClearanceModal({
                       return (
                         <div
                           key={k}
-                          className={`flex items-start gap-4 p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group ${k === "purpose" ? "sm:col-span-2" : ""}`}
+                          className={`flex items-start gap-4 p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group ${k === "purpose" || k === "email" ? "sm:col-span-2" : ""}`}
                         >
                           <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition-all shrink-0">
                             <Icon className="w-5 h-5" />
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">
                               {label}
                             </span>
-                            <span className="text-lg font-black text-black leading-tight break-words uppercase">
-                              {v.toString()}
-                            </span>
+                            {k === "purpose" ? (
+                              <div className="space-y-1">
+                                {v.toString().split(/\n|(?<=\.)(?=\s*[A-Z])|(?<=REQUIREMENT)(?=\s)/g)
+                                  .map(s => s.trim()).filter(Boolean)
+                                  .map((line, i) => (
+                                    <div key={i} className="flex items-start gap-2">
+                                      <span className="text-gray-300 mt-1 shrink-0">•</span>
+                                      <span className="text-base font-black text-black leading-snug uppercase">{line}</span>
+                                    </div>
+                                  ))}
+                              </div>
+                            ) : (
+                              <span className="text-lg font-black text-black leading-tight break-all uppercase">
+                                {v.toString()}
+                              </span>
+                            )}
                           </div>
                         </div>
                       );

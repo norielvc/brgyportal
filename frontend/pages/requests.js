@@ -2338,124 +2338,60 @@ function RequestDetailsModal({
         style={{ height: "92vh" }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-8 py-5 flex items-center justify-between shrink-0">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-7 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
-            <div className="bg-white/20 p-2.5 rounded-xl">
-              <FileText className="w-7 h-7 text-white" />
+            <div className="bg-white/10 p-2 rounded-xl border border-white/10">
+              <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Request Details</h2>
-              <p className="text-blue-200 text-sm font-semibold">
-                {request.reference_number}
-              </p>
+              <h2 className="text-sm font-semibold text-white">Request Details</h2>
+              <p className="text-blue-200/60 text-[11px] font-mono">{request.reference_number}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isEditing &&
-              canAct &&
-              !["oic_review", "ready", "ready_for_pickup"].includes(
-                request.status,
-              ) && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="px-3 py-1.5 bg-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/30 flex items-center gap-2 transition-colors"
-                  title="Edit Request Details"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit Details</span>
+            {!isEditing && canAct && !["oic_review", "ready", "ready_for_pickup"].includes(request.status) && (
+                <button onClick={() => setIsEditing(true)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 flex items-center gap-2 transition-colors border border-white/10">
+                  <Edit className="w-3.5 h-3.5" /><span>Edit</span>
                 </button>
               )}
             {isEditing && (
               <>
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50"
-                >
-                  {isSaving ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent animate-spin rounded-full" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  <span>{isSaving ? "Saving..." : "Save Changes"}</span>
+                <button onClick={handleSave} disabled={isSaving} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 flex items-center gap-2 transition-colors disabled:opacity-50">
+                  {isSaving ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin rounded-full" /> : <Save className="w-3.5 h-3.5" />}
+                  <span>{isSaving ? "Saving..." : "Save"}</span>
                 </button>
-                <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    setEditFormData({
-                      full_name:
-                        request.full_name || request.applicant_name || "",
-                      contact_number: request.contact_number || "",
-                      age: request.age || "",
-                      sex: request.sex || "",
-                      civil_status: request.civil_status || "",
-                      date_of_birth: request.date_of_birth || "",
-                      place_of_birth: request.place_of_birth || "",
-                      address: request.address || "",
-                      purpose: request.purpose || "",
-                      date_of_death: request.date_of_death || "",
-                      cause_of_death: request.cause_of_death || "",
-                      covid_related: request.covid_related || false,
-                      requestor_name: request.requestor_name || "",
-                      guardian_name: request.guardian_name || "",
-                      guardian_relationship:
-                        request.guardian_relationship || "",
-                      partner_full_name: request.partner_full_name || "",
-                      partner_age: request.partner_age || "",
-                      partner_sex: request.partner_sex || "",
-                      partner_date_of_birth:
-                        request.partner_date_of_birth || "",
-                      no_of_children: request.no_of_children || "",
-                      living_together_years:
-                        request.living_together_years || "",
-                      living_together_months:
-                        request.living_together_months || "",
-                      date_of_examination: request.date_of_examination || "",
-                      usaping_barangay: request.usaping_barangay || "",
-                      date_of_hearing: request.date_of_hearing || "",
-                    });
-                  }}
-                  className="px-3 py-1.5 bg-gray-500 text-white rounded-lg text-sm font-medium hover:bg-gray-600 flex items-center transition-colors"
-                >
+                <button onClick={() => { setIsEditing(false); setEditFormData({ full_name: request.full_name || request.applicant_name || "", contact_number: request.contact_number || "", age: request.age || "", sex: request.sex || "", civil_status: request.civil_status || "", date_of_birth: request.date_of_birth || "", place_of_birth: request.place_of_birth || "", address: request.address || "", purpose: request.purpose || "", date_of_death: request.date_of_death || "", cause_of_death: request.cause_of_death || "", covid_related: request.covid_related || false, requestor_name: request.requestor_name || "", guardian_name: request.guardian_name || "", guardian_relationship: request.guardian_relationship || "", partner_full_name: request.partner_full_name || "", partner_age: request.partner_age || "", partner_sex: request.partner_sex || "", partner_date_of_birth: request.partner_date_of_birth || "", no_of_children: request.no_of_children || "", living_together_years: request.living_together_years || "", living_together_months: request.living_together_months || "", date_of_examination: request.date_of_examination || "", usaping_barangay: request.usaping_barangay || "", date_of_hearing: request.date_of_hearing || "" }); }} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 transition-colors border border-white/10">
                   Cancel
                 </button>
               </>
             )}
-            <button
-              onClick={() => setShowPdfPreview(true)}
-              className="px-3 py-1.5 bg-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/30 flex items-center gap-2 transition-colors"
-              title="View Certificate Preview"
-            >
-              <Eye className="w-4 h-4" />
-              <span>Preview PDF</span>
+            <button onClick={() => setShowPdfPreview(true)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 flex items-center gap-2 transition-colors border border-white/10">
+              <Eye className="w-3.5 h-3.5" /><span>Preview PDF</span>
             </button>
-            <button
-              onClick={onClose}
-              className="text-white/80 hover:text-white p-1 hover:bg-white/10 rounded-lg"
-            >
-              <XCircle className="w-6 h-6" />
+            <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-colors ml-1">
+              <XCircle className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-gray-100 bg-gray-50/50 px-6 pt-2 shrink-0">
+        <div className="flex border-b border-blue-100 bg-blue-50/30 px-6 shrink-0">
           <button
             onClick={() => setActiveTab("details")}
-            className={`pb-3 pt-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+            className={`pb-3 pt-3 px-4 text-sm font-semibold border-b-2 transition-colors ${
               activeTab === "details"
                 ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+                : "border-transparent text-gray-400 hover:text-gray-600"
             }`}
           >
             Request Details
           </button>
           <button
             onClick={() => setActiveTab("history")}
-            className={`pb-3 pt-2 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            className={`pb-3 pt-3 px-4 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === "history"
                 ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+                : "border-transparent text-gray-400 hover:text-gray-600"
             }`}
           >
             <span>History & Comments</span>
@@ -2465,7 +2401,7 @@ function RequestDetailsModal({
           </button>
         </div>
 
-        <div className="p-7 overflow-y-auto overflow-x-hidden flex-1 space-y-6 custom-scrollbar">
+        <div className="p-6 overflow-y-auto overflow-x-hidden flex-1 space-y-5 custom-scrollbar bg-slate-50/50">
           {activeTab === "details" && (
             <>
               {/* OIC / Ready Guidance Banner */}
@@ -2538,13 +2474,13 @@ function RequestDetailsModal({
 
               {/* Data Mismatch Warning */}
               {hasMismatch && !isEditing && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="bg-amber-50/80 border border-amber-100 rounded-xl p-3.5 mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="flex items-start gap-3">
                     <div className="bg-amber-100 p-2 rounded-lg text-amber-600">
                       <AlertTriangle className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-[11px] font-black text-amber-900 uppercase tracking-widest">
+                      <h4 className="text-xs font-semibold text-amber-800">
                         Information Mismatch Detected
                       </h4>
                       <p className="text-xs text-amber-800 mt-1 font-medium italic">
@@ -2558,7 +2494,7 @@ function RequestDetailsModal({
                     <button
                       onClick={handleSyncToResident}
                       disabled={isSyncing}
-                      className="self-center px-4 py-2 bg-amber-600 text-white rounded-lg text-[11px] font-black hover:bg-amber-700 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 tracking-widest"
+                      className="self-center px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 tracking-widest"
                     >
                       {isSyncing ? (
                         <RefreshCw className="w-3 h-3 animate-spin" />
@@ -2572,9 +2508,9 @@ function RequestDetailsModal({
               )}
 
               {/* Compact Applicant Info Grid */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <div className="bg-white rounded-2xl p-6 border border-blue-50 shadow-sm">
                 <div className="flex justify-between items-center mb-4 border-l-4 border-blue-500 pl-4">
-                  <h3 className="font-black text-gray-900 flex items-center gap-2 text-sm uppercase tracking-[0.2em]">
+                  <h3 className="font-semibold text-blue-700 flex items-center gap-2 text-xs uppercase tracking-widest">
                     <User className="w-4 h-4 text-blue-500" />
                     Applicant Information
                   </h3>
@@ -2637,7 +2573,7 @@ function RequestDetailsModal({
                     {isEditing ? (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             First Name
                           </p>
                           <input
@@ -2649,7 +2585,7 @@ function RequestDetailsModal({
                           />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Middle Name
                           </p>
                           <input
@@ -2661,7 +2597,7 @@ function RequestDetailsModal({
                           />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Last Name
                           </p>
                           <input
@@ -2673,7 +2609,7 @@ function RequestDetailsModal({
                           />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Suffix
                           </p>
                           <input
@@ -2722,7 +2658,7 @@ function RequestDetailsModal({
                             </button>
                           )}
                         </div>
-                        <p className="font-black text-gray-900 uppercase text-2xl tracking-tight leading-tight">
+                        <p className="font-bold text-gray-900 text-xl tracking-tight">
                           {request.applicant_name ||
                             request.full_name ||
                             "NOT RECORDED"}
@@ -2759,7 +2695,7 @@ function RequestDetailsModal({
                     {/* Key fields row */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                           Date of Birth
                         </p>
                         {isEditing ? (
@@ -2771,7 +2707,7 @@ function RequestDetailsModal({
                             className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
                           />
                         ) : (
-                          <p className="font-black text-gray-900 text-base font-mono">
+                          <p className="font-semibold text-gray-800 text-sm font-mono">
                             {request.date_of_birth ||
                               (request.residents?.date_of_birth
                                 ? new Date(request.residents.date_of_birth)
@@ -2782,7 +2718,7 @@ function RequestDetailsModal({
                         )}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                           Civil Status
                         </p>
                         {isEditing ? (
@@ -2799,25 +2735,25 @@ function RequestDetailsModal({
                             <option value="CO-HABITING">CO-HABITING</option>
                           </select>
                         ) : (
-                          <p className="font-black text-gray-900 text-base uppercase">
+                          <p className="font-semibold text-gray-800 text-sm uppercase">
                             {request.civil_status || "NOT RECORDED"}
                           </p>
                         )}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                           Age / Sex
                         </p>
-                        <p className="font-black text-gray-900 text-base uppercase">
+                        <p className="font-semibold text-gray-800 text-sm uppercase">
                           {displayAge || "-"} / {request.sex || "-"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                           Contact No.
                         </p>
                         <div className="flex items-center gap-2">
-                          <p className="font-black text-gray-900 text-base font-mono tracking-tighter">
+                          <p className="font-semibold text-gray-800 text-sm font-mono tracking-tighter">
                             {request.contact_number || "NOT RECORDED"}
                           </p>
                           {!isEditing && request.contact_number && (
@@ -2840,7 +2776,7 @@ function RequestDetailsModal({
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                      <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                         Place of Birth
                       </p>
                       {isEditing ? (
@@ -2852,7 +2788,7 @@ function RequestDetailsModal({
                           className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
                         />
                       ) : (
-                        <p className="font-black text-gray-900 text-base uppercase">
+                        <p className="font-semibold text-gray-800 text-sm uppercase">
                           {request.place_of_birth || "NOT RECORDED"}
                         </p>
                       )}
@@ -2862,7 +2798,7 @@ function RequestDetailsModal({
                   {/* RIGHT COLUMN */}
                   <div className="space-y-4">
                     <div>
-                      <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                      <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                         Residential Address
                       </p>
                       {isEditing ? (
@@ -2874,7 +2810,7 @@ function RequestDetailsModal({
                           rows="3"
                         />
                       ) : (
-                        <p className="font-bold text-gray-800 text-base uppercase leading-relaxed">
+                        <p className="font-medium text-gray-700 text-sm leading-relaxed">
                           {request.address || "NOT RECORDED"}
                         </p>
                       )}
@@ -2886,7 +2822,7 @@ function RequestDetailsModal({
                       "barangay_residency",
                     ].includes(request.certificate_type) && (
                       <div>
-                        <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                           Purpose of Request
                         </p>
                         {isEditing ? (
@@ -2937,7 +2873,7 @@ function RequestDetailsModal({
                           </>
                         ) : (
                           <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <p className="font-black text-gray-900 text-base uppercase leading-relaxed whitespace-pre-wrap">
+                            <p className="font-semibold text-gray-800 text-sm uppercase leading-relaxed whitespace-pre-wrap">
                               {request.purpose || "NOT SPECIFIED"}
                             </p>
                           </div>
@@ -2962,7 +2898,7 @@ function RequestDetailsModal({
                     {isEditing ? (
                       <>
                         <div className="col-span-1 md:col-span-2">
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Partner Full Name
                           </p>
                           <input
@@ -2974,7 +2910,7 @@ function RequestDetailsModal({
                           />
                         </div>
                         <div className="col-span-1">
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Date of Birth
                           </p>
                           <input
@@ -2992,7 +2928,7 @@ function RequestDetailsModal({
                           />
                         </div>
                         <div className="col-span-1">
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Sex
                           </p>
                           <select
@@ -3007,7 +2943,7 @@ function RequestDetailsModal({
                           </select>
                         </div>
                         <div className="col-span-1 md:col-span-2">
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Civil Status
                           </p>
                           <input
@@ -3019,7 +2955,7 @@ function RequestDetailsModal({
                           />
                         </div>
                         <div className="col-span-2">
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Partner Address
                           </p>
                           <input
@@ -3031,7 +2967,7 @@ function RequestDetailsModal({
                           />
                         </div>
                         <div className="col-span-2 md:col-span-1">
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Years Living Together
                           </p>
                           <input
@@ -3043,7 +2979,7 @@ function RequestDetailsModal({
                           />
                         </div>
                         <div className="col-span-2 md:col-span-1">
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             Months
                           </p>
                           <input
@@ -3055,7 +2991,7 @@ function RequestDetailsModal({
                           />
                         </div>
                         <div className="col-span-2 md:col-span-2">
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                             No. of Children
                           </p>
                           <input
@@ -3080,7 +3016,7 @@ function RequestDetailsModal({
                               : "col-span-2 md:col-span-2"
                           }
                         >
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Partner Name
                           </p>
                           <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight truncate">
@@ -3088,18 +3024,18 @@ function RequestDetailsModal({
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Date of Birth
                           </p>
-                          <p className="font-black text-gray-900 text-base font-mono whitespace-nowrap">
+                          <p className="font-semibold text-gray-800 text-sm font-mono whitespace-nowrap">
                             {request.partner_date_of_birth || "N/A"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Age / Sex
                           </p>
-                          <p className="font-black text-gray-900 text-base uppercase">
+                          <p className="font-semibold text-gray-800 text-sm uppercase">
                             {(calculateAge(request.partner_date_of_birth) ||
                               request.partner_age ||
                               "-") +
@@ -3108,7 +3044,7 @@ function RequestDetailsModal({
                           </p>
                         </div>
                         <div className="col-span-2 md:col-span-2">
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Partner Address
                           </p>
                           <p
@@ -3121,15 +3057,15 @@ function RequestDetailsModal({
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Previous Status
                           </p>
-                          <p className="font-black text-gray-900 text-base uppercase">
+                          <p className="font-semibold text-gray-800 text-sm uppercase">
                             {request.partner_civil_status || "CO-HABITING"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             No. of Children
                           </p>
                           <p className="font-black text-gray-900 text-sm font-mono tracking-tighter">
@@ -3137,10 +3073,10 @@ function RequestDetailsModal({
                           </p>
                         </div>
                         <div className="col-span-2">
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Partnership Length
                           </p>
-                          <p className="font-black text-gray-900 text-base uppercase">
+                          <p className="font-semibold text-gray-800 text-sm uppercase">
                             {request.living_together_years || "0"} YRS,{" "}
                             {request.living_together_months || "0"} MOS
                           </p>
@@ -3175,7 +3111,7 @@ function RequestDetailsModal({
                               : "col-span-2"
                           }
                         >
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Business Name
                           </p>
                           <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight truncate">
@@ -3183,15 +3119,15 @@ function RequestDetailsModal({
                           </p>
                         </div>
                         <div className="col-span-1 md:col-span-2">
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Nature of Business
                           </p>
-                          <p className="font-black text-gray-900 text-base uppercase">
+                          <p className="font-semibold text-gray-800 text-sm uppercase">
                             {additionalDetails?.natureOfBusiness || "N/A"}
                           </p>
                         </div>
                         <div className="col-span-2 md:col-span-4">
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Business Address
                           </p>
                           <p className="font-extrabold text-gray-900 text-[13px] uppercase leading-relaxed">
@@ -3199,15 +3135,15 @@ function RequestDetailsModal({
                           </p>
                         </div>
                         <div className="col-span-1 md:col-span-2">
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Contact Person
                           </p>
-                          <p className="font-black text-gray-900 text-base uppercase">
+                          <p className="font-semibold text-gray-800 text-sm uppercase">
                             {additionalDetails?.contactPerson || "N/A"}
                           </p>
                         </div>
                         <div className="col-span-1 md:col-span-2">
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Clearance Type
                           </p>
                           <span className="font-black text-emerald-700 bg-emerald-50 inline-block px-2 py-0.5 rounded border border-emerald-200 text-[11px] uppercase tracking-widest mt-1">
@@ -3347,7 +3283,7 @@ function RequestDetailsModal({
 
                           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 py-6 border-y border-gray-100">
                             <div>
-                              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 Date and Time of Visit
                               </p>
                               <input
@@ -3363,7 +3299,7 @@ function RequestDetailsModal({
                               />
                             </div>
                             <div>
-                              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 Name of Owner / Representative
                               </p>
                               <input
@@ -3469,7 +3405,7 @@ function RequestDetailsModal({
                         {isEditing ? (
                           <>
                             <div>
-                              <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 Guardian's Full Name
                               </p>
                               <input
@@ -3481,7 +3417,7 @@ function RequestDetailsModal({
                               />
                             </div>
                             <div>
-                              <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 Relationship
                               </p>
                               <select
@@ -3507,7 +3443,7 @@ function RequestDetailsModal({
                         ) : (
                           <>
                             <div>
-                              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                                 Guardian Name
                               </p>
                               <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight">
@@ -3515,10 +3451,10 @@ function RequestDetailsModal({
                               </p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                                 Relationship
                               </p>
-                              <p className="font-black text-gray-900 text-base uppercase">
+                              <p className="font-semibold text-gray-800 text-sm uppercase">
                                 {request.guardian_relationship ||
                                   "NOT SPECIFIED"}
                               </p>
@@ -3564,7 +3500,7 @@ function RequestDetailsModal({
                         {isDeath && (
                           <>
                             <div className="col-span-1">
-                              <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 Date of Death
                               </p>
                               <input
@@ -3582,7 +3518,7 @@ function RequestDetailsModal({
                               />
                             </div>
                             <div className="col-span-1">
-                              <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 Cause of Death
                               </p>
                               <input
@@ -3594,7 +3530,7 @@ function RequestDetailsModal({
                               />
                             </div>
                             <div className="col-span-1">
-                              <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 COVID-19
                               </p>
                               <select
@@ -3619,7 +3555,7 @@ function RequestDetailsModal({
                         {isMedicoLegal && (
                           <>
                             <div className="col-span-1">
-                              <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 Date of Exam
                               </p>
                               <input
@@ -3637,7 +3573,7 @@ function RequestDetailsModal({
                               />
                             </div>
                             <div className="col-span-1">
-                              <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 Usaping Brgy
                               </p>
                               <input
@@ -3649,7 +3585,7 @@ function RequestDetailsModal({
                               />
                             </div>
                             <div className="col-span-1">
-                              <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-2">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                 Date of Hearing
                               </p>
                               <input
@@ -3673,10 +3609,10 @@ function RequestDetailsModal({
                       <>
                         {isDeath && (
                           <div>
-                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                            <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                               Date of Death
                             </p>
-                            <p className="font-black text-gray-900 text-base font-mono">
+                            <p className="font-semibold text-gray-800 text-sm font-mono">
                               {request.date_of_death ||
                               request.residents?.date_of_death
                                 ? new Date(
@@ -3697,10 +3633,10 @@ function RequestDetailsModal({
                         {isMedicoLegal && (
                           <>
                             <div>
-                              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                                 Date of Exam
                               </p>
-                              <p className="font-black text-gray-900 text-base font-mono whitespace-nowrap">
+                              <p className="font-semibold text-gray-800 text-sm font-mono whitespace-nowrap">
                                 {request.date_of_examination
                                   ? new Date(request.date_of_examination)
                                       .toLocaleDateString("en-US", {
@@ -3713,18 +3649,18 @@ function RequestDetailsModal({
                               </p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                                 Usaping Brgy No.
                               </p>
-                              <p className="font-black text-gray-900 text-base font-mono">
+                              <p className="font-semibold text-gray-800 text-sm font-mono">
                                 {request.usaping_barangay || "NOT RECORDED"}
                               </p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                                 Date of Hearing
                               </p>
-                              <p className="font-black text-gray-900 text-base font-mono whitespace-nowrap">
+                              <p className="font-semibold text-gray-800 text-sm font-mono whitespace-nowrap">
                                 {request.date_of_hearing
                                   ? new Date(request.date_of_hearing)
                                       .toLocaleDateString("en-US", {
@@ -3740,11 +3676,11 @@ function RequestDetailsModal({
                         )}
 
                         <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Cause / Purpose
                           </p>
                           <p
-                            className="font-black text-gray-900 text-base uppercase truncate"
+                            className="font-semibold text-gray-800 text-sm uppercase truncate"
                             title={
                               request.cause_of_death ||
                               request.purpose ||
@@ -3757,7 +3693,7 @@ function RequestDetailsModal({
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Current Status
                           </p>
                           <div className="mt-1">
@@ -4610,12 +4546,12 @@ function RequestDetailsModal({
               )}
 
               {currentStep?.status === "staff_review" ? (
-                <div className="flex gap-4 justify-end">
+                <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-blue-50">
                   {request.status === "physical_inspection" ? (
                     <button
                       onClick={() => handleSaveInspectionResults(true)}
                       disabled={isUpdatingInspection}
-                      className={`px-10 py-3.5 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-lg shadow-blue-200 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                      className={`px-5 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                     >
                       <CheckCircle className="w-4 h-4" />
                       Submit Inspection Result & Forward
@@ -4625,7 +4561,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "reject")}
                         disabled={isEditing}
-                        className={`px-8 py-3.5 bg-white border-2 border-red-200 text-red-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
+                        className={`px-4 py-2 bg-white border border-red-200 text-red-500 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
                       >
                         <XCircle className="w-4 h-4" />
                         Mark as Ineligible
@@ -4633,7 +4569,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "approve")}
                         disabled={isEditing}
-                        className={`px-10 py-3.5 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-lg shadow-blue-200 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                        className={`px-5 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                       >
                         <CheckCircle className="w-4 h-4" />
                         Verify & Forward
@@ -4644,7 +4580,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "reject")}
                         disabled={isEditing}
-                        className={`px-8 py-3.5 bg-white border-2 border-red-200 text-red-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
+                        className={`px-4 py-2 bg-white border border-red-200 text-red-500 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
                       >
                         <XCircle className="w-4 h-4" />
                         Reject Application
@@ -4665,7 +4601,7 @@ function RequestDetailsModal({
                 </div>
               ) : currentStep?.status === "physical_inspection" ||
                 request.status === "physical_inspection" ? (
-                <div className="flex gap-4 justify-end">
+                <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-blue-50">
                   <button
                     onClick={() => handleSaveInspectionResults(false)}
                     disabled={isUpdatingInspection}
@@ -4677,7 +4613,7 @@ function RequestDetailsModal({
                   <button
                     onClick={() => onAction(request, "reject")}
                     disabled={isEditing}
-                    className={`px-6 py-3.5 bg-white border-2 border-red-200 text-red-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
+                    className={`px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
                   >
                     <XCircle className="w-4 h-4" />
                     Reject Application
@@ -4693,7 +4629,7 @@ function RequestDetailsModal({
                   <button
                     onClick={() => handleSaveInspectionResults(true)}
                     disabled={isUpdatingInspection}
-                    className={`px-10 py-3.5 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-lg shadow-blue-200 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                    className={`px-5 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                   >
                     <CheckCircle className="w-4 h-4" />
                     Submit & Forward to Captain
@@ -4701,7 +4637,7 @@ function RequestDetailsModal({
                 </div>
               ) : currentStep?.status === "Treasury" ||
                 request.status === "Treasury" ? (
-                <div className="flex gap-4 justify-end">
+                <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-blue-50">
                   <button
                     onClick={() => onAction(request, "return")}
                     disabled={isEditing}
@@ -4720,7 +4656,7 @@ function RequestDetailsModal({
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-4 justify-end">
+                <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-blue-50">
                   {["ready", "ready_for_pickup"].includes(request.status) ? (
                     <button
                       onClick={() => onAction(request, "approve")}
@@ -4756,7 +4692,7 @@ function RequestDetailsModal({
                           <button
                             onClick={() => onAction(request, "reject")}
                             disabled={isEditing}
-                            className={`px-6 py-3.5 bg-white border-2 border-red-200 text-red-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
+                            className={`px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
                           >
                             <XCircle className="w-4 h-4" />
                             Reject
@@ -4766,7 +4702,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "approve")}
                         disabled={isEditing}
-                        className={`px-10 py-3.5 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-lg shadow-blue-200 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                        className={`px-5 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                       >
                         <CheckCircle className="w-4 h-4" />
                         {request.status === "Treasury"
@@ -4898,15 +4834,6 @@ function RequestDetailsModal({
           </Modal>
         )}
 
-        {/* Existing Modals */}
-        {showPdfPreview && (
-          <CertificatePreviewModal
-            request={request}
-            onClose={() => setShowPdfPreview(false)}
-            onBack={() => setShowPdfPreview(false)}
-            getTypeLabel={getTypeLabel}
-          />
-        )}
       </div>
     </div>
   );
@@ -5054,172 +4981,106 @@ function ActionModal({
         onClick={onClose}
       />
 
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden">
-        {/* Landscape Header */}
-        <div className="px-8 py-6 border-b border-gray-100 flex items-center gap-5 bg-white shrink-0">
-          <div
-            className={`w-14 h-14 ${cfg.iconBg} rounded-2xl flex items-center justify-center shrink-0 shadow-sm transform rotate-3`}
-          >
-            <Icon className={`w-7 h-7 ${cfg.iconColor}`} />
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden" style={{ height: '88vh' }}>
+        {/* Header */}
+        <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-4 bg-white shrink-0">
+          <div className={`w-12 h-12 ${cfg.iconBg} rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
+            <Icon className={`w-6 h-6 ${cfg.iconColor}`} />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1.5">
-              {cfg.title}
-            </h2>
-            <p className="text-sm font-medium text-gray-500 leading-none">
-              {cfg.description}
-            </p>
+            <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none mb-1">{cfg.title}</h2>
+            <p className="text-sm font-medium text-gray-500 leading-none">{cfg.description}</p>
           </div>
         </div>
 
-        {/* Landscape Body - Split Grid */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gray-50/30">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 h-full">
-            {/* LEFT COLUMN: Context (Span 5) */}
-            <div className="md:col-span-5 flex flex-col gap-6">
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xl shadow-gray-100/50 space-y-5">
-                <div className="flex items-center gap-2 pb-3 border-b border-gray-50">
+        {/* Body - Split Grid */}
+        <div className="flex-1 overflow-hidden p-6 bg-slate-50/50">
+          <div className="grid grid-cols-12 gap-6 h-full">
+            {/* LEFT COLUMN: Context (Span 4) */}
+            <div className="col-span-4 flex flex-col gap-4 overflow-y-auto">
+              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-2 pb-3 border-b border-gray-100 mb-4">
                   <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                    Request Context
-                  </p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Request Context</p>
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1.5">
-                      Reference No
-                    </p>
-                    <p className="font-mono font-black text-blue-600 text-lg tracking-tighter leading-none">
-                      {request.reference_number}
-                    </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Reference No</p>
+                    <p className="font-mono font-black text-blue-600 text-base tracking-tighter">{request.reference_number}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Applicant</p>
+                    <p className="font-extrabold text-gray-900 uppercase text-sm tracking-tight">{request.applicant_name || request.full_name}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1.5">
-                      Applicant Name
-                    </p>
-                    <p className="font-extrabold text-gray-900 uppercase text-base tracking-tight leading-relaxed">
-                      {request.applicant_name || request.full_name}
-                    </p>
+                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Stage</p>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 border border-gray-200 text-[10px] font-bold text-gray-600 uppercase">{request.status.replace(/_/g, " ")}</span>
                   </div>
                   <div>
-                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1.5">
-                      Current Stage
-                    </p>
-                    <div className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 border border-gray-200 text-xs font-bold text-gray-600 uppercase">
-                      {request.status.replace(/_/g, " ")}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1.5">
-                      Certificate Type
-                    </p>
-                    <p className="font-bold text-gray-700 text-sm uppercase">
-                      {request.certificate_type?.replace(/_/g, " ")}
-                    </p>
+                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Type</p>
+                    <p className="font-bold text-gray-700 text-xs uppercase">{request.certificate_type?.replace(/_/g, " ")}</p>
                   </div>
                   {request.contact_number && (
-                    <div>
-                      <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1.5">
-                        Contact No.
-                      </p>
-                      <p className="font-black text-gray-900 text-sm font-mono">
-                        {request.contact_number}
-                      </p>
+                    <div className="col-span-2">
+                      <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Contact No.</p>
+                      <p className="font-black text-gray-900 text-sm font-mono">{request.contact_number}</p>
                     </div>
                   )}
                   {request.purpose && (
-                    <div>
-                      <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1.5">
-                        Purpose
-                      </p>
-                      <p className="font-bold text-gray-700 text-sm uppercase leading-relaxed">
-                        {request.purpose}
-                      </p>
+                    <div className="col-span-2">
+                      <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Purpose</p>
+                      <p className="font-bold text-gray-700 text-xs uppercase leading-relaxed">{request.purpose}</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-blue-50 border border-blue-100">
+              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
                 <p className="text-[10px] font-bold text-blue-800 uppercase leading-relaxed opacity-80">
-                  Review the details carefully. This action will be logged in
-                  the official audit trail and cannot be undone once confirmed.
+                  This action will be logged in the official audit trail and cannot be undone.
                 </p>
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Actions (Span 7) */}
-            <div className="md:col-span-7 flex flex-col gap-6">
+            {/* RIGHT COLUMN: Actions (Span 8) */}
+            <div className="col-span-8 flex flex-col gap-4 h-full">
               {/* Comments Section */}
-              <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-1 transition-all focus-within:ring-4 focus-within:ring-blue-50 focus-within:border-blue-300">
+              <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-1 transition-all focus-within:ring-4 focus-within:ring-blue-50 focus-within:border-blue-300 min-h-0">
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   className="w-full h-full p-5 bg-transparent border-none focus:ring-0 text-sm font-semibold text-gray-700 placeholder:text-gray-300 resize-none rounded-xl"
-                  placeholder={
-                    actionType === "approve"
-                      ? "Add optional notes, remarks, or specific instructions for the next step..."
-                      : "REQUIRED: Please provide a detailed justification for this decision..."
-                  }
+                  placeholder={actionType === "approve"
+                    ? "Add optional notes, remarks, or specific instructions for the next step..."
+                    : "REQUIRED: Please provide a detailed justification for this decision..."}
                 />
               </div>
 
               {/* Signature Block (Conditional) */}
               {canUseEsign && (
-                <div className="mt-auto border-t-2 border-dashed border-gray-200 pt-6">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="border-t-2 border-dashed border-gray-200 pt-4 shrink-0">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600">
-                        <Shield className="w-4 h-4" />
-                      </div>
-                      <p className="text-[10px] font-black  text-gray-900 uppercase tracking-widest">
-                        Digital Authorization
-                      </p>
+                      <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600"><Shield className="w-4 h-4" /></div>
+                      <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Digital Authorization</p>
                     </div>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase">
-                      {isEsignRole ? currentStep.officialRole : "Official Sign"}
-                    </p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase">{isEsignRole ? currentStep.officialRole : "Official Sign"}</p>
                   </div>
-
                   <div className="bg-white rounded-xl border border-blue-200 p-1 shadow-sm">
                     {!showSignPad && (userSignature || tempSignature) ? (
-                      <div
-                        className="relative h-28 flex items-center justify-center rounded-lg bg-gray-50 border-2 border-dashed border-gray-200 hover:border-blue-400 cursor-pointer overflow-hidden group transition-all"
-                        onClick={() => setShowSignPad(true)}
-                      >
-                        <img
-                          src={tempSignature || userSignature}
-                          className="h-full object-contain p-2"
-                          alt="Sign"
-                        />
+                      <div className="relative h-24 flex items-center justify-center rounded-lg bg-gray-50 border-2 border-dashed border-gray-200 hover:border-blue-400 cursor-pointer overflow-hidden group transition-all" onClick={() => setShowSignPad(true)}>
+                        <img src={tempSignature || userSignature} className="h-full object-contain p-2" alt="Sign" />
                         <div className="absolute inset-0 bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest border border-blue-200 px-3 py-1 rounded bg-blue-50">
-                            Click to Resign
-                          </span>
+                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest border border-blue-200 px-3 py-1 rounded bg-blue-50">Click to Resign</span>
                         </div>
                       </div>
                     ) : (
                       <div className="bg-white rounded-lg overflow-hidden border border-gray-100">
-                        <SignaturePad
-                          onSignatureChange={setTempSignature}
-                          height={120}
-                          label=""
-                        />
+                        <SignaturePad onSignatureChange={setTempSignature} height={100} label="" />
                         <div className="flex bg-gray-50 border-t border-gray-200">
-                          <button
-                            onClick={() => setTempSignature(null)}
-                            className="flex-1 py-2 text-[10px] font-bold text-gray-500 hover:text-gray-800 uppercase"
-                          >
-                            Clear
-                          </button>
+                          <button onClick={() => setTempSignature(null)} className="flex-1 py-2 text-[10px] font-bold text-gray-500 hover:text-gray-800 uppercase">Clear</button>
                           <div className="w-px bg-gray-200"></div>
-                          <button
-                            onClick={() => setShowSignPad(false)}
-                            className="flex-1 py-2 text-[10px] font-black text-blue-600 hover:bg-blue-50 uppercase"
-                          >
-                            Confirm
-                          </button>
+                          <button onClick={() => setShowSignPad(false)} className="flex-1 py-2 text-[10px] font-black text-blue-600 hover:bg-blue-50 uppercase">Confirm</button>
                         </div>
                       </div>
                     )}
@@ -5230,8 +5091,8 @@ function ActionModal({
           </div>
         </div>
 
-        {/* Landscape Footer */}
-        <div className="px-8 py-5 bg-white border-t border-gray-100 flex items-center justify-between shrink-0">
+        {/* Footer */}
+        <div className="px-8 py-4 bg-white border-t border-gray-100 flex items-center justify-between shrink-0">
           <button
             onClick={onClose}
             disabled={processing}
@@ -5609,11 +5470,10 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900/80">
-      <div className="flex min-h-screen items-center justify-center p-4 pt-8">
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-gray-900/80">
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden" style={{ height: '96vh' }}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-700 px-6 py-3 flex items-center justify-between shrink-0 z-10">
             <div className="flex items-center gap-3">
               <button
                 onClick={onBack}
@@ -5686,7 +5546,7 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
           )}
 
           {/* Certificate Preview */}
-          <div className="p-6 bg-gray-100 overflow-y-auto max-h-[calc(100vh-150px)]">
+          <div className="flex-1 overflow-y-auto bg-gray-100 p-4">
             {!officials ? (
               <div className="flex items-center justify-center h-64">
                 <div className="flex flex-col items-center gap-3">
@@ -5708,7 +5568,6 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 }
@@ -7524,7 +7383,7 @@ function ORGenerationModal({ request, onClose, onSuccess }) {
           </p>
         </div>
 
-        <div className="flex gap-4 justify-end">
+        <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-blue-50">
           <button
             onClick={onClose}
             disabled={isGenerating}
@@ -7822,3 +7681,8 @@ function ORPreviewSection({ request }) {
     </>
   );
 }
+
+
+
+
+
