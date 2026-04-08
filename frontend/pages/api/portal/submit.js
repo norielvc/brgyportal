@@ -203,9 +203,12 @@ export default async function handler(req, res) {
       // Top-level cohabitation columns (read by certificate preview)
       ...(canonicalType === "barangay_cohabitation" ? {
         partner_full_name: formData.partnerFullName?.toUpperCase() || "",
-        no_of_children: formData.numberOfChildren || "0",
-        living_together_years: formData.yearsLiving || "0",
-        living_together_months: "0",
+        partner_age: parseInt(formData.partnerAge) || null,
+        partner_sex: formData.partnerSex?.toUpperCase() || "",
+        partner_date_of_birth: formData.partnerDateOfBirth || null,
+        no_of_children: parseInt(formData.numberOfChildren) || 0,
+        living_together_years: parseInt(formData.yearsLiving) || 0,
+        living_together_months: 0,
       } : {}),
       // JSON storage for certificate-specific fields
       details: {
@@ -228,6 +231,9 @@ export default async function handler(req, res) {
         // Cohabitation — store with all key variants for compatibility
         partner_name: formData.partnerFullName?.toUpperCase(),
         partnerFullName: formData.partnerFullName?.toUpperCase(),
+        partnerAge: formData.partnerAge || "",
+        partnerSex: formData.partnerSex?.toUpperCase() || "",
+        partnerDateOfBirth: formData.partnerDateOfBirth || "",
         noOfChildren: formData.numberOfChildren || "0",
         livingTogetherYears: formData.yearsLiving || "0",
         livingTogetherMonths: "0",

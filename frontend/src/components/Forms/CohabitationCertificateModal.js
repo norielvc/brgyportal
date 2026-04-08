@@ -12,6 +12,9 @@ import { Search, CheckCircle, MapPin, Info } from 'lucide-react';
 export default function CohabitationCertificateModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
   const [partnerName, setPartnerName] = useState('');
   const [partnerId, setPartnerId] = useState(null);
+  const [partnerAge, setPartnerAge] = useState('');
+  const [partnerSex, setPartnerSex] = useState('');
+  const [partnerDob, setPartnerDob] = useState('');
   const [yearsLiving, setYearsLiving] = useState('');
   const [children, setChildren] = useState('0');
   const [isPartnerSearchOpen, setIsPartnerSearchOpen] = useState(false);
@@ -23,11 +26,15 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
   const handlePartnerSelect = (resident) => {
     setPartnerName(resident.full_name || '');
     setPartnerId(resident.id);
+    setPartnerAge(resident.age || '');
+    setPartnerSex(resident.gender || resident.sex || '');
+    setPartnerDob(resident.date_of_birth || '');
     setIsPartnerSearchOpen(false);
   };
 
   const handleClose = () => {
     setPartnerName(''); setPartnerId(null);
+    setPartnerAge(''); setPartnerSex(''); setPartnerDob('');
     setYearsLiving(''); setChildren('0');
     setCurrentAddress(''); setPurok('');
     onClose();
@@ -165,6 +172,9 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
       extraFormData={{
         partnerFullName: partnerName,
         partnerId,
+        partnerAge,
+        partnerSex,
+        partnerDateOfBirth: partnerDob,
         yearsLiving,
         numberOfChildren: children,
         purok,
