@@ -81,14 +81,15 @@ function SearchableDropdown({ items, onSelect, placeholder, label, colorClass })
 
 export default function UnifiedCertModal({
   isOpen, onClose,
-  title,           // e.g. "Indigency Certificate"
-  certType,        // e.g. "certificate_of_indigency"
+  title,
+  certType,
   tenantConfig = {},
   isDemo = false,
-  extraStep1 = null,   // optional extra JSX after resident search in step 1
-  extraStep3 = null,   // optional extra fields before purpose in step 3
+  extraStep1 = null,
+  extraStep3 = null,
   requirePurpose = true,
   step3Label = "State Your Purpose / Sabihin ang Layunin",
+  extraFormData = {},   // additional fields merged into submission (e.g. partnerFullName)
 }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -157,7 +158,7 @@ export default function UnifiedCertModal({
           'Content-Type': 'application/json',
           'x-tenant-id': tenantConfig?.tenant_id || (isDemo ? 'demo' : 'ibaoeste'),
         },
-        body: JSON.stringify({ type: certType, formData }),
+        body: JSON.stringify({ type: certType, formData: { ...formData, ...extraFormData } }),
       });
       const result = await response.json();
       if (result.success) {
@@ -389,7 +390,7 @@ export default function UnifiedCertModal({
                     </div>
                   </div>
                   <div className="group">
-                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Email (Optional)</label>
+                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Email <span className="normal-case font-semibold text-gray-400">(Optional / Opsyonal)</span></label>
                     <div className="relative">
                       <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
                       <input type="email" name="email" value={formData.email} onChange={handleInputChange}
