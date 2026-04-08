@@ -115,6 +115,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
         isOpen={isPartnerSearchOpen}
         onClose={() => setIsPartnerSearchOpen(false)}
         onSelect={handlePartnerSelect}
+        tenantConfig={tenantConfig}
         tenantId={tenantConfig?.tenant_id || (isDemo ? 'demo' : 'ibaoeste')}
       />
     </div>

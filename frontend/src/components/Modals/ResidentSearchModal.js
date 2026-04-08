@@ -21,6 +21,8 @@ export default function ResidentSearchModal({
   onClose,
   onSelect,
   isDemo = false,
+  tenantConfig = {},
+  tenantId: tenantIdProp,
 }) {
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -100,11 +102,12 @@ export default function ResidentSearchModal({
 
     try {
       const tenantId =
-        typeof window !== "undefined"
+        tenantIdProp ||
+        (typeof window !== "undefined"
           ? new URLSearchParams(window.location.search).get("tenant") ||
             window.location.pathname.replace(/^\//, "").split("/")[0] ||
             "ibaoeste"
-          : "ibaoeste";
+          : "ibaoeste");
 
       const response = await fetch(
         `/api/residents/search?name=${encodeURIComponent(searchTerm)}`,
@@ -158,22 +161,22 @@ export default function ResidentSearchModal({
 
   if (!isOpen) return null;
 
+  // Use tenantConfig colors if provided, fall back to isDemo theme
+  const primaryColor = tenantConfig.primaryColor || (isDemo ? "#111111" : "#112e1f");
+  const accentColor = tenantConfig.accentColor || (isDemo ? "#C9A84C" : "#10b981");
+  const headerBg = tenantConfig.darkHeader
+    ? `bg-gradient-to-r ${tenantConfig.darkHeader}`
+    : `bg-[${primaryColor}]`;
+
   const theme = {
-    primary: isDemo ? "bg-black" : "bg-[#112e1f]",
-    header: isDemo
-      ? "from-black via-zinc-900 to-black"
-      : "from-[#112e1f] via-[#2d5a3d] to-[#112117]",
-    accent: isDemo ? "text-[#c9a84c]" : "text-emerald-400",
-    ring: isDemo
-      ? "focus:ring-zinc-900/5 focus:border-black"
-      : "focus:ring-emerald-500/5 focus:border-[#2d5a3d]",
-    iconBg: isDemo
-      ? "bg-zinc-100 text-black"
-      : "bg-emerald-50 text-emerald-700",
-    hover: isDemo
-      ? "hover:border-black/20 hover:bg-zinc-50"
-      : "hover:border-emerald-200 hover:bg-emerald-50/30",
-    activeText: isDemo ? "text-black" : "text-[#112e1f]",
+    headerStyle: {
+      background: tenantConfig.colorStyle?.background ||
+        (isDemo ? "linear-gradient(135deg,#000 0%,#1a1a1a 100%)" : "linear-gradient(135deg,#112e1f 0%,#022c22 100%)"),
+    },
+    accentColor,
+    primaryColor,
+    spinnerColor: accentColor,
+    hoverBorder: accentColor,
   };
 
   return (
@@ -186,21 +189,20 @@ export default function ResidentSearchModal({
       <div className="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95 fade-in duration-300 border-4 border-white/10">
         {/* Header */}
         <div
-          className={`bg-gradient-to-r ${theme.header} px-10 py-8 flex items-center justify-between text-white relative overflow-hidden flex-shrink-0`}
+          className="px-10 py-8 flex items-center justify-between text-white relative overflow-hidden flex-shrink-0"
+          style={{ background: theme.headerStyle.background }}
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
 
           <div className="flex items-center gap-6 relative z-10">
             <div className="bg-white/10 backdrop-blur-2xl p-4 rounded-2xl border border-white/20 shadow-2xl">
-              <Database className={`w-6 h-6 ${theme.accent}`} />
+              <Database className="w-6 h-6" style={{ color: theme.accentColor }} />
             </div>
             <div>
               <h2 className="text-2xl font-black tracking-tighter leading-none uppercase">
                 Census Database
               </h2>
-              <p
-                className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 opacity-40`}
-              >
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-2 opacity-40">
                 Official Verification Node
               </p>
             </div>
@@ -225,14 +227,16 @@ export default function ResidentSearchModal({
               type="text"
               autoFocus
               placeholder="ENTER NAME TO SEARCH..."
-              className={`w-full pl-20 pr-10 py-6 bg-white border-4 border-gray-50 rounded-[2rem] ${theme.ring} outline-none transition-all font-black ${theme.activeText} placeholder:text-gray-200 text-xl tracking-tight shadow-inner`}
+              className="w-full pl-20 pr-10 py-6 bg-white border-4 border-gray-50 rounded-[2rem] outline-none transition-all font-black text-gray-900 placeholder:text-gray-200 text-xl tracking-tight shadow-inner focus:border-gray-300"
+              style={{ caretColor: theme.primaryColor }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             {isLoading && (
               <div className="absolute right-8 top-1/2 -translate-y-1/2">
                 <div
-                  className={`w-6 h-6 border-4 ${isDemo ? "border-black" : "border-emerald-600"} border-t-transparent rounded-full animate-spin`}
+                  className="w-6 h-6 border-4 border-t-transparent rounded-full animate-spin"
+                  style={{ borderColor: `${theme.accentColor}40`, borderTopColor: theme.accentColor }}
                 ></div>
               </div>
             )}
@@ -256,7 +260,8 @@ export default function ResidentSearchModal({
 
               <button
                 onClick={handleManualEntry}
-                className={`px-10 py-5 ${isDemo ? "bg-black" : "bg-[#112e1f]"} text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-4 group border-2 border-white/10`}
+                className="px-10 py-5 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-4 group border-2 border-white/10"
+                style={{ backgroundColor: theme.primaryColor }}
               >
                 <UserPlus className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 Emergency Manual Entry
@@ -273,14 +278,16 @@ export default function ResidentSearchModal({
                 <button
                   key={resident.id}
                   onClick={() => onSelect(resident)}
-                  className={`flex flex-col md:flex-row md:items-center gap-4 p-4 bg-white border-[3px] border-gray-50 rounded-[1.5rem] ${theme.hover} transition-all text-left group relative overflow-hidden active:scale-[0.98] shadow-sm`}
+                  className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-white border-[3px] border-gray-50 rounded-[1.5rem] hover:border-gray-200 transition-all text-left group relative overflow-hidden active:scale-[0.98] shadow-sm"
+                  style={{ '--hover-border': theme.accentColor }}
                 >
-                  <div
-                    className={`absolute top-0 right-0 w-32 h-32 ${isDemo ? "bg-black/5" : "bg-emerald-500/5"} rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-150 transition-transform duration-1000`}
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-150 transition-transform duration-1000 opacity-10"
+                    style={{ backgroundColor: theme.accentColor }}
                   ></div>
 
                   <div
-                    className={`w-12 h-12 ${theme.iconBg} rounded-xl flex items-center justify-center shrink-0 group-hover:bg-black group-hover:text-white transition-all shadow-inner border border-black/5`}
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 group-hover:text-white transition-all shadow-inner border border-black/5"
+                    style={{ backgroundColor: `${theme.accentColor}20`, color: theme.primaryColor }}
                   >
                     <User className="w-6 h-6" />
                   </div>
@@ -288,7 +295,7 @@ export default function ResidentSearchModal({
                   <div className="flex-1 min-w-0 relative z-10">
                     <div className="flex items-center flex-wrap gap-2 mb-1">
                       <h4
-                        className={`font-black ${theme.activeText} text-lg md:text-xl tracking-tighter uppercase group-hover:translate-x-1 transition-transform`}
+                        className="font-black text-gray-900 text-lg md:text-xl tracking-tighter uppercase group-hover:translate-x-1 transition-transform"
                       >
                         {resident.full_name}
                       </h4>
@@ -301,7 +308,8 @@ export default function ResidentSearchModal({
 
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-2 h-2 rounded-full ${isDemo ? "bg-zinc-200" : "bg-emerald-200"}`}
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: `${theme.accentColor}60` }}
                       ></div>
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] italic">
                         Validated Record Verified 2026
@@ -343,7 +351,8 @@ export default function ResidentSearchModal({
                 <div className="mt-10 flex flex-col items-center gap-4">
                   <button
                     onClick={handleManualEntry}
-                    className="px-10 py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-105 transition-all flex items-center gap-4"
+                    className="px-10 py-5 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-105 transition-all flex items-center gap-4"
+                    style={{ backgroundColor: theme.primaryColor }}
                   >
                     <UserPlus className="w-5 h-5" />
                     Override with Manual Entry
@@ -357,11 +366,10 @@ export default function ResidentSearchModal({
           ) : (
             <div className="py-24 text-center space-y-8 opacity-40 group hover:opacity-100 transition-all">
               <div
-                className={`w-32 h-32 ${isDemo ? "bg-zinc-50" : "bg-emerald-50"} rounded-[3rem] flex items-center justify-center mx-auto transition-transform duration-1000 group-hover:scale-110 border-4 border-gray-50`}
+                className="w-32 h-32 rounded-[3rem] flex items-center justify-center mx-auto transition-transform duration-1000 group-hover:scale-110 border-4 border-gray-50"
+                style={{ backgroundColor: `${theme.accentColor}15` }}
               >
-                <Database
-                  className={`w-12 h-12 ${isDemo ? "text-black" : "text-emerald-900"}`}
-                />
+                <Database className="w-12 h-12" style={{ color: theme.primaryColor }} />
               </div>
               <div>
                 <p className="text-black font-black uppercase tracking-widest text-xs">
@@ -379,7 +387,8 @@ export default function ResidentSearchModal({
         <div className="px-10 py-8 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-4">
             <div
-              className={`w-3 h-3 ${isDemo ? "bg-black" : "bg-emerald-500"} rounded-full animate-pulse shadow-2xl`}
+              className="w-3 h-3 rounded-full animate-pulse shadow-2xl"
+              style={{ backgroundColor: theme.accentColor }}
             ></div>
             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">
               Security Protocol: SEC-TLS-256

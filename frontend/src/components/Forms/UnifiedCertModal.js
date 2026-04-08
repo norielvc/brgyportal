@@ -215,8 +215,28 @@ export default function UnifiedCertModal({
 
   // Confirmation Modal
   if (showConfirmation) {
-    const skip = ['residentId', 'age', 'sex', 'civilStatus', 'address', 'dateOfBirth', 'placeOfBirth'];
-    const iconMap = { fullName: '👤', contactNumber: '📞', email: '✉️', purpose: '📋' };
+    const skip = ['residentId', 'age', 'sex', 'civilStatus', 'address', 'dateOfBirth', 'placeOfBirth', 'partnerId'];
+    const iconMap = {
+      fullName: '👤', contactNumber: '📞', email: '✉️', purpose: '📋',
+      partnerFullName: '👫', yearsLiving: '📅', numberOfChildren: '👶',
+      aliasName: '🪪', guardianName: '🛡️', guardianRelationship: '🔗',
+    };
+    const labelMap = {
+      fullName: 'Full Name / Buong Pangalan',
+      contactNumber: 'Contact Number / Numero',
+      email: 'Email',
+      purpose: 'Purpose / Layunin',
+      partnerFullName: "Partner's Name / Pangalan ng Kasama",
+      yearsLiving: 'Years Together / Taon ng Pagsasama',
+      numberOfChildren: 'No. of Children / Bilang ng Anak',
+      aliasName: 'Alias / Other Name',
+      guardianName: "Guardian's Name",
+      guardianRelationship: 'Relationship / Relasyon',
+    };
+
+    // Merge formData + extraFormData for display
+    const allData = { ...formData, ...extraFormData };
+
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
         <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
@@ -229,13 +249,14 @@ export default function UnifiedCertModal({
               <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
             </button>
           </div>
-          <div className="p-8 bg-gray-50">
+          <div className="p-8 bg-gray-50 overflow-y-auto max-h-[60vh]">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Object.entries(formData).map(([k, v]) => {
+              {Object.entries(allData).map(([k, v]) => {
                 if (!v || skip.includes(k)) return null;
-                const label = k.replace(/([A-Z])/g, ' $1').toUpperCase();
+                const label = labelMap[k] || k.replace(/([A-Z])/g, ' $1').toUpperCase();
+                const wideKeys = ['purpose', 'email', 'partnerFullName'];
                 return (
-                  <div key={k} className={`flex items-start gap-4 p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm group ${k === 'purpose' || k === 'email' ? 'sm:col-span-2' : ''}`}>
+                  <div key={k} className={`flex items-start gap-4 p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm group ${wideKeys.includes(k) ? 'sm:col-span-2' : ''}`}>
                     <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-lg shrink-0">{iconMap[k] || '📄'}</div>
                     <div className="min-w-0 flex-1">
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">{label}</span>
