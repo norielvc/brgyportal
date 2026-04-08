@@ -188,7 +188,7 @@ export default async function handler(req, res) {
       age: parseInt(formData.age) || 0,
       sex: (formData.sex || formData.gender)?.toUpperCase() || "",
       civil_status: formData.civilStatus?.toUpperCase() || "",
-      address: (formData.address || formData.ownerAddress || formData.deceasedAddress)?.toUpperCase() || "",
+      address: (formData.address || formData.currentAddress || formData.ownerAddress || formData.deceasedAddress)?.toUpperCase() || "",
       contact_number: formData.contactNumber || "",
       email: formData.email || "",
       purpose:
@@ -200,6 +200,13 @@ export default async function handler(req, res) {
       status: "staff_review",
       date_issued: new Date().toISOString(),
       created_at: new Date().toISOString(),
+      // Top-level cohabitation columns (read by certificate preview)
+      ...(canonicalType === "barangay_cohabitation" ? {
+        partner_full_name: formData.partnerFullName?.toUpperCase() || "",
+        no_of_children: formData.numberOfChildren || "0",
+        living_together_years: formData.yearsLiving || "0",
+        living_together_months: "0",
+      } : {}),
       // JSON storage for certificate-specific fields
       details: {
         // Business Fields
@@ -218,8 +225,14 @@ export default async function handler(req, res) {
         // Guardianship
         guardian_name: formData.guardianName?.toUpperCase(),
         guardian_relationship: formData.guardianRelationship?.toUpperCase(),
-        // Cohabitation
+        // Cohabitation — store with all key variants for compatibility
         partner_name: formData.partnerFullName?.toUpperCase(),
+        partnerFullName: formData.partnerFullName?.toUpperCase(),
+        noOfChildren: formData.numberOfChildren || "0",
+        livingTogetherYears: formData.yearsLiving || "0",
+        livingTogetherMonths: "0",
+        purok: formData.purok?.toUpperCase(),
+        currentAddress: formData.currentAddress?.toUpperCase(),
         // Others
         ...formData.details,
       },
