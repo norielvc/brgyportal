@@ -1,7 +1,7 @@
 /**
  * CohabitationCertificateModal
  * Step 3: Partner details + years/children
- * Step 4: Current shared address (requestor-entered, not pulled from DB — for staff verification)
+ * Step 4: Address — House No. + Purok (user input), Barangay/Municipality auto-appended
  * Bilingual labels (English / Filipino)
  */
 import React, { useState } from 'react';
@@ -18,10 +18,16 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
   const [yearsLiving, setYearsLiving] = useState('');
   const [children, setChildren] = useState('0');
   const [isPartnerSearchOpen, setIsPartnerSearchOpen] = useState(false);
-  const [currentAddress, setCurrentAddress] = useState('');
+  const [houseNo, setHouseNo] = useState('');
   const [purok, setPurok] = useState('');
 
   const accentColor = tenantConfig.primaryColor || '#059669';
+
+  // Auto barangay suffix from tenantConfig
+  const barangaySuffix = tenantConfig.subtitle || `BRGY. ${(tenantConfig.shortName || "IBA O' ESTE").toUpperCase()}, CALUMPIT, BULACAN`;
+
+  // Composed full address
+  const composedAddress = [houseNo, purok, barangaySuffix].filter(Boolean).join(', ');
 
   const handlePartnerSelect = (resident) => {
     setPartnerName(resident.full_name || '');
@@ -36,7 +42,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
     setPartnerName(''); setPartnerId(null);
     setPartnerAge(''); setPartnerSex(''); setPartnerDob('');
     setYearsLiving(''); setChildren('0');
-    setCurrentAddress(''); setPurok('');
+    setHouseNo(''); setPurok('');
     onClose();
   };
 
@@ -56,7 +62,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
               <p className="font-black text-gray-900 uppercase text-sm truncate">{partnerName}</p>
               <p className="text-xs text-gray-400">Nahanap sa database / Found in database</p>
             </div>
-            <button type="button" onClick={() => { setPartnerName(''); setPartnerId(null); }}
+            <button type="button" onClick={() => { setPartnerName(''); setPartnerId(null); setPartnerAge(''); setPartnerSex(''); setPartnerDob(''); }}
               className="text-xs text-red-400 hover:text-red-600 font-bold flex-shrink-0">
               Baguhin / Change
             </button>
@@ -109,6 +115,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
 
   const extraStep4 = (
     <div className="space-y-5">
+      {/* Info banner */}
       <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
         <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
         <div>
@@ -116,42 +123,73 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
             Address Verification / Beripikasyon ng Tirahan
           </p>
           <p className="text-[11px] text-amber-700 leading-relaxed">
-            Please enter your <strong>current shared address</strong>. Staff will compare this with records on file to verify or update both residents' addresses.
+            Enter your <strong>current shared address</strong>. Staff will compare this with records on file.
             <br />
-            <span className="text-amber-600">Ilagay ang inyong <strong>kasalukuyang tirahan</strong>. Ito ay ikukumpara ng staff sa rekord para sa beripikasyon.</span>
+            <span className="text-amber-600">Ilagay ang inyong <strong>kasalukuyang tirahan</strong>. Ikukumpara ito ng staff sa rekord.</span>
           </p>
         </div>
       </div>
 
+      {/* House No. */}
+      <div>
+        <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+          House No. / <span className="text-gray-400 normal-case font-semibold">Numero ng Bahay</span>
+          <span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          type="text"
+          value={houseNo}
+          onChange={e => setHouseNo(e.target.value.toUpperCase())}
+          placeholder="E.G. 123 / BLK 4 LOT 5"
+          className="w-full px-5 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase"
+        />
+      </div>
+
+      {/* Purok */}
       <div>
         <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
           Purok / Sitio <span className="text-red-500">*</span>
         </label>
-        <input type="text" value={purok} onChange={e => setPurok(e.target.value.toUpperCase())}
+        <input
+          type="text"
+          value={purok}
+          onChange={e => setPurok(e.target.value.toUpperCase())}
           placeholder="E.G. PUROK 3, SITIO BANAWE"
-          className="w-full px-5 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase" />
+          className="w-full px-5 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase"
+        />
       </div>
 
+      {/* Auto-filled barangay */}
       <div>
         <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
-          Current Shared Address / <span className="text-gray-400 normal-case font-semibold">Kasalukuyang Tirahan</span>
-          <span className="text-red-500 ml-1">*</span>
+          Barangay / Municipality
+          <span className="ml-2 text-[10px] normal-case font-semibold text-green-600">
+            ✓ Awtomatiko / Auto-filled
+          </span>
         </label>
-        <textarea value={currentAddress} onChange={e => setCurrentAddress(e.target.value.toUpperCase())}
-          placeholder="HOUSE NO., STREET, BARANGAY, MUNICIPALITY"
-          rows={3}
-          className="w-full px-5 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-sm uppercase resize-none" />
-        <p className="text-[10px] text-gray-400 mt-1 ml-1">
-          ⚠️ Barangay name and municipality is sufficient. Do not include sensitive landmarks. /
-          Sapat na ang pangalan ng barangay at munisipyo.
-        </p>
+        <div className="w-full px-5 py-4 bg-green-50 border-4 border-green-100 rounded-2xl font-black text-sm text-green-800 uppercase tracking-wide select-none">
+          {barangaySuffix}
+        </div>
       </div>
 
+      {/* Live preview */}
+      {(houseNo || purok) && (
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+            Full Address Preview / Buong Tirahan
+          </p>
+          <p className="text-sm font-black text-gray-800 uppercase leading-relaxed">
+            {composedAddress}
+          </p>
+        </div>
+      )}
+
+      {/* Staff note */}
       <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
         <MapPin className="w-5 h-5 text-gray-400 shrink-0" />
         <p className="text-[11px] text-gray-500 font-semibold">
-          Staff will review this address against both residents' records and may update them if a change is confirmed. /
-          <span className="text-gray-400"> Susuriin ng staff ang address na ito at ia-update kung kinakailangan.</span>
+          Staff will review and may update both residents' records if a change is confirmed. /
+          <span className="text-gray-400"> Susuriin ng staff at ia-update kung kinakailangan.</span>
         </p>
       </div>
     </div>
@@ -177,8 +215,9 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
         partnerDateOfBirth: partnerDob,
         yearsLiving,
         numberOfChildren: children,
+        houseNo,
         purok,
-        currentAddress,
+        currentAddress: composedAddress,
       }}
     />
   );
