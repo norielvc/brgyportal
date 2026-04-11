@@ -213,6 +213,12 @@ export default async function handler(req, res) {
         living_together_years: parseInt(formData.yearsLiving) || 0,
         living_together_months: 0,
       } : {}),
+      // Top-level medico legal columns
+      ...(canonicalType === "medico_legal" ? {
+        date_of_examination: formData.date_of_examination || formData.dateOfExamination || null,
+        usaping_barangay: formData.usaping_barangay || formData.usapingBarangay || "",
+        date_of_hearing: formData.date_of_hearing || formData.dateOfHearing || null,
+      } : {}),
       // JSON storage for certificate-specific fields
       details: {
         // Business Fields

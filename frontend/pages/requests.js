@@ -197,11 +197,10 @@ const MultiSelectDropdown = ({
   <div className="relative" ref={dropdownRef}>
     <button
       onClick={() => setIsOpen(!isOpen)}
-      className={`flex items-center justify-between w-full min-w-[160px] pl-3 pr-8 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm transition-all ${
-        selected.length > 0
+      className={`flex items-center justify-between w-full min-w-[160px] pl-3 pr-8 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm transition-all ${selected.length > 0
           ? "border-blue-400 ring-1 ring-blue-50"
           : "border-gray-300"
-      }`}
+        }`}
     >
       <div className="flex items-center gap-2 truncate">
         {Icon && (
@@ -250,9 +249,8 @@ const MultiSelectDropdown = ({
             return (
               <label
                 key={option.value}
-                className={`flex items-center px-2 py-2 rounded-lg cursor-pointer transition-colors mb-1 ${
-                  isSelected ? "bg-blue-50/50" : "hover:bg-gray-50"
-                }`}
+                className={`flex items-center px-2 py-2 rounded-lg cursor-pointer transition-colors mb-1 ${isSelected ? "bg-blue-50/50" : "hover:bg-gray-50"
+                  }`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <input
@@ -267,11 +265,10 @@ const MultiSelectDropdown = ({
                   }}
                 />
                 <div
-                  className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
-                    isSelected
+                  className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isSelected
                       ? "bg-blue-600 border-blue-600"
                       : "bg-white border-gray-300"
-                  }`}
+                    }`}
                 >
                   {isSelected && (
                     <Check className="w-3 h-3 text-white stroke-[3px]" />
@@ -595,7 +592,7 @@ export default function RequestsPage() {
     if (
       request.workflow_assignment &&
       String(request.workflow_assignment.assigned_user_id) ===
-        String(activeUser._id || activeUser.id)
+      String(activeUser._id || activeUser.id)
     ) {
       return true;
     }
@@ -1261,11 +1258,10 @@ export default function RequestsPage() {
         <div className="flex border-b border-gray-200">
           <button
             onClick={() => setViewMode("assigned")}
-            className={`px-6 py-4 text-sm font-semibold transition-all border-b-2 flex items-center gap-2 ${
-              viewMode === "assigned"
+            className={`px-6 py-4 text-sm font-semibold transition-all border-b-2 flex items-center gap-2 ${viewMode === "assigned"
                 ? "border-blue-600 text-blue-600 bg-blue-50/30"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-            }`}
+              }`}
           >
             <FileCheck className="w-4 h-4" />
             My Assignments
@@ -1277,11 +1273,10 @@ export default function RequestsPage() {
           </button>
           <button
             onClick={() => setViewMode("all")}
-            className={`px-6 py-4 text-sm font-semibold transition-all border-b-2 flex items-center gap-2 ${
-              viewMode === "all"
+            className={`px-6 py-4 text-sm font-semibold transition-all border-b-2 flex items-center gap-2 ${viewMode === "all"
                 ? "border-blue-600 text-blue-600 bg-blue-50/30"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-            }`}
+              }`}
           >
             <History className="w-4 h-4" />
             Certificate Request History
@@ -2318,7 +2313,7 @@ function RequestDetailsModal({
   const handleSave = async () => {
     setIsSaving(true);
     const combinedName =
-      `${editFormData.first_name} ${editFormData.middle_name} ${editFormData.last_name} ${editFormData.suffix}`
+      `${editFormData.first_name || ''} ${editFormData.middle_name || ''} ${editFormData.last_name || ''} ${editFormData.suffix || ''}`
         .replace(/\s+/g, " ")
         .trim();
 
@@ -2330,7 +2325,7 @@ function RequestDetailsModal({
       "date_of_hearing",
       "partner_date_of_birth",
     ];
-    
+
     // Sanitize: convert empty strings to null for integer fields
     const integerFields = [
       "age",
@@ -2339,13 +2334,13 @@ function RequestDetailsModal({
       "living_together_years",
       "living_together_months",
     ];
-    
+
     const sanitized = { ...editFormData, full_name: combinedName };
-    
+
     dateFields.forEach((field) => {
       if (sanitized[field] === "") sanitized[field] = null;
     });
-    
+
     integerFields.forEach((field) => {
       if (sanitized[field] === "" || sanitized[field] === null) {
         sanitized[field] = null;
@@ -2400,10 +2395,10 @@ function RequestDetailsModal({
           </div>
           <div className="flex items-center gap-2">
             {!isEditing && canAct && !["oic_review", "ready", "ready_for_pickup"].includes(request.status) && (
-                <button onClick={() => setIsEditing(true)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 flex items-center gap-2 transition-colors border border-white/10">
-                  <Edit className="w-3.5 h-3.5" /><span>Edit</span>
-                </button>
-              )}
+              <button onClick={() => setIsEditing(true)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 flex items-center gap-2 transition-colors border border-white/10">
+                <Edit className="w-3.5 h-3.5" /><span>Edit</span>
+              </button>
+            )}
             {isEditing && (
               <>
                 <button onClick={handleSave} disabled={isSaving} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 flex items-center gap-2 transition-colors disabled:opacity-50">
@@ -2428,21 +2423,19 @@ function RequestDetailsModal({
         <div className="flex border-b border-blue-100 bg-blue-50/30 px-6 shrink-0">
           <button
             onClick={() => setActiveTab("details")}
-            className={`pb-3 pt-3 px-4 text-sm font-semibold border-b-2 transition-colors ${
-              activeTab === "details"
+            className={`pb-3 pt-3 px-4 text-sm font-semibold border-b-2 transition-colors ${activeTab === "details"
                 ? "border-blue-600 text-blue-600"
                 : "border-transparent text-gray-400 hover:text-gray-600"
-            }`}
+              }`}
           >
             Request Details
           </button>
           <button
             onClick={() => setActiveTab("history")}
-            className={`pb-3 pt-3 px-4 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-              activeTab === "history"
+            className={`pb-3 pt-3 px-4 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === "history"
                 ? "border-blue-600 text-blue-600"
                 : "border-transparent text-gray-400 hover:text-gray-600"
-            }`}
+              }`}
           >
             <span>History & Comments</span>
             {hasComments && (
@@ -2458,23 +2451,23 @@ function RequestDetailsModal({
               {["oic_review", "ready", "ready_for_pickup"].includes(
                 request.status,
               ) && (
-                <div className="bg-green-600 p-3 rounded-xl shadow-lg border-2 border-green-400 text-white mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white/20 p-2 rounded-lg">
-                      <Printer className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-lg font-black uppercase leading-tight">
-                        APPROVED REQUEST
-                      </h4>
-                      <p className="text-sm font-bold opacity-90">
-                        Please print the certificate and contact the requestor
-                        for collection.
-                      </p>
+                  <div className="bg-green-600 p-3 rounded-xl shadow-lg border-2 border-green-400 text-white mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-white/20 p-2 rounded-lg">
+                        <Printer className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-lg font-black uppercase leading-tight">
+                          APPROVED REQUEST
+                        </h4>
+                        <p className="text-sm font-bold opacity-90">
+                          Please print the certificate and contact the requestor
+                          for collection.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* OR Preview Section for Releasing Team */}
               {request.status === "oic_review" &&
@@ -2698,7 +2691,7 @@ function RequestDetailsModal({
                                       ...data.data,
                                     }));
                                   }
-                                } catch (err) {}
+                                } catch (err) { }
                                 setShowResidentDb(true);
                               }}
                               className="p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50/50 hover:bg-blue-100 rounded-lg border border-blue-100/50 group relative active:scale-90"
@@ -2715,30 +2708,30 @@ function RequestDetailsModal({
                         </p>
                         {request.certificate_type ===
                           "certification_same_person" && (
-                          <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm mt-2 w-fit">
-                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest border-r border-blue-200 pr-2">
-                              AKA
-                            </span>
-                            <span className="font-black text-blue-700 uppercase text-sm tracking-tight">
-                              {(() => {
-                                try {
-                                  const d =
-                                    typeof request.details === "string"
-                                      ? JSON.parse(request.details || "{}")
-                                      : request.details || {};
-                                  return (
-                                    d.fullName2 ||
-                                    d.name_2 ||
-                                    d.name2 ||
-                                    "NOT RECORDED"
-                                  );
-                                } catch (e) {
-                                  return "NOT RECORDED";
-                                }
-                              })()}
-                            </span>
-                          </div>
-                        )}
+                            <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm mt-2 w-fit">
+                              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest border-r border-blue-200 pr-2">
+                                AKA
+                              </span>
+                              <span className="font-black text-blue-700 uppercase text-sm tracking-tight">
+                                {(() => {
+                                  try {
+                                    const d =
+                                      typeof request.details === "string"
+                                        ? JSON.parse(request.details || "{}")
+                                        : request.details || {};
+                                    return (
+                                      d.fullName2 ||
+                                      d.name_2 ||
+                                      d.name2 ||
+                                      "NOT RECORDED"
+                                    );
+                                  } catch (e) {
+                                    return "NOT RECORDED";
+                                  }
+                                })()}
+                              </span>
+                            </div>
+                          )}
                       </div>
                     )}
 
@@ -2761,8 +2754,8 @@ function RequestDetailsModal({
                             {request.date_of_birth ||
                               (request.residents?.date_of_birth
                                 ? new Date(request.residents.date_of_birth)
-                                    .toISOString()
-                                    .split("T")[0]
+                                  .toISOString()
+                                  .split("T")[0]
                                 : "NOT RECORDED")}
                           </p>
                         )}
@@ -2893,65 +2886,65 @@ function RequestDetailsModal({
                       "certificate_of_indigency",
                       "barangay_residency",
                     ].includes(request.certificate_type) && (
-                      <div>
-                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
-                          Purpose of Request
-                        </p>
-                        {isEditing ? (
-                          <>
-                            <textarea
-                              name="purpose"
-                              value={editFormData.purpose}
-                              onChange={handleInputChange}
-                              className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 font-black text-gray-900 uppercase text-sm mb-3 transition-all resize-none"
-                              rows="3"
-                              placeholder="ENTER PURPOSE HERE..."
-                            />
-                            <div className="grid grid-cols-3 gap-2">
-                              <select
-                                onChange={handlePurposeSelect}
-                                className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
-                              >
-                                <option value="">-- PURPOSE 1 --</option>
-                                {PURPOSE_LIST_1.map((p, i) => (
-                                  <option key={i} value={p}>
-                                    {p}
-                                  </option>
-                                ))}
-                              </select>
-                              <select
-                                onChange={handlePurposeSelect}
-                                className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-sm outline-none cursor-pointer uppercase"
-                              >
-                                <option value="">-- PURPOSE 2 --</option>
-                                {PURPOSE_LIST_2.map((p, i) => (
-                                  <option key={i} value={p}>
-                                    {p}
-                                  </option>
-                                ))}
-                              </select>
-                              <select
-                                onChange={handlePurposeSelect}
-                                className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
-                              >
-                                <option value="">-- PURPOSE 3 --</option>
-                                {PURPOSE_LIST_3.map((p, i) => (
-                                  <option key={i} value={p}>
-                                    {p}
-                                  </option>
-                                ))}
-                              </select>
+                        <div>
+                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                            Purpose of Request
+                          </p>
+                          {isEditing ? (
+                            <>
+                              <textarea
+                                name="purpose"
+                                value={editFormData.purpose}
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 font-black text-gray-900 uppercase text-sm mb-3 transition-all resize-none"
+                                rows="3"
+                                placeholder="ENTER PURPOSE HERE..."
+                              />
+                              <div className="grid grid-cols-3 gap-2">
+                                <select
+                                  onChange={handlePurposeSelect}
+                                  className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
+                                >
+                                  <option value="">-- PURPOSE 1 --</option>
+                                  {PURPOSE_LIST_1.map((p, i) => (
+                                    <option key={i} value={p}>
+                                      {p}
+                                    </option>
+                                  ))}
+                                </select>
+                                <select
+                                  onChange={handlePurposeSelect}
+                                  className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-sm outline-none cursor-pointer uppercase"
+                                >
+                                  <option value="">-- PURPOSE 2 --</option>
+                                  {PURPOSE_LIST_2.map((p, i) => (
+                                    <option key={i} value={p}>
+                                      {p}
+                                    </option>
+                                  ))}
+                                </select>
+                                <select
+                                  onChange={handlePurposeSelect}
+                                  className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
+                                >
+                                  <option value="">-- PURPOSE 3 --</option>
+                                  {PURPOSE_LIST_3.map((p, i) => (
+                                    <option key={i} value={p}>
+                                      {p}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                              <p className="font-semibold text-gray-800 text-sm uppercase leading-relaxed whitespace-pre-wrap">
+                                {request.purpose || "NOT SPECIFIED"}
+                              </p>
                             </div>
-                          </>
-                        ) : (
-                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <p className="font-semibold text-gray-800 text-sm uppercase leading-relaxed whitespace-pre-wrap">
-                              {request.purpose || "NOT SPECIFIED"}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
@@ -2991,8 +2984,8 @@ function RequestDetailsModal({
                             value={
                               editFormData.partner_date_of_birth
                                 ? new Date(editFormData.partner_date_of_birth)
-                                    .toISOString()
-                                    .split("T")[0]
+                                  .toISOString()
+                                  .split("T")[0]
                                 : ""
                             }
                             onChange={handleInputChange}
@@ -3244,326 +3237,326 @@ function RequestDetailsModal({
               {!["oic_review", "ready", "ready_for_pickup"].includes(
                 request.status,
               ) && (
-                <div
-                  className={`grid gap-6 ${isMedicoLegal ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
-                >
-                  {isBusinessPermit &&
-                    (request.status === "physical_inspection" ||
-                      request.status === "secretary_approval") && (
-                      <div className="col-span-full">
-                        <div className="bg-amber-600 px-6 py-4 rounded-t-2xl flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-white/20 rounded-lg">
-                              <ClipboardCheck className="w-5 h-5 text-white" />
+                  <div
+                    className={`grid gap-6 ${isMedicoLegal ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
+                  >
+                    {isBusinessPermit &&
+                      (request.status === "physical_inspection" ||
+                        request.status === "secretary_approval") && (
+                        <div className="col-span-full">
+                          <div className="bg-amber-600 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-white/20 rounded-lg">
+                                <ClipboardCheck className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <h3 className="text-white font-black uppercase tracking-widest text-sm">
+                                  Physical Inspection Report
+                                </h3>
+                                <p className="text-white/70 text-[10px] font-bold uppercase">
+                                  Record findings from internal committee visit
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="text-white font-black uppercase tracking-widest text-sm">
-                                Physical Inspection Report
-                              </h3>
-                              <p className="text-white/70 text-[10px] font-bold uppercase">
-                                Record findings from internal committee visit
-                              </p>
-                            </div>
+                            <button
+                              onClick={() => handleSaveInspectionResults(false)}
+                              disabled={isUpdatingInspection}
+                              className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/20"
+                            >
+                              {isUpdatingInspection
+                                ? "Saving..."
+                                : "Save Draft Findings"}
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleSaveInspectionResults(false)}
-                            disabled={isUpdatingInspection}
-                            className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/20"
-                          >
-                            {isUpdatingInspection
-                              ? "Saving..."
-                              : "Save Draft Findings"}
-                          </button>
-                        </div>
-                        <div className="bg-white rounded-b-2xl border-x border-b border-gray-100 shadow-xl p-6">
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr className="border-b border-gray-100">
-                                  <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 w-[180px]">
-                                    Areas
-                                  </th>
-                                  <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">
-                                    Findings & Recommendations
-                                  </th>
-                                  <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 w-[150px]">
-                                    Date
-                                  </th>
-                                  <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">
-                                    Remarks
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-50">
-                                {Object.keys(inspectionData.areas).map(
-                                  (area) => (
-                                    <tr
-                                      key={area}
-                                      className="group hover:bg-gray-50/50 transition-colors"
-                                    >
-                                      <td className="py-4 px-2">
-                                        <p className="text-[11px] font-black text-gray-700 uppercase leading-none">
-                                          {area}
-                                        </p>
-                                      </td>
-                                      <td className="py-3 px-2">
-                                        <input
-                                          type="text"
-                                          className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 transition-all font-bold"
-                                          value={
-                                            inspectionData.areas[area].findings
-                                          }
-                                          onChange={(e) =>
-                                            handleInspectionChange(
-                                              area,
-                                              "findings",
-                                              e.target.value,
-                                            )
-                                          }
-                                          placeholder="Enter findings..."
-                                        />
-                                      </td>
-                                      <td className="py-3 px-2">
-                                        <input
-                                          type="date"
-                                          className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 font-bold"
-                                          value={
-                                            inspectionData.areas[area].date
-                                          }
-                                          onChange={(e) =>
-                                            handleInspectionChange(
-                                              area,
-                                              "date",
-                                              e.target.value,
-                                            )
-                                          }
-                                        />
-                                      </td>
-                                      <td className="py-3 px-2">
-                                        <input
-                                          type="text"
-                                          className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 font-bold"
-                                          value={
-                                            inspectionData.areas[area].remarks
-                                          }
-                                          onChange={(e) =>
-                                            handleInspectionChange(
-                                              area,
-                                              "remarks",
-                                              e.target.value,
-                                            )
-                                          }
-                                          placeholder="Add remarks..."
-                                        />
-                                      </td>
-                                    </tr>
-                                  ),
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
-
-                          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 py-6 border-y border-gray-100">
-                            <div>
-                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
-                                Date and Time of Visit
-                              </p>
-                              <input
-                                type="datetime-local"
-                                className="w-full bg-white border border-gray-200 rounded-xl py-3 px-4 text-sm font-black text-gray-900 focus:ring-2 focus:ring-amber-500 shadow-sm"
-                                value={inspectionData.visitDateTime}
-                                onChange={(e) =>
-                                  handleInspectionMetaChange(
-                                    "visitDateTime",
-                                    e.target.value,
-                                  )
-                                }
-                              />
-                            </div>
-                            <div>
-                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
-                                Name of Owner / Representative
-                              </p>
-                              <input
-                                type="text"
-                                className="w-full bg-white border border-gray-200 rounded-xl py-3 px-4 text-sm font-black text-gray-900 uppercase focus:ring-2 focus:ring-amber-500 shadow-sm"
-                                value={inspectionData.ownerRepresentative}
-                                onChange={(e) =>
-                                  handleInspectionMetaChange(
-                                    "ownerRepresentative",
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder="Name of person met during visit"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="mt-6 pt-4">
-                            <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                              Recommending Approval
-                            </h4>
+                          <div className="bg-white rounded-b-2xl border-x border-b border-gray-100 shadow-xl p-6">
                             <div className="overflow-x-auto">
                               <table className="w-full text-left border-collapse">
                                 <thead>
                                   <tr className="border-b border-gray-100">
-                                    <th className="py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest px-2">
-                                      Committee
+                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 w-[180px]">
+                                      Areas
                                     </th>
-                                    <th className="py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest px-2">
-                                      Name of Signatory
+                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">
+                                      Findings & Recommendations
                                     </th>
-                                    <th className="py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest px-2 w-[150px]">
+                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 w-[150px]">
                                       Date
+                                    </th>
+                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">
+                                      Remarks
                                     </th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50 text-[11px]">
-                                  {Object.keys(
-                                    inspectionData.recommendations,
-                                  ).map((comm) => (
-                                    <tr
-                                      key={comm}
-                                      className="hover:bg-gray-50/50"
-                                    >
-                                      <td className="py-3 px-2 font-bold text-gray-700">
-                                        {comm}
-                                      </td>
-                                      <td className="py-2 px-2">
-                                        <input
-                                          type="text"
-                                          className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 focus:ring-2 focus:ring-emerald-500 font-bold uppercase transition-all"
-                                          value={
-                                            inspectionData.recommendations[comm]
-                                              .name
-                                          }
-                                          onChange={(e) =>
-                                            handleRecommendationChange(
-                                              comm,
-                                              "name",
-                                              e.target.value,
-                                            )
-                                          }
-                                          placeholder="Enter name..."
-                                        />
-                                      </td>
-                                      <td className="py-2 px-2">
-                                        <input
-                                          type="date"
-                                          className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 focus:ring-2 focus:ring-emerald-500 font-bold"
-                                          value={
-                                            inspectionData.recommendations[comm]
-                                              .date
-                                          }
-                                          onChange={(e) =>
-                                            handleRecommendationChange(
-                                              comm,
-                                              "date",
-                                              e.target.value,
-                                            )
-                                          }
-                                        />
-                                      </td>
-                                    </tr>
-                                  ))}
+                                <tbody className="divide-y divide-gray-50">
+                                  {Object.keys(inspectionData.areas).map(
+                                    (area) => (
+                                      <tr
+                                        key={area}
+                                        className="group hover:bg-gray-50/50 transition-colors"
+                                      >
+                                        <td className="py-4 px-2">
+                                          <p className="text-[11px] font-black text-gray-700 uppercase leading-none">
+                                            {area}
+                                          </p>
+                                        </td>
+                                        <td className="py-3 px-2">
+                                          <input
+                                            type="text"
+                                            className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 transition-all font-bold"
+                                            value={
+                                              inspectionData.areas[area].findings
+                                            }
+                                            onChange={(e) =>
+                                              handleInspectionChange(
+                                                area,
+                                                "findings",
+                                                e.target.value,
+                                              )
+                                            }
+                                            placeholder="Enter findings..."
+                                          />
+                                        </td>
+                                        <td className="py-3 px-2">
+                                          <input
+                                            type="date"
+                                            className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 font-bold"
+                                            value={
+                                              inspectionData.areas[area].date
+                                            }
+                                            onChange={(e) =>
+                                              handleInspectionChange(
+                                                area,
+                                                "date",
+                                                e.target.value,
+                                              )
+                                            }
+                                          />
+                                        </td>
+                                        <td className="py-3 px-2">
+                                          <input
+                                            type="text"
+                                            className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 font-bold"
+                                            value={
+                                              inspectionData.areas[area].remarks
+                                            }
+                                            onChange={(e) =>
+                                              handleInspectionChange(
+                                                area,
+                                                "remarks",
+                                                e.target.value,
+                                              )
+                                            }
+                                            placeholder="Add remarks..."
+                                          />
+                                        </td>
+                                      </tr>
+                                    ),
+                                  )}
                                 </tbody>
                               </table>
                             </div>
+
+                            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 py-6 border-y border-gray-100">
+                              <div>
+                                <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                                  Date and Time of Visit
+                                </p>
+                                <input
+                                  type="datetime-local"
+                                  className="w-full bg-white border border-gray-200 rounded-xl py-3 px-4 text-sm font-black text-gray-900 focus:ring-2 focus:ring-amber-500 shadow-sm"
+                                  value={inspectionData.visitDateTime}
+                                  onChange={(e) =>
+                                    handleInspectionMetaChange(
+                                      "visitDateTime",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                                  Name of Owner / Representative
+                                </p>
+                                <input
+                                  type="text"
+                                  className="w-full bg-white border border-gray-200 rounded-xl py-3 px-4 text-sm font-black text-gray-900 uppercase focus:ring-2 focus:ring-amber-500 shadow-sm"
+                                  value={inspectionData.ownerRepresentative}
+                                  onChange={(e) =>
+                                    handleInspectionMetaChange(
+                                      "ownerRepresentative",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="Name of person met during visit"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="mt-6 pt-4">
+                              <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                Recommending Approval
+                              </h4>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                  <thead>
+                                    <tr className="border-b border-gray-100">
+                                      <th className="py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest px-2">
+                                        Committee
+                                      </th>
+                                      <th className="py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest px-2">
+                                        Name of Signatory
+                                      </th>
+                                      <th className="py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest px-2 w-[150px]">
+                                        Date
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-50 text-[11px]">
+                                    {Object.keys(
+                                      inspectionData.recommendations,
+                                    ).map((comm) => (
+                                      <tr
+                                        key={comm}
+                                        className="hover:bg-gray-50/50"
+                                      >
+                                        <td className="py-3 px-2 font-bold text-gray-700">
+                                          {comm}
+                                        </td>
+                                        <td className="py-2 px-2">
+                                          <input
+                                            type="text"
+                                            className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 focus:ring-2 focus:ring-emerald-500 font-bold uppercase transition-all"
+                                            value={
+                                              inspectionData.recommendations[comm]
+                                                .name
+                                            }
+                                            onChange={(e) =>
+                                              handleRecommendationChange(
+                                                comm,
+                                                "name",
+                                                e.target.value,
+                                              )
+                                            }
+                                            placeholder="Enter name..."
+                                          />
+                                        </td>
+                                        <td className="py-2 px-2">
+                                          <input
+                                            type="date"
+                                            className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 focus:ring-2 focus:ring-emerald-500 font-bold"
+                                            value={
+                                              inspectionData.recommendations[comm]
+                                                .date
+                                            }
+                                            onChange={(e) =>
+                                              handleRecommendationChange(
+                                                comm,
+                                                "date",
+                                                e.target.value,
+                                              )
+                                            }
+                                          />
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
                           </div>
+                        </div>
+                      )}
+
+                    {isGuardianship && (
+                      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col">
+                        <div className="border-l-4 border-blue-500 pl-3 mb-5">
+                          <h3 className="font-black text-gray-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
+                            <User className="w-4 h-4 text-blue-500" />
+                            Guardian Information
+                          </h3>
+                        </div>
+                        <div className="space-y-5 flex-1">
+                          {isEditing ? (
+                            <>
+                              <div>
+                                <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                                  Guardian's Full Name
+                                </p>
+                                <input
+                                  type="text"
+                                  name="guardian_name"
+                                  value={editFormData.guardian_name}
+                                  onChange={handleInputChange}
+                                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                                />
+                              </div>
+                              <div>
+                                <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                                  Relationship
+                                </p>
+                                <select
+                                  name="guardian_relationship"
+                                  value={editFormData.guardian_relationship}
+                                  onChange={handleInputChange}
+                                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm select-none"
+                                >
+                                  <option value="">SELECT...</option>
+                                  <option value="PARENT">PARENT</option>
+                                  <option value="GRANDPARENT">GRANDPARENT</option>
+                                  <option value="SIBLING">SIBLING</option>
+                                  <option value="AUNT/UNCLE">AUNT/UNCLE</option>
+                                  <option value="COUSIN">COUSIN</option>
+                                  <option value="STEP-PARENT">STEP-PARENT</option>
+                                  <option value="LEGAL GUARDIAN">
+                                    LEGAL GUARDIAN
+                                  </option>
+                                  <option value="OTHER">OTHER</option>
+                                </select>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div>
+                                <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                                  Guardian Name
+                                </p>
+                                <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight">
+                                  {request.guardian_name || "NOT SPECIFIED"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                                  Relationship
+                                </p>
+                                <p className="font-semibold text-gray-800 text-sm uppercase">
+                                  {request.guardian_relationship ||
+                                    "NOT SPECIFIED"}
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     )}
 
-                  {isGuardianship && (
-                    <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col">
-                      <div className="border-l-4 border-blue-500 pl-3 mb-5">
-                        <h3 className="font-black text-gray-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
-                          <User className="w-4 h-4 text-blue-500" />
-                          Guardian Information
-                        </h3>
-                      </div>
-                      <div className="space-y-5 flex-1">
-                        {isEditing ? (
-                          <>
-                            <div>
-                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
-                                Guardian's Full Name
-                              </p>
-                              <input
-                                type="text"
-                                name="guardian_name"
-                                value={editFormData.guardian_name}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
-                              />
-                            </div>
-                            <div>
-                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
-                                Relationship
-                              </p>
-                              <select
-                                name="guardian_relationship"
-                                value={editFormData.guardian_relationship}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm select-none"
-                              >
-                                <option value="">SELECT...</option>
-                                <option value="PARENT">PARENT</option>
-                                <option value="GRANDPARENT">GRANDPARENT</option>
-                                <option value="SIBLING">SIBLING</option>
-                                <option value="AUNT/UNCLE">AUNT/UNCLE</option>
-                                <option value="COUSIN">COUSIN</option>
-                                <option value="STEP-PARENT">STEP-PARENT</option>
-                                <option value="LEGAL GUARDIAN">
-                                  LEGAL GUARDIAN
-                                </option>
-                                <option value="OTHER">OTHER</option>
-                              </select>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div>
-                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
-                                Guardian Name
-                              </p>
-                              <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight">
-                                {request.guardian_name || "NOT SPECIFIED"}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
-                                Relationship
-                              </p>
-                              <p className="font-semibold text-gray-800 text-sm uppercase">
-                                {request.guardian_relationship ||
-                                  "NOT SPECIFIED"}
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {request.admin_comment && (
-                    <div className="bg-orange-50 rounded-xl p-5 border border-orange-100 shadow-sm">
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="bg-orange-100 p-1.5 rounded-lg">
-                          <FileText className="w-4 h-4 text-orange-600" />
+                    {request.admin_comment && (
+                      <div className="bg-orange-50 rounded-xl p-5 border border-orange-100 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="bg-orange-100 p-1.5 rounded-lg">
+                            <FileText className="w-4 h-4 text-orange-600" />
+                          </div>
+                          <h3 className="font-black text-orange-900 text-[11px] uppercase tracking-[0.2em]">
+                            Admin Remarks
+                          </h3>
                         </div>
-                        <h3 className="font-black text-orange-900 text-[11px] uppercase tracking-[0.2em]">
-                          Admin Remarks
-                        </h3>
+                        <p className="text-sm text-orange-800 italic leading-relaxed font-medium">
+                          "{request.admin_comment}"
+                        </p>
                       </div>
-                      <p className="text-sm text-orange-800 italic leading-relaxed font-medium">
-                        "{request.admin_comment}"
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
 
               {(isDeath || isMedicoLegal) && (
                 <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm mt-6">
@@ -3591,8 +3584,8 @@ function RequestDetailsModal({
                                 value={
                                   editFormData.date_of_death
                                     ? new Date(editFormData.date_of_death)
-                                        .toISOString()
-                                        .split("T")[0]
+                                      .toISOString()
+                                      .split("T")[0]
                                     : ""
                                 }
                                 onChange={handleInputChange}
@@ -3646,8 +3639,8 @@ function RequestDetailsModal({
                                 value={
                                   editFormData.date_of_examination
                                     ? new Date(editFormData.date_of_examination)
-                                        .toISOString()
-                                        .split("T")[0]
+                                      .toISOString()
+                                      .split("T")[0]
                                     : ""
                                 }
                                 onChange={handleInputChange}
@@ -3676,8 +3669,8 @@ function RequestDetailsModal({
                                 value={
                                   editFormData.date_of_hearing
                                     ? new Date(editFormData.date_of_hearing)
-                                        .toISOString()
-                                        .split("T")[0]
+                                      .toISOString()
+                                      .split("T")[0]
                                     : ""
                                 }
                                 onChange={handleInputChange}
@@ -3696,17 +3689,17 @@ function RequestDetailsModal({
                             </p>
                             <p className="font-semibold text-gray-800 text-sm font-mono">
                               {request.date_of_death ||
-                              request.residents?.date_of_death
+                                request.residents?.date_of_death
                                 ? new Date(
-                                    request.date_of_death ||
-                                      request.residents.date_of_death,
-                                  )
-                                    .toLocaleDateString("en-US", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })
-                                    .toUpperCase()
+                                  request.date_of_death ||
+                                  request.residents.date_of_death,
+                                )
+                                  .toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })
+                                  .toUpperCase()
                                 : "NOT RECORDED"}
                             </p>
                           </div>
@@ -3721,12 +3714,12 @@ function RequestDetailsModal({
                               <p className="font-semibold text-gray-800 text-sm font-mono whitespace-nowrap">
                                 {request.date_of_examination
                                   ? new Date(request.date_of_examination)
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "NOT RECORDED"}
                               </p>
                             </div>
@@ -3745,12 +3738,12 @@ function RequestDetailsModal({
                               <p className="font-semibold text-gray-800 text-sm font-mono whitespace-nowrap">
                                 {request.date_of_hearing
                                   ? new Date(request.date_of_hearing)
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "NOT RECORDED"}
                               </p>
                             </div>
@@ -3810,55 +3803,53 @@ function RequestDetailsModal({
               {Array.isArray(history) && history.length > 0 ? (
                 <div className="space-y-4">
                   {history.map((entry, index) => (
-                      <div key={index} className="flex gap-4 group">
-                        <div className="flex-shrink-0">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border ${
-                              entry.action === "approve" ? "bg-green-50 text-green-600 border-green-100"
-                                : entry.action === "reject" ? "bg-red-50 text-red-600 border-red-100"
-                                : entry.action === "return" ? "bg-amber-50 text-amber-600 border-amber-100"
+                    <div key={index} className="flex gap-4 group">
+                      <div className="flex-shrink-0">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border ${entry.action === "approve" ? "bg-green-50 text-green-600 border-green-100"
+                            : entry.action === "reject" ? "bg-red-50 text-red-600 border-red-100"
+                              : entry.action === "return" ? "bg-amber-50 text-amber-600 border-amber-100"
                                 : entry.action === "note" ? "bg-purple-50 text-purple-600 border-purple-100"
-                                : entry.action === "submitted" ? "bg-blue-50 text-blue-600 border-blue-100"
-                                : "bg-gray-50 text-gray-500 border-gray-100"
-                            }`}>
-                            {entry.action === "approve" ? <CheckCircle className="w-5 h-5" />
-                              : entry.action === "reject" ? <XCircle className="w-5 h-5" />
+                                  : entry.action === "submitted" ? "bg-blue-50 text-blue-600 border-blue-100"
+                                    : "bg-gray-50 text-gray-500 border-gray-100"
+                          }`}>
+                          {entry.action === "approve" ? <CheckCircle className="w-5 h-5" />
+                            : entry.action === "reject" ? <XCircle className="w-5 h-5" />
                               : entry.action === "return" ? <RotateCcw className="w-5 h-5" />
-                              : entry.action === "note" ? <MessageCircle className="w-5 h-5" />
-                              : <FileText className="w-5 h-5" />}
-                          </div>
-                        </div>
-                        <div className="flex-1 bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50 group-hover:bg-gray-50 transition-colors">
-                          <div className="flex justify-between items-start mb-1">
-                            <p className="font-extrabold text-gray-900 uppercase text-[12px] tracking-tight">
-                              {entry.users
-                                ? `${entry.users.first_name || ""} ${entry.users.last_name || ""}`.trim() || entry.users.email
-                                : entry.performed_by_name || entry.performed_by_email || "System"}
-                            </p>
-                            <span className="text-[10px] font-bold text-gray-400 font-mono tracking-tighter bg-white px-2 py-0.5 rounded border border-gray-100">
-                              {new Date(entry.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-[0.1em] ${
-                                entry.action === "approve" ? "bg-green-100 text-green-700"
-                                  : entry.action === "reject" ? "bg-red-100 text-red-700"
-                                  : entry.action === "return" ? "bg-amber-100 text-amber-700"
-                                  : entry.action === "note" ? "bg-purple-100 text-purple-700"
-                                  : entry.action === "submitted" ? "bg-blue-100 text-blue-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}>
-                              {entry.action === "submitted" ? "SUBMITTED" : entry.action?.toUpperCase()}
-                            </span>
-                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{entry.step_name}</span>
-                          </div>
-                          {(entry.comments || entry.comment) && (
-                            <div className="bg-white p-3 rounded-xl border border-gray-100 text-[13px] text-gray-700 italic font-medium leading-relaxed shadow-sm">
-                              "{entry.comments || entry.comment}"
-                            </div>
-                          )}
+                                : entry.action === "note" ? <MessageCircle className="w-5 h-5" />
+                                  : <FileText className="w-5 h-5" />}
                         </div>
                       </div>
-                    ))}
+                      <div className="flex-1 bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50 group-hover:bg-gray-50 transition-colors">
+                        <div className="flex justify-between items-start mb-1">
+                          <p className="font-extrabold text-gray-900 uppercase text-[12px] tracking-tight">
+                            {entry.users
+                              ? `${entry.users.first_name || ""} ${entry.users.last_name || ""}`.trim() || entry.users.email
+                              : entry.performed_by_name || entry.performed_by_email || "System"}
+                          </p>
+                          <span className="text-[10px] font-bold text-gray-400 font-mono tracking-tighter bg-white px-2 py-0.5 rounded border border-gray-100">
+                            {new Date(entry.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-[0.1em] ${entry.action === "approve" ? "bg-green-100 text-green-700"
+                              : entry.action === "reject" ? "bg-red-100 text-red-700"
+                                : entry.action === "return" ? "bg-amber-100 text-amber-700"
+                                  : entry.action === "note" ? "bg-purple-100 text-purple-700"
+                                    : entry.action === "submitted" ? "bg-blue-100 text-blue-700"
+                                      : "bg-gray-100 text-gray-700"
+                            }`}>
+                            {entry.action === "submitted" ? "SUBMITTED" : entry.action?.toUpperCase()}
+                          </span>
+                          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{entry.step_name}</span>
+                        </div>
+                        {(entry.comments || entry.comment) && (
+                          <div className="bg-white p-3 rounded-xl border border-gray-100 text-[13px] text-gray-700 italic font-medium leading-relaxed shadow-sm">
+                            "{entry.comments || entry.comment}"
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-400 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
@@ -4075,11 +4066,10 @@ function RequestDetailsModal({
                         Electronic Tag
                       </p>
                       <div
-                        className={`inline-flex items-center px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${
-                          request.residents.pending_case
+                        className={`inline-flex items-center px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${request.residents.pending_case
                             ? "bg-rose-600 text-white border-rose-500 shadow-rose-200 animate-pulse"
                             : "bg-emerald-600 text-white border-emerald-500 shadow-emerald-200"
-                        }`}
+                          }`}
                       >
                         {request.residents.pending_case
                           ? "HOLD / PENDING CASE"
@@ -4092,11 +4082,10 @@ function RequestDetailsModal({
                         Case History & Administrative Remarks
                       </p>
                       <div
-                        className={`p-4 rounded-xl border-2 text-[12px] font-extrabold leading-relaxed min-h-[80px] shadow-inner ${
-                          request.residents.pending_case
+                        className={`p-4 rounded-xl border-2 text-[12px] font-extrabold leading-relaxed min-h-[80px] shadow-inner ${request.residents.pending_case
                             ? "bg-white border-rose-100 text-rose-900 italic"
                             : "bg-gray-50 border-gray-100 text-gray-400 border-dashed"
-                        }`}
+                          }`}
                       >
                         {request.residents.case_record_history ||
                           "NO PREVIOUS LEGAL HISTORY OR PENDING CASES REPORTED FOR THIS RESIDENT RECORD."}
@@ -4761,34 +4750,34 @@ function RequestDetailsModal({
                       {!["ready", "ready_for_pickup"].includes(
                         request.status,
                       ) && (
-                        <>
-                          {request.certificate_type !== "business_permit" && (
+                          <>
+                            {request.certificate_type !== "business_permit" && (
+                              <button
+                                onClick={() =>
+                                  onAction(
+                                    request,
+                                    request.status === "oic_review"
+                                      ? "send_back_to_start"
+                                      : "return",
+                                  )
+                                }
+                                disabled={isEditing}
+                                className={`px-6 py-3.5 bg-white border-2 border-amber-200 text-amber-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                                Send Back
+                              </button>
+                            )}
                             <button
-                              onClick={() =>
-                                onAction(
-                                  request,
-                                  request.status === "oic_review"
-                                    ? "send_back_to_start"
-                                    : "return",
-                                )
-                              }
+                              onClick={() => onAction(request, "reject")}
                               disabled={isEditing}
-                              className={`px-6 py-3.5 bg-white border-2 border-amber-200 text-amber-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
+                              className={`px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
                             >
-                              <RotateCcw className="w-4 h-4" />
-                              Send Back
+                              <XCircle className="w-4 h-4" />
+                              Reject
                             </button>
-                          )}
-                          <button
-                            onClick={() => onAction(request, "reject")}
-                            disabled={isEditing}
-                            className={`px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Reject
-                          </button>
-                        </>
-                      )}
+                          </>
+                        )}
                       <button
                         onClick={() => onAction(request, "approve")}
                         disabled={isEditing}
@@ -4952,84 +4941,84 @@ function ActionModal({
     approve: isReviewStep
       ? request.status === "physical_inspection"
         ? {
-            title: "Submit Inspection & Forward",
-            description:
-              "The physical inspection is complete. Forward this for approval.",
-            icon: ClipboardCheck,
-            iconBg: "bg-amber-100",
-            iconColor: "text-amber-600",
-            buttonBg: "bg-amber-600 hover:bg-amber-700",
-            buttonText: "Submit & Forward",
-          }
+          title: "Submit Inspection & Forward",
+          description:
+            "The physical inspection is complete. Forward this for approval.",
+          icon: ClipboardCheck,
+          iconBg: "bg-amber-100",
+          iconColor: "text-amber-600",
+          buttonBg: "bg-amber-600 hover:bg-amber-700",
+          buttonText: "Submit & Forward",
+        }
         : {
-            title: "Verify & Forward Request",
-            description:
-              "I confirm that the resident is legitimate and the request is valid.",
-            icon: CheckCircle,
-            iconBg: "bg-blue-100",
-            iconColor: "text-blue-600",
-            buttonBg: "bg-blue-600 hover:bg-blue-700",
-            buttonText: "Verify & Forward",
-          }
+          title: "Verify & Forward Request",
+          description:
+            "I confirm that the resident is legitimate and the request is valid.",
+          icon: CheckCircle,
+          iconBg: "bg-blue-100",
+          iconColor: "text-blue-600",
+          buttonBg: "bg-blue-600 hover:bg-blue-700",
+          buttonText: "Verify & Forward",
+        }
       : request.status === "oic_review"
         ? {
-            title: "Ready for Pickup",
-            description:
-              "Mark this certificate as ready for the resident to collect.",
-            icon: CheckCircle,
-            iconBg: "bg-indigo-100",
-            iconColor: "text-indigo-600",
-            buttonBg: "bg-indigo-600 hover:bg-indigo-700",
-            buttonText: "Ready to Pickup",
-          }
+          title: "Ready for Pickup",
+          description:
+            "Mark this certificate as ready for the resident to collect.",
+          icon: CheckCircle,
+          iconBg: "bg-indigo-100",
+          iconColor: "text-indigo-600",
+          buttonBg: "bg-indigo-600 hover:bg-indigo-700",
+          buttonText: "Ready to Pickup",
+        }
         : ["ready", "ready_for_pickup"].includes(request.status)
           ? {
-              title: "Release Certificate",
-              description:
-                "Confirm that this certificate has been officially released to the resident.",
-              icon: CheckCircle,
-              iconBg: "bg-green-100",
-              iconColor: "text-green-600",
-              buttonBg: "bg-green-600 hover:bg-green-700",
-              buttonText: "Confirm Release",
-            }
+            title: "Release Certificate",
+            description:
+              "Confirm that this certificate has been officially released to the resident.",
+            icon: CheckCircle,
+            iconBg: "bg-green-100",
+            iconColor: "text-green-600",
+            buttonBg: "bg-green-600 hover:bg-green-700",
+            buttonText: "Confirm Release",
+          }
           : {
-              title: "Approve Request",
-              description:
-                "Are you sure you want to approve this certificate request?",
-              icon: CheckCircle,
-              iconBg: "bg-green-100",
-              iconColor: "text-green-600",
-              buttonBg: "bg-green-600 hover:bg-green-700",
-              buttonText:
-                currentStep?.status === "Treasury" ||
+            title: "Approve Request",
+            description:
+              "Are you sure you want to approve this certificate request?",
+            icon: CheckCircle,
+            iconBg: "bg-green-100",
+            iconColor: "text-green-600",
+            buttonBg: "bg-green-600 hover:bg-green-700",
+            buttonText:
+              currentStep?.status === "Treasury" ||
                 request.status === "Treasury"
-                  ? "Mark as Paid & Generate OR"
-                  : currentStep?.status === "captain_approval" ||
-                      request.status === "captain_approval"
-                    ? "Approve Request"
-                    : "Forward Request",
-            },
+                ? "Mark as Paid & Generate OR"
+                : currentStep?.status === "captain_approval" ||
+                  request.status === "captain_approval"
+                  ? "Approve Request"
+                  : "Forward Request",
+          },
     reject: isReviewStep
       ? {
-          title: "Mark as Not Legitimate",
-          description:
-            "Please provide a reason why this request is not legitimate.",
-          icon: XCircle,
-          iconBg: "bg-red-100",
-          iconColor: "text-red-600",
-          buttonBg: "bg-red-600 hover:bg-red-700",
-          buttonText: "Reject Request",
-        }
+        title: "Mark as Not Legitimate",
+        description:
+          "Please provide a reason why this request is not legitimate.",
+        icon: XCircle,
+        iconBg: "bg-red-100",
+        iconColor: "text-red-600",
+        buttonBg: "bg-red-600 hover:bg-red-700",
+        buttonText: "Reject Request",
+      }
       : {
-          title: "Reject Request",
-          description: "Please provide a reason for rejecting this request.",
-          icon: XCircle,
-          iconBg: "bg-red-100",
-          iconColor: "text-red-600",
-          buttonBg: "bg-red-600 hover:bg-red-700",
-          buttonText: "Reject Request",
-        },
+        title: "Reject Request",
+        description: "Please provide a reason for rejecting this request.",
+        icon: XCircle,
+        iconBg: "bg-red-100",
+        iconColor: "text-red-600",
+        buttonBg: "bg-red-600 hover:bg-red-700",
+        buttonText: "Reject Request",
+      },
     return: {
       title: "Send Back for Revision",
       description: "Please specify what needs to be corrected or updated.",
@@ -5472,174 +5461,203 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
     );
   }, []);
 
-  const handlePrint = () => {
-    const printContent = certificateRef.current;
-    if (!printContent) return;
+  // ── Print: opens a new window with auto-scale and browser print dialog ──
+  const handlePrintPDF = () => {
+    if (!certificateRef.current) return;
 
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(`
-      <!DOCTYPE html>
+    const element = certificateRef.current;
+
+    // Collect inline CSS from loaded stylesheets
+    let allCSS = "";
+    Array.from(document.styleSheets).forEach((sheet) => {
+      try {
+        Array.from(sheet.cssRules || []).forEach((rule) => {
+          allCSS += rule.cssText + "\n";
+        });
+      } catch (_e) {}
+    });
+
+    const linkHrefs = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .map((l) => l.href)
+      .filter(Boolean);
+
+    const printWindow = window.open("", "_blank", "width=900,height=1200");
+    if (!printWindow) {
+      alert("Pop-up blocked. Please allow pop-ups for this site and try again.");
+      return;
+    }
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>${request.reference_number}</title>
+    ${linkHrefs.map((href) => `<link rel="stylesheet" href="${href}" />`).join("\n")}
+    <style>
+      ${allCSS}
+      @page { size: A4 portrait; margin: 0; }
+      html, body { margin: 0; padding: 0; width: 210mm; height: 297mm; overflow: hidden; background: white; }
+      .cert-print-wrapper { width: 210mm; transform-origin: top left; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    </style>
+  </head>
+  <body>
+    <div class="cert-print-wrapper" id="certWrap">${element.outerHTML}</div>
+    <script>
+      function scaleAndPrint() {
+        var wrap = document.getElementById('certWrap');
+        if (!wrap) { window.print(); window.close(); return; }
+        var A4_H = 1122;
+        var contentH = wrap.scrollHeight;
+        if (contentH > A4_H) {
+          var scale = A4_H / contentH;
+          wrap.style.transform = 'scale(' + scale + ')';
+          document.body.style.height = (contentH * scale) + 'px';
+        }
+        setTimeout(function() { window.print(); window.close(); }, 300);
+      }
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function() { setTimeout(scaleAndPrint, 300); });
+      } else {
+        window.addEventListener('load', function() { setTimeout(scaleAndPrint, 500); });
+      }
+    <\/script>
+  </body>
+</html>`);
+    printWindow.document.close();
+  };
+
+  // ── Download PDF: Hidden iFrame strategy for Perfect Fidelity ──
+  const handleDownloadPDF = async () => {
+    if (!certificateRef.current) return;
+    setIsDownloading(true);
+
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
+      const element = certificateRef.current;
+      
+      // Collect inline CSS from loaded stylesheets (same as Print)
+      let allCSS = "";
+      Array.from(document.styleSheets).forEach((sheet) => {
+        try {
+          Array.from(sheet.cssRules || []).forEach((rule) => {
+            allCSS += rule.cssText + "\n";
+          });
+        } catch (_e) {}
+      });
+
+      const linkHrefs = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .map((l) => l.href)
+        .filter(Boolean);
+
+      // Create a hidden iframe
+      const iframe = document.createElement('iframe');
+      iframe.style.visibility = 'hidden';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '210mm';   // Exact A4 width
+      iframe.style.height = '297mm';  // Exact A4 height
+      iframe.style.border = 'none';
+      iframe.style.zIndex = '-9999';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentWindow.document;
+
+      // Inject HTML and CSS
+      iframeDoc.write(`<!DOCTYPE html>
       <html>
         <head>
-          <title>${getTypeLabel(request.certificate_type)} - ${request.reference_number}</title>
-          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-          <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Merriweather:wght@400;700&family=Crimson+Text:wght@400;600;700&family=Old+Standard+TT:wght@400;700&display=swap" rel="stylesheet">
+          <meta charset="UTF-8" />
+          ${linkHrefs.map((href) => `<link rel="stylesheet" href="${href}" />`).join("\n")}
           <style>
-            @page {
-              size: A4 portrait;
-              margin: 0;
-            }
-            @media print {
-              html, body {
-                width: 210mm;
-                height: 297mm;
-                margin: 0;
-                padding: 0;
-              }
-              * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-              .certificate-container {
-                box-shadow: none !important;
-              }
-            }
-            body {
+            ${allCSS}
+            html, body {
               margin: 0;
               padding: 0;
-              display: flex;
-              justify-content: center;
-              align-items: flex-start;
-              background: #f5f5f5;
+              width: 210mm;
+              height: 297mm;
+              background: white;
+              overflow: hidden;
             }
             .certificate-container {
-              width: 210mm;
-              min-height: 297mm;
-              padding: 0;
-              box-sizing: border-box;
-              background: white;
+              width: 210mm !important;
+              min-height: 297mm !important;
+              box-sizing: border-box !important;
+              margin: 0 !important;
+              box-shadow: none !important;
             }
-            /* Preserve all positioning and styling */
-            .absolute {
-              position: absolute;
-            }
-            .relative {
-              position: relative;
-            }
-            .flex {
-              display: flex;
-            }
-            .flex-col {
-              flex-direction: column;
-            }
-            .items-center {
-              align-items: center;
-            }
-            .justify-center {
-              justify-content: center;
-            }
-            .text-center {
-              text-align: center;
-            }
-            .pointer-events-none {
-              pointer-events: none;
+            /* Clean up any tracking/spacing issues specific to html2canvas rendering */
+            * {
+              letter-spacing: normal !important;
             }
           </style>
         </head>
         <body>
-          ${printContent.outerHTML}
-          <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.print();
-                window.close();
-              }, 800);
-            };
-          </script>
+          ${element.outerHTML}
         </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
+      </html>`);
+      iframeDoc.close();
 
-  const handleDownloadPDF = async () => {
-    // For other certificates OR the Business Permit Application Form (old template), use html2canvas
-    if (!certificateRef.current) return;
-
-    setIsDownloading(true);
-
-    try {
-      const html2canvas = (await import("html2canvas")).default;
-      const jsPDF = (await import("jspdf")).default;
-
-      const element = certificateRef.current;
-      
-      // Temporarily reset letter-spacing for better PDF rendering
-      const originalStyles = [];
-      const allElements = element.querySelectorAll('*');
-      allElements.forEach((el) => {
-        const computed = window.getComputedStyle(el);
-        originalStyles.push({
-          element: el,
-          letterSpacing: el.style.letterSpacing,
-          wordSpacing: el.style.wordSpacing,
-        });
-        // Reset to normal spacing
-        el.style.letterSpacing = 'normal';
-        el.style.wordSpacing = 'normal';
+      // Ensure iframe content is fully loaded
+      await new Promise((resolve) => {
+        iframe.onload = () => {
+          setTimeout(resolve, 800); // Buffer for font rendering
+        };
+        // Fallback timeout in case onload doesn't fire
+        setTimeout(resolve, 1500);
       });
-      
-      // Add a small delay to ensure fonts are loaded and styles applied
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      const canvas = await html2canvas(element, {
-        scale: 3, // Increased scale for better quality
+
+      const captureTarget = iframeDoc.querySelector('.certificate-container') || iframeDoc.body;
+
+      // Capture the pristine layout
+      const canvas = await html2canvas(captureTarget, {
+        scale: 2,
         useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        letterRendering: true, // Better text rendering
         allowTaint: false,
-        foreignObjectRendering: false, // Disable to avoid text issues
-        imageTimeout: 0,
-        removeContainer: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        windowWidth: iframe.offsetWidth,
+        windowHeight: iframe.offsetHeight
       });
 
-      // Restore original styles
-      originalStyles.forEach(({ element, letterSpacing, wordSpacing }) => {
-        element.style.letterSpacing = letterSpacing;
-        element.style.wordSpacing = wordSpacing;
-      });
+      // Cleanup
+      document.body.removeChild(iframe);
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/png", 1.0);
       const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-        compress: true,
+        orientation: "portrait", 
+        unit: "mm", 
+        format: "a4", 
+        compress: true 
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
+      const pdfW = 210;
+      const pdfH = 297;
+      
+      // Calculate how to fit the width perfectly on the page
+      const imgWidthMm = pdfW;
+      const imgHeightMm = (canvas.height * pdfW) / canvas.width;
 
-      pdf.addImage(
-        imgData,
-        "PNG",
-        imgX,
-        imgY,
-        imgWidth * ratio,
-        imgHeight * ratio,
-        undefined,
-        'FAST' // Use FAST compression for better quality
-      );
+      if (imgHeightMm <= pdfH) {
+        // Fits vertically - align to top
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
+      } else {
+        // Too tall - Scale to fit exactly one A4 page
+        const scale = pdfH / imgHeightMm;
+        const scaledWidth = imgWidthMm * scale;
+        const xOffset = (pdfW - scaledWidth) / 2;
+        pdf.addImage(imgData, "PNG", xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
+      }
+
       pdf.save(`${request.reference_number}.pdf`);
     } catch (error) {
-      console.error("PDF generation error:", error);
-      alert("Could not generate PDF. Please try printing instead.");
+      console.error("PDF download error:", error);
+      alert("Could not generate PDF. Please use the Print option for perfect results.");
     } finally {
       setIsDownloading(false);
     }
@@ -5647,105 +5665,105 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-gray-900/80">
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden" style={{ height: '96vh' }}>
-          {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-700 px-6 py-3 flex items-center justify-between shrink-0 z-10">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onBack}
-                className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg mr-2"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
-              <div className="bg-white/20 p-2 rounded-lg">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">
-                  Certificate Preview
-                </h2>
-                <p className="text-purple-200 text-sm">
-                  {request.reference_number}
-                </p>
-              </div>
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden" style={{ height: '96vh' }}>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-700 px-6 py-3 flex items-center justify-between shrink-0 z-10">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg mr-2"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+            <div className="bg-white/20 p-2 rounded-lg">
+              <FileText className="w-6 h-6 text-white" />
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium text-sm"
-              >
-                <Printer className="w-4 h-4" />
-                Print
-              </button>
-              {['oic_review', 'ready', 'ready_for_pickup', 'released'].includes(request.status) && (
-                <button
-                  onClick={handleDownloadPDF}
-                  disabled={isDownloading}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium text-sm disabled:opacity-50"
-                >
-                  {isDownloading ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
-                  Download
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg ml-2"
-              >
-                <X className="w-6 h-6" />
-              </button>
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                Certificate Preview
+              </h2>
+              <p className="text-purple-200 text-sm">
+                {request.reference_number}
+              </p>
             </div>
           </div>
-
-          {/* Template Selection Tabs (Only for Business Permits) */}
-          {request.certificate_type === "business_permit" && (
-            <div className="bg-gray-50 border-b border-gray-200 px-6 py-2 flex items-center gap-4">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                Select Form Template:
-              </span>
-              <div className="flex bg-gray-200 p-1 rounded-xl">
-                <button
-                  onClick={() => setSelectedTemplate("old")}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedTemplate === "old" ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  Application Form
-                </button>
-                <button
-                  onClick={() => setSelectedTemplate("new")}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedTemplate === "new" ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  Business Clearance
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Certificate Preview */}
-          <div className="flex-1 overflow-y-auto bg-gray-100 p-4">
-            {!officials ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm font-medium text-gray-500">Loading certificate template...</p>
-                </div>
-              </div>
-            ) : (
-              <ClearancePreviewForRequests
-                request={request}
-                currentDate={currentDate}
-                officials={officials}
-                certificateRef={certificateRef}
-                history={history}
-                inspectionData={inspectionData}
-                selectedTemplate={selectedTemplate}
-                orData={orData}
-              />
-            )}
+          <div className="flex items-center gap-2">
+            {/* Print button — opens print window (perfect fidelity) */}
+            <button
+              onClick={handlePrintPDF}
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium text-sm"
+            >
+              <Printer className="w-4 h-4" />
+              Print
+            </button>
+            {/* Download button — saves PDF directly */}
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-purple-700 rounded-lg hover:bg-purple-50 transition-all font-medium text-sm disabled:opacity-50"
+            >
+              {isDownloading ? (
+                <div className="w-4 h-4 border-2 border-purple-300 border-t-purple-700 rounded-full animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              Download PDF
+            </button>
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg ml-2"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
         </div>
+
+        {/* Template Selection Tabs (Only for Business Permits) */}
+        {request.certificate_type === "business_permit" && (
+          <div className="bg-gray-50 border-b border-gray-200 px-6 py-2 flex items-center gap-4">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Select Form Template:
+            </span>
+            <div className="flex bg-gray-200 p-1 rounded-xl">
+              <button
+                onClick={() => setSelectedTemplate("old")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedTemplate === "old" ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                Application Form
+              </button>
+              <button
+                onClick={() => setSelectedTemplate("new")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedTemplate === "new" ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                Business Clearance
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Certificate Preview */}
+        <div className="flex-1 overflow-y-auto bg-gray-100 p-4">
+          {!officials ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm font-medium text-gray-500">Loading certificate template...</p>
+              </div>
+            </div>
+          ) : (
+            <ClearancePreviewForRequests
+              request={request}
+              currentDate={currentDate}
+              officials={officials}
+              certificateRef={certificateRef}
+              history={history}
+              inspectionData={inspectionData}
+              selectedTemplate={selectedTemplate}
+              orData={orData}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -5922,15 +5940,15 @@ function ClearancePreviewForRequests({
 
   const issuedDate = captainApproval?.created_at
     ? new Date(captainApproval.created_at).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 
   return (
     <div className="p-1 flex justify-center print:p-0">
@@ -6152,10 +6170,10 @@ function ClearancePreviewForRequests({
                             : request.certificate_type === "barangay_clearance"
                               ? "BARANGAY CLEARANCE CERTIFICATE"
                               : request.certificate_type ===
-                                  "certificate_of_indigency"
+                                "certificate_of_indigency"
                                 ? "CERTIFICATE OF INDIGENCY"
                                 : request.certificate_type ===
-                                    "barangay_residency"
+                                  "barangay_residency"
                                   ? "BARANGAY RESIDENCY CERTIFICATE"
                                   : "CERTIFICATE"}
                 </h2>
@@ -6208,32 +6226,32 @@ function ClearancePreviewForRequests({
                         [
                           "Name of Owner",
                           request.ownerFullName ||
-                            additionalDetails.ownerFullName ||
-                            formData.fullName,
+                          additionalDetails.ownerFullName ||
+                          formData.fullName,
                         ],
                         [
                           "Owner's Address",
                           request.ownerAddress ||
-                            additionalDetails.ownerAddress ||
-                            formData.address,
+                          additionalDetails.ownerAddress ||
+                          formData.address,
                         ],
                         [
                           "Business / Trade Name",
                           request.businessName ||
-                            additionalDetails.businessName ||
-                            "N/A",
+                          additionalDetails.businessName ||
+                          "N/A",
                         ],
                         [
                           "Business Address",
                           request.businessAddress ||
-                            additionalDetails.businessAddress ||
-                            "N/A",
+                          additionalDetails.businessAddress ||
+                          "N/A",
                         ],
                         [
                           "Nature of Business",
                           request.natureOfBusiness ||
-                            additionalDetails.natureOfBusiness ||
-                            "N/A",
+                          additionalDetails.natureOfBusiness ||
+                          "N/A",
                         ],
                       ].map(([label, value], idx) => (
                         <div key={idx} className="flex items-start">
@@ -6329,13 +6347,13 @@ function ClearancePreviewForRequests({
                           <span className="text-left pl-2 font-bold">
                             {orData?.amount_paid
                               ? "₱" +
-                                parseFloat(orData.amount_paid).toLocaleString(
-                                  undefined,
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  },
-                                )
+                              parseFloat(orData.amount_paid).toLocaleString(
+                                undefined,
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                },
+                              )
                               : ""}
                           </span>
 
@@ -6386,12 +6404,12 @@ function ClearancePreviewForRequests({
                           <td className="border border-black p-1.5 w-[35%] font-normal">
                             {request.applicationDate
                               ? new Date(
-                                  request.applicationDate,
-                                ).toLocaleDateString("en-US")
+                                request.applicationDate,
+                              ).toLocaleDateString("en-US")
                               : request.created_at
                                 ? new Date(
-                                    request.created_at,
-                                  ).toLocaleDateString("en-US")
+                                  request.created_at,
+                                ).toLocaleDateString("en-US")
                                 : ""}
                           </td>
                           <td className="border border-black p-1.5 w-[30%] text-center text-red-700 font-bold">
@@ -6550,8 +6568,8 @@ function ClearancePreviewForRequests({
                         <div className="flex-1 border-b border-black h-4 px-2">
                           {inspectionData?.visitDateTime
                             ? new Date(
-                                inspectionData.visitDateTime,
-                              ).toLocaleString()
+                              inspectionData.visitDateTime,
+                            ).toLocaleString()
                             : ""}
                         </div>
                       </div>
@@ -6685,7 +6703,7 @@ function ClearancePreviewForRequests({
                           {request.certificate_type === "barangay_clearance"
                             ? "This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:"
                             : request.certificate_type ===
-                                "certificate_of_indigency"
+                              "certificate_of_indigency"
                               ? 'This is to certify that below mentioned person is a bona fide resident and their family belongs to the "Indigent Families" of this barangay as of date mentioned below. Further certifying that their income is not enough to sustain and support their basic needs:'
                               : "This is to certify that below mentioned person is a bona fide resident of this barangay as detailed below:"}
                         </p>
@@ -6716,50 +6734,50 @@ function ClearancePreviewForRequests({
                                 "DATE OF BIRTH",
                                 formData.dateOfBirth
                                   ? new Date(formData.dateOfBirth)
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "N/A",
                               ],
                               [
                                 "DATE OF EXAMINATION",
                                 formData.date_of_examination ||
-                                formData.dateOfExamination
+                                  formData.dateOfExamination
                                   ? new Date(
-                                      formData.date_of_examination ||
-                                        formData.dateOfExamination,
-                                    )
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    formData.date_of_examination ||
+                                    formData.dateOfExamination,
+                                  )
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "NOT RECORDED",
                               ],
                               [
                                 "USAPING BARANGAY NO.",
                                 formData.usaping_barangay ||
-                                  formData.usapingBarangay ||
-                                  "NOT RECORDED",
+                                formData.usapingBarangay ||
+                                "NOT RECORDED",
                               ],
                               [
                                 "DATE OF HEARING",
                                 formData.date_of_hearing ||
-                                formData.dateOfHearing
+                                  formData.dateOfHearing
                                   ? new Date(
-                                      formData.date_of_hearing ||
-                                        formData.dateOfHearing,
-                                    )
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    formData.date_of_hearing ||
+                                    formData.dateOfHearing,
+                                  )
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "NOT RECORDED",
                               ],
                             ];
@@ -6789,12 +6807,12 @@ function ClearancePreviewForRequests({
                                 "DATE OF DEATH",
                                 formData.dateOfDeath
                                   ? new Date(formData.dateOfDeath)
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "",
                               ],
                               [
@@ -6812,12 +6830,12 @@ function ClearancePreviewForRequests({
                                 "DATE OF BIRTH",
                                 formData.dateOfBirth
                                   ? new Date(formData.dateOfBirth)
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "",
                               ],
                               [
@@ -6834,12 +6852,12 @@ function ClearancePreviewForRequests({
                                 "DATE OF BIRTH",
                                 formData.partnerDateOfBirth
                                   ? new Date(formData.partnerDateOfBirth)
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "",
                               ],
                               ["NO. OF CHILDREN", formData.noOfChildren],
@@ -6854,12 +6872,12 @@ function ClearancePreviewForRequests({
                                 "DATE OF BIRTH",
                                 formData.dateOfBirth
                                   ? new Date(formData.dateOfBirth)
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "",
                               ],
                               [
@@ -6888,12 +6906,12 @@ function ClearancePreviewForRequests({
                                 "Date of Birth",
                                 formData.dateOfBirth
                                   ? new Date(formData.dateOfBirth)
-                                      .toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                      .toUpperCase()
+                                    .toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                    .toUpperCase()
                                   : "",
                               ],
                             ];
@@ -6943,9 +6961,9 @@ function ClearancePreviewForRequests({
                               <span
                                 className={
                                   label === "NAME" ||
-                                  label === "Name" ||
-                                  isBoldRow ||
-                                  isSamePerson
+                                    label === "Name" ||
+                                    isBoldRow ||
+                                    isSamePerson
                                     ? "font-bold"
                                     : "font-normal"
                                 }
@@ -6961,9 +6979,9 @@ function ClearancePreviewForRequests({
                     </div>
 
                     {isNaturalDeath ||
-                    isGuardianship ||
-                    isCohabitation ||
-                    isSamePerson ? (
+                      isGuardianship ||
+                      isCohabitation ||
+                      isSamePerson ? (
                       <p
                         className={`${isSamePerson ? "mb-6" : "mb-10"} text-left leading-relaxed ${isGuardianship || isCohabitation ? "uppercase" : ""}`}
                       >
@@ -7034,7 +7052,7 @@ function ClearancePreviewForRequests({
                           : isGuardianship || isCohabitation || isMedicoLegal
                             ? "80px"
                             : request.certificate_type ===
-                                "certificate_of_indigency"
+                              "certificate_of_indigency"
                               ? "34px"
                               : "24px",
                       }}
