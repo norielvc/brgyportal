@@ -2330,9 +2330,28 @@ function RequestDetailsModal({
       "date_of_hearing",
       "partner_date_of_birth",
     ];
+    
+    // Sanitize: convert empty strings to null for integer fields
+    const integerFields = [
+      "age",
+      "partner_age",
+      "no_of_children",
+      "living_together_years",
+      "living_together_months",
+    ];
+    
     const sanitized = { ...editFormData, full_name: combinedName };
+    
     dateFields.forEach((field) => {
       if (sanitized[field] === "") sanitized[field] = null;
+    });
+    
+    integerFields.forEach((field) => {
+      if (sanitized[field] === "" || sanitized[field] === null) {
+        sanitized[field] = null;
+      } else {
+        sanitized[field] = parseInt(sanitized[field]) || null;
+      }
     });
 
     const success = await onUpdate(request.id, sanitized);
@@ -2774,9 +2793,32 @@ function RequestDetailsModal({
                         <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                           Age / Sex
                         </p>
-                        <p className="font-semibold text-gray-800 text-sm uppercase">
-                          {displayAge || "-"} / {request.sex || "-"}
-                        </p>
+                        {isEditing ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              name="age"
+                              value={editFormData.age || ""}
+                              onChange={handleInputChange}
+                              placeholder="Age"
+                              className="w-20 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                            />
+                            <select
+                              name="sex"
+                              value={editFormData.sex || ""}
+                              onChange={handleInputChange}
+                              className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            >
+                              <option value="">SELECT</option>
+                              <option value="MALE">MALE</option>
+                              <option value="FEMALE">FEMALE</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <p className="font-semibold text-gray-800 text-sm uppercase">
+                            {displayAge || "-"} / {request.sex || "-"}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
@@ -5436,34 +5478,87 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
 
     const printWindow = window.open("", "_blank");
     printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>${getTypeLabel(request.certificate_type)} - ${request.reference_number}</title>
-              <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-                <style>
-                  @page {size: A4 portrait; margin: 0; }
-                  @media print {
-                    html, body {width: 210mm; height: 297mm; margin: 0; padding: 0; }
-                  * {-webkit - print - color - adjust: exact !important; print-color-adjust: exact !important; }
-          }
-                  body {margin: 0; padding: 0; display: flex; justify-content: center; }
-                  .certificate {width: 210mm; min-height: 297mm; padding: 8mm; box-sizing: border-box; background: white; }
-                </style>
-            </head>
-            <body>
-              <div class="certificate">${printContent.innerHTML}</div>
-              <script>
-                window.onload = function() {
-                  setTimeout(function () {
-                    window.print();
-                    window.close();
-                  }, 500); 
-          };
-              </script>
-            </body>
-          </html>
-          `);
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${getTypeLabel(request.certificate_type)} - ${request.reference_number}</title>
+          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Merriweather:wght@400;700&family=Crimson+Text:wght@400;600;700&family=Old+Standard+TT:wght@400;700&display=swap" rel="stylesheet">
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 0;
+            }
+            @media print {
+              html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+              }
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .certificate-container {
+                box-shadow: none !important;
+              }
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              display: flex;
+              justify-content: center;
+              align-items: flex-start;
+              background: #f5f5f5;
+            }
+            .certificate-container {
+              width: 210mm;
+              min-height: 297mm;
+              padding: 0;
+              box-sizing: border-box;
+              background: white;
+            }
+            /* Preserve all positioning and styling */
+            .absolute {
+              position: absolute;
+            }
+            .relative {
+              position: relative;
+            }
+            .flex {
+              display: flex;
+            }
+            .flex-col {
+              flex-direction: column;
+            }
+            .items-center {
+              align-items: center;
+            }
+            .justify-center {
+              justify-content: center;
+            }
+            .text-center {
+              text-align: center;
+            }
+            .pointer-events-none {
+              pointer-events: none;
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent.outerHTML}
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 800);
+            };
+          </script>
+        </body>
+      </html>
+    `);
     printWindow.document.close();
   };
 
