@@ -23,6 +23,7 @@ import { getUserData, logout, getAuthToken, isAdmin } from "@/lib/auth";
 import SignatureInput from "@/components/UI/SignatureInput";
 import SignatureImage from "@/components/UI/SignatureImage";
 import SignatureDebugger from "@/components/UI/SignatureDebugger";
+import { ConfirmModal } from "@/components/UI/Modal";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -47,6 +48,10 @@ export default function Settings() {
   const [importPreview, setImportPreview] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  
+  // Confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [signatureToDelete, setSignatureToDelete] = useState(null);
 
   // API Configuration - uses internal Next.js /api route
   const API_URL = "/api";
@@ -212,7 +217,13 @@ export default function Settings() {
   };
 
   const deleteSignature = async (signatureId) => {
-    if (!confirm("Are you sure you want to delete this signature?")) return;
+    setSignatureToDelete(signatureId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!signatureToDelete) return;
+    const signatureId = signatureToDelete;
 
     try {
       const token = getAuthToken();
@@ -240,6 +251,9 @@ export default function Settings() {
       console.error("Error deleting signature:", error);
       setErrorMessage("Failed to delete signature");
       setTimeout(() => setErrorMessage(""), 3000);
+    } finally {
+      setDeleteConfirmOpen(false);
+      setSignatureToDelete(null);
     }
   };
 
@@ -1141,6 +1155,20 @@ export default function Settings() {
           Save Changes
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setSignatureToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Signature"
+        message="Are you sure you want to permanently delete this digital signature? This action cannot be undone."
+        confirmText="Delete Signature"
+        cancelText="Keep Signature"
+        type="danger"
+      />
     </div>
   );
 }
