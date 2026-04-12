@@ -72,17 +72,6 @@ export default function SignatureImage({
     }
   }, [signatureData, imageUrl, retryCount, onLoadError]);
 
-  // Show loading state
-  if (isLoading && signatureData) {
-    return showFallback ? (
-      <div
-        className={`flex items-center justify-center text-gray-400 ${className}`}
-      >
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-      </div>
-    ) : null;
-  }
-
   // Show empty state
   if (!signatureData) {
     return showFallback ? (
@@ -108,21 +97,29 @@ export default function SignatureImage({
     ) : null;
   }
 
-  // Show the image
   return (
-    <img
-      src={imageUrl}
-      alt={alt}
-      className={className}
-      onLoad={handleImageLoad}
-      onError={handleImageError}
-      loading="eager"
-      decoding="sync"
-      style={{
-        objectFit: "contain",
-        maxWidth: "100%",
-        maxHeight: "100%",
-      }}
-    />
+    <div className={`relative ${className}`}>
+      {/* Loading Spinner */}
+      {isLoading && showFallback && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-500"></div>
+        </div>
+      )}
+      
+      <img
+        src={imageUrl}
+        alt={alt}
+        className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        loading="eager"
+        decoding="sync"
+        style={{
+          objectFit: "contain",
+          maxWidth: "100%",
+          maxHeight: "100%",
+        }}
+      />
+    </div>
   );
 }
