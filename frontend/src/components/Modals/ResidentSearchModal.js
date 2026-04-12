@@ -27,14 +27,51 @@ export default function ResidentSearchModal({
   useEffect(() => {
     if (typeof window !== "undefined") {
       if (isOpen) {
-        document.body.style.overflow = "hidden";
+        // Save current scroll position
+        const scrollY = window.scrollY;
+        
+        // Calculate scrollbar width to prevent layout shift
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+        
+        // Lock scroll and maintain position
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = '100%';
+        document.body.style.overflow = 'hidden';
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
       } else {
-        document.body.style.overflow = "";
+        // Get the scroll position before unlocking
+        const scrollY = document.body.style.top;
+        
+        // Restore scroll
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Restore scroll position
+        if (scrollY) {
+          window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
       }
     }
     return () => {
       if (typeof window !== "undefined") {
-        document.body.style.overflow = "";
+        // Get the scroll position before unlocking
+        const scrollY = document.body.style.top;
+        
+        // Restore scroll
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Restore scroll position
+        if (scrollY) {
+          window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
       }
     };
   }, [isOpen]);
@@ -43,6 +80,15 @@ export default function ResidentSearchModal({
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showPendingCaseModal, setShowPendingCaseModal] = useState(false);
+
+  const handleResidentClick = (resident) => {
+    if (resident.pending_case) {
+      setShowPendingCaseModal(true);
+    } else {
+      onSelect(resident);
+    }
+  };
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -209,7 +255,7 @@ export default function ResidentSearchModal({
           </div>
           <button
             onClick={onClose}
-            className="p-3 hover:bg-white/10 rounded-2xl transition-all group shrink-0"
+            className="p-3 hover:bg-white/10 rounded-2xl transition-all group shrink-0 relative z-10"
           >
             <X className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />
           </button>
@@ -277,7 +323,7 @@ export default function ResidentSearchModal({
               {results.map((resident) => (
                 <button
                   key={resident.id}
-                  onClick={() => onSelect(resident)}
+                  onClick={() => handleResidentClick(resident)}
                   className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-white border-[3px] border-gray-50 rounded-[1.5rem] hover:border-gray-200 transition-all text-left group relative overflow-hidden active:scale-[0.98] shadow-sm"
                   style={{ '--hover-border': theme.accentColor }}
                 >
@@ -299,11 +345,6 @@ export default function ResidentSearchModal({
                       >
                         {resident.full_name}
                       </h4>
-                      {resident.pending_case && (
-                        <span className="bg-rose-600 text-white text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest flex items-center gap-2">
-                          <ShieldAlert className="w-3 h-3" /> RESTRICTED
-                        </span>
-                      )}
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -401,6 +442,51 @@ export default function ResidentSearchModal({
           </div>
         </div>
       </div>
+
+      {/* Pending Case Modal */}
+      {showPendingCaseModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                <ShieldAlert className="w-8 h-8 text-amber-600" />
+              </div>
+              
+              <h3 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">
+                In-Person Visit Required
+              </h3>
+              
+              <p className="text-gray-600 text-base leading-relaxed mb-6">
+                We kindly request that you visit our barangay office in person to process your certificate request. Due to data privacy regulations and the sensitive nature of certain records, we are unable to process this request through our online portal.
+              </p>
+              
+              <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-4 mb-6 w-full">
+                <p className="text-sm font-bold text-blue-900 mb-2">
+                  📍 Visit Us At:
+                </p>
+                <p className="text-sm text-blue-800 leading-relaxed">
+                  {tenantConfig.shortName || 'Barangay'} Office<br />
+                  Office Hours: Monday - Friday, 8:00 AM - 5:00 PM
+                </p>
+              </div>
+              
+              <p className="text-xs text-gray-500 italic mb-6">
+                We appreciate your understanding and cooperation in maintaining the confidentiality and security of all resident records.
+              </p>
+              
+              <button
+                onClick={() => {
+                  setShowPendingCaseModal(false);
+                  onClose();
+                }}
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl active:scale-95"
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

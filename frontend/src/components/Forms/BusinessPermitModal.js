@@ -366,7 +366,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                       Permit Type / Uri ng Permit <span className="text-red-500">*</span>
                     </label>
                     <div className="grid grid-cols-2 gap-4">
-                      {['NEW', 'RENEWAL', 'AMENDMENT', 'CLOSURE'].map(type => (
+                      {['NEW', 'RENEWAL'].map(type => (
                         <button key={type} type="button"
                           onClick={() => setFormData(prev => ({ ...prev, clearanceType: type }))}
                           className={`p-6 rounded-3xl border-4 font-black text-lg uppercase tracking-tight transition-all ${formData.clearanceType === type ? 'bg-black text-white border-black scale-105 shadow-xl' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300 hover:text-gray-700'}`}>

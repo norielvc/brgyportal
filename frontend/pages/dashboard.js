@@ -8,7 +8,6 @@ import {
   Clock,
   AlertCircle,
   TrendingUp,
-  TrendingDown,
   BarChart2,
   Activity,
   RefreshCw,
@@ -16,10 +15,19 @@ import {
   Calendar,
   Package,
   Users,
-  Download,
+  Target,
+  Bell,
+  Award,
+  Zap,
   Filter,
-  Printer,
 } from "lucide-react";
+
+/**
+ * Optimized Dashboard UI
+ * 1. Cleaned up color noise (replaced overwhelming gradients with white-card aesthetic)
+ * 2. Improved visual hierarchy
+ * 3. Grouped metrics logically
+ */
 
 const API_URL = "/api";
 
@@ -37,34 +45,13 @@ const TYPE_LABELS = {
 };
 
 const STATUS_CONFIG = {
-  pending: {
-    label: "Pending",
-    color: "bg-amber-100 text-amber-700 border-amber-200",
-  },
-  approved: {
-    label: "Approved",
-    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  },
-  released: {
-    label: "Released",
-    color: "bg-blue-100 text-blue-700 border-blue-200",
-  },
-  rejected: {
-    label: "Rejected",
-    color: "bg-red-100 text-red-700 border-red-200",
-  },
-  returned: {
-    label: "Returned",
-    color: "bg-orange-100 text-orange-700 border-orange-200",
-  },
-  cancelled: {
-    label: "Cancelled",
-    color: "bg-gray-100 text-gray-600 border-gray-200",
-  },
-  forwarded: {
-    label: "Forwarded",
-    color: "bg-purple-100 text-purple-700 border-purple-200",
-  },
+  pending: { label: "Pending", color: "text-amber-600 bg-amber-50 border-amber-100", iconColor: "text-amber-500" },
+  approved: { label: "Approved", color: "text-emerald-600 bg-emerald-50 border-emerald-100", iconColor: "text-emerald-500" },
+  released: { label: "Released", color: "text-blue-600 bg-blue-50 border-blue-100", iconColor: "text-blue-500" },
+  rejected: { label: "Rejected", color: "text-red-600 bg-red-50 border-red-100", iconColor: "text-red-500" },
+  returned: { label: "Returned", color: "text-orange-600 bg-orange-50 border-orange-100", iconColor: "text-orange-500" },
+  cancelled: { label: "Cancelled", color: "text-gray-500 bg-gray-50 border-gray-100", iconColor: "text-gray-400" },
+  forwarded: { label: "Forwarded", color: "text-purple-600 bg-purple-50 border-purple-100", iconColor: "text-purple-500" },
 };
 
 function formatDate(iso) {
@@ -76,308 +63,246 @@ function formatDate(iso) {
   });
 }
 
+// Optimized Metric Card (Clean White Aesthetic matching new design)
+const MetricCard = ({ icon: Icon, label, value, sub, iconBgColor, iconColor }) => (
+  <div className="bg-white rounded-xl p-5 border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all">
+    <div className="flex items-start justify-between mb-4">
+      <div className={`p-2 rounded-lg ${iconBgColor || 'bg-gray-50'}`}>
+        <Icon className={`w-4 h-4 ${iconColor || 'text-gray-600'}`} />
+      </div>
+    </div>
+    <div>
+      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+        {label}
+      </p>
+      <div className="flex items-baseline gap-2">
+        <p className="text-3xl font-black text-gray-900">{value ?? "0"}</p>
+      </div>
+      {sub && (
+        <p className="text-xs text-gray-400 font-medium mt-1">{sub}</p>
+      )}
+    </div>
+  </div>
+);
+
 export default function Dashboard() {
   const router = useRouter();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({ dateFrom: "", dateTo: "", certificateType: "", status: "" });
 
   const fetchData = async (showRefresh = false) => {
     try {
       if (showRefresh) setRefreshing(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/dashboard/certificate-analytics`, {
+      
+      if (!token) {
+        console.error("❌ No auth token - redirecting to login");
+        router.push("/login");
+        return;
+      }
+
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([k, v]) => v && params.append(k, v));
+      
+      const url = `${API_URL}/dashboard/certificate-analytics?${params.toString()}`;
+      console.log("📊 Fetching dashboard data...");
+      
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
       const json = await res.json();
+      
+      console.log("📊 API Response:", {
+        success: json.success,
+        totalRequests: json.data?.overview?.totalRequests,
+        status: res.status,
+        fullResponse: json, // Log the full response to see the error
+      });
+      
+      if (!res.ok) {
+        console.error("❌ API Error:", res.status, json);
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          router.push("/login");
+          return;
+        }
+      }
+      
       if (json.success) {
         setData(json.data);
-        setLastUpdated(new Date());
+        console.log("✅ Dashboard data loaded successfully");
+      } else {
+        console.error("❌ API returned success:false", json);
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    } catch (e) { 
+      console.error("❌ Dashboard error:", e); 
+    } finally { 
+      setLoading(false); 
+      setRefreshing(false); 
     }
   };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
-    fetchData();
+    if (!token) { router.push("/login"); return; }
+    fetchData().then(() => setIsFirstLoad(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="h-28 bg-gray-100 rounded-2xl" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 h-72 bg-gray-100 rounded-2xl" />
-          <div className="h-72 bg-gray-100 rounded-2xl" />
-        </div>
-      </div>
-    );
+  useEffect(() => { if (!isFirstLoad) fetchData(); }, [filters]);
+
+  if (loading) return <div className="p-8 animate-pulse space-y-8"><div className="h-20 bg-gray-100 rounded-2xl w-full" /><div className="grid grid-cols-4 gap-6"><div className="h-32 bg-gray-100 rounded-2xl" /><div className="h-32 bg-gray-100 rounded-2xl" /><div className="h-32 bg-gray-100 rounded-2xl" /><div className="h-32 bg-gray-100 rounded-2xl" /></div></div>;
 
   const ov = data?.overview || {};
-  const maxTrend = Math.max(
-    ...(data?.monthlyTrend || []).map((m) => m.total),
-    1,
-  );
-  const maxType = Math.max(...(data?.byType || []).map((t) => t.count), 1);
-
-  const MetricCard = ({
-    icon: Icon,
-    label,
-    value,
-    sub,
-    gradient,
-    badge,
-    badgeColor,
-  }) => (
-    <div
-      className={`relative overflow-hidden rounded-2xl p-5 text-white shadow-lg bg-gradient-to-br ${gradient} border border-white/10 hover:scale-[1.02] transition-transform`}
-    >
-      <div className="absolute -bottom-4 -right-4 opacity-10">
-        <Icon className="w-24 h-24" />
-      </div>
-      <div className="flex items-start justify-between mb-3">
-        <div className="p-2 bg-white/20 rounded-xl">
-          <Icon className="w-5 h-5" />
-        </div>
-        {badge !== undefined && (
-          <span
-            className={`text-[10px] font-black px-2 py-0.5 rounded-full ${badgeColor || "bg-white/20 text-white"} uppercase tracking-wide`}
-          >
-            {badge >= 0 ? `+${badge}` : badge}%
-          </span>
-        )}
-      </div>
-      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-1">
-        {label}
-      </p>
-      <p className="text-4xl font-black leading-none mb-1">{value ?? "—"}</p>
-      {sub && (
-        <p className="text-[10px] text-white/60 font-bold uppercase tracking-wide mt-1">
-          {sub}
-        </p>
-      )}
-    </div>
-  );
+  const maxTrend = Math.max(...(data?.monthlyTrend || []).map(m => m.total), 1);
+  const maxDaily = Math.max(...(data?.dailyTrend || []).map(d => d.count), 1);
+  const maxType = Math.max(...(data?.byType || []).map(t => t.count), 1);
+  
+  const growthBadge = ov.monthGrowth != null ? `${ov.monthGrowth >= 0 ? '+' : ''}${ov.monthGrowth}%` : null;
 
   return (
     <div className="space-y-6">
-      {/* Header Bar */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      {/* Header Area */}
+      <div className="flex items-center justify-between pb-2 border-b border-gray-100">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-            Certificate Request Analytics
-          </h1>
-          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-            Complete Report & Audit Dashboard
-            {lastUpdated && ` · Updated ${lastUpdated.toLocaleTimeString()}`}
-          </p>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Overview Analytics</h1>
+          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Real-time monitoring system</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => fetchData(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-black uppercase tracking-wide hover:bg-gray-50 transition shadow-sm"
-          >
-            <RefreshCw
-              className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
-            />
-            Refresh
+          <button onClick={() => setShowFilters(!showFilters)} className={`p-2.5 rounded-xl border transition-all ${showFilters ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
+            <Filter className="w-5 h-5" />
           </button>
-          <button
-            onClick={() => router.push("/requests")}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#2d5a3d] to-[#112e1f] text-white rounded-xl text-xs font-black uppercase tracking-wide hover:opacity-90 transition shadow-sm"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            View All Requests
+          <button onClick={() => fetchData(true)} disabled={refreshing} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50">
+            <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+          <button onClick={() => router.push("/requests")} className="px-6 py-2.5 bg-[#2d5a3d] text-white rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-[#2d5a3d]/20 transition-all">
+            Manage Requests
           </button>
         </div>
       </div>
 
-      {/* Top Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          icon={FileText}
-          label="Total Requests"
-          value={ov.totalRequests}
-          sub="All time"
-          gradient="from-[#1e3a8a] to-[#1d4ed8]"
-        />
-        <MetricCard
-          icon={Clock}
-          label="In Progress"
-          value={ov.pending}
-          sub="Active requests"
-          gradient="from-amber-500 to-orange-600"
-        />
-        <MetricCard
-          icon={CheckCircle}
-          label="Approved / Released"
-          value={ov.approved}
-          sub="Completed"
-          gradient="from-emerald-600 to-teal-700"
-        />
-        <MetricCard
-          icon={XCircle}
-          label="Rejected"
-          value={ov.rejected}
-          sub="Declined"
-          gradient="from-red-500 to-rose-700"
-        />
-        <MetricCard
-          icon={Package}
-          label="Released"
-          value={ov.released}
-          sub="Picked up"
-          gradient="from-blue-500 to-cyan-600"
-        />
-        <MetricCard
-          icon={AlertCircle}
-          label="Returned"
-          value={ov.returned}
-          sub="Sent back"
-          gradient="from-orange-500 to-amber-600"
-        />
-        <MetricCard
-          icon={Calendar}
-          label="This Month"
-          value={ov.thisMonth ?? 0}
-          badge={ov.monthGrowth}
-          badgeColor={
-            ov.monthGrowth >= 0
-              ? "bg-emerald-400/30 text-emerald-100"
-              : "bg-red-400/30 text-red-100"
-          }
-          sub={`vs ${ov.lastMonth ?? 0} last month`}
-          gradient="from-purple-600 to-fuchsia-700"
-        />
-        <MetricCard
-          icon={Activity}
-          label="Avg Processing"
-          value={`${ov.avgProcessingDays ?? "—"}${ov.avgProcessingDays != null ? "d" : ""}`}
-          sub="Days to approve"
-          gradient="from-slate-600 to-gray-800"
-        />
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 animate-in slide-in-from-top duration-300">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Date From</label>
+              <input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-100 rounded-xl text-xs focus:ring-2 focus:ring-[#2d5a3d] focus:border-[#2d5a3d] transition-all outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Date To</label>
+              <input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-100 rounded-xl text-xs focus:ring-2 focus:ring-[#2d5a3d] focus:border-[#2d5a3d] transition-all outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Type</label>
+              <select
+                value={filters.certificateType}
+                onChange={(e) => setFilters({ ...filters, certificateType: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-100 rounded-xl text-xs focus:ring-2 focus:ring-[#2d5a3d] focus:border-[#2d5a3d] transition-all outline-none bg-white"
+              >
+                <option value="">All Types</option>
+                {Object.entries(TYPE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-100 rounded-xl text-xs focus:ring-2 focus:ring-[#2d5a3d] focus:border-[#2d5a3d] transition-all outline-none bg-white"
+              >
+                <option value="">All Status</option>
+                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                  <option key={key} value={key}>{cfg.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase">
+             <button onClick={() => setFilters({ dateFrom: "", dateTo: "", certificateType: "", status: "" })} className="hover:text-black transition-colors">Reset All</button>
+             <span>·</span>
+             <span>{Object.values(filters).filter(Boolean).length} Active Filters</span>
+          </div>
+        </div>
+      )}
+
+      {/* Row 1: Core Performance Lifecycle */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <MetricCard icon={FileText} label="Total Volume" value={ov.totalRequests} sub="All time" colorClass="bg-gray-100 text-gray-900" onClick={() => router.push("/requests")} />
+        <MetricCard icon={Clock} label="In Progress" value={ov.pending} sub="Pending actions" colorClass="bg-amber-50 text-amber-600" onClick={() => router.push("/requests?status=pending")} />
+        <MetricCard icon={CheckCircle} label="Success" value={ov.approved} sub="Finalized" colorClass="bg-emerald-50 text-emerald-600" onClick={() => router.push("/requests?status=approved")} />
+        <MetricCard icon={Package} label="Released" value={ov.released} sub="Claimed" colorClass="bg-blue-50 text-blue-600" onClick={() => router.push("/requests?status=released")} />
+        <MetricCard icon={AlertCircle} label="Returned" value={ov.returned} sub="Corrections" colorClass="bg-orange-50 text-orange-600" onClick={() => router.push("/requests?status=returned")} />
+        <MetricCard icon={XCircle} label="Declined" value={ov.rejected} sub="Rejected" colorClass="bg-red-50 text-red-600" onClick={() => router.push("/requests?status=rejected")} />
       </div>
 
-      {/* Today + Step Queue */}
+      {/* Row 2: Operational Context */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <MetricCard icon={Calendar} label="This Month" value={ov.thisMonth} badge={growthBadge} sub="Submissions" colorClass="bg-indigo-50 text-indigo-600" />
+        <MetricCard icon={Target} label="Completion" value={`${ov.completionRate}%`} sub="Success Rate" colorClass="bg-teal-50 text-teal-600" />
+        <MetricCard icon={Bell} label="Overdue" value={ov.overdueCount} sub=">7 days" colorClass="bg-rose-50 text-rose-600" />
+        <MetricCard icon={Users} label="Residents" value={ov.residentsCount} sub="Registered" colorClass="bg-sky-50 text-sky-600" onClick={() => router.push("/residents")} />
+        <MetricCard icon={Award} label="Active Staff" value={ov.usersCount} sub="Accountancy" colorClass="bg-violet-50 text-violet-600" />
+      </div>
+
+      {/* Charts & Workflow */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Monthly Trend Bar Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">
-                Monthly Request Trend
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                Last 12 months — Total vs Approved
-              </p>
-            </div>
-            <BarChart2 className="w-5 h-5 text-gray-300" />
+        {/* Trend Chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-sm font-black text-gray-900 uppercase tracking-tighter flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-500" />
+              7-Day Activity
+            </h3>
           </div>
-          <div className="flex items-end gap-1 h-36">
-            {(data?.monthlyTrend || []).map((m, i) => (
-              <div
-                key={i}
-                className="flex-1 flex flex-col items-center gap-0.5 group relative"
-              >
-                {/* Tooltip */}
-                <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col items-center z-20">
-                  <div className="bg-gray-900 text-white text-[9px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                    {m.month}
-                    <br />
-                    Total: {m.total} · Approved: {m.approved}
-                  </div>
-                  <div className="w-1.5 h-1.5 bg-gray-900 rotate-45 -mt-0.5" />
-                </div>
-                {/* Bars */}
-                <div className="w-full flex items-end justify-center gap-0.5 h-32">
-                  <div
-                    className="w-2/5 bg-gradient-to-t from-[#1e3a8a] to-[#3b82f6] rounded-t-sm transition-all"
-                    style={{
-                      height: `${(m.total / maxTrend) * 100}%`,
-                      minHeight: m.total > 0 ? "3px" : "0",
-                    }}
-                  />
-                  <div
-                    className="w-2/5 bg-gradient-to-t from-[#16a34a] to-[#4ade80] rounded-t-sm transition-all"
-                    style={{
-                      height: `${(m.approved / maxTrend) * 100}%`,
-                      minHeight: m.approved > 0 ? "3px" : "0",
-                    }}
+          <div className="h-48 flex items-end justify-between gap-3 px-2">
+            {(data?.dailyTrend || []).map((d, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center group">
+                <div className="w-full flex items-end justify-center h-40 pb-2">
+                  <div 
+                    className="w-1/2 bg-[#2d5a3d]/20 rounded-t-lg group-hover:bg-[#2d5a3d] transition-all duration-300 border-x border-t border-[#2d5a3d]/10" 
+                    style={{ height: `${(d.count / maxDaily) * 100}%`, minHeight: '4px' }} 
                   />
                 </div>
-                <span className="text-[7px] text-gray-400 font-bold uppercase tracking-wide text-center leading-tight mt-1">
-                  {m.month.split(" ")[0]}
-                </span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{d.date}</span>
               </div>
             ))}
           </div>
-          {/* Legend */}
-          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-blue-500" />
-              <span className="text-[10px] font-bold text-gray-500 uppercase">
-                Total Requests
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-green-500" />
-              <span className="text-[10px] font-bold text-gray-500 uppercase">
-                Approved
-              </span>
-            </div>
-          </div>
         </div>
 
-        {/* Step Queue (Active) */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">
-                Step Queue
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                Active requests by step
-              </p>
-            </div>
-            <Activity className="w-5 h-5 text-gray-300" />
-          </div>
-          <div className="space-y-3">
-            {(data?.byStep || []).length === 0 && (
-              <p className="text-xs text-gray-400 font-bold text-center py-6">
-                No active requests
-              </p>
-            )}
-            {(data?.byStep || []).map((s, i) => {
+        {/* Workflow Steps */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h3 className="text-sm font-black text-gray-900 uppercase tracking-tighter mb-6 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-amber-500" />
+            Bottlenecks
+          </h3>
+          <div className="space-y-4">
+            {(data?.byStep || []).slice(0, 5).map((s, i) => {
               const pct = Math.round((s.count / (ov.pending || 1)) * 100);
               return (
                 <div key={i}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-black text-gray-700 uppercase tracking-wide truncate">
-                      {s.step}
-                    </span>
-                    <span className="text-[10px] font-black text-gray-500 ml-2 shrink-0">
-                      {s.count}
-                    </span>
+                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase mb-1.5">
+                    <span className="truncate w-40">{s.step}</span>
+                    <span className="text-gray-900">{s.count}</span>
                   </div>
-                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[#2d5a3d] to-[#8dc63f] rounded-full transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
+                  <div className="w-full h-1.5 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-400 transition-all duration-1000" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
@@ -386,191 +311,101 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Type Breakdown + Status Breakdown + Recent */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Certificate Type Breakdown */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">
-                By Certificate Type
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                Request volume per type
-              </p>
-            </div>
-            <FileText className="w-5 h-5 text-gray-300" />
-          </div>
-          <div className="space-y-3">
-            {(data?.byType || []).map((t, i) => {
-              const pct = Math.round((t.count / maxType) * 100);
-              const colors = [
-                "from-blue-500 to-indigo-600",
-                "from-emerald-500 to-teal-600",
-                "from-purple-500 to-fuchsia-600",
-                "from-orange-500 to-amber-600",
-                "from-rose-500 to-pink-600",
-                "from-cyan-500 to-sky-600",
-                "from-lime-500 to-green-600",
-                "from-violet-500 to-purple-600",
-                "from-red-500 to-rose-600",
-                "from-amber-500 to-yellow-600",
-              ];
-              return (
-                <div key={i}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-black text-gray-700 uppercase tracking-wide">
-                      {TYPE_LABELS[t.type] || t.type}
-                    </span>
-                    <span className="text-[10px] font-black text-gray-500">
-                      {t.count}
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full bg-gradient-to-r ${colors[i % colors.length]} rounded-full`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Monthly Performance */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h3 className="text-sm font-black text-gray-900 uppercase tracking-tighter mb-8 flex items-center gap-2">
+            <BarChart2 className="w-4 h-4 text-blue-500" />
+            Annual Volume
+          </h3>
+          <div className="h-40 flex items-end justify-between gap-2 px-2">
+            {(data?.monthlyTrend || []).map((m, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center group">
+                <div className="w-full flex items-end justify-center h-32 gap-1 pb-2">
+                  <div className="w-1/3 bg-blue-500/30 rounded-t-sm group-hover:bg-blue-500 transition-colors" style={{ height: `${(m.total / maxTrend) * 100}%` }} />
+                  <div className="w-1/3 bg-[#2d5a3d]/50 rounded-t-sm group-hover:bg-[#2d5a3d] transition-colors" style={{ height: `${(m.approved / maxTrend) * 100}%` }} />
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Status Breakdown */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">
-                Status Breakdown
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                All-time status distribution
-              </p>
-            </div>
-            <CheckCircle className="w-5 h-5 text-gray-300" />
-          </div>
-          <div className="space-y-3">
-            {(data?.byStatus || []).map((s, i) => {
-              const cfg = STATUS_CONFIG[s.status] || {
-                label: s.status,
-                color: "bg-gray-100 text-gray-600 border-gray-200",
-              };
-              const pct =
-                ov.totalRequests > 0
-                  ? Math.round((s.count / ov.totalRequests) * 100)
-                  : 0;
-              return (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-1">
-                    <span
-                      className={`inline-block text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${cfg.color}`}
-                    >
-                      {cfg.label}
-                    </span>
-                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden ml-1">
-                      <div
-                        className="h-full bg-gradient-to-r from-gray-400 to-gray-600 rounded-full"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-black text-gray-600 ml-3 shrink-0">
-                    {s.count} <span className="text-gray-400">({pct}%)</span>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Summary Row */}
-          <div className="mt-5 pt-4 border-t border-gray-100 grid grid-cols-2 gap-3">
-            {[
-              { label: "Today", val: ov.todayCount },
-              { label: "This Month", val: ov.thisMonth },
-              { label: "Last Month", val: ov.lastMonth },
-              { label: "Avg Days", val: `${ov.avgProcessingDays}d` },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="bg-gray-50 rounded-xl px-3 py-2 text-center"
-              >
-                <div className="text-lg font-black text-gray-800">
-                  {item.val}
-                </div>
-                <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                  {item.label}
-                </div>
+                <span className="text-[8px] font-black text-gray-400 uppercase">{m.month.split(' ')[0]}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Recent Requests */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">
-                Recent Requests
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                Latest 10 submissions
-              </p>
-            </div>
-            <button
-              onClick={() => router.push("/requests")}
-              className="text-[10px] font-black text-[#2d5a3d] hover:underline uppercase tracking-wide flex items-center gap-1"
-            >
-              View all <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="space-y-2.5 overflow-y-auto max-h-80 pr-1 custom-scrollbar">
-            {(data?.recent || []).map((r, i) => {
-              const cfg = STATUS_CONFIG[r.status] || {
-                label: r.status,
-                color: "bg-gray-100 text-gray-600 border-gray-200",
-              };
+        {/* Requests by Type */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h3 className="text-sm font-black text-gray-900 uppercase tracking-tighter mb-6 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-indigo-500" />
+            Category Mix
+          </h3>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+            {(data?.byType || []).slice(0, 10).map((t, i) => {
+              const pct = Math.round((t.count / maxType) * 100);
               return (
-                <div
-                  key={i}
-                  className="flex flex-col gap-0.5 p-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-black text-[#2d5a3d] uppercase tracking-tight truncate">
-                      {r.referenceNumber || "—"}
-                    </span>
-                    <span
-                      className={`text-[8px] font-black px-1.5 py-0.5 border rounded-full uppercase tracking-wide shrink-0 ${cfg.color}`}
-                    >
-                      {cfg.label}
-                    </span>
+                <div key={i}>
+                  <div className="flex justify-between text-[9px] font-bold text-gray-400 uppercase mb-1">
+                    <span className="truncate">{TYPE_LABELS[t.type] || t.type}</span>
+                    <span className="text-gray-900">{t.count}</span>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-700 truncate">
-                    {r.applicantName || "—"}
-                  </span>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-gray-400">
-                      {TYPE_LABELS[r.certificateType] || r.certificateType}
-                    </span>
-                    <span className="text-[9px] font-bold text-gray-400">
-                      {formatDate(r.createdAt)}
-                    </span>
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-500" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Recent Interactions List */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-sm font-black text-gray-900 uppercase tracking-tighter flex items-center gap-2">
+            <Clock className="w-4 h-4 text-gray-900" />
+            Recent Interactions
+          </h3>
+          <button onClick={() => router.push("/requests")} className="text-[10px] font-black uppercase text-[#2d5a3d] hover:underline flex items-center gap-1">
+            View Logs <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-50">
+                <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Reference</th>
+                <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Applicant</th>
+                <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</th>
+                <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data?.recent || []).slice(0, 8).map((r, i) => {
+                const cfg = STATUS_CONFIG[r.status] || { label: r.status, color: "text-gray-500 bg-gray-50" };
+                return (
+                  <tr key={i} className="border-b border-gray-50/50 hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => router.push("/requests")}>
+                    <td className="py-3 text-xs font-black text-[#2d5a3d]">{r.referenceNumber}</td>
+                    <td className="py-3 text-xs font-bold text-gray-800">{r.applicantName}</td>
+                    <td className="py-3 text-[10px] font-bold text-gray-400 uppercase">{TYPE_LABELS[r.certificateType] || r.certificateType}</td>
+                    <td className="py-3">
+                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${cfg.color}`}>{cfg.label}</span>
+                    </td>
+                    <td className="py-3 text-[10px] font-bold text-gray-400 text-right">{formatDate(r.createdAt)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 }
 
+
 Dashboard.getLayout = (page) => (
   <Layout
-    title="Request Analytics Dashboard"
-    subtitle="CERTIFICATE REQUESTS — COMPLETE REPORT & AUDIT"
+    title="Overview Analytics"
+    subtitle="Real-time monitoring system"
   >
     {page}
   </Layout>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Data Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+        .result { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
+        .success { border-left: 4px solid #10b981; }
+        .error { border-left: 4px solid #ef4444; }
+        button { padding: 10px 20px; background: #2d5a3d; color: white; border: none; border-radius: 6px; cursor: pointer; margin: 5px; }
+        button:hover { opacity: 0.9; }
+        pre { background: #f9f9f9; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Dashboard Data Tester</h1>
+    <p>This will test if your dashboard can fetch data from the API</p>
+    
+    <button onclick="testAuth()">1. Test Authentication</button>
+    <button onclick="testDashboard()">2. Test Dashboard API</button>
+    <button onclick="testTenant()">3. Test Tenant Data</button>
+    <button onclick="clearToken()">Clear Token & Logout</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        function getToken() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                log('❌ No token found! Please log in first.', 'error');
+                return null;
+            }
+            return token;
+        }
+
+        async function testAuth() {
+            document.getElementById('results').innerHTML = '';
+            const token = getToken();
+            if (!token) return;
+
+            try {
+                const res = await fetch(`${API_URL}/test-auth`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    log(`✅ Authentication Success!<br><pre>${JSON.stringify(data.user, null, 2)}</pre>`, 'success');
+                } else {
+                    log(`❌ Authentication Failed<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function testDashboard() {
+            document.getElementById('results').innerHTML = '';
+            const token = getToken();
+            if (!token) return;
+
+            try {
+                log('📊 Fetching dashboard data...', 'info');
+                const res = await fetch(`${API_URL}/dashboard/certificate-analytics`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    const overview = data.data.overview;
+                    log(`✅ Dashboard Data Retrieved!<br>
+                        <strong>Total Requests:</strong> ${overview.totalRequests}<br>
+                        <strong>Pending:</strong> ${overview.pending}<br>
+                        <strong>Approved:</strong> ${overview.approved}<br>
+                        <strong>Released:</strong> ${overview.released}<br>
+                        <strong>Rejected:</strong> ${overview.rejected}<br>
+                        <strong>This Month:</strong> ${overview.thisMonth}<br>
+                        <strong>Residents:</strong> ${overview.residentsCount}<br>
+                        <strong>Users:</strong> ${overview.usersCount}<br>
+                        <pre>${JSON.stringify(overview, null, 2)}</pre>
+                    `, 'success');
+                } else {
+                    log(`❌ Dashboard API Failed<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function testTenant() {
+            document.getElementById('results').innerHTML = '';
+            const token = getToken();
+            if (!token) return;
+
+            try {
+                const res = await fetch(`${API_URL}/debug-tenant`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    log(`✅ Tenant Debug Info<br><pre>${JSON.stringify(data.debug, null, 2)}</pre>`, 'success');
+                } else {
+                    log(`❌ Tenant Debug Failed<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('token');
+            document.getElementById('results').innerHTML = '';
+            log('✅ Token cleared. Please log in again.', 'success');
+        }
+
+        // Auto-check on load
+        window.onload = () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                log(`✅ Token found in localStorage`, 'success');
+            } else {
+                log(`⚠️ No token found. Please log in at <a href="http://localhost:3000/login">http://localhost:3000/login</a>`, 'error');
+            }
+        };
+    </script>
+</body>
+</html>

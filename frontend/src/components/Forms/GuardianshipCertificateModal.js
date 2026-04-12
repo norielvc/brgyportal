@@ -44,6 +44,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
       step3Label="Purpose of Guardianship"
       extraStep3={extraStep3}
       requirePurpose={false}
+      extraFormData={{ guardianName, guardianRelationship }}
     />
   );
 }

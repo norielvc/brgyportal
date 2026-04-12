@@ -108,10 +108,38 @@ export default function UnifiedCertModal({
   });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      document.body.style.overflow = isOpen ? 'hidden' : '';
+    if (typeof window !== 'undefined' && isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      
+      // Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      // Lock scroll and maintain position
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
-    return () => { if (typeof window !== 'undefined') document.body.style.overflow = ''; };
+    return () => { 
+      if (typeof window !== 'undefined') {
+        // Get the scroll position before unlocking
+        const scrollY = document.body.style.top;
+        
+        // Restore scroll
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Restore scroll position
+        if (scrollY) {
+          window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
+      }
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -153,13 +181,17 @@ export default function UnifiedCertModal({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      const submissionData = { ...formData, ...extraFormData };
+      console.log('UnifiedCertModal - Submitting data:', submissionData);
+      console.log('UnifiedCertModal - extraFormData:', extraFormData);
+      
       const response = await fetch('/api/portal/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-tenant-id': tenantConfig?.tenant_id || (isDemo ? 'demo' : 'ibaoeste'),
         },
-        body: JSON.stringify({ type: certType, formData: { ...formData, ...extraFormData } }),
+        body: JSON.stringify({ type: certType, formData: submissionData }),
       });
       const result = await response.json();
       if (result.success) {
@@ -239,6 +271,9 @@ export default function UnifiedCertModal({
       houseNo: Home,
       purok: MapPin,
       currentAddress: Building,
+      dateOfDeath: Calendar,
+      causeOfDeath: AlertCircle,
+      requesterName: User,
     };
 
     const labelMap = {
@@ -249,7 +284,7 @@ export default function UnifiedCertModal({
       partnerFullName: "Partner's Name / Pangalan ng Kasama",
       yearsLiving: 'Years Together / Taon ng Pagsasama',
       numberOfChildren: 'No. of Children / Bilang ng Anak',
-      aliasName: 'Alias / Other Name',
+      aliasName: 'Second Name / Other Name',
       guardianName: "Guardian's Name",
       guardianRelationship: 'Relationship / Relasyon',
       partnerAge: 'Partner Age',
@@ -258,6 +293,9 @@ export default function UnifiedCertModal({
       houseNo: 'House No. / Numero ng Bahay',
       purok: 'Purok / Sitio',
       currentAddress: 'Current Address / Kasalukuyang Tirahan',
+      dateOfDeath: 'Date of Death / Petsa ng Kamatayan',
+      causeOfDeath: 'Cause of Death / Sanhi ng Kamatayan',
+      requesterName: 'Requester Name / Pangalan ng Humiling',
     };
 
     // Merge formData + extraFormData for display

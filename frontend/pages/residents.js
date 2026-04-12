@@ -341,13 +341,6 @@ export default function Residents() {
                     {resident.gender || "UNKNOWN"} • {resident.age || "N/A"} Y/O
                     • {resident.civil_status || "SINGLE"}
                   </p>
-                  {resident.second_name && (
-                    <div className="pt-1">
-                      <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded inline-block mt-0.5 border border-indigo-100 shadow-sm">
-                        AKA: {resident.second_name}
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-2 pt-4 border-t border-gray-50/50">
@@ -417,16 +410,6 @@ export default function Residents() {
                   )}
                 </div>
               </div>
-              {selectedResident.second_name && (
-                <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-right z-10">
-                  <p className="text-[9px] font-black text-white/60 uppercase tracking-widest mb-0.5 whitespace-nowrap">
-                    Also Known As
-                  </p>
-                  <p className="text-[14px] font-black text-white uppercase tracking-tight truncate">
-                    {selectedResident.second_name}
-                  </p>
-                </div>
-              )}
               {/* Decorative background icons */}
               <UsersIcon className="absolute -bottom-8 -right-8 w-48 h-48 text-white/5 -rotate-12" />
             </div>
@@ -725,27 +708,6 @@ export default function Residents() {
               </div>
             </div>
 
-            <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100 space-y-4 shadow-inner">
-              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                <User className="w-3 h-3 text-blue-500" />
-                Alternate Identity (Also Known As)
-              </p>
-              <div className="grid grid-cols-1">
-                <div className="col-span-1">
-                  <label className="label">Second Name / AKA</label>
-                  <input
-                    type="text"
-                    className="input uppercase font-bold text-blue-600 bg-white"
-                    value={formData.second_name || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, second_name: e.target.value })
-                    }
-                    placeholder="E.G. 'BONG' OR NICKNAME"
-                  />
-                </div>
-              </div>
-            </div>
-
             <div className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 space-y-4 shadow-inner">
               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
                 <Shield className="w-3 h-3 text-emerald-500" />
@@ -1040,22 +1002,14 @@ export default function Residents() {
           </div>
 
           <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-4">
-            {selectedResident && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsFormModalOpen(false);
-                  setIsModalOpen(true);
-                }}
-                className="px-6 py-3 text-gray-500 font-bold hover:text-gray-800 transition-colors flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Profile
-              </button>
-            )}
             <button
               type="button"
-              onClick={() => setIsFormModalOpen(false)}
+              onClick={() => {
+                setIsFormModalOpen(false);
+                if (selectedResident) {
+                  setIsModalOpen(true);
+                }
+              }}
               className="px-6 py-3 text-gray-400 font-bold hover:text-gray-600 transition-colors"
             >
               Cancel

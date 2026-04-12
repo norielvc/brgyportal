@@ -27,12 +27,38 @@ export default function Modal({
 
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
+      
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      
+      // Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      // Lock scroll and maintain position
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "unset";
+      
+      // Get the scroll position before unlocking
+      const scrollY = document.body.style.top;
+      
+      // Restore scroll
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      
+      // Restore scroll position
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     };
   }, [isOpen, onClose]);
 
@@ -49,13 +75,14 @@ export default function Modal({
       {/* Modal panel */}
       <div
         className={cn(
-          "relative w-full p-6 overflow-hidden text-left bg-white shadow-xl rounded-xl",
+          "relative w-full overflow-hidden text-left bg-white shadow-xl rounded-xl flex flex-col",
           sizeClasses[size],
         )}
+        style={{ maxHeight: "90vh" }}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between p-6 pb-4 shrink-0">
             {title && (
               <h3 className="text-lg font-medium text-gray-900">{title}</h3>
             )}
@@ -71,7 +98,7 @@ export default function Modal({
         )}
 
         {/* Content */}
-        <div>{children}</div>
+        <div className="overflow-y-auto px-6 pb-6">{children}</div>
       </div>
     </div>
   );

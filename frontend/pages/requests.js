@@ -1779,14 +1779,15 @@ function RequestDetailsModal({
       ? (request.details?.currentAddress || request.address || "")
       : (request.address || request.details?.currentAddress || ""),
     purpose: request.purpose || "",
-    date_of_death: request.date_of_death || "",
-    cause_of_death: request.cause_of_death || "",
-    covid_related: request.covid_related || false,
+    date_of_death: request.date_of_death || request.details?.date_of_death || "",
+    cause_of_death: request.cause_of_death || request.details?.cause_of_death || "",
+    covid_related: request.covid_related ?? request.details?.covid_related ?? false,
     requestor_name: request.requestor_name || "",
-    guardian_name: request.guardian_name || "",
-    guardian_relationship: request.guardian_relationship || "",
-    partner_full_name: request.partner_full_name || request.details?.partnerFullName || "",
-    partner_sex: request.partner_sex || request.details?.partnerSex || "",
+    guardian_name: request.guardian_name || request.details?.guardian_name || "",
+    guardian_relationship: request.guardian_relationship || request.details?.guardian_relationship || "",
+    alias_name: request.alias_name || request.details?.alias_name || request.details?.aliasName || "",
+    partner_full_name: request.partner_full_name || request.details?.partner_name || request.details?.partnerFullName || "",
+    partner_sex: request.partner_sex || request.details?.partner_sex || request.details?.partnerSex || "",
     partner_date_of_birth: request.partner_date_of_birth || request.details?.partnerDateOfBirth || "",
     partner_residential_address: request.partner_residential_address || request.details?.partnerResidentialAddress || "",
     partner_address: request.partner_address || request.address || request.details?.currentAddress || "",
@@ -2030,11 +2031,11 @@ function RequestDetailsModal({
 
     // Check for Guardian mismatch for Guardianship certificates
     if (request.certificate_type === "barangay_guardianship") {
-      const reqGName = normalize(request.guardian_name);
+      const reqGName = normalize(request.guardian_name || request.details?.guardian_name);
       const resGName = normalize(resident.guardian_name);
       if (reqGName && reqGName !== resGName) mismatches.push("Guardian Name");
 
-      const reqGRel = normalize(request.guardian_relationship);
+      const reqGRel = normalize(request.guardian_relationship || request.details?.guardian_relationship);
       const resGRel = normalize(resident.guardian_relationship);
       if (reqGRel && reqGRel !== resGRel)
         mismatches.push("Guardian Relationship");
@@ -2273,7 +2274,6 @@ function RequestDetailsModal({
       date_of_death: request.residents.date_of_death || "",
       covid_related: request.residents.covid_related || false,
       cause_of_death: request.residents.cause_of_death || "",
-      second_name: request.residents.second_name || "",
     });
   };
 
@@ -2710,16 +2710,23 @@ function RequestDetailsModal({
                           "certification_same_person" && (
                             <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm mt-2 w-fit">
                               <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest border-r border-blue-200 pr-2">
-                                AKA
+                                AKA / SECOND NAME
                               </span>
                               <span className="font-black text-blue-700 uppercase text-sm tracking-tight">
                                 {(() => {
+                                  // Check alias_name column first
+                                  if (request.alias_name) {
+                                    return request.alias_name;
+                                  }
+                                  // Fallback to details JSON
                                   try {
                                     const d =
                                       typeof request.details === "string"
                                         ? JSON.parse(request.details || "{}")
                                         : request.details || {};
                                     return (
+                                      d.alias_name ||
+                                      d.aliasName ||
                                       d.fullName2 ||
                                       d.name_2 ||
                                       d.name2 ||
@@ -3522,7 +3529,7 @@ function RequestDetailsModal({
                                   Guardian Name
                                 </p>
                                 <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight">
-                                  {request.guardian_name || "NOT SPECIFIED"}
+                                  {request.guardian_name || request.details?.guardian_name || "NOT SPECIFIED"}
                                 </p>
                               </div>
                               <div>
@@ -3530,7 +3537,7 @@ function RequestDetailsModal({
                                   Relationship
                                 </p>
                                 <p className="font-semibold text-gray-800 text-sm uppercase">
-                                  {request.guardian_relationship ||
+                                  {request.guardian_relationship || request.details?.guardian_relationship ||
                                     "NOT SPECIFIED"}
                                 </p>
                               </div>
@@ -3688,11 +3695,11 @@ function RequestDetailsModal({
                               Date of Death
                             </p>
                             <p className="font-semibold text-gray-800 text-sm font-mono">
-                              {request.date_of_death ||
+                              {request.date_of_death || request.details?.date_of_death ||
                                 request.residents?.date_of_death
                                 ? new Date(
-                                  request.date_of_death ||
-                                  request.residents.date_of_death,
+                                  request.date_of_death || request.details?.date_of_death ||
+                                  request.residents?.date_of_death,
                                 )
                                   .toLocaleDateString("en-US", {
                                     year: "numeric",
@@ -3757,12 +3764,12 @@ function RequestDetailsModal({
                           <p
                             className="font-semibold text-gray-800 text-sm uppercase truncate"
                             title={
-                              request.cause_of_death ||
+                              request.cause_of_death || request.details?.cause_of_death ||
                               request.purpose ||
                               "NOT STATED"
                             }
                           >
-                            {request.cause_of_death ||
+                            {request.cause_of_death || request.details?.cause_of_death ||
                               request.purpose ||
                               "NOT STATED"}
                           </p>
@@ -3902,16 +3909,6 @@ function RequestDetailsModal({
                       )}
                     </div>
                   </div>
-                  {request.residents.second_name && (
-                    <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-right z-10">
-                      <p className="text-[9px] font-black text-white/60 uppercase tracking-widest mb-0.5 whitespace-nowrap">
-                        Also Known As
-                      </p>
-                      <p className="text-[14px] font-black text-white uppercase tracking-tight truncate">
-                        {request.residents.second_name}
-                      </p>
-                    </div>
-                  )}
                   {/* Decorative background icons */}
                   <Users className="absolute -bottom-8 -right-8 w-48 h-48 text-white/5 -rotate-12" />
                 </div>
@@ -4190,25 +4187,6 @@ function RequestDetailsModal({
                       />
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-4 bg-white/50 p-4 rounded-xl border border-blue-100 shadow-inner">
-                  <p className="text-[10px] font-black text-blue-400 uppercase font-black tracking-widest mb-2 flex items-center gap-2">
-                    <User className="w-3 h-3" />
-                    Also Known As / Second Name
-                  </p>
-                  <input
-                    type="text"
-                    className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-black uppercase focus:ring-2 focus:ring-blue-500 outline-none text-blue-700 placeholder:text-blue-200"
-                    placeholder="E.G. NICKNAME OR SECOND NAME"
-                    value={residentFormData.second_name || ""}
-                    onChange={(e) =>
-                      setResidentFormData({
-                        ...residentFormData,
-                        second_name: e.target.value,
-                      })
-                    }
-                  />
                 </div>
 
                 {/* Red warning banner for pending case */}
@@ -5810,16 +5788,16 @@ function ClearancePreviewForRequests({
     dateOfBirth: request.date_of_birth || "",
     placeOfBirth: request.place_of_birth || "",
     dateOfDeath:
-      request.date_of_death || request.residents?.date_of_death || "",
+      request.date_of_death || request.details?.date_of_death || request.residents?.date_of_death || "",
     causeOfDeath:
-      request.cause_of_death || request.residents?.cause_of_death || "",
+      request.cause_of_death || request.details?.cause_of_death || request.residents?.cause_of_death || "",
     covidRelated:
-      (request.covid_related ?? request.residents?.covid_related)
+      (request.covid_related ?? request.details?.covid_related ?? request.residents?.covid_related)
         ? "Yes"
         : "No",
     requestorName: request.requestor_name || "",
-    guardianName: request.guardian_name || "",
-    guardianRelationship: request.guardian_relationship || "",
+    guardianName: request.guardian_name || request.details?.guardian_name || "",
+    guardianRelationship: request.guardian_relationship || request.details?.guardian_relationship || "",
     partnerFullName: request.partner_full_name || request.details?.partnerFullName || request.details?.partner_name || "",
     partnerAge: request.partner_age || request.details?.partnerAge || "",
     partnerSex: request.partner_sex || request.details?.partnerSex || "",
@@ -5899,9 +5877,12 @@ function ClearancePreviewForRequests({
     additionalDetails.fullName1 ||
     formData.fullName;
   const name2 =
+    request.alias_name ||
     request.name_2 ||
     additionalDetails.name_2 ||
     additionalDetails.fullName2 ||
+    additionalDetails.alias_name ||
+    additionalDetails.aliasName ||
     "";
 
   // Find the timestamp of the last "return" or "reject" event to reset codes

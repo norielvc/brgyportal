@@ -859,8 +859,8 @@ export default function PortalPageContent({ initialTenantId }) {
   // Intersection Observer for scroll animations
   useEffect(() => {
     const observerOptions = {
-      threshold: 0.1,
-      rootMargin: "0px 0px -50px 0px",
+      threshold: [0, 0.1], // Trigger as soon as even 1px is visible
+      rootMargin: "0px 0px 100px 0px", // Load 100px before it enters the viewport
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -872,7 +872,13 @@ export default function PortalPageContent({ initialTenantId }) {
     }, observerOptions);
 
     const animatableElements = document.querySelectorAll(".animate-on-scroll");
+    
+    // Check if we should immediately activate based on hash or immediate visibility
+    const currentHash = window.location.hash;
     animatableElements.forEach((el) => {
+      if (currentHash && el.id && currentHash === `#${el.id}`) {
+        el.classList.add("active");
+      }
       observer.observe(el);
     });
 
@@ -956,13 +962,21 @@ export default function PortalPageContent({ initialTenantId }) {
 
         .animate-on-scroll {
           opacity: 0;
-          transform: translateY(20px);
-          transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+          transform: translateY(30px);
+          transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+          will-change: transform, opacity;
         }
 
         .animate-on-scroll.active {
           opacity: 1;
           transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+          .animate-on-scroll {
+            transition-duration: 0.4s;
+            transform: translateY(15px);
+          }
         }
 
         .hero-gradient {
@@ -2505,7 +2519,7 @@ export default function PortalPageContent({ initialTenantId }) {
                               section.key === "captain" ||
                               section.key === "sk_chairman"
                                 ? "max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12 px-4 mb-12"
-                                : "flex flex-wrap gap-4 lg:gap-5 justify-center"
+                                : "grid grid-cols-2 lg:flex lg:flex-wrap gap-4 lg:gap-5 justify-center"
                             }
                           >
                             {section.key === "captain" ? (
