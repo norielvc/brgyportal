@@ -25,7 +25,11 @@ import SignatureImage from "@/components/UI/SignatureImage";
 import SignatureDebugger from "@/components/UI/SignatureDebugger";
 
 export default function Settings() {
-  const user = getUserData();
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    setUser(getUserData());
+  }, []);
   const [activeTab, setActiveTab] = useState("general");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
