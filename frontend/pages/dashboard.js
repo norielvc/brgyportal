@@ -168,10 +168,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header Area */}
       <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Overview Analytics</h1>
-          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Real-time monitoring system</p>
-        </div>
+        <div />
         <div className="flex items-center gap-2">
           <button onClick={() => setShowFilters(!showFilters)} className={`p-2.5 rounded-xl border transition-all ${showFilters ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
             <Filter className="w-5 h-5" />
