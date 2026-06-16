@@ -101,18 +101,24 @@ export default async function handler(req, res) {
         });
     }
 
-    const { data: existing } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", email)
-      .single();
-    if (existing)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "User with this email already exists",
-        });
+    // 1. Email uniqueness check
+    const { data: existing } = await supabase.from("users").select("id").eq("email", email).single();
+    if (existing) return res.status(400).json({ success: false, message: "User with this email already exists" });
+
+    // 2. Subscription Staff Limit Check
+    const [{ count: staffCount }, { data: sub }] = await Promise.all([
+      supabase.from("users").select("id", { count: "exact", head: true }).eq("tenant_id", targetTenantId),
+      supabase.from('barangay_subscriptions').select('*, plan:subscription_plans(*)').eq('barangay_id', targetTenantId).eq('status', 'active').maybeSingle()
+    ]);
+
+    if (sub && sub.plan && sub.plan.max_staff !== -1) {
+        if (staffCount >= sub.plan.max_staff) {
+          return res.status(403).json({
+            success: false,
+            message: `Staff account limit reached for your ${sub.plan.name} plan (${sub.plan.max_staff} total). Please upgrade to add more people.`
+          });
+        }
+    }
 
     const hashedPassword = await bcrypt.hash(password, 12);
     const { data: newUser, error } = await supabase

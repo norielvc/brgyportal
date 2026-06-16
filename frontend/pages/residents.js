@@ -30,12 +30,29 @@ import Pagination from "@/components/UI/Pagination";
 import Modal from "@/components/UI/Modal";
 import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
+import { generateFullAddress, PUROK_OPTIONS } from "@/lib/addressHelper";
 
 export default function Residents() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const API_URL = "/api";
+
+  // Calculate age from birth date
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return '';
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    // Adjust age if birthday hasn't occurred this year
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
 
   const [residents, setResidents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +61,16 @@ export default function Residents() {
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [limit, setLimit] = useState(30);
+
+  // Tenant-specific address fields
+  const [tenantAddressDefaults, setTenantAddressDefaults] = useState({
+    barangay: '',
+    municipality: '',
+    province: 'Province of Bulacan',
+  });
+
+  // Tenant-specific purok options
+  const [purokOptions, setPurokOptions] = useState(PUROK_OPTIONS);
 
   // Modal state
   const [selectedResident, setSelectedResident] = useState(null);
@@ -60,6 +87,11 @@ export default function Residents() {
     date_of_birth: "",
     place_of_birth: "",
     residential_address: "",
+    house_number: "",
+    purok: "",
+    barangay: "",
+    municipality: "",
+    province: "",
     contact_number: "",
     pending_case: false,
     case_record_history: "",
@@ -78,6 +110,51 @@ export default function Residents() {
     setCurrentUser(user);
   }, [router]);
 
+  // Fetch tenant address defaults when currentUser is available
+  useEffect(() => {
+    if (currentUser) {
+      fetchTenantAddressDefaults();
+    }
+  }, [currentUser]);
+
+  const fetchTenantAddressDefaults = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/settings`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      
+      if (data.success && data.settings) {
+        const headerInfo = data.settings.certificate_settings?.headerInfo || {};
+        setTenantAddressDefaults({
+          barangay: headerInfo.barangayName || '',
+          municipality: headerInfo.municipality || '',
+          province: headerInfo.province || 'Province of Bulacan',
+        });
+
+        // Set tenant-specific purok options
+        if (currentUser?.tenant_id === 'demo') {
+          // Demo tenant: only Purok 1-5
+          setPurokOptions([
+            { value: 'Purok 1', label: 'Purok 1' },
+            { value: 'Purok 2', label: 'Purok 2' },
+            { value: 'Purok 3', label: 'Purok 3' },
+            { value: 'Purok 4', label: 'Purok 4' },
+            { value: 'Purok 5', label: 'Purok 5' },
+          ]);
+        } else {
+          // Other tenants: use default options
+          setPurokOptions(PUROK_OPTIONS);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching tenant address defaults:', error);
+    }
+  };
+
   useEffect(() => {
     if (mounted && currentUser) {
       fetchResidents();
@@ -85,6 +162,19 @@ export default function Residents() {
   }, [mounted, currentUser, currentPage, searchTerm, limit]);
 
   const handleOpenAddModal = () => {
+    // Determine purok options based on tenant
+    const tenantPurokOptions = currentUser?.tenant_id === 'demo' 
+      ? [
+          { value: 'Purok 1', label: 'Purok 1' },
+          { value: 'Purok 2', label: 'Purok 2' },
+          { value: 'Purok 3', label: 'Purok 3' },
+          { value: 'Purok 4', label: 'Purok 4' },
+          { value: 'Purok 5', label: 'Purok 5' },
+        ]
+      : PUROK_OPTIONS;
+    
+    setPurokOptions(tenantPurokOptions);
+
     setFormData({
       last_name: "",
       first_name: "",
@@ -96,6 +186,11 @@ export default function Residents() {
       date_of_birth: "",
       place_of_birth: "",
       residential_address: "",
+      house_number: "",
+      purok: "",
+      barangay: tenantAddressDefaults.barangay,
+      municipality: tenantAddressDefaults.municipality,
+      province: tenantAddressDefaults.province,
       contact_number: "",
       pending_case: false,
       case_record_history: "",
@@ -123,6 +218,15 @@ export default function Residents() {
     try {
       // Clean up data for database compatibility
       const cleanedData = { ...formData };
+
+      // Generate full address for backward compatibility
+      cleanedData.residential_address = generateFullAddress({
+        house_number: cleanedData.house_number,
+        purok: cleanedData.purok,
+        barangay: cleanedData.barangay,
+        municipality: cleanedData.municipality,
+        province: cleanedData.province,
+      });
 
       // Convert empty date strings to null to avoid timestamp syntax errors
       if (cleanedData.date_of_birth === "") cleanedData.date_of_birth = null;
@@ -754,17 +858,35 @@ export default function Residents() {
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="label">Age</label>
+                    <label className="label">Birth Date</label>
                     <input
-                      type="number"
-                      required
+                      type="date"
                       className="input"
-                      value={formData.age}
-                      onChange={(e) =>
-                        setFormData({ ...formData, age: e.target.value })
-                      }
+                      value={formData.date_of_birth}
+                      onChange={(e) => {
+                        const birthDate = e.target.value;
+                        setFormData({
+                          ...formData,
+                          date_of_birth: birthDate,
+                          age: birthDate ? calculateAge(birthDate) : '',
+                        });
+                      }}
                     />
                   </div>
+                  <div>
+                    <label className="label">
+                      Age <span className="text-blue-500 text-[9px]">(Auto)</span>
+                    </label>
+                    <input
+                      type="number"
+                      readOnly
+                      className="input bg-gray-100 cursor-not-allowed"
+                      value={formData.age}
+                      placeholder="Auto from birth date"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="label">Gender</label>
                     <select
@@ -778,8 +900,6 @@ export default function Residents() {
                       <option value="FEMALE">FEMALE</option>
                     </select>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="label">Civil Status</label>
                     <select
@@ -803,23 +923,9 @@ export default function Residents() {
 
               <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                  Birth & Contact
+                  Contact & Birth Place
                 </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Birth Date</label>
-                    <input
-                      type="date"
-                      className="input"
-                      value={formData.date_of_birth}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          date_of_birth: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="label">Contact No.</label>
                     <input
@@ -835,20 +941,20 @@ export default function Residents() {
                       placeholder="09..."
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="label">Birth Place</label>
-                  <input
-                    type="text"
-                    className="input uppercase"
-                    value={formData.place_of_birth}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        place_of_birth: e.target.value,
-                      })
-                    }
-                  />
+                  <div>
+                    <label className="label">Birth Place</label>
+                    <input
+                      type="text"
+                      className="input uppercase"
+                      value={formData.place_of_birth}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          place_of_birth: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -983,22 +1089,115 @@ export default function Residents() {
             </div>
           </div>
 
-          <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">
-              Location Details
+          <div className="bg-purple-50/50 p-6 rounded-2xl border border-purple-100 space-y-4">
+            <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest">
+              📍 Residential Address
             </p>
-            <label className="label">Full Residential Address</label>
-            <textarea
-              required
-              className="input uppercase h-24 pt-3"
-              value={formData.residential_address}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  residential_address: e.target.value,
-                })
-              }
-            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* House Number */}
+              <div>
+                <label className="label">
+                  🏠 House Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., 2706, 123-A, Blk 5 Lot 10"
+                  className="input uppercase font-bold"
+                  value={formData.house_number}
+                  onChange={(e) =>
+                    setFormData({ ...formData, house_number: e.target.value })
+                  }
+                />
+                <p className="text-[9px] text-gray-500 mt-1 font-semibold">
+                  Enter your house/building number
+                </p>
+              </div>
+
+              {/* Purok Dropdown */}
+              <div>
+                <label className="label">
+                  📌 Purok / Sitio <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  className="input uppercase font-bold"
+                  value={formData.purok}
+                  onChange={(e) =>
+                    setFormData({ ...formData, purok: e.target.value })
+                  }
+                >
+                  <option value="">-- SELECT PUROK --</option>
+                  {purokOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[9px] text-gray-500 mt-1 font-semibold">
+                  Select your purok or sitio
+                </p>
+              </div>
+
+              {/* Barangay (Auto-populated, Read-only) */}
+              <div>
+                <label className="label">
+                  🏘️ Barangay <span className="text-blue-500">(Automatic)</span>
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
+                  value={formData.barangay}
+                />
+                <p className="text-[9px] text-blue-600 mt-1 font-semibold">
+                  ✓ Auto-filled from system settings
+                </p>
+              </div>
+
+              {/* Municipality (Auto-populated, Read-only) */}
+              <div>
+                <label className="label">
+                  🏛️ Municipality <span className="text-blue-500">(Automatic)</span>
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
+                  value={formData.municipality}
+                />
+                <p className="text-[9px] text-blue-600 mt-1 font-semibold">
+                  ✓ Auto-filled from system settings
+                </p>
+              </div>
+
+              {/* Province (Auto-populated, Read-only) - Full Width */}
+              <div className="md:col-span-2">
+                <label className="label">
+                  🗺️ Province <span className="text-blue-500">(Automatic)</span>
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
+                  value={formData.province}
+                />
+                <p className="text-[9px] text-blue-600 mt-1 font-semibold">
+                  ✓ Auto-filled from system settings
+                </p>
+              </div>
+            </div>
+
+            {/* Full Address Preview */}
+            <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200">
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                📋 Full Address Preview:
+              </p>
+              <p className="text-[13px] font-bold text-gray-800 uppercase">
+                {generateFullAddress(formData) || 'Enter house number and purok to see preview'}
+              </p>
+            </div>
           </div>
 
           <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-4">

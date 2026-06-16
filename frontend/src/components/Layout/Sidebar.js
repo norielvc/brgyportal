@@ -24,6 +24,8 @@ import {
   Package,
   PenTool,
   Award,
+  Lock,
+  CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout, getUserData } from "@/lib/auth";
@@ -63,18 +65,21 @@ const mainMenuItems = [
     name: "QR Scanner",
     icon: Smartphone,
     description: "QR code scanning tools",
+    proOnly: true, // Lock for Starter and Standard plans
     children: [
       {
         name: "Mobile Scanner",
         href: "/mobile-qr-scanner",
         icon: Smartphone,
         description: "Scan QR codes",
+        proOnly: true,
       },
       {
         name: "Scan History",
         href: "/qr-scan-history",
         icon: History,
         description: "View scanned codes",
+        proOnly: true,
       },
     ],
   },
@@ -103,6 +108,7 @@ const mainMenuItems = [
         href: "/facilities",
         icon: Building2,
         adminOnly: true,
+        starterOnly: true, // Lock for Starter plan only
         description: "Manage facilities",
       },
       {
@@ -124,6 +130,7 @@ const mainMenuItems = [
         href: "/achievements",
         icon: Award,
         adminOnly: true,
+        starterOnly: true, // Lock for Starter plan only
         description: "Awards & Recognition",
       },
       {
@@ -131,6 +138,7 @@ const mainMenuItems = [
         href: "/programs",
         icon: Activity,
         adminOnly: true,
+        starterOnly: true, // Lock for Starter plan only
         description: "Barangay Initiatives",
       },
     ],
@@ -207,6 +215,39 @@ export default function Sidebar({
     "secretary",
     "staff",
   ];
+
+  // Fetch subscription data to check plan
+  const [subscription, setSubscription] = useState(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [lockedFeatureName, setLockedFeatureName] = useState("");
+  const [requiredPlanType, setRequiredPlanType] = useState("Pro"); // "Pro" or "Standard"
+  
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/subscription/usage", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (json.success) {
+          setSubscription(json.data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch subscription:", e);
+      }
+    };
+    fetchSubscription();
+  }, []);
+
+  // Check if user has Pro plan
+  const isProPlan = subscription?.planId === "pro" || subscription?.requests?.total === -1;
+  
+  // Check if user has Starter plan (lowest tier)
+  const isStarterPlan = subscription?.planId === "starter";
+  
+  // Check if user has Standard or Pro plan (can access starter-locked features)
+  const canAccessStarterLocked = subscription?.planId === "standard" || isProPlan;
 
   const handleLogout = () => {
     logout();
@@ -405,22 +446,43 @@ export default function Sidebar({
                     )
                     .map((child) => {
                       const isChildActive = router.pathname === child.href;
+                      // Check if locked based on plan
+                      const isProLocked = child.proOnly && !isProPlan;
+                      const isStarterLocked = child.starterOnly && !canAccessStarterLocked;
+                      const isLocked = isProLocked || isStarterLocked;
+                      
+                      // Determine which plan is required
+                      const requiredPlan = child.proOnly ? "Pro" : child.starterOnly ? "Standard or Pro" : null;
+                      
                       return (
                         <Link
                           key={child.name}
-                          href={child.href}
+                          href={isLocked ? "#" : child.href}
                           className={cn(
                             "group flex items-center px-4 py-2 text-[12px] font-bold rounded-lg transition-all",
-                            isChildActive
+                            isLocked
+                              ? "text-blue-100/20 cursor-not-allowed opacity-50"
+                              : isChildActive
                               ? "bg-white/10 text-white"
                               : "text-blue-100/40 hover:bg-white/5 hover:text-white",
                           )}
-                          onClick={() => setIsMobileMenuOpen(false)}
+                          onClick={(e) => {
+                            if (isLocked) {
+                              e.preventDefault();
+                              setLockedFeatureName(child.name);
+                              setRequiredPlanType(child.proOnly ? "Pro" : "Standard");
+                              setShowUpgradeModal(true);
+                              return;
+                            }
+                            setIsMobileMenuOpen(false);
+                          }}
                         >
                           <child.icon
                             className={cn(
                               "w-4 h-4 mr-3 transition-all",
-                              isChildActive
+                              isLocked
+                                ? "text-white/10"
+                                : isChildActive
                                 ? "text-blue-400"
                                 : "text-white/10 group-hover:text-blue-300",
                             )}
@@ -428,6 +490,9 @@ export default function Sidebar({
                           <div className="flex-1 min-w-0">
                             <div className="truncate">{child.name}</div>
                           </div>
+                          {isLocked && (
+                            <Lock className="w-3 h-3 text-yellow-400 ml-2" />
+                          )}
                         </Link>
                       );
                     })}
@@ -522,6 +587,118 @@ export default function Sidebar({
       >
         {renderNav(false)}
       </div>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-6 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                    <Lock className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight">Feature Locked</h3>
+                    <p className="text-xs font-semibold text-white/80 uppercase tracking-wider">
+                      {requiredPlanType} Plan Required
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-8">
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-2xl mb-4">
+                  <Smartphone className="w-8 h-8 text-amber-600" />
+                </div>
+                <h4 className="text-2xl font-black text-gray-900 mb-2">{lockedFeatureName}</h4>
+                <p className="text-gray-600 leading-relaxed">
+                  This feature is only available in the <span className="font-bold text-amber-600">{requiredPlanType} Plan</span>
+                  {requiredPlanType === "Standard" && " or higher"}. 
+                  Upgrade your subscription to unlock {lockedFeatureName} and other premium features.
+                </p>
+              </div>
+
+              {/* Features List */}
+              <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+                  {requiredPlanType} Plan Includes:
+                </p>
+                <ul className="space-y-2">
+                  {requiredPlanType === "Pro" ? (
+                    <>
+                      <li className="flex items-center text-sm text-gray-700">
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                        <span>QR Code Scanner & History</span>
+                      </li>
+                      <li className="flex items-center text-sm text-gray-700">
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                        <span>Advanced Analytics Dashboard</span>
+                      </li>
+                      <li className="flex items-center text-sm text-gray-700">
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                        <span>Unlimited Certificate Requests</span>
+                      </li>
+                      <li className="flex items-center text-sm text-gray-700">
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                        <span>Bulk Data Export (Excel/CSV)</span>
+                      </li>
+                    </>
+                  ) : (
+                    <>
+                      <li className="flex items-center text-sm text-gray-700">
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                        <span>Facilities Management</span>
+                      </li>
+                      <li className="flex items-center text-sm text-gray-700">
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                        <span>Programs & Achievements</span>
+                      </li>
+                      <li className="flex items-center text-sm text-gray-700">
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                        <span>1,000 Requests per Month</span>
+                      </li>
+                      <li className="flex items-center text-sm text-gray-700">
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                        <span>Physical Inspection Reports</span>
+                      </li>
+                    </>
+                  )}
+                </ul>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                >
+                  Maybe Later
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUpgradeModal(false);
+                    router.push("/pricing");
+                  }}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg hover:shadow-xl"
+                >
+                  Upgrade Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

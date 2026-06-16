@@ -51,10 +51,30 @@ export default function EventsPage() {
     try {
       setLoading(true);
       const token = getAuthToken();
+      
+      if (!token) {
+        console.error('No auth token found');
+        setNotification({
+          type: "error",
+          message: "Authentication required. Please log in again.",
+        });
+        setEvents([]);
+        return;
+      }
+
+      console.log('Fetching events...');
       const response = await fetch(`${API_URL}/events`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Fetch failed:', response.status, errorText);
+        throw new Error(`Failed to fetch events: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('Events fetched:', data);
 
       if (data.success && data.data.length > 0) {
         setEvents(data.data);
@@ -63,6 +83,10 @@ export default function EventsPage() {
       }
     } catch (error) {
       console.error("Error fetching events:", error);
+      setNotification({
+        type: "error",
+        message: `Failed to load events: ${error.message}`,
+      });
       setEvents([]);
     } finally {
       setLoading(false);
@@ -161,18 +185,124 @@ export default function EventsPage() {
     }
   };
 
-  const handleImageUpload = (e, isEditing = false) => {
-    const file = e.target.files[0];
-    if (file) {
+  const handleImageUpload = async (e, isEditing = false) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+
+    // Validate file size (max 5MB before compression)
+    if (file.size > 5 * 1024 * 1024) {
+      setNotification({
+        type: "error",
+        message: "Image too large. Please use an image under 5MB.",
+      });
+      // Clear the input
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setNotification({
+        type: "error",
+        message: "Please select a valid image file.",
+      });
+      // Clear the input
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    try {
+      // Show uploading state
+      setNotification({
+        type: "success",
+        message: "Uploading image...",
+      });
+
+      // Convert to base64
       const reader = new FileReader();
-      reader.onloadend = () => {
-        if (isEditing && editingEvent) {
-          setEditingEvent({ ...editingEvent, image: reader.result });
-        } else {
-          setFormData({ ...formData, image: reader.result });
+      reader.onerror = () => {
+        setNotification({
+          type: "error",
+          message: "Failed to read image file.",
+        });
+        // Clear the input
+        if (e.target) e.target.value = '';
+      };
+      
+      reader.onloadend = async () => {
+        try {
+          const token = getAuthToken();
+          
+          if (!token) {
+            throw new Error("Authentication required");
+          }
+          
+          // Get old URL if replacing
+          const oldUrl = isEditing && editingEvent ? editingEvent.image : formData.image;
+          
+          console.log('Uploading image to storage...');
+          
+          // Upload to Supabase Storage
+          const response = await fetch(`${API_URL}/upload/image`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              base64: reader.result,
+              folder: "events",
+              oldUrl: oldUrl && oldUrl.startsWith("http") ? oldUrl : null,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Upload response error:', response.status, errorText);
+            throw new Error(`Upload failed: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (data.success && data.url) {
+            // Update the image URL
+            if (isEditing && editingEvent) {
+              setEditingEvent({ ...editingEvent, image: data.url });
+            } else {
+              setFormData({ ...formData, image: data.url });
+            }
+            setNotification({
+              type: "success",
+              message: "Image uploaded successfully!",
+            });
+            // Clear the input for next upload
+            if (e.target) e.target.value = '';
+          } else {
+            throw new Error(data.message || "Upload failed");
+          }
+        } catch (error) {
+          console.error("Upload error:", error);
+          setNotification({
+            type: "error",
+            message: `Upload failed: ${error.message}`,
+          });
+          // Clear the input
+          if (e.target) e.target.value = '';
         }
       };
+      
       reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Image processing error:", error);
+      setNotification({
+        type: "error",
+        message: "Failed to process image",
+      });
+      // Clear the input
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -187,7 +317,7 @@ export default function EventsPage() {
     setShowAddModal(true);
   };
 
-  const addEvent = () => {
+  const addEvent = async () => {
     if (
       !formData.title.trim() ||
       !formData.description.trim() ||
@@ -196,21 +326,77 @@ export default function EventsPage() {
       setNotification({ type: "error", message: "Please fill in all fields" });
       return;
     }
-    const newEvent = { ...formData, id: Date.now() };
-    setEvents([...events, newEvent]);
-    setShowAddModal(false);
-    setHasChanges(true);
-    setNotification({
-      type: "success",
-      message: 'Event added. Click "Save All" to publish.',
-    });
+
+    // Prevent double-clicking
+    if (saving) {
+      console.log('Already saving, ignoring duplicate request');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const token = getAuthToken();
+
+      if (!token) {
+        throw new Error("Authentication required. Please log in again.");
+      }
+
+      console.log('Creating new event:', formData);
+
+      // Create the event in the database
+      const response = await fetch(`${API_URL}/events`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          date: formData.date,
+          description: formData.description,
+          body: formData.body || "",
+          image: formData.image || "",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Create failed:', response.status, errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setShowAddModal(false);
+        setNotification({
+          type: "success",
+          message: "Event added successfully!",
+        });
+        // Refresh from server
+        await fetchEvents();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || "Failed to add event",
+        });
+      }
+    } catch (error) {
+      console.error("Error adding event:", error);
+      setNotification({
+        type: "error",
+        message: `Failed to add event: ${error.message}`,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const startEditing = (event) => {
     setEditingEvent({ ...event });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (
       !editingEvent.title.trim() ||
       !editingEvent.description.trim() ||
@@ -219,16 +405,85 @@ export default function EventsPage() {
       setNotification({ type: "error", message: "Please fill in all fields" });
       return;
     }
-    setEvents(events.map((e) => (e.id === editingEvent.id ? editingEvent : e)));
-    setEditingEvent(null);
-    setHasChanges(true);
-    setNotification({
-      type: "success",
-      message: 'Event updated. Click "Save All" to publish.',
-    });
+
+    // Validate that we have a proper ID
+    if (!editingEvent.id) {
+      setNotification({ 
+        type: "error", 
+        message: "Invalid event ID. Please refresh the page and try again." 
+      });
+      return;
+    }
+
+    // Prevent double-clicking
+    if (saving) {
+      console.log('Already saving, ignoring duplicate request');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const token = getAuthToken();
+
+      if (!token) {
+        throw new Error("Authentication required. Please log in again.");
+      }
+
+      console.log('Saving event with ID:', editingEvent.id);
+      console.log('Event data:', editingEvent);
+
+      // Update the event in the database
+      const response = await fetch(`${API_URL}/events/${editingEvent.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: editingEvent.title,
+          date: editingEvent.date,
+          description: editingEvent.description,
+          body: editingEvent.body || "",
+          image: editingEvent.image || "",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Save failed:', response.status, errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state
+        setEvents(events.map((e) => (e.id === editingEvent.id ? editingEvent : e)));
+        setEditingEvent(null);
+        setNotification({
+          type: "success",
+          message: "Event saved successfully!",
+        });
+        // Refresh from server to ensure consistency
+        await fetchEvents();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || "Failed to save event",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving event:", error);
+      setNotification({
+        type: "error",
+        message: `Failed to save event: ${error.message}`,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const deleteEvent = (id) => {
+  const deleteEvent = async (id) => {
     if (events.length <= 1) {
       setNotification({
         type: "error",
@@ -236,24 +491,120 @@ export default function EventsPage() {
       });
       return;
     }
-    setEvents(events.filter((e) => e.id !== id));
-    setHasChanges(true);
-    setNotification({
-      type: "success",
-      message: 'Event deleted. Click "Save All" to publish.',
-    });
+
+    if (!confirm("Are you sure you want to delete this event?")) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const token = getAuthToken();
+
+      const response = await fetch(`${API_URL}/events/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setNotification({
+          type: "success",
+          message: "Event deleted successfully!",
+        });
+        fetchEvents(); // Refresh from server
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || "Failed to delete event",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      setNotification({
+        type: "error",
+        message: "Failed to delete event. Please try again.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const moveEvent = (index, direction) => {
+  const moveEvent = async (index, direction) => {
     const newEvents = [...events];
     const newIndex = direction === "up" ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= events.length) return;
+    
+    // Swap events
     [newEvents[index], newEvents[newIndex]] = [
       newEvents[newIndex],
       newEvents[index],
     ];
+    
+    // Update local state immediately for smooth UX
     setEvents(newEvents);
-    setHasChanges(true);
+
+    try {
+      setSaving(true);
+      const token = getAuthToken();
+
+      // Clean the events data - only send necessary fields
+      const cleanEvents = newEvents.map((e) => ({
+        id: e.id,
+        title: e.title,
+        date: e.date,
+        description: e.description,
+        body: e.body || "",
+        image: e.image || "",
+      }));
+
+      console.log('Updating event order, sending:', cleanEvents.length, 'events');
+
+      // Save the new order to database
+      const response = await fetch(`${API_URL}/events/bulk/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ events: cleanEvents }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Reorder failed:', response.status, errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setNotification({
+          type: "success",
+          message: "Event order updated!",
+        });
+        fetchEvents(); // Refresh from server
+      } else {
+        // Revert on error
+        setEvents(events);
+        setNotification({
+          type: "error",
+          message: data.message || "Failed to update order",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating order:", error);
+      // Revert on error
+      setEvents(events);
+      setNotification({
+        type: "error",
+        message: `Failed to update order: ${error.message}`,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -277,30 +628,11 @@ export default function EventsPage() {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={resetToDefault}
-            disabled={saving}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            Reset
-          </button>
-          <button
             onClick={openAddModal}
             className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
             Add Event
-          </button>
-          <button
-            onClick={saveAllChanges}
-            disabled={!hasChanges || saving}
-            className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${hasChanges && !saving ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
-          >
-            {saving ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Save className="w-5 h-5" />
-            )}
-            {saving ? "Saving..." : "Save All"}
           </button>
         </div>
       </div>
@@ -316,16 +648,6 @@ export default function EventsPage() {
             <AlertCircle className="w-5 h-5" />
           )}
           <span className="font-medium">{notification.message}</span>
-        </div>
-      )}
-
-      {hasChanges && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600" />
-          <span className="text-amber-800 font-medium">
-            Unsaved changes. Click "Save All" to publish to homepage for
-            everyone.
-          </span>
         </div>
       )}
 
@@ -568,8 +890,9 @@ export default function EventsPage() {
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Use high-quality images (recommended: 1920x1080)</li>
               <li>• Keep titles short and descriptive</li>
-              <li>• Use the arrows to reorder events</li>
-              <li>• Click "Save All" to publish changes for everyone</li>
+              <li>• Each event saves immediately when you click Save</li>
+              <li>• Use arrows to reorder events (saves automatically)</li>
+              <li>• Changes appear on homepage instantly</li>
             </ul>
           </div>
         </div>

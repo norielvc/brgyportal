@@ -1,0 +1,4 @@
+last_name,first_name,middle_name,suffix,date_of_birth,age,gender,civil_status,place_of_birth,house_number,purok,barangay,municipality,province,contact_number
+DELA CRUZ,JUAN,SANTOS,JR,1990-01-15,,MALE,MARRIED,MANILA,123,Purok 1,IBA O' ESTE,CALUMPIT,BULACAN,09171234567
+REYES,MARIA,GARCIA,,1985-12-20,,FEMALE,SINGLE,QUEZON CITY,456,Purok 2,IBA O' ESTE,CALUMPIT,BULACAN,09187654321
+TEST,MARIA,N/A,,1983-12-20,,,,QUEZON CITY,456,Purok 2,IBA O' ESTE,CALUMPIT,BULACAN,5187654321

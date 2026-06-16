@@ -62,44 +62,17 @@ export default async function handler(req, res) {
     }
   } catch (cloudError) {
     console.warn(
-      "⚠️ Search Resilience: Supabase inactive or keys missing - attempting local resolution...",
+      "❌ Search failed: Supabase inactive or keys missing",
     );
-  }
-
-  /**
-   * STAGE 2: Local Resilience Fallback (JSON-based)
-   */
-  try {
-    const dataPath = path.join(process.cwd(), "src/data/mock/residents.json");
-    const jsonData = await fs.readFile(dataPath, "utf8");
-    const data = JSON.parse(jsonData);
-
-    const residents = data.residents || [];
-    const allFiltered = residents.filter(
-      (r) =>
-        r.full_name.toLowerCase().includes((name || "").toLowerCase()) &&
-        (r.tenant_id === tenantId ||
-          (tenantId === "demo" && r.tenant_id === "demo")),
-    );
-
-    const totalItems = allFiltered.length;
-    const paginated = allFiltered.slice(offset, offset + limit);
-
-    console.log(
-      `📦 Fallback Search: Found ${paginated.length} local records (Total: ${totalItems}).`,
-    );
+    // Don't serve fake fallback data - return empty result
     return res.status(200).json({
       success: true,
-      residents: paginated,
-      totalItems,
-      totalPages: Math.ceil(totalItems / limit),
+      residents: [],
+      totalItems: 0,
+      totalPages: 0,
       currentPage: page,
-      source: "local_resilience_store",
+      source: "no_data_available",
+      message: "Database unavailable - no fallback data provided"
     });
-  } catch (fsError) {
-    console.error(`❌ CRITICAL FAILURE [Search]:`, fsError);
-    return res
-      .status(500)
-      .json({ success: false, message: "Resident database offline." });
   }
 }

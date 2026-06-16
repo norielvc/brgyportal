@@ -37,6 +37,8 @@ export default function ProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef(null);
+  const [subscription, setSubscription] = useState(null);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -45,9 +47,38 @@ export default function ProgramsPage() {
     image: "",
   });
 
+  // Check subscription on mount
   useEffect(() => {
-    fetchPrograms();
+    const checkSubscription = async () => {
+      try {
+        const token = getAuthToken();
+        const res = await fetch("/api/subscription/usage", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (json.success) {
+          setSubscription(json.data);
+          // Check if user has Starter plan (locked)
+          const isStarterPlan = json.data.planId === "starter";
+          if (isStarterPlan) {
+            // Redirect to dashboard with message
+            window.location.href = "/dashboard?upgrade=programs";
+          }
+        }
+      } catch (e) {
+        console.error("Failed to check subscription:", e);
+      } finally {
+        setIsCheckingSubscription(false);
+      }
+    };
+    checkSubscription();
   }, []);
+
+  useEffect(() => {
+    if (!isCheckingSubscription) {
+      fetchPrograms();
+    }
+  }, [isCheckingSubscription]);
 
   const fetchPrograms = async () => {
     try {

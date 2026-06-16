@@ -182,6 +182,12 @@ export default function PortalPageContent({ initialTenantId }) {
       try {
         // Residents can see public subscription status (plan name/features)
         const res = await fetch(`/api/subscription/usage?tenantId=${tenantId}`);
+        // Guard: only parse JSON if the response is actually JSON (not a 404 HTML page)
+        const contentType = res.headers.get("content-type") || "";
+        if (!res.ok || !contentType.includes("application/json")) {
+          console.warn("Subscription API unavailable, skipping feature gating.");
+          return;
+        }
         const data = await res.json();
         if (data.success) {
           setSubscription(data.data);
@@ -1139,12 +1145,14 @@ export default function PortalPageContent({ initialTenantId }) {
               currentSlide === index ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
           >
-            {item.image && (
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${item.image})` }}
-              />
-            )}
+            <div
+              className="absolute inset-0 bg-cover bg-center transition-opacity duration-700"
+              style={{
+                backgroundImage: item.image
+                  ? `url(${item.image})`
+                  : `linear-gradient(135deg, ${tenantConfig.primaryColor} 0%, ${tenantConfig.cardBackground} 100%)`,
+              }}
+            />
             <div className="absolute inset-0 hero-gradient" />
             <div className="relative h-full max-w-[1800px] mx-auto px-8 sm:px-12 lg:px-16 flex items-center">
               <div className="max-w-2xl text-white">

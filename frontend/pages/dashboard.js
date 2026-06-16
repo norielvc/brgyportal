@@ -147,13 +147,27 @@ export default function Dashboard() {
     }
   };
 
+  const [subData, setSubData] = useState(null);
+  
+  const fetchSubData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/subscription/usage", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const json = await res.json();
+      if (json.success) setSubData(json.data);
+    } catch (e) { console.error("Sub fetch error:", e); }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) { router.push("/login"); return; }
     fetchData().then(() => setIsFirstLoad(false));
+    fetchSubData();
   }, []);
 
-  useEffect(() => { if (!isFirstLoad) fetchData(); }, [filters]);
+  useEffect(() => { if (!isFirstLoad) { fetchData(); fetchSubData(); } }, [filters]);
 
   if (loading) return <div className="p-8 animate-pulse space-y-8"><div className="h-20 bg-gray-100 rounded-2xl w-full" /><div className="grid grid-cols-4 gap-6"><div className="h-32 bg-gray-100 rounded-2xl" /><div className="h-32 bg-gray-100 rounded-2xl" /><div className="h-32 bg-gray-100 rounded-2xl" /><div className="h-32 bg-gray-100 rounded-2xl" /></div></div>;
 
@@ -164,80 +178,79 @@ export default function Dashboard() {
   
   const growthBadge = ov.monthGrowth != null ? `${ov.monthGrowth >= 0 ? '+' : ''}${ov.monthGrowth}%` : null;
 
+  const SubscriptionWidget = ({ data }) => {
+    if (!data) return null;
+    const requestPct = data.requests.isUnlimited ? 0 : Math.min(100, (data.requests.used / data.requests.total) * 100);
+    const staffPct = data.staff.isUnlimited ? 0 : Math.min(100, (data.staff.used / data.staff.total) * 100);
+    
+    return (
+        <div className="bg-white rounded-2xl border border-[#2d5a3d]/10 p-5 shadow-sm mb-6 flex flex-col md:flex-row items-center justify-between gap-6 border-l-4 border-l-[#2d5a3d] animate-in slide-in-from-left duration-500">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="p-3 bg-[#2d5a3d]/10 rounded-xl">
+                    <Zap className="w-6 h-6 text-[#2d5a3d]" />
+                </div>
+                <div>
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Barangay Active Plan</h4>
+                    <p className="text-xl font-black text-gray-900">{data.planName}</p>
+                </div>
+            </div>
+            
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-8 w-full px-0 md:px-8 md:border-x border-gray-50">
+                <div className="group">
+                    <div className="flex justify-between items-end mb-2">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5">
+                            <Activity className="w-3 h-3" /> Monthly Requests
+                        </span>
+                        <span className="text-xs font-black text-gray-900 bg-gray-50 px-2 py-0.5 rounded">
+                            {data.requests.used} / {data.requests.isUnlimited ? '∞' : data.requests.total}
+                        </span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                        <div 
+                            className={`h-full transition-all duration-1000 ${requestPct > 90 ? 'bg-red-500' : 'bg-[#2d5a3d]'}`} 
+                            style={{ width: `${data.requests.isUnlimited ? 100 : requestPct}%` }} 
+                        />
+                    </div>
+                </div>
+                
+                <div className="group">
+                    <div className="flex justify-between items-end mb-2">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5">
+                            <Users className="w-3 h-3" /> Staff Slots
+                        </span>
+                        <span className="text-xs font-black text-gray-900 bg-gray-50 px-2 py-0.5 rounded">
+                            {data.staff.used} / {data.staff.isUnlimited ? '∞' : data.staff.total}
+                        </span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                        <div 
+                            className={`h-full transition-all duration-1000 ${staffPct > 90 ? 'bg-amber-500' : 'bg-blue-500'}`} 
+                            style={{ width: `${data.staff.isUnlimited ? 100 : staffPct}%` }} 
+                        />
+                    </div>
+                </div>
+            </div>
+            
+            <div className="w-full md:w-auto">
+                <button 
+                  onClick={() => router.push('/pricing')}
+                  className="w-full md:w-auto px-6 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-gray-200"
+                >
+                    Upgrade Plan
+                </button>
+            </div>
+        </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header Area */}
-      <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-        <div />
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowFilters(!showFilters)} className={`p-2.5 rounded-xl border transition-all ${showFilters ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
-            <Filter className="w-5 h-5" />
-          </button>
-          <button onClick={() => fetchData(true)} disabled={refreshing} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50">
-            <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
-          </button>
-          <button onClick={() => router.push("/requests")} className="px-6 py-2.5 bg-[#2d5a3d] text-white rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-[#2d5a3d]/20 transition-all">
-            Manage Requests
-          </button>
-        </div>
+      {/* Header Area - Cleaned up */}
+      <div className="pb-2 border-b border-gray-100 mb-2">
+        {/* Buttons removed as requested */}
       </div>
 
-      {/* Filters Panel */}
-      {showFilters && (
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 animate-in slide-in-from-top duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Date From</label>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-100 rounded-xl text-xs focus:ring-2 focus:ring-[#2d5a3d] focus:border-[#2d5a3d] transition-all outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Date To</label>
-              <input
-                type="date"
-                value={filters.dateTo}
-                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-100 rounded-xl text-xs focus:ring-2 focus:ring-[#2d5a3d] focus:border-[#2d5a3d] transition-all outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Type</label>
-              <select
-                value={filters.certificateType}
-                onChange={(e) => setFilters({ ...filters, certificateType: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-100 rounded-xl text-xs focus:ring-2 focus:ring-[#2d5a3d] focus:border-[#2d5a3d] transition-all outline-none bg-white"
-              >
-                <option value="">All Types</option>
-                {Object.entries(TYPE_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Status</label>
-              <select
-                value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-100 rounded-xl text-xs focus:ring-2 focus:ring-[#2d5a3d] focus:border-[#2d5a3d] transition-all outline-none bg-white"
-              >
-                <option value="">All Status</option>
-                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                  <option key={key} value={key}>{cfg.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase">
-             <button onClick={() => setFilters({ dateFrom: "", dateTo: "", certificateType: "", status: "" })} className="hover:text-black transition-colors">Reset All</button>
-             <span>·</span>
-             <span>{Object.values(filters).filter(Boolean).length} Active Filters</span>
-          </div>
-        </div>
-      )}
+      <SubscriptionWidget data={subData} />
 
       {/* Row 1: Core Performance Lifecycle */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">

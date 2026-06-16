@@ -13,11 +13,16 @@ if (!supabaseUrl || !supabaseKey) {
   );
 }
 
+// Create singleton client with reasonable timeout
 export const supabase = createClient(supabaseUrl || "", supabaseKey || "", {
+  auth: {
+    persistSession: false, // Disable session persistence on server
+    autoRefreshToken: false,
+  },
   global: {
     fetch: (url, options) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       return fetch(url, { ...options, signal: controller.signal })
         .then((res) => {
           clearTimeout(timeoutId);
@@ -25,6 +30,9 @@ export const supabase = createClient(supabaseUrl || "", supabaseKey || "", {
         })
         .catch((err) => {
           clearTimeout(timeoutId);
+          if (err.name === 'AbortError') {
+            console.error('Supabase request timeout after 30s');
+          }
           throw err;
         });
     },

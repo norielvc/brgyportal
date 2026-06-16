@@ -451,6 +451,7 @@ export default function SuperAdminDashboard() {
   const [showOnboard, setShowOnboard] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const [showProtection, setShowProtection] = useState(false);
+  const [updatingPlan, setUpdatingPlan] = useState(null);
 
   const fetchTenants = async () => {
     try {
@@ -483,6 +484,35 @@ export default function SuperAdminDashboard() {
     setShowOnboard(false);
     setSuccessData(data);
     fetchTenants(); // refresh list
+  };
+
+  const updatePlan = async (tenantId, planId) => {
+    try {
+      setUpdatingPlan(tenantId);
+      console.log(`🔄 Updating plan for ${tenantId} to ${planId}...`);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/tenants`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${token}`,
+          "x-tenant-id": "ibaoeste" // Context context required by your auth middleware
+        },
+        body: JSON.stringify({ tenantId, planId: planId.toLowerCase() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        console.log("✅ Plan updated successfully");
+        fetchTenants();
+      } else {
+        console.error("❌ Plan update failed:", data.message);
+        alert("Failed to update plan: " + data.message);
+      }
+    } catch (err) {
+      console.error("❌ Network error updating plan:", err);
+    } finally {
+      setUpdatingPlan(null);
+    }
   };
 
   return (
@@ -650,9 +680,21 @@ export default function SuperAdminDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2.5 py-1 rounded border border-gray-300 bg-white text-xs font-bold text-gray-700 shadow-sm">
-                          {tenant.plan_tier}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <select
+                             value={tenant.plan_id || "starter"}
+                             onChange={(e) => updatePlan(tenant.id, e.target.value)}
+                             disabled={updatingPlan === tenant.id}
+                             className="inline-flex px-2 py-1 rounded border border-gray-300 bg-white text-xs font-bold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer disabled:opacity-50"
+                          >
+                             <option value="starter">Starter</option>
+                             <option value="standard">Standard</option>
+                             <option value="pro">Pro</option>
+                          </select>
+                          {updatingPlan === tenant.id && (
+                            <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>

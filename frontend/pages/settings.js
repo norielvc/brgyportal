@@ -30,10 +30,42 @@ export default function Settings() {
   
   useEffect(() => {
     setUser(getUserData());
+    fetchTenantSettings();
   }, []);
+
+  // Fetch tenant-specific settings
+  const fetchTenantSettings = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/settings`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      
+      if (data.success && data.settings) {
+        const headerInfo = data.settings.certificate_settings?.headerInfo || {};
+        setTenantAddressDefaults({
+          barangay: headerInfo.barangayName || 'BARANGAY DEMO',
+          municipality: headerInfo.municipality || 'DEMO',
+          province: headerInfo.province || 'DEMO',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching tenant settings:', error);
+    }
+  };
   const [activeTab, setActiveTab] = useState("general");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Tenant-specific address defaults
+  const [tenantAddressDefaults, setTenantAddressDefaults] = useState({
+    barangay: '',
+    municipality: '',
+    province: '',
+  });
 
   // Signature management state
   const [signatures, setSignatures] = useState([]);
@@ -350,16 +382,23 @@ export default function Settings() {
       "first_name",
       "middle_name",
       "suffix",
+      "date_of_birth",
       "age",
       "gender",
       "civil_status",
-      "date_of_birth",
       "place_of_birth",
-      "residential_address",
+      "house_number",
+      "purok",
+      "barangay",
+      "municipality",
+      "province",
       "contact_number",
     ];
+    
+    // Use tenant-specific values in sample data
     const sampleData =
-      "SALAZAR,CARLO,PADILLA,IV,57,FEMALE,SEPARATED,1968-04-19,BAGUIO,House No. 810C,09171234567";
+      `SALAZAR,CARLO,PADILLA,IV,1968-04-19,57,MALE,MARRIED,BAGUIO,810C,Purok 1,${tenantAddressDefaults.barangay},${tenantAddressDefaults.municipality},${tenantAddressDefaults.province},09171234567`;
+    
     const csvContent = headers.join(",") + "\n" + sampleData;
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -1061,45 +1100,112 @@ export default function Settings() {
                       skipEmptyLines: true,
                       complete: async (results) => {
                         try {
-                          const mappedData = results.data.map((row) => ({
-                            last_name:
-                              row.last_name || row["Last Name"] || row.lastName,
-                            first_name:
-                              row.first_name ||
-                              row["First Name"] ||
-                              row.firstName,
-                            middle_name:
-                              row.middle_name || row["Middle Name"] || "",
-                            suffix: row.suffix || row.Suffix || "",
-                            age: parseInt(row.age || row.Age) || null,
-                            gender: (
-                              row.gender ||
-                              row.Gender ||
-                              row.sex ||
-                              ""
-                            ).toUpperCase(),
-                            civil_status: (
-                              row.civil_status ||
-                              row["Civil Status"] ||
-                              ""
-                            ).toUpperCase(),
-                            date_of_birth:
-                              row.date_of_birth || row["Date of Birth"],
-                            place_of_birth:
-                              row.place_of_birth || row["Place of Birth"],
-                            residential_address:
-                              row.residential_address ||
-                              row["Residential Address"] ||
-                              row.address,
-                            contact_number:
-                              row.contact_number || row["Contact Number"] || "",
-                          }));
+                          // Helper function to parse various date formats
+                          const parseDate = (dateStr) => {
+                            if (!dateStr || dateStr === '') return null;
+                            
+                            // Already in YYYY-MM-DD format
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                              return dateStr;
+                            }
+                            
+                            // Parse "Month DD, YYYY" format (e.g., "August 25, 1963")
+                            const monthNames = {
+                              'january': '01', 'february': '02', 'march': '03', 'april': '04',
+                              'may': '05', 'june': '06', 'july': '07', 'august': '08',
+                              'september': '09', 'october': '10', 'november': '11', 'december': '12'
+                            };
+                            
+                            const match = dateStr.match(/(\w+)\s+(\d{1,2}),\s+(\d{4})/i);
+                            if (match) {
+                              const month = monthNames[match[1].toLowerCase()];
+                              const day = match[2].padStart(2, '0');
+                              const year = match[3];
+                              if (month) {
+                                return year + '-' + month + '-' + day;
+                              }
+                            }
+                            
+                            // Try parsing as Date object
+                            try {
+                              const date = new Date(dateStr);
+                              if (!isNaN(date.getTime())) {
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                return year + '-' + month + '-' + day;
+                              }
+                            } catch (e) {
+                              return null;
+                            }
+                            
+                            return null;
+                          };
+                          
+                          // Helper function to clean values (convert N/A, empty strings to null)
+                          const cleanValue = (value) => {
+                            if (value === undefined || value === null || value === '' || 
+                                (typeof value === 'string' && value.trim().toUpperCase() === 'N/A')) {
+                              return null;
+                            }
+                            return typeof value === 'string' ? value.trim() : value;
+                          };
+                          
+                          // Helper function to calculate age from date of birth
+                          const calculateAge = (dateOfBirth) => {
+                            if (!dateOfBirth) return null;
+                            try {
+                              const today = new Date();
+                              const birthDate = new Date(dateOfBirth);
+                              if (isNaN(birthDate.getTime())) return null;
+                              let age = today.getFullYear() - birthDate.getFullYear();
+                              const monthDiff = today.getMonth() - birthDate.getMonth();
+                              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                                age--;
+                              }
+                              return age > 0 ? age : null;
+                            } catch (e) {
+                              return null;
+                            }
+                          };
+                          
+                          const mappedData = results.data.map((row) => {
+                            const dateRaw = cleanValue(row.date_of_birth || row["Date of Birth"]);
+                            const dateOfBirth = parseDate(dateRaw);
+                            const ageValue = cleanValue(row.age || row.Age);
+                            const age = ageValue ? parseInt(ageValue) : calculateAge(dateOfBirth);
+                            
+                            const genderRaw = cleanValue(row.gender || row.Gender || row.sex);
+                            const civilStatusRaw = cleanValue(row.civil_status || row["Civil Status"]);
+                            
+                            return {
+                              last_name: cleanValue(row.last_name || row["Last Name"] || row.lastName),
+                              first_name: cleanValue(row.first_name || row["First Name"] || row.firstName),
+                              middle_name: cleanValue(row.middle_name || row["Middle Name"]),
+                              suffix: cleanValue(row.suffix || row.Suffix),
+                              age: age,
+                              gender: genderRaw ? genderRaw.toUpperCase() : null,
+                              civil_status: civilStatusRaw ? civilStatusRaw.toUpperCase() : null,
+                              date_of_birth: dateOfBirth,
+                              place_of_birth: cleanValue(row.place_of_birth || row["Place of Birth"]),
+                              house_number: cleanValue(row.house_number || row["House Number"]),
+                              purok: cleanValue(row.purok || row.Purok),
+                              barangay: cleanValue(row.barangay || row.Barangay),
+                              municipality: cleanValue(row.municipality || row.Municipality),
+                              province: cleanValue(row.province || row.Province),
+                              contact_number: cleanValue(row.contact_number || row["Contact Number"] || row.zonbi),
+                            };
+                          });
 
+                          const token = getAuthToken();
                           const res = await fetch(
                             `${API_URL}/residents/bulk-insert`,
                             {
                               method: "POST",
-                              headers: { "Content-Type": "application/json" },
+                              headers: { 
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${token}`
+                              },
                               body: JSON.stringify({ residents: mappedData }),
                             },
                           );

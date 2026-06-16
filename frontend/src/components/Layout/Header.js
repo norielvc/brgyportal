@@ -1,7 +1,8 @@
 import { Bell, Search, User, Settings, LogOut, Menu } from "lucide-react";
-import { useState } from "react";
-import { getUserData, logout } from "@/lib/auth";
+import { useState, useEffect } from "react";
+import { getUserData, logout, getAuthToken } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
+import { useRouter } from "next/router";
 
 export default function Header({
   title,
@@ -12,33 +13,103 @@ export default function Header({
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   const user = getUserData();
+  const router = useRouter();
 
-  const notifications = [
-    {
-      id: 1,
-      title: "New employee onboarded",
-      message: "Sarah Johnson has been added to the system",
-      time: "2 minutes ago",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: "Security update completed",
-      message: "System security patches have been applied",
-      time: "1 hour ago",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: "Weekly report ready",
-      message: "Employee activity report is available",
-      time: "3 hours ago",
-      unread: false,
-    },
-  ];
+  // Fetch notifications
+  useEffect(() => {
+    fetchNotifications();
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const fetchNotifications = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch('/api/notifications?limit=10', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setNotifications(data.data || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      const token = getAuthToken();
+      await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Update local state
+      setNotifications(notifications.map(n => 
+        n.id === notificationId ? { ...n, read: true } : n
+      ));
+      setUnreadCount(Math.max(0, unreadCount - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const token = getAuthToken();
+      await fetch('/api/notifications/all/read', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Update local state
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    markAsRead(notification.id);
+    if (notification.link) {
+      router.push(notification.link);
+    }
+    setShowNotifications(false);
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'success': return '✅';
+      case 'error': return '❌';
+      case 'warning': return '⚠️';
+      default: return '📢';
+    }
+  };
+
+  const getTimeAgo = (timestamp) => {
+    const now = new Date();
+    const created = new Date(timestamp);
+    const diffMs = now - created;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
 
   return (
     <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100/80 px-6 py-4 sticky top-0 z-30 shadow-sm transition-all duration-300">
@@ -94,41 +165,74 @@ export default function Header({
             {/* Notifications dropdown */}
             {showNotifications && (
               <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden transform origin-top-right transition-all">
-                <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
                   <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">
                     Notifications
                   </h3>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Mark all read
+                    </button>
+                  )}
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-4 border-b border-gray-50 transition-colors cursor-pointer ${notification.unread ? "bg-blue-50/30 hover:bg-blue-50/50" : "hover:bg-gray-50/80"}`}
-                    >
-                      <div className="flex items-start">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
-                            {notification.title}
-                          </p>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-2">
-                            {notification.time}
-                          </p>
-                        </div>
-                        {notification.unread && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                        )}
-                      </div>
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Bell className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-sm text-gray-500 font-medium">No notifications yet</p>
+                      <p className="text-xs text-gray-400 mt-1">You'll see updates here</p>
                     </div>
-                  ))}
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        onClick={() => handleNotificationClick(notification)}
+                        className={`p-4 border-b border-gray-50 transition-colors cursor-pointer ${!notification.read ? "bg-blue-50/30 hover:bg-blue-50/50" : "hover:bg-gray-50/80"}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg flex-shrink-0 mt-0.5">
+                            {getNotificationIcon(notification.type)}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {notification.title}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            {notification.reference_number && (
+                              <p className="text-xs text-blue-600 font-medium mt-1">
+                                Ref: {notification.reference_number}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-400 mt-2">
+                              {getTimeAgo(notification.created_at)}
+                            </p>
+                          </div>
+                          {!notification.read && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-                <div className="p-3 border-t border-gray-200">
-                  <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                    View all notifications
-                  </button>
-                </div>
+                {notifications.length > 0 && (
+                  <div className="p-3 border-t border-gray-200">
+                    <button 
+                      onClick={() => {
+                        router.push('/notifications');
+                        setShowNotifications(false);
+                      }}
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      View all notifications
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

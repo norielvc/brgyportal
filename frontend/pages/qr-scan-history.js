@@ -80,6 +80,8 @@ export default function QRScanHistoryPage() {
   const [activeTab, setActiveTab] = useState('scans'); // 'scans' or 'duplicates'
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [subscription, setSubscription] = useState(null);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
 
   // Events API states
   const [events, setEvents] = useState([]);
@@ -92,6 +94,33 @@ export default function QRScanHistoryPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+
+  // Check subscription on mount
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const token = getAuthToken();
+        const res = await fetch("/api/subscription/usage", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (json.success) {
+          setSubscription(json.data);
+          // Check if user has Pro plan
+          const isProPlan = json.data.planId === "pro" || json.data.requests?.total === -1;
+          if (!isProPlan) {
+            // Redirect to dashboard with message
+            router.push("/dashboard?upgrade=qr-scanner");
+          }
+        }
+      } catch (e) {
+        console.error("Failed to check subscription:", e);
+      } finally {
+        setIsCheckingSubscription(false);
+      }
+    };
+    checkSubscription();
+  }, []);
 
   const handleDeleteScan = async (id) => {
     try {

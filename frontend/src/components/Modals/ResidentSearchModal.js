@@ -106,46 +106,6 @@ export default function ResidentSearchModal({
     setIsLoading(true);
     setError(null);
 
-    // Client-side backup store for zero-downtime development
-    const localBackup = [
-      {
-        id: "MOCK-001",
-        full_name: "JUAN DELA CRUZ",
-        tenant_id: "demo",
-        civil_status: "Single",
-        residential_address: "Purok 1, Iba O' Este",
-        gender: "Male",
-        verified: true,
-      },
-      {
-        id: "MOCK-001",
-        full_name: "JUAN DELA CRUZ",
-        tenant_id: "ibaoeste",
-        civil_status: "Single",
-        residential_address: "Purok 1, Iba O' Este",
-        gender: "Male",
-        verified: true,
-      },
-      {
-        id: "MOCK-002",
-        full_name: "MARIA CLARA",
-        tenant_id: "ibaoeste",
-        civil_status: "Single",
-        residential_address: "Purok 4, Iba O' Este",
-        gender: "Female",
-        verified: true,
-      },
-      {
-        id: "MOCK-003",
-        full_name: "RICARDO DALISAY",
-        tenant_id: "demo",
-        civil_status: "Married",
-        residential_address: "Admin District",
-        gender: "Male",
-        verified: true,
-      },
-    ];
-
     try {
       const tenantId =
         tenantIdProp ||
@@ -165,27 +125,16 @@ export default function ResidentSearchModal({
       const data = await response.json();
       if (data.success && data.residents?.length > 0) {
         setResults(data.residents);
-      } else if (searchTerm.length >= 3) {
-        // Secondary fallback: Filter from local backup if API is empty or failing
-        const filtered = localBackup.filter(
-          (r) =>
-            r.full_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-            r.tenant_id === tenantId,
-        );
-        setResults(filtered);
+      } else {
+        // No results found - don't show fake data
+        setResults([]);
       }
     } catch (err) {
-      console.warn("API Unreachable - Using client-side resilience store");
-      const filtered = localBackup.filter((r) =>
-        r.full_name.toLowerCase().includes(searchTerm.toLowerCase()),
+      console.error("❌ Resident search API failed:", err.message);
+      setError(
+        "Network services interrupted. Please utilize Manual Entry below.",
       );
-      if (filtered.length > 0) {
-        setResults(filtered);
-      } else {
-        setError(
-          "Network services interrupted. Please utilize Manual Entry below.",
-        );
-      }
+      setResults([]);
     } finally {
       setIsLoading(false);
     }
