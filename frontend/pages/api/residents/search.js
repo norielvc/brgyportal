@@ -49,9 +49,23 @@ export default async function handler(req, res) {
       console.log(
         `✅ Resident Search: Found ${residents.length} live records. Total: ${count}`,
       );
+      // Compute residential_address from structured fields when flat field is empty
+      const enriched = residents.map((r) => {
+        if (!r.residential_address && (r.house_number || r.purok || r.barangay || r.municipality || r.province)) {
+          const parts = [
+            r.house_number ? `HOUSE NO. ${r.house_number.trim()}` : null,
+            r.purok ? r.purok.trim().toUpperCase() : null,
+            r.barangay ? r.barangay.trim().toUpperCase() : null,
+            r.municipality ? r.municipality.trim().toUpperCase() : null,
+            r.province ? r.province.trim().toUpperCase() : null,
+          ].filter(Boolean);
+          return { ...r, residential_address: parts.join(", ") };
+        }
+        return r;
+      });
       return res.status(200).json({
         success: true,
-        residents,
+        residents: enriched,
         totalItems: count || 0,
         totalPages: Math.ceil((count || 0) / limit),
         currentPage: page,

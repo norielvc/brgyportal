@@ -568,7 +568,15 @@ export default function Residents() {
                         Residential Address
                       </p>
                       <p className="text-[13px] font-black text-gray-800 uppercase leading-relaxed font-medium">
-                        {selectedResident.residential_address}
+                        {selectedResident.residential_address ||
+                          generateFullAddress({
+                            house_number: selectedResident.house_number,
+                            purok: selectedResident.purok,
+                            barangay: selectedResident.barangay,
+                            municipality: selectedResident.municipality,
+                            province: selectedResident.province,
+                          }) ||
+                          "NOT RECORDED"}
                       </p>
                     </div>
                     <div>
