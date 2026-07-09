@@ -284,7 +284,7 @@ export default function PricingPage() {
             </a>
             <button
               onClick={() =>
-                (window.location.href = "https://brgydesk.up.railway.app/")
+                (window.location.href = "https://brgydesk.vercel.app/")
               }
               className="text-base font-semibold transition-colors flex items-center gap-2"
               style={{ color: GOLD }}
