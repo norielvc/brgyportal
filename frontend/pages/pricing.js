@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowRight,
+  Tag,
 } from "lucide-react";
 
 function useReveal(immediate = false) {
@@ -88,6 +89,7 @@ const plans = [
     name: "Standard",
     price: 6999,
     setup: 15000,
+    promo: true,
     description:
       "Full-featured system for active barangays with complete document processing.",
     icon: Star,
@@ -124,6 +126,7 @@ const plans = [
     name: "Pro",
     price: 12999,
     setup: 20000,
+    promo: true,
     description:
       "For high-volume or urban barangays that need everything, unlimited.",
     icon: Crown,
@@ -297,8 +300,19 @@ export default function PricingPage() {
         </div>
       </nav>
 
+      {/* Promo Banner */}
+      <div
+        className="fixed top-[68px] left-0 right-0 z-40 flex items-center justify-center gap-3 px-6 py-3 text-sm font-semibold text-white"
+        style={{ background: `linear-gradient(90deg, ${GOLD_DARK}, ${GOLD}, ${GOLD_DARK})` }}
+      >
+        <Tag className="w-4 h-4 shrink-0" />
+        <span>
+          🎉 <strong>Founding Barangay Partner Offer</strong> — Get <strong>30% off</strong> Standard &amp; Pro for 6 months + <strong>FREE setup fee</strong>. Limited to 10 barangays only.
+        </span>
+      </div>
+
       {/* Hero */}
-      <section className="pt-36 pb-14 px-8 text-center bg-white">
+      <section className="pt-52 pb-14 px-8 text-center bg-white">
         <div
           className={`max-w-4xl mx-auto transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
         >
@@ -336,6 +350,16 @@ export default function PricingPage() {
                   className={`plan-card${plan.highlight === "platinum" ? " highlight-platinum" : plan.highlight === "gold" ? " highlight-gold" : ""} relative rounded-2xl flex flex-col overflow-hidden bg-white border ${plan.highlight ? "border-transparent" : "border-gray-200"} shadow-sm`}
                 >
                   <div className="p-10 flex-1 flex flex-col">
+                    {/* Founding Partner Badge */}
+                    {plan.promo && (
+                      <div
+                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-5 self-start"
+                        style={{ background: `${GOLD}20`, color: GOLD_DARK }}
+                      >
+                        <Tag className="w-3 h-3" />
+                        Founding Partner — 30% Off
+                      </div>
+                    )}
                     {/* Icon + Name */}
                     <div className="flex items-center gap-4 mb-8">
                       <div
@@ -366,15 +390,35 @@ export default function PricingPage() {
 
                     {/* Price */}
                     <div className="mb-2">
+                      {plan.promo && (
+                        <span className="text-xl font-semibold text-gray-400 line-through mr-2">
+                          ₱{plan.price.toLocaleString()}
+                        </span>
+                      )}
                       <span className="text-6xl font-extrabold tracking-tight text-gray-900">
-                        ₱{plan.price.toLocaleString()}
+                        ₱{plan.promo ? Math.round(plan.price * 0.7).toLocaleString() : plan.price.toLocaleString()}
                       </span>
                       <span className="text-base ml-2 text-gray-400">
                         /month
                       </span>
+                      {plan.promo && (
+                        <span
+                          className="ml-3 text-xs font-bold px-2 py-1 rounded-full"
+                          style={{ background: "#dcfce7", color: "#15803d" }}
+                        >
+                          Save 30%
+                        </span>
+                      )}
                     </div>
                     <p className="text-base text-gray-400 mb-3">
-                      + ₱{plan.setup.toLocaleString()} one-time setup
+                      {plan.promo ? (
+                        <>
+                          <span className="line-through">+ ₱{plan.setup.toLocaleString()} one-time setup</span>
+                          <span className="ml-2 font-semibold" style={{ color: "#15803d" }}>FREE setup</span>
+                        </>
+                      ) : (
+                        <>+ ₱{plan.setup.toLocaleString()} one-time setup</>
+                      )}
                     </p>
                     <p className="text-base text-gray-500 mb-10 leading-relaxed">
                       {plan.description}
