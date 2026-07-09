@@ -390,6 +390,7 @@ export default function BarangayClearanceModal({
   const certificateRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [consentExpanded, setConsentExpanded] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -565,6 +566,7 @@ export default function BarangayClearanceModal({
     setShowConfirmationPopup(false);
     setShowSuccessModal(false);
     setConsentChecked(false);
+    setConsentExpanded(false);
   };
 
   if (!isOpen) return null;
@@ -954,12 +956,23 @@ export default function BarangayClearanceModal({
                         className="mt-0.5 w-4 h-4 accent-black shrink-0 cursor-pointer"
                       />
                       <span className="text-[11px] font-bold text-amber-800 tracking-wide leading-relaxed">
-                        By proceeding with this submission, I voluntarily agree to the collection and processing of my personal data by this Barangay for the purpose of certificate request processing and public service delivery.
-                        <br /><br />
-                        I understand that the information processed includes my personal details, contact information, and related data, and that such data will be treated with strict confidentiality and used only for legitimate barangay administrative purposes in accordance with the <span className="underline">Data Privacy Act of 2012 (R.A. 10173)</span>.
-                        <br /><br />
-                        I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.
+                        I agree to the collection and processing of my personal data by this Barangay in accordance with the <span className="underline">Data Privacy Act of 2012 (R.A. 10173)</span>.
                         <span className="text-red-600"> *</span>
+                        {' '}
+                        <button
+                          type="button"
+                          onClick={e => { e.preventDefault(); setConsentExpanded(v => !v); }}
+                          className="underline text-amber-900 hover:text-black transition-colors font-black ml-1"
+                        >
+                          {consentExpanded ? 'Read less' : 'Read more'}
+                        </button>
+                        {consentExpanded && (
+                          <span className="block mt-2 font-normal text-amber-700 leading-relaxed">
+                            By proceeding with this submission, I voluntarily agree to the collection and processing of my personal data by this Barangay for the purpose of certificate request processing and public service delivery.<br /><br />
+                            I understand that the information processed includes my personal details, contact information, and related data, and that such data will be treated with strict confidentiality and used only for legitimate barangay administrative purposes in accordance with the Data Privacy Act of 2012 (R.A. 10173).<br /><br />
+                            I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.
+                          </span>
+                        )}
                       </span>
                     </label>
                   </div>
