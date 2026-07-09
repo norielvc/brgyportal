@@ -5839,7 +5839,7 @@ function ClearancePreviewForRequests({
     civilStatus: request.civil_status || "",
     address: request.certificate_type === "barangay_cohabitation"
       ? (request.details?.currentAddress || request.address || "")
-      : (request.address || request.details?.currentAddress || ""),
+      : (request.address || request.residents?.residential_address || request.details?.currentAddress || ""),
     dateOfBirth: request.date_of_birth || "",
     placeOfBirth: request.place_of_birth || "",
     dateOfDeath:
