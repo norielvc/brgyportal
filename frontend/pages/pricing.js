@@ -90,6 +90,7 @@ const plans = [
     price: 6999,
     setup: 15000,
     promo: true,
+    promoRate: 0.8,
     description:
       "Full-featured system for active barangays with complete document processing.",
     icon: Star,
@@ -127,6 +128,7 @@ const plans = [
     price: 12999,
     setup: 20000,
     promo: true,
+    promoRate: 0.7,
     description:
       "For high-volume or urban barangays that need everything, unlimited.",
     icon: Crown,
@@ -307,7 +309,7 @@ export default function PricingPage() {
       >
         <Tag className="w-4 h-4 shrink-0" />
         <span>
-          🎉 <strong>Founding Barangay Partner Offer</strong> — Get <strong>50% off the setup fee</strong> on Standard &amp; Pro plans. Limited to 10 barangays only.
+          🎉 <strong>Founding Barangay Partner Offer</strong> — <strong>20% off</strong> Standard &amp; <strong>30% off</strong> Pro monthly + <strong>50% off setup fee</strong>. Limited to 10 barangays only.
         </span>
       </div>
 
@@ -357,7 +359,7 @@ export default function PricingPage() {
                         style={{ background: `${GOLD}20`, color: GOLD_DARK }}
                       >
                         <Tag className="w-3 h-3" />
-                        Founding Partner — 50% Off Setup
+                        Founding Partner — {plan.promoRate === 0.8 ? "20%" : "30%"} Off + 50% Setup
                       </div>
                     )}
                     {/* Icon + Name */}
@@ -390,12 +392,25 @@ export default function PricingPage() {
 
                     {/* Price */}
                     <div className="mb-2">
+                      {plan.promo && (
+                        <span className="text-xl font-semibold text-gray-400 line-through mr-2">
+                          ₱{plan.price.toLocaleString()}
+                        </span>
+                      )}
                       <span className="text-6xl font-extrabold tracking-tight text-gray-900">
-                        ₱{plan.price.toLocaleString()}
+                        ₱{plan.promo ? Math.round(plan.price * plan.promoRate).toLocaleString() : plan.price.toLocaleString()}
                       </span>
                       <span className="text-base ml-2 text-gray-400">
                         /month
                       </span>
+                      {plan.promo && (
+                        <span
+                          className="ml-3 text-xs font-bold px-2 py-1 rounded-full"
+                          style={{ background: "#dcfce7", color: "#15803d" }}
+                        >
+                          Save {plan.promoRate === 0.8 ? "20%" : "30%"}
+                        </span>
+                      )}
                     </div>
                     <p className="text-base text-gray-400 mb-3">
                       {plan.promo ? (
