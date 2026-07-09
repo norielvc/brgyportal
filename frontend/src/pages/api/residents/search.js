@@ -9,7 +9,7 @@ import fs from "fs/promises";
  */
 export default async function handler(req, res) {
   const { name } = req.query;
-  const tenantId = req.headers["x-tenant-id"] || "ibaoeste";
+  const tenantId = (req.headers["x-tenant-id"] || "ibaoeste").toLowerCase();
 
   if (!name || name.length < 3) {
     return res.status(200).json({ success: true, residents: [] });

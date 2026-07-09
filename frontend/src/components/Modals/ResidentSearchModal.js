@@ -107,13 +107,14 @@ export default function ResidentSearchModal({
     setError(null);
 
     try {
-      const tenantId =
+      const tenantId = (
         tenantIdProp ||
         (typeof window !== "undefined"
           ? new URLSearchParams(window.location.search).get("tenant") ||
             window.location.pathname.replace(/^\//, "").split("/")[0] ||
             "ibaoeste"
-          : "ibaoeste");
+          : "ibaoeste")
+      ).toLowerCase();
 
       const response = await fetch(
         `/api/residents/search?name=${encodeURIComponent(searchTerm)}`,
