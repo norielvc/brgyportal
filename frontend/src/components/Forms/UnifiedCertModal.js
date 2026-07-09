@@ -100,6 +100,7 @@ export default function UnifiedCertModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
   const [notification, setNotification] = useState(null);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '', residentId: null, age: '', sex: '', civilStatus: '',
@@ -145,7 +146,7 @@ export default function UnifiedCertModal({
   useEffect(() => {
     if (!isOpen) {
       setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
-      setErrors({}); setNotification(null);
+      setErrors({}); setNotification(null); setConsentChecked(false);
       setFormData({ fullName: '', residentId: null, age: '', sex: '', civilStatus: '', address: '', dateOfBirth: '', placeOfBirth: '', contactNumber: '', email: '', purpose: '' });
     }
   }, [isOpen]);
@@ -344,14 +345,24 @@ export default function UnifiedCertModal({
                 );
               })}
             </div>
-            <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 text-gray-400 shrink-0" />
-              <p className="text-gray-500 text-[11px] font-semibold uppercase tracking-wide">Please review all details before confirming your submission.</p>
+            <div className="mt-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={e => setConsentChecked(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-black shrink-0 cursor-pointer"
+                />
+                <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wide leading-relaxed">
+                  I hereby certify that all information I have provided is true and correct to the best of my knowledge. I understand that providing false information is punishable by law.
+                  <span className="text-red-600"> *</span>
+                </span>
+              </label>
             </div>
           </div>
           <div className="border-t bg-white px-8 py-6 flex justify-between items-center shrink-0">
             <button onClick={() => setShowConfirmation(false)} className="px-6 py-3 font-black uppercase tracking-[0.2em] text-[10px] text-gray-400 hover:text-black transition-all">← Back / Edit</button>
-            <button onClick={handleSubmit} disabled={isSubmitting} className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50">
+            <button onClick={handleSubmit} disabled={isSubmitting || !consentChecked} className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
               {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
               Confirm Submission
             </button>

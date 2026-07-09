@@ -389,6 +389,7 @@ export default function BarangayClearanceModal({
   const [errors, setErrors] = useState({});
   const certificateRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -563,6 +564,7 @@ export default function BarangayClearanceModal({
     setCurrentStep(1);
     setShowConfirmationPopup(false);
     setShowSuccessModal(false);
+    setConsentChecked(false);
   };
 
   if (!isOpen) return null;
@@ -943,11 +945,19 @@ export default function BarangayClearanceModal({
                     })}
                   </div>
 
-                  <div className="mt-4 p-5 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-4">
-                    <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />
-                    <p className="text-emerald-700 text-[11px] font-bold uppercase tracking-wide">
-                      All details validated against the official directory.
-                    </p>
+                  <div className="mt-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={consentChecked}
+                        onChange={e => setConsentChecked(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-black shrink-0 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wide leading-relaxed">
+                        I hereby certify that all information I have provided is true and correct to the best of my knowledge. I understand that providing false information is punishable by law.
+                        <span className="text-red-600"> *</span>
+                      </span>
+                    </label>
                   </div>
                 </div>
 
@@ -961,7 +971,8 @@ export default function BarangayClearanceModal({
                   </button>
                   <button
                     onClick={handleProceedSubmission}
-                    className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3"
+                    disabled={isSubmitting || !consentChecked}
+                    className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       "Submitting..."
