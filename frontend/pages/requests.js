@@ -2884,7 +2884,18 @@ function RequestDetailsModal({
                         />
                       ) : (
                         <p className="font-medium text-gray-700 text-sm leading-relaxed">
-                          {request.address || "NOT RECORDED"}
+                          {request.address || (() => {
+                            const r = request.residents;
+                            if (!r) return "NOT RECORDED";
+                            const parts = [
+                              r.house_number ? `HOUSE NO. ${r.house_number}` : null,
+                              r.purok || null,
+                              r.barangay || null,
+                              r.municipality || null,
+                              r.province || null,
+                            ].filter(Boolean);
+                            return parts.length ? parts.join(", ").toUpperCase() : (r.residential_address || "NOT RECORDED");
+                          })()}
                         </p>
                       )}
                     </div>
@@ -5839,7 +5850,22 @@ function ClearancePreviewForRequests({
     civilStatus: request.civil_status || "",
     address: request.certificate_type === "barangay_cohabitation"
       ? (request.details?.currentAddress || request.address || "")
-      : (request.address || request.residents?.residential_address || request.details?.currentAddress || ""),
+      : (() => {
+          if (request.address) return request.address;
+          const r = request.residents;
+          if (r?.residential_address) return r.residential_address;
+          if (r) {
+            const parts = [
+              r.house_number ? `HOUSE NO. ${r.house_number}` : null,
+              r.purok || null,
+              r.barangay || null,
+              r.municipality || null,
+              r.province || null,
+            ].filter(Boolean);
+            if (parts.length) return parts.join(", ").toUpperCase();
+          }
+          return request.details?.currentAddress || "";
+        })(),
     dateOfBirth: request.date_of_birth || "",
     placeOfBirth: request.place_of_birth || "",
     dateOfDeath:
