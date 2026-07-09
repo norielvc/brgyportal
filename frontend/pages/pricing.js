@@ -48,8 +48,8 @@ const PLATINUM_LIGHT = "#C8D3DE";
 const plans = [
   {
     name: "Starter",
-    price: 1499,
-    setup: 5000,
+    price: 2999,
+    setup: 10000,
     description: "For small barangays getting started with digital services.",
     icon: Zap,
     highlight: false,
@@ -86,8 +86,8 @@ const plans = [
   },
   {
     name: "Standard",
-    price: 2999,
-    setup: 8000,
+    price: 6999,
+    setup: 15000,
     description:
       "Full-featured system for active barangays with complete document processing.",
     icon: Star,
@@ -122,8 +122,8 @@ const plans = [
   },
   {
     name: "Pro",
-    price: 4999,
-    setup: 10000,
+    price: 12999,
+    setup: 20000,
     description:
       "For high-volume or urban barangays that need everything, unlimited.",
     icon: Crown,
@@ -153,27 +153,29 @@ const addons = [
   {
     category: "Recurring",
     items: [
-      { name: "Extra staff accounts (5 slots)", price: "₱500 / mo" },
-      { name: "Extra request capacity (+500 / mo)", price: "₱300 / mo" },
+      { name: "Extra staff accounts (5 slots)", price: "₱1,500 / mo" },
+      { name: "Extra request capacity (+500 / mo)", price: "₱800 / mo" },
+      { name: "Priority support upgrade", price: "₱2,500 / mo" },
     ],
   },
   {
     category: "One-Time",
     items: [
-      { name: "Additional training session (1 hr)", price: "₱800" },
-      { name: "Custom certificate template design", price: "₱3,000" },
-      { name: "Data migration from old system", price: "₱5,000" },
+      { name: "Additional training session (1 hr)", price: "₱2,500" },
+      { name: "Custom certificate template design", price: "₱8,000" },
+      { name: "Data migration from old system", price: "₱15,000" },
+      { name: "On-site setup & training visit", price: "₱20,000" },
     ],
   },
   {
     category: "Custom Request Form",
     description: "New certificate or document type beyond included forms.",
     items: [
-      { name: "Simple — basic fields, 1–2 step workflow", price: "₱5,000" },
-      { name: "Standard — multiple fields, full workflow", price: "₱8,000" },
+      { name: "Simple — basic fields, 1–2 step workflow", price: "₱10,000" },
+      { name: "Standard — multiple fields, full workflow", price: "₱18,000" },
       {
         name: "Complex — conditional fields, inspection, OR",
-        price: "₱12,000",
+        price: "₱28,000",
       },
     ],
   },
@@ -181,9 +183,9 @@ const addons = [
     category: "Additional Landing Page Section",
     description: "New section on your public barangay website.",
     items: [
-      { name: "Simple — text + image, static", price: "₱3,000" },
-      { name: "Standard — CMS / admin-editable", price: "₱5,000" },
-      { name: "Complex — gallery, carousel, dynamic data", price: "₱8,000" },
+      { name: "Simple — text + image, static", price: "₱6,000" },
+      { name: "Standard — CMS / admin-editable", price: "₱10,000" },
+      { name: "Complex — gallery, carousel, dynamic data", price: "₱18,000" },
     ],
   },
 ];
@@ -475,7 +477,7 @@ export default function PricingPage() {
               <p className="text-gray-400 text-base leading-relaxed">
                 Get a centralized LGU dashboard, bulk deployment across all
                 barangays, unified reporting, SLA guarantee, and a dedicated
-                account manager. Starting at ₱25,000/month.
+                account manager. Starting at ₱40,000/month.
               </p>
             </div>
             <button
