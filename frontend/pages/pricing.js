@@ -307,7 +307,7 @@ export default function PricingPage() {
       >
         <Tag className="w-4 h-4 shrink-0" />
         <span>
-          🎉 <strong>Founding Barangay Partner Offer</strong> — Get <strong>30% off</strong> Standard &amp; Pro for 6 months + <strong>FREE setup fee</strong>. Limited to 10 barangays only.
+          🎉 <strong>Founding Barangay Partner Offer</strong> — Get <strong>50% off the setup fee</strong> on Standard &amp; Pro plans. Limited to 10 barangays only.
         </span>
       </div>
 
@@ -357,7 +357,7 @@ export default function PricingPage() {
                         style={{ background: `${GOLD}20`, color: GOLD_DARK }}
                       >
                         <Tag className="w-3 h-3" />
-                        Founding Partner — 30% Off
+                        Founding Partner — 50% Off Setup
                       </div>
                     )}
                     {/* Icon + Name */}
@@ -390,31 +390,18 @@ export default function PricingPage() {
 
                     {/* Price */}
                     <div className="mb-2">
-                      {plan.promo && (
-                        <span className="text-xl font-semibold text-gray-400 line-through mr-2">
-                          ₱{plan.price.toLocaleString()}
-                        </span>
-                      )}
                       <span className="text-6xl font-extrabold tracking-tight text-gray-900">
-                        ₱{plan.promo ? Math.round(plan.price * 0.7).toLocaleString() : plan.price.toLocaleString()}
+                        ₱{plan.price.toLocaleString()}
                       </span>
                       <span className="text-base ml-2 text-gray-400">
                         /month
                       </span>
-                      {plan.promo && (
-                        <span
-                          className="ml-3 text-xs font-bold px-2 py-1 rounded-full"
-                          style={{ background: "#dcfce7", color: "#15803d" }}
-                        >
-                          Save 30%
-                        </span>
-                      )}
                     </div>
                     <p className="text-base text-gray-400 mb-3">
                       {plan.promo ? (
                         <>
                           <span className="line-through">+ ₱{plan.setup.toLocaleString()} one-time setup</span>
-                          <span className="ml-2 font-semibold" style={{ color: "#15803d" }}>FREE setup</span>
+                          <span className="ml-2 font-semibold" style={{ color: "#15803d" }}>+ ₱{Math.round(plan.setup * 0.5).toLocaleString()} setup (50% off)</span>
                         </>
                       ) : (
                         <>+ ₱{plan.setup.toLocaleString()} one-time setup</>
