@@ -391,21 +391,19 @@ export default function PricingPage() {
                     </div>
 
                     {/* Price */}
-                    <div className="mb-2">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
                       {plan.promo && (
-                        <span className="text-xl font-semibold text-gray-400 line-through mr-2">
+                        <span className="text-xl font-semibold text-gray-400 line-through">
                           ₱{plan.price.toLocaleString()}
                         </span>
                       )}
                       <span className="text-6xl font-extrabold tracking-tight text-gray-900">
                         ₱{plan.promo ? Math.round(plan.price * plan.promoRate).toLocaleString() : plan.price.toLocaleString()}
                       </span>
-                      <span className="text-base ml-2 text-gray-400">
-                        /month
-                      </span>
+                      <span className="text-base text-gray-400">/month</span>
                       {plan.promo && (
                         <span
-                          className="ml-3 text-xs font-bold px-2 py-1 rounded-full"
+                          className="text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap"
                           style={{ background: "#dcfce7", color: "#15803d" }}
                         >
                           Save {plan.promoRate === 0.8 ? "20%" : "30%"}
