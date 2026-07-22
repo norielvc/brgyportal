@@ -49,14 +49,14 @@ const PLATINUM_LIGHT = "#C8D3DE";
 const plans = [
   {
     name: "Starter",
-    price: 2999,
-    setup: 10000,
+    license: 80000,
+    supportFee: 10000,
     description: "For small barangays getting started with digital services.",
     icon: Zap,
     highlight: false,
     requests: "300 requests / mo",
     staff: "3 staff + 1 admin",
-    support: "Email · 3–5 days",
+    support: "Email & Viber · 3–5 days SLA",
     training: "1 training call",
     features: [
       "Barangay public website",
@@ -80,6 +80,7 @@ const plans = [
       "Official Receipt (OR) generation",
       "Physical Inspection Report",
       "Signature capture",
+      "Resident ID management with QR printing",
       "QR code scanner feature",
       "Analytics dashboard",
       "Custom domain",
@@ -87,17 +88,15 @@ const plans = [
   },
   {
     name: "Standard",
-    price: 6999,
-    setup: 15000,
-    promo: true,
-    promoRate: 0.8,
+    license: 90000,
+    supportFee: 13000,
     description:
       "Full-featured system for active barangays with complete document processing.",
     icon: Star,
     highlight: "platinum",
     requests: "2,000 requests / mo",
     staff: "8 staff + 1 admin",
-    support: "Email · 1–2 days",
+    support: "Email & Viber · 1–2 days SLA",
     training: "2 training calls",
     features: [
       "Everything in Starter",
@@ -117,6 +116,7 @@ const plans = [
     ],
     notIncluded: [
       "Custom domain",
+      "Resident ID management with QR printing",
       "QR code scanner feature",
       "Analytics dashboard",
       "Bulk data export",
@@ -124,18 +124,16 @@ const plans = [
     ],
   },
   {
-    name: "Pro",
-    price: 12999,
-    setup: 20000,
-    promo: true,
-    promoRate: 0.7,
+    name: "Premium",
+    license: 99000,
+    supportFee: 15000,
     description:
       "For high-volume or urban barangays that need everything, unlimited.",
     icon: Crown,
     highlight: "gold",
     requests: "Unlimited",
     staff: "Unlimited",
-    support: "Priority · same-day",
+    support: "Priority · same-day SLA",
     training: "3 calls + 30-day support",
     features: [
       "Everything in Standard",
@@ -143,6 +141,7 @@ const plans = [
       "Custom color theme",
       "Unlimited staff accounts",
       "Unlimited requests / month",
+      "Resident ID management with QR printing",
       "QR code scanner feature",
       "Analytics dashboard",
       "Bulk data export (Excel / CSV)",
@@ -166,6 +165,7 @@ const addons = [
   {
     category: "One-Time",
     items: [
+      { name: "Resident ID management with QR printing", price: "₱25,000" },
       { name: "Additional training session (1 hr)", price: "₱2,500" },
       { name: "Custom certificate template design", price: "₱8,000" },
       { name: "Data migration from old system", price: "₱15,000" },
@@ -202,11 +202,15 @@ const faqs = [
   },
   {
     q: "Can we upgrade our plan later?",
-    a: "Absolutely. You can upgrade anytime and we will prorate the difference.",
+    a: "Yes. You can upgrade to a higher tier anytime by paying the price difference on the license fee.",
   },
   {
-    q: "What happens to our data if we cancel?",
-    a: "Your data remains accessible for 30 days after cancellation. We can export everything for you.",
+    q: "What does the monthly support fee cover?",
+    a: "It covers system maintenance, hosting, bug fixes, and support based on your plan's SLA. Support starts on Month 2 — your first month after launch is free.",
+  },
+  {
+    q: "What happens if we stop paying the monthly support fee?",
+    a: "Your system stays live and you keep access to your data, but you will no longer receive active support, updates, or SLA-backed response times.",
   },
   {
     q: "Is this compliant with the Data Privacy Act?",
@@ -309,7 +313,7 @@ export default function PricingPage() {
       >
         <Tag className="w-4 h-4 shrink-0" />
         <span>
-          🎉 <strong>Founding Barangay Partner Offer</strong> — <strong>20% off</strong> Standard &amp; <strong>30% off</strong> Pro monthly + <strong>50% off setup fee</strong>. Limited to 10 barangays only.
+          Own your barangay system outright. <strong>One-time license fee.</strong> No recurring rent, ever.
         </span>
       </div>
 
@@ -330,11 +334,11 @@ export default function PricingPage() {
               className="w-2 h-2 rounded-full"
               style={{ background: GOLD }}
             ></span>
-            Subscription Plans
+            One-Time License
           </span>
           <p className="text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
             A professional barangay website and complete document management
-            system. No hidden fees. Cancel anytime.
+            system. Pay once, own it forever. Optional monthly support with SLA.
           </p>
         </div>
       </section>
@@ -352,16 +356,6 @@ export default function PricingPage() {
                   className={`plan-card${plan.highlight === "platinum" ? " highlight-platinum" : plan.highlight === "gold" ? " highlight-gold" : ""} relative rounded-2xl flex flex-col overflow-hidden bg-white border ${plan.highlight ? "border-transparent" : "border-gray-200"} shadow-sm`}
                 >
                   <div className="p-10 flex-1 flex flex-col">
-                    {/* Founding Partner Badge */}
-                    {plan.promo && (
-                      <div
-                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-5 self-start"
-                        style={{ background: `${GOLD}20`, color: GOLD_DARK }}
-                      >
-                        <Tag className="w-3 h-3" />
-                        Founding Partner — {plan.promoRate === 0.8 ? "20%" : "30%"} Off + 50% Setup
-                      </div>
-                    )}
                     {/* Icon + Name */}
                     <div className="flex items-center gap-4 mb-8">
                       <div
@@ -391,34 +385,14 @@ export default function PricingPage() {
                     </div>
 
                     {/* Price */}
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      {plan.promo && (
-                        <span className="text-xl font-semibold text-gray-400 line-through">
-                          ₱{plan.price.toLocaleString()}
-                        </span>
-                      )}
+                    <div className="mb-2 flex flex-wrap items-baseline gap-2">
                       <span className="text-6xl font-extrabold tracking-tight text-gray-900">
-                        ₱{plan.promo ? Math.round(plan.price * plan.promoRate).toLocaleString() : plan.price.toLocaleString()}
+                        ₱{plan.license.toLocaleString()}
                       </span>
-                      <span className="text-base text-gray-400">/month</span>
-                      {plan.promo && (
-                        <span
-                          className="text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap"
-                          style={{ background: "#dcfce7", color: "#15803d" }}
-                        >
-                          Save {plan.promoRate === 0.8 ? "20%" : "30%"}
-                        </span>
-                      )}
+                      <span className="text-base text-gray-400">one-time</span>
                     </div>
                     <p className="text-base text-gray-400 mb-3">
-                      {plan.promo ? (
-                        <>
-                          <span className="line-through">+ ₱{plan.setup.toLocaleString()} one-time setup</span>
-                          <span className="ml-2 font-semibold" style={{ color: "#15803d" }}>+ ₱{Math.round(plan.setup * 0.5).toLocaleString()} setup (50% off)</span>
-                        </>
-                      ) : (
-                        <>+ ₱{plan.setup.toLocaleString()} one-time setup</>
-                      )}
+                      + ₱{plan.supportFee.toLocaleString()}/month support (SLA) — starts Month 2
                     </p>
                     <p className="text-base text-gray-500 mb-10 leading-relaxed">
                       {plan.description}
