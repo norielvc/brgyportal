@@ -307,7 +307,7 @@ export default function UnifiedCertModal({
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
         <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-          <div className="bg-black px-10 py-7 flex items-center justify-between shrink-0">
+          <div className="px-10 py-7 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
             <div>
               <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Confirmation</h2>
               <p className="text-white/40 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">Review your application before submitting</p>
@@ -357,7 +357,7 @@ export default function UnifiedCertModal({
                     <p>I understand that the information processed includes my personal details, contact information, and related data, and that such data will be treated with strict confidentiality and used only for legitimate barangay administrative purposes in accordance with the <strong>Data Privacy Act of 2012 (R.A. 10173)</strong>.</p>
                     <p>I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.</p>
                   </div>
-                  <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 bg-black text-white rounded-xl font-black uppercase tracking-widest text-xs">Close</button>
+                  <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 text-white rounded-xl font-black uppercase tracking-widest text-xs" style={{ backgroundColor: accentColor }}>Close</button>
                 </div>
               </div>
             )}
@@ -384,7 +384,7 @@ export default function UnifiedCertModal({
           </div>
           <div className="border-t bg-white px-8 py-6 flex justify-between items-center shrink-0">
             <button onClick={() => setShowConfirmation(false)} className="px-6 py-3 font-black uppercase tracking-[0.2em] text-[10px] text-gray-400 hover:text-black transition-all">← Back / Edit</button>
-            <button onClick={handleSubmit} disabled={isSubmitting || !consentChecked} className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={handleSubmit} disabled={isSubmitting || !consentChecked} className="px-10 py-4 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:opacity-90 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: accentColor }}>
               {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
               Confirm Submission
             </button>
@@ -402,7 +402,7 @@ export default function UnifiedCertModal({
         <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 no-scrollbar" style={{ height: '92vh', maxHeight: '95vh' }}>
 
           {/* Header */}
-          <div className="bg-black px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0">
+          <div className="px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0" style={{ backgroundColor: accentColor }}>
             <div className="flex items-center gap-4">
               <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20">
                 <FileText className="w-5 h-5 text-white" />
@@ -437,11 +437,11 @@ export default function UnifiedCertModal({
               {[1, 2, 3, ...(extraStep4 ? [4] : [])].map((s) => (
                 <React.Fragment key={s}>
                   <div className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? 'bg-black text-white scale-110' : 'bg-gray-100 text-gray-300'}`}>
-                      {currentStep > s ? <CheckCircle className="w-6 h-6 text-emerald-400" /> : s}
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? 'text-white scale-110' : 'bg-gray-100 text-gray-300'}`} style={currentStep >= s ? { backgroundColor: accentColor } : undefined}>
+                      {currentStep > s ? <CheckCircle className="w-6 h-6 text-white" /> : s}
                     </div>
                   </div>
-                  {s < (extraStep4 ? 4 : 3) && <div className={`flex-1 h-1 mx-4 rounded-full ${currentStep > s ? 'bg-black' : 'bg-gray-100'}`} />}
+                  {s < (extraStep4 ? 4 : 3) && <div className="flex-1 h-1 mx-4 rounded-full" style={{ backgroundColor: currentStep > s ? accentColor : undefined }} />}
                 </React.Fragment>
               ))}
             </div>
@@ -475,14 +475,14 @@ export default function UnifiedCertModal({
                   )}
 
                   {formData.fullName && (
-                    <div className="bg-black text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5">
+                    <div className="text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5" style={{ backgroundColor: accentColor }}>
                       <div className="absolute top-0 right-0 p-3 opacity-10"><CheckCircle className="w-16 h-16 text-white" /></div>
                       <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">Confirmed Applicant / Kumpirmadong Aplikante</p>
                       <h4 className="text-2xl font-black tracking-tighter mb-4 leading-none uppercase">{formData.fullName}</h4>
                       <div className="grid grid-cols-2 gap-2 relative z-10">
                         <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
                           <p className="text-white/30 text-[8px] tracking-widest mb-0.5">Status</p>
-                          <p className="text-emerald-400 text-xs">Verified Member / Beripikadong Miyembro</p>
+                          <p className="text-white/90 text-xs">Verified Member / Beripikadong Miyembro</p>
                         </div>
                         <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
                           <p className="text-white/30 text-[8px] tracking-widest mb-0.5">DB ID</p>
@@ -573,7 +573,7 @@ export default function UnifiedCertModal({
                     if (currentStep === 1 && !formData.fullName) { setErrors({ fullName: true }); return; }
                     if (currentStep === 2 && !formData.contactNumber) { setErrors({ contactNumber: true }); return; }
                     setCurrentStep(p => p + 1);
-                  }} className="px-12 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all flex items-center gap-3">
+                  }} className="px-12 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all flex items-center gap-3" style={{ backgroundColor: accentColor }}>
                     Next Step / Susunod <ChevronRight className="w-5 h-5" />
                   </button>
                 );
