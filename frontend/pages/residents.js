@@ -303,7 +303,7 @@ export default function Residents() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-xl h-10 w-10 border-4 border-blue-600 border-t-transparent shadow-lg shadow-blue-100"></div>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.3em]">
             Loading System...
           </p>
         </div>
@@ -524,28 +524,28 @@ export default function Residents() {
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                         Gender & Maturity
                       </p>
-                      <p className="text-[14px] font-black text-gray-800 uppercase tracking-tight">
+                      <p className="text-[15px] font-semibold text-gray-900 tracking-tight">
                         {selectedResident.gender} • {selectedResident.age} YEARS
                         OLD
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                         Social Status
                       </p>
-                      <p className="text-[14px] font-black text-gray-800 uppercase tracking-tight">
+                      <p className="text-[15px] font-semibold text-gray-900 tracking-tight">
                         {selectedResident.civil_status || "SINGLE"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                         Birth Information
                       </p>
-                      <p className="text-[14px] font-black text-gray-800 font-mono tracking-tighter">
-                        {selectedResident.date_of_birth || "NOT RECORDED"}
+                      <p className="text-[15px] font-medium text-gray-900 tracking-tight">
+                        {selectedResident.date_of_birth || "Not recorded"}
                       </p>
                     </div>
                   </div>
@@ -560,10 +560,10 @@ export default function Residents() {
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                         Residential Address
                       </p>
-                      <p className="text-[13px] font-black text-gray-800 uppercase leading-relaxed font-medium">
+                      <p className="text-[15px] font-medium text-gray-900 leading-relaxed">
                         {selectedResident.residential_address ||
                           generateFullAddress({
                             house_number: selectedResident.house_number,
@@ -572,15 +572,15 @@ export default function Residents() {
                             municipality: selectedResident.municipality,
                             province: selectedResident.province,
                           }) ||
-                          "NOT RECORDED"}
+                          "Not recorded"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                         Place of Birth
                       </p>
-                      <p className="text-[13px] font-black text-gray-800 uppercase leading-relaxed font-medium">
-                        {selectedResident.place_of_birth || "NOT SPECIFIED"}
+                      <p className="text-[15px] font-medium text-gray-900 leading-relaxed">
+                        {selectedResident.place_of_birth || "Not specified"}
                       </p>
                     </div>
                   </div>
@@ -602,11 +602,11 @@ export default function Residents() {
                         <Phone className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase">
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
                           Primary Phone
                         </p>
-                        <p className="text-[14px] font-black text-gray-800 font-mono tracking-tighter">
-                          {selectedResident.contact_number || "NONE"}
+                        <p className="text-[15px] font-medium text-gray-900 tracking-tight">
+                          {selectedResident.contact_number || "None"}
                         </p>
                       </div>
                     </div>
@@ -615,11 +615,11 @@ export default function Residents() {
                         <Mail className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase">
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
                           Email Sync
                         </p>
-                        <p className="text-[12px] font-bold text-gray-500 uppercase italic">
-                          Not Connected
+                        <p className="text-[14px] font-medium text-gray-400 italic">
+                          Not connected
                         </p>
                       </div>
                     </div>
@@ -630,7 +630,7 @@ export default function Residents() {
                       <div className="bg-emerald-100 p-1.5 rounded-lg">
                         <Activity className="w-4 h-4 text-emerald-600" />
                       </div>
-                      <span className="text-[11px] font-black text-emerald-700 uppercase tracking-[0.2em]">
+                      <span className="text-[11px] font-semibold text-emerald-700 tracking-wide">
                         Live Status Active
                       </span>
                     </div>
@@ -647,20 +647,20 @@ export default function Residents() {
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                         Guardian Name
                       </p>
-                      <p className="text-[14px] font-black text-gray-800 uppercase tracking-tight">
-                        {selectedResident.guardian_name || "NOT RECORDED"}
+                      <p className="text-[15px] font-semibold text-gray-900 tracking-tight">
+                        {selectedResident.guardian_name || "Not recorded"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                         Relationship
                       </p>
-                      <p className="text-[14px] font-black text-gray-800 uppercase tracking-tight">
+                      <p className="text-[15px] font-semibold text-gray-900 tracking-tight">
                         {selectedResident.guardian_relationship ||
-                          "NOT RECORDED"}
+                          "Not recorded"}
                       </p>
                     </div>
                   </div>
@@ -684,7 +684,7 @@ export default function Residents() {
                   >
                     Official Clearance Status
                   </h3>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mt-0.5">
+                  <p className="text-[11px] font-medium text-gray-500 tracking-tight mt-0.5">
                     Verification against Barangay Law Records
                   </p>
                 </div>
@@ -692,11 +692,11 @@ export default function Residents() {
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div className="md:col-span-1">
-                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
                     Electronic Tag
                   </p>
                   <div
-                    className={`inline-flex items-center px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${
+                    className={`inline-flex items-center px-4 py-2.5 rounded-xl text-[11px] font-semibold tracking-wide border shadow-sm ${
                       selectedResident.pending_case
                         ? "bg-rose-600 text-white border-rose-500 shadow-rose-200 animate-pulse"
                         : "bg-emerald-600 text-white border-emerald-500 shadow-emerald-200"
@@ -709,18 +709,18 @@ export default function Residents() {
                 </div>
 
                 <div className="md:col-span-3">
-                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
                     Case History & Administrative Remarks
                   </p>
                   <div
-                    className={`p-4 rounded-xl border-2 text-[12px] font-extrabold leading-relaxed min-h-[80px] shadow-inner ${
+                    className={`p-4 rounded-xl border-2 text-[15px] font-normal leading-relaxed min-h-[80px] shadow-inner ${
                       selectedResident.pending_case
                         ? "bg-white border-rose-100 text-rose-900 italic"
                         : "bg-gray-50 border-gray-100 text-gray-400 border-dashed"
                     }`}
                   >
                     {selectedResident.case_record_history ||
-                      "NO PREVIOUS LEGAL HISTORY OR PENDING CASES REPORTED FOR THIS RESIDENT RECORD."}
+                      "No previous legal history or pending cases reported for this resident record."}
                   </div>
                 </div>
               </div>
@@ -737,13 +737,13 @@ export default function Residents() {
               <div className="flex gap-3">
                 <button
                   onClick={handleOpenEditModal}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2"
+                  className="px-8 py-3 bg-blue-600 text-white rounded-xl text-[11px] font-semibold tracking-wide shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2"
                 >
                   <Edit className="w-4 h-4" /> Edit Profile
                 </button>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 active:scale-95 transition-all"
+                  className="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl text-[11px] font-semibold tracking-wide hover:bg-gray-200 active:scale-95 transition-all"
                 >
                   Close Window
                 </button>
@@ -1009,7 +1009,7 @@ export default function Residents() {
             >
               <div className="flex items-center justify-between">
                 <p
-                  className={`text-[10px] font-black uppercase tracking-widest ${formData.is_deceased ? "text-red-500" : "text-gray-500"}`}
+                  className={`text-[11px] font-semibold tracking-wide ${formData.is_deceased ? "text-red-500" : "text-gray-500"}`}
                 >
                   Deceased Status
                 </p>
