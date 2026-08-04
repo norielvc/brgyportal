@@ -1276,7 +1276,7 @@ export default function PortalPageContent({ initialTenantId }) {
                   className={`bg-white px-8 py-3.5 rounded-full font-bold transition-all transform hover:-translate-y-1 flex items-center gap-3 shadow-[0_15px_30px_-5px_rgba(0,0,0,0.3)] text-sm md:text-base group`}
                   style={{ color: tenantConfig.primaryColor }}
                 >
-                  Discover Story{" "}
+                  Read Full Announcement{" "}
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -1328,6 +1328,59 @@ export default function PortalPageContent({ initialTenantId }) {
           </button>
         </div>
       </section>
+
+      {/* Quick Action Bar — Task-First Citizen Services */}
+      <div className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-12 py-4">
+          <div className="grid grid-cols-3 gap-3 sm:gap-6">
+            <a
+              href="#forms"
+              className="flex items-center gap-3 p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors group"
+            >
+              <div
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: `${tenantConfig.primaryColor}15` }}
+              >
+                <FileText className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: tenantConfig.primaryColor }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">Request Certificate</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 truncate hidden sm:block">Barangay clearance, permits, and more</p>
+              </div>
+            </a>
+            <a
+              href="#track"
+              className="flex items-center gap-3 p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors group"
+            >
+              <div
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: `${tenantConfig.accentColor}15` }}
+              >
+                <Search className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: tenantConfig.accentColor }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">Track Request</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 truncate hidden sm:block">Check your certificate status</p>
+              </div>
+            </a>
+            <a
+              href="#contact"
+              className="flex items-center gap-3 p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors group"
+            >
+              <div
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: `${tenantConfig.secondaryColor}20` }}
+              >
+                <Phone className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: tenantConfig.secondaryColor }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">Contact Us</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 truncate hidden sm:block">Hotlines and office hours</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
 
       {/* Available Forms Section - Modern Design with Responsive Background */}
       <section
@@ -1389,12 +1442,11 @@ export default function PortalPageContent({ initialTenantId }) {
                   backgroundImage: `linear-gradient(to right, ${tenantConfig.accentColor}, ${tenantConfig.primaryColor})`,
                 }}
               >
-                Smart Forms
+                Online Services
               </span>
             </h2>
             <p className="text-gray-500 max-w-2xl mx-auto text-lg md:text-xl font-medium leading-relaxed">
-              Experience the future of local government service. Secure,
-              paperless, and accessible 24/7.
+              Request official barangay certificates and permits online. Secure, paperless, and accessible anytime.
             </p>
           </div>
 
@@ -1667,7 +1719,7 @@ export default function PortalPageContent({ initialTenantId }) {
               Request Tracker
             </div>
             <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight mb-3">
-              Track Your <span style={{ color: tenantConfig.accentColor }}>Certificate</span>
+              Track Your <span style={{ color: tenantConfig.accentColor }}>Request</span>
             </h2>
             <p className="text-gray-500 text-base mb-8">Enter your reference number to check the current status of your certificate request.</p>
             <TrackRequestWidget tenantId={tenantId} tenantConfig={tenantConfig} />
@@ -2791,12 +2843,12 @@ export default function PortalPageContent({ initialTenantId }) {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-4">
             <h2 className="text-2xl font-bold text-white mb-1">
-              Feel free to contact us
+              Contact the Barangay Office
             </h2>
             <p
               className={`text-base italic ${tenantId === "demo" ? "text-gray-400" : "text-green-400"}`}
             >
-              Wag mahiya at kami ay inyong tanungin
+              For inquiries and assistance, please reach out to us
             </p>
           </div>
 
