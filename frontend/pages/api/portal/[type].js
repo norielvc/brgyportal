@@ -11,6 +11,9 @@ export default async function handler(req, res) {
   const { type } = req.query;
   const tenantId = (req.headers["x-tenant-id"] || "ibaoeste").toLowerCase();
 
+  // Cache responses for 60 seconds on client, serve stale for 5 minutes
+  res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+
   const validTypes = [
     "events",
     "facilities",
@@ -46,7 +49,7 @@ export default async function handler(req, res) {
         global: {
           fetch: (url, options) => {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 1500);
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             return fetch(url, { ...options, signal: controller.signal })
               .then((res) => {
                 clearTimeout(timeoutId);
@@ -147,6 +150,13 @@ export default async function handler(req, res) {
     } else if (error) {
       console.error(`Supabase fetch error [${type}]:`, error.message);
     }
+
+    // No data found (empty result, no error) — return empty array
+    return res.status(200).json({
+      success: true,
+      data: [],
+      source: "cloud_supabase_empty",
+    });
   } catch (cloudError) {
     console.error(
       `❌ Cloud data unavailable [Portal/${type}]: ${cloudError.message}`,

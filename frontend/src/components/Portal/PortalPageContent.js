@@ -63,11 +63,6 @@ export default function PortalPageContent({ initialTenantId }) {
   const router = useRouter();
   const [tenantId, setTenantId] = useState((initialTenantId || "ibaoeste").toLowerCase());
 
-  // Version Check Log
-  useEffect(() => {
-    console.log("🚀 Barangay Portal Loaded: Version 2.7 (Dynamic Themes)");
-  }, []);
-
   const [tenantConfig, setTenantConfig] = useState({
     name: "BARANGAY",
     shortName: "Barangay",
@@ -151,7 +146,13 @@ export default function PortalPageContent({ initialTenantId }) {
           .split(" ")
           .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(" ");
-        const subtitle = tenant?.domain || "Official Barangay Portal";
+        const subtitleParts = [
+          tenant?.municipality,
+          tenant?.region,
+        ].filter(Boolean);
+        const subtitle = subtitleParts.length > 0
+          ? `${subtitleParts.join(", ")} · Official Barangay Portal`
+          : "Official Barangay Portal";
 
         setTenantConfig({
           tenant_id: tenantId,
@@ -179,7 +180,22 @@ export default function PortalPageContent({ initialTenantId }) {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [showHotlines, setShowHotlines] = useState(false);
+  const [showAssistance, setShowAssistance] = useState(false);
+  const [assistanceMode, setAssistanceMode] = useState(null); // 'kapchat' | 'assistance' | null
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const [chatUserInfo, setChatUserInfo] = useState({ name: "", contact: "" });
+  const [chatStarted, setChatStarted] = useState(false);
+  const [assistanceFormData, setAssistanceFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    message: "",
+  });
+  const [assistanceSubmitting, setAssistanceSubmitting] = useState(false);
+  const [assistanceSuccess, setAssistanceSuccess] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [weatherInfo, setWeatherInfo] = useState({
     icon: Sun,
@@ -526,31 +542,22 @@ export default function PortalPageContent({ initialTenantId }) {
     const fetchEvents = async () => {
       if (!tenantId) return;
       try {
-        console.log(
-          `📡 Fetching events from resilient Next.js API for tenant: ${tenantId}`,
-        );
         const response = await fetch(`/api/portal/events`, {
           headers: { "x-tenant-id": tenantId },
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API error ${response.status}: ${errorText}`);
+          throw new Error(`API error ${response.status}`);
         }
 
         const data = await response.json();
         if (data.success && data.data && data.data.length > 0) {
-          console.log("✅ Setting events from API:", data.data);
           setNewsItems(data.data);
         } else {
-          throw new Error("API results empty - falling back");
+          setNewsItems([]);
         }
       } catch (error) {
-        console.error(
-          "❌ Events API failed - no fallback data will be shown",
-          error.message,
-        );
-        // Don't show fake data - leave empty
+        console.error("❌ Events API failed:", error.message);
         setNewsItems([]);
       }
     };
@@ -564,11 +571,6 @@ export default function PortalPageContent({ initialTenantId }) {
       newsItems.length > 0 &&
       (isNaN(currentSlide) || currentSlide >= newsItems.length)
     ) {
-      console.log(
-        "🔄 Self-healing: Resetting currentSlide from",
-        currentSlide,
-        "to 0",
-      );
       setCurrentSlide(0);
     }
   }, [newsItems, currentSlide]);
@@ -578,36 +580,26 @@ export default function PortalPageContent({ initialTenantId }) {
     const fetchFacilities = async () => {
       if (!tenantId) return;
       try {
-        console.log(
-          `📡 Fetching facilities from resilient Next.js API for tenant: ${tenantId}`,
-        );
         const response = await fetch(`/api/portal/facilities`, {
           headers: { "x-tenant-id": tenantId },
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API error ${response.status}: ${errorText}`);
+          throw new Error(`API error ${response.status}`);
         }
 
         const data = await response.json();
         if (data.success && data.data && data.data.length > 0) {
-          // Map icon names to actual components
           const facilitiesWithIcons = data.data.map((facility) => ({
             ...facility,
             icon: getIconComponent(facility.icon),
           }));
-          console.log("✅ Setting facilities from API:", facilitiesWithIcons);
           setFacilities(facilitiesWithIcons);
         } else {
-          throw new Error("API results empty - falling back");
+          setFacilities([]);
         }
       } catch (error) {
-        console.error(
-          "❌ Facilities API failed - no fallback data will be shown",
-          error.message,
-        );
-        // Don't show fake data - leave empty
+        console.error("❌ Facilities API failed:", error.message);
         setFacilities([]);
       }
     };
@@ -631,146 +623,88 @@ export default function PortalPageContent({ initialTenantId }) {
     return () => clearInterval(timer);
   }, [facilities]);
 
-  // Fetch local government details and achievements
+  // Fetch officials, config, achievements, programs, tourism, and portal config in parallel
   useEffect(() => {
     const fetchData = async () => {
       if (!tenantId) return;
-      console.log(
-        `🌐 BRGY PORTAL [V2.5]: Fetching dynamic content for tenant: ${tenantId}`,
-      );
 
-      try {
-        // Fetch Officials via resilient Next.js API
-        const officialsRes = await fetch(`/api/portal/officials`, {
-          headers: { "x-tenant-id": tenantId },
-        });
+      const headers = { "x-tenant-id": tenantId };
 
-        if (!officialsRes.ok) {
-          const errorText = await officialsRes.text();
-          throw new Error(`API error ${officialsRes.status}: ${errorText}`);
+      // Helper: safe fetch with error handling
+      const safeFetch = async (url) => {
+        try {
+          const res = await fetch(url, { headers });
+          if (!res.ok) return null;
+          const json = await res.json();
+          return json.success ? json : null;
+        } catch {
+          return null;
         }
+      };
 
-        const officialsData = await officialsRes.json();
-        if (officialsData.success && Array.isArray(officialsData.data)) {
-          setOfficials(officialsData.data);
-        }
-      } catch (err) {
-        console.error(
-          "❌ Officials API failed - no fallback data will be shown",
-          err.message,
+      // Launch all fetches in parallel
+      const [
+        officialsResult,
+        achievementsResult,
+        programsResult,
+        tourismResult,
+        configResult,
+      ] = await Promise.all([
+        safeFetch(`/api/portal/officials`),
+        safeFetch(`/api/portal/achievements`),
+        safeFetch(`/api/portal/programs`),
+        safeFetch(`/api/portal/tourism`),
+        safeFetch(`/api/portal/config`),
+      ]);
+
+      // Officials
+      if (officialsResult?.data && Array.isArray(officialsResult.data)) {
+        setOfficials(officialsResult.data);
+      }
+
+      // Achievements
+      if (achievementsResult?.data && Array.isArray(achievementsResult.data)) {
+        setAchievements(
+          achievementsResult.data.map((ach) => ({
+            ...ach,
+            colorClass: ach.color_class || "bg-blue-600",
+            textColor: ach.text_color || "blue-400",
+          })),
         );
-        // Don't show fake data - leave empty
-        setOfficials([]);
       }
 
-      try {
-        const configRes = await fetch(`${API_URL}/officials/config`, {
-          headers: { "x-tenant-id": tenantId },
-        });
-        if (configRes.ok) {
-          const settingsData = await configRes.json();
-          if (settingsData.success && settingsData.data) {
-            if (settingsData.data.heroSection)
-              setHeroSettings(settingsData.data.heroSection);
-            if (settingsData.data.visibility)
-              setVisibilitySettings(settingsData.data.visibility);
-          }
-        }
-      } catch (err) {
-        console.warn("📡 API Fallback: Config skipped");
+      // Programs
+      if (programsResult?.data && Array.isArray(programsResult.data)) {
+        setPrograms(programsResult.data);
       }
 
-      try {
-        const achievementsRes = await fetch(`/api/portal/achievements`, {
-          headers: { "x-tenant-id": tenantId },
+      // Tourism
+      if (tourismResult?.data && Array.isArray(tourismResult.data)) {
+        const mapped = tourismResult.data.map((d) => {
+          const hasCoords = d.latitude != null && d.longitude != null;
+          const directions = d.directions_url
+            || (hasCoords
+              ? `https://www.google.com/maps/search/?api=1&query=${d.latitude},${d.longitude}`
+              : `https://maps.google.com/?q=${encodeURIComponent(d.name)}`);
+          return {
+            id: d.id,
+            name: d.name,
+            image: d.image || "",
+            description: d.description || "",
+            directions,
+            latitude: d.latitude,
+            longitude: d.longitude,
+            hasCoords,
+          };
         });
-
-        if (achievementsRes.ok) {
-          const achievementsData = await achievementsRes.json();
-          if (
-            achievementsData.success &&
-            Array.isArray(achievementsData.data)
-          ) {
-            setAchievements(
-              achievementsData.data.map((ach) => ({
-                ...ach,
-                colorClass: ach.color_class || "bg-blue-600",
-                textColor: ach.text_color || "blue-400",
-              })),
-            );
-          }
-        }
-      } catch (err) {
-        console.error("❌ Achievements API failed - no fallback data will be shown", err.message);
-        // Don't show fake data - leave empty
-        setAchievements([]);
+        setTourismDestinations(mapped);
       }
 
-      try {
-        // Fetch Programs via resilient Next.js API
-        const programsRes = await fetch(`/api/portal/programs`, {
-          headers: { "x-tenant-id": tenantId },
-        });
-        if (programsRes.ok) {
-          const programsData = await programsRes.json();
-          if (programsData.success && Array.isArray(programsData.data)) {
-            setPrograms(programsData.data);
-          }
-        }
-      } catch (error) {
-        console.error("❌ Programs API failed - no fallback data will be shown", error.message);
-        // Don't show fake data - leave empty
-        setPrograms([]);
-      }
-
-      try {
-        // Fetch Tourism via resilient Next.js API
-        const tourismRes = await fetch(`/api/portal/tourism`, {
-          headers: { "x-tenant-id": tenantId },
-        });
-        if (tourismRes.ok) {
-          const tourismData = await tourismRes.json();
-          if (tourismData.success && Array.isArray(tourismData.data)) {
-            const mapped = tourismData.data.map((d) => {
-              const hasCoords = d.latitude != null && d.longitude != null;
-              const directions = d.directions_url
-                || (hasCoords
-                  ? `https://www.google.com/maps/search/?api=1&query=${d.latitude},${d.longitude}`
-                  : `https://maps.google.com/?q=${encodeURIComponent(d.name)}`);
-              return {
-                id: d.id,
-                name: d.name,
-                image: d.image || "",
-                description: d.description || "",
-                directions,
-                latitude: d.latitude,
-                longitude: d.longitude,
-                hasCoords,
-              };
-            });
-            setTourismDestinations(mapped);
-          }
-        }
-      } catch (error) {
-        console.error("❌ Tourism API failed:", error.message);
-      }
-
-      try {
-        // Fetch Website Config (Hero, Visibility, Contact, Branding)
-        const configRes = await fetch(`/api/portal/config`, {
-          headers: { "x-tenant-id": tenantId },
-        });
-        if (configRes.ok) {
-          const settingsData = await configRes.json();
-          if (settingsData.success && settingsData.data) {
-            const data = settingsData.data;
-            if (data.heroSection) setHeroSettings(data.heroSection);
-            if (data.visibility) setVisibilitySettings(data.visibility);
-            // ... Handle branding merge here if needed
-          }
-        }
-      } catch (err) {
-        console.warn("📡 API Fallback: Config skipped");
+      // Config (hero + visibility) — single fetch replaces previous duplicate
+      if (configResult?.data) {
+        const data = configResult.data;
+        if (data.heroSection) setHeroSettings(data.heroSection);
+        if (data.visibility) setVisibilitySettings(data.visibility);
       }
     };
 
@@ -956,6 +890,69 @@ export default function PortalPageContent({ initialTenantId }) {
     });
   };
 
+  // Get the Barangay Captain from officials data
+  const captain = officials.find((o) => o.position_type === "captain");
+
+  // KapChat — Send message to Barangay Captain
+  const handleChatSend = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const userMessage = { id: Date.now(), text: chatInput.trim(), sender: "user", time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+    setChatMessages((prev) => [...prev, userMessage]);
+    setChatInput("");
+    setChatSending(true);
+
+    // Simulate captain auto-reply
+    setTimeout(() => {
+      const captainName = captain?.full_name || "the Barangay Captain";
+      const reply = {
+        id: Date.now() + 1,
+        text: `Thank you for your message. ${captainName} will review your concern and get back to you. For urgent matters, please call our office during business hours.`,
+        sender: "captain",
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setChatMessages((prev) => [...prev, reply]);
+      setChatSending(false);
+    }, 1500);
+  };
+
+  // Brgy Assistance — Submit assistance request (same as Contact form)
+  const handleAssistanceSubmit = async (e) => {
+    e.preventDefault();
+    setAssistanceSubmitting(true);
+
+    // Simulate submission (same behavior as Contact form)
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    setAssistanceSuccess(true);
+    setAssistanceSubmitting(false);
+    setAssistanceFormData({ firstName: "", lastName: "", email: "", phone: "", message: "" });
+
+    setTimeout(() => {
+      setAssistanceSuccess(false);
+      setShowAssistance(false);
+      setAssistanceMode(null);
+    }, 2500);
+  };
+
+  // Open assistance widget in a specific mode
+  const openAssistance = (mode) => {
+    setAssistanceMode(mode);
+    setShowAssistance(true);
+  };
+
+  // Close assistance widget and reset
+  const closeAssistance = () => {
+    setShowAssistance(false);
+    setAssistanceMode(null);
+    setChatMessages([]);
+    setChatInput("");
+    setChatStarted(false);
+    setChatUserInfo({ name: "", contact: "" });
+    setAssistanceSuccess(false);
+  };
+
   return (
     <div
       className="min-h-screen bg-gray-50"
@@ -1088,15 +1085,6 @@ export default function PortalPageContent({ initialTenantId }) {
       >
         Skip to content
       </a>
-
-      {/* RP Government Masthead */}
-      <div className="bg-gray-900 text-white/90 py-1.5 px-4 text-center text-[10px] sm:text-xs font-medium tracking-wide border-b border-white/10">
-        <span className="hidden sm:inline">Republic of the Philippines</span>
-        <span className="hidden sm:inline mx-2 text-white/30">|</span>
-        <span>{tenantConfig.subtitle}</span>
-        <span className="hidden sm:inline mx-2 text-white/30">|</span>
-        <span className="hidden sm:inline">Official Barangay Portal</span>
-      </div>
 
       {/* Portal Header */}
       <div
@@ -1840,110 +1828,172 @@ export default function PortalPageContent({ initialTenantId }) {
         </section>
       )}
 
-      {/* Facilities Section */}
+      {/* Facilities Section — Modern Government Directory */}
       {!isFeatureLocked('facilities') && (
-        <section id="directory" className="relative bg-gray-50 overflow-hidden">
-          <div className="relative w-full h-[40vh] min-h-[350px] lg:h-[50vh] bg-gray-950 overflow-hidden">
-            {facilities.flatMap((f) => f.images || []).length > 0 ? (
-              facilities.flatMap((f) => f.images || []).filter((img, i, arr) => arr.indexOf(img) === i).map((img, index) => (
-                <div key={index} className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${heroCarouselIndex === index ? "opacity-100 scale-100" : "opacity-0 scale-105"}`}>
-                  <img 
-                    src={img} 
-                    alt={`Slide ${index}`} 
-                    className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-[2000ms]"
-                    loading={index === 0 ? "eager" : "lazy"}
-                  />
-                </div>
-              ))
-            ) : (
-              <div className="absolute inset-0 bg-gray-900 animate-pulse"></div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent z-10" />
-            <div className="absolute inset-0 z-20 flex items-center px-6 sm:px-10 lg:px-16">
-              <div className="max-w-4xl text-left">
-                <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-[1] mb-6 tracking-tighter uppercase">
-                  Community<br/>
-                  <span className="text-transparent bg-clip-text" style={{ backgroundImage: `linear-gradient(to right, #fff, ${tenantConfig.accentColor})` }}>
-                    Facilities
-                  </span>
-                </h2>
-              </div>
-            </div>
-          </div>
-          
-          {/* Facilities Grid */}
-          <div className="py-16 max-w-[1400px] mx-auto px-6 lg:px-12">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {facilities.map((facility, index) => (
+        <section id="directory" className="bg-gray-50 border-t border-gray-200">
+          <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 py-12 md:py-16">
+            {/* Section Header */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
                 <div
-                  key={index}
-                  className="group relative flex flex-col cursor-pointer bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                  onClick={() => setSelectedFacility(facility)}
-                >
-                  <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
-                    <img 
-                      src={facility.images?.[0]} 
-                      alt={facility.name} 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="p-6 text-left">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">{facility.name}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed mb-4">{facility.description}</p>
-                    <span className="flex items-center gap-1 text-xs font-bold uppercase" style={{ color: tenantConfig.accentColor }}>
-                      View Photos <ChevronRight className="w-4 h-4" />
-                    </span>
-                  </div>
+                  className="w-1 h-8 rounded-full"
+                  style={{ backgroundColor: tenantConfig.primaryColor }}
+                ></div>
+                <div>
+                  <p
+                    className="text-xs font-bold uppercase tracking-widest"
+                    style={{ color: tenantConfig.primaryColor }}
+                  >
+                    Barangay Infrastructure &amp; Public Facilities
+                  </p>
+                  <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight mt-1">
+                    Community Facilities Directory
+                  </h2>
                 </div>
-              ))}
+              </div>
+              <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-gray-200">
+                A directory of public infrastructure and facilities maintained by the Barangay government, available for the use and benefit of our constituents.
+              </p>
             </div>
+
+            {/* Facilities Grid — Government Info Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {facilities.map((facility, index) => {
+                const FacilityIcon = facility.icon || Building2;
+                const photoCount = (facility.images || []).length;
+                return (
+                  <div
+                    key={index}
+                    className="group flex flex-col cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200"
+                    onClick={() => setSelectedFacility(facility)}
+                  >
+                    {/* Image */}
+                    <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
+                      <img
+                        src={facility.images?.[0]}
+                        alt={facility.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      {photoCount > 1 && (
+                        <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-md bg-black/70 text-white text-[10px] font-bold backdrop-blur-sm border border-white/20">
+                          <ImageIcon className="w-3 h-3" />
+                          {photoCount} Photos
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex flex-col flex-1 p-5">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
+                        >
+                          <FacilityIcon
+                            className="w-5 h-5"
+                            style={{ color: tenantConfig.primaryColor }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-base font-bold text-gray-900 leading-snug">
+                            {facility.name}
+                          </h3>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-0.5">
+                            Barangay Facility
+                          </p>
+                        </div>
+                      </div>
+
+                      {facility.description && (
+                        <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">
+                          {facility.description}
+                        </p>
+                      )}
+
+                      <div
+                        className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pt-3 border-t border-gray-100"
+                        style={{ color: tenantConfig.primaryColor }}
+                      >
+                        {photoCount > 1 ? "View Photo Gallery" : "View Details"}
+                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Empty State */}
+            {facilities.length === 0 && (
+              <div className="text-center py-12">
+                <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-400 text-sm">Facility information will be available soon.</p>
+              </div>
+            )}
           </div>
         </section>
       )}
 
-      {/* Tourism and Lifestyle Section */}
+      {/* Tourism and Lifestyle Section — Government Directory */}
       {tourismDestinations.length > 0 && (
-      <section id="tourism" className="py-16 md:py-24 bg-white relative overflow-hidden">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight mb-4">
-              Tourism and Lifestyle
-            </h2>
-            <p className="text-gray-500 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
-              Discover exciting destinations and lifestyle spots in our barangay. Click on any card to get directions.
+      <section id="tourism" className="bg-white border-t border-gray-100">
+        <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 py-12 md:py-16">
+          {/* Section Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className="w-1 h-8 rounded-full"
+                style={{ backgroundColor: tenantConfig.primaryColor }}
+              ></div>
+              <div>
+                <p
+                  className="text-xs font-bold uppercase tracking-widest"
+                  style={{ color: tenantConfig.primaryColor }}
+                >
+                  Local Tourism &amp; Destinations
+                </p>
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight mt-1">
+                  Tourism and Lifestyle
+                </h2>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-gray-200">
+              Explore notable destinations and landmarks within our barangay. Location details and directions are available for each site.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {tourismDestinations.map((destination) => (
               <div
                 key={destination.id}
-                className="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_-8px_rgba(0,0,0,0.12)] border border-gray-100 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.18)] hover:-translate-y-1 transition-all duration-300"
+                className="group flex flex-col bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200"
               >
-                <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+                <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
                   <img
                     src={destination.image}
                     alt={destination.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
                   <a
                     href={destination.directions}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg hover:bg-white transition-all"
+                    className="absolute top-3 right-3 w-9 h-9 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm hover:bg-white transition-all"
                     aria-label={`Get directions to ${destination.name}`}
                   >
-                    <Navigation className="w-5 h-5" style={{ color: tenantConfig.primaryColor }} />
+                    <Navigation className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
                   </a>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">
+                <div className="flex flex-col flex-1 p-5">
+                  <h3 className="text-base font-bold text-gray-900 mb-2 leading-snug">
                     {destination.name}
                   </h3>
                   {destination.description && (
-                    <p className="text-gray-500 text-sm mb-3 line-clamp-2">{destination.description}</p>
+                    <p className="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-2 flex-1">
+                      {destination.description}
+                    </p>
                   )}
                   {destination.hasCoords && (
                     <p className="text-xs text-gray-400 mb-3 font-mono">
@@ -1954,10 +2004,10 @@ export default function PortalPageContent({ initialTenantId }) {
                     href={destination.directions}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-bold hover:gap-2.5 transition-all"
+                    className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pt-3 border-t border-gray-100"
                     style={{ color: tenantConfig.primaryColor }}
                   >
-                    <MapPin className="w-4 h-4" />
+                    <MapPin className="w-3.5 h-3.5" />
                     {destination.hasCoords ? "View on Google Maps" : "Get Directions"}
                   </a>
                 </div>
@@ -1968,71 +2018,45 @@ export default function PortalPageContent({ initialTenantId }) {
       </section>
       )}
 
-      {/* Barangay Achievement and Awards Section */}
+      {/* Barangay Achievement and Awards Section — Government Records */}
       {!isFeatureLocked('achievements') && (
         <section
           id="achievements"
-          className="py-16 md:py-24 bg-gray-950 relative overflow-hidden animate-on-scroll"
+          className="bg-gray-50 border-t border-gray-200"
         >
-          {/* Cinematic Gradient Overlays */}
-          <div
-            className="absolute inset-x-0 top-0 h-px"
-            style={{
-              background: `linear-gradient(to right, transparent, ${tenantConfig.accentColor}80, transparent)`,
-            }}
-          ></div>
-          <div
-            className="absolute top-0 right-0 w-[800px] h-[800px] rounded-full blur-[150px] -translate-y-1/2 translate-x-1/2"
-            style={{ backgroundColor: `${tenantConfig.accentColor}10` }}
-          ></div>
-          <div
-            className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2"
-            style={{ backgroundColor: `${tenantConfig.primaryColor}10` }}
-          ></div>
-
-          <div className="relative z-10 max-w-[1400px] mx-auto px-8 sm:px-12 lg:px-16">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12 md:mb-16">
-              <div className="max-w-3xl">
+          <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 py-12 md:py-16">
+            {/* Section Header */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
                 <div
-                  className="inline-flex items-center gap-3 px-4 py-1.5 border rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-8"
-                  style={{
-                    backgroundColor: `${tenantConfig.accentColor}20`,
-                    borderColor: `${tenantConfig.accentColor}30`,
-                    color: tenantConfig.accentColor,
-                  }}
-                >
-                  <Star className="w-3.5 h-3.5 fill-current" />
-                  Community Milestones
-                </div>
-                <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-[1.05]">
-                  Our Legacy of
-                  <br />
-                  <span
-                    className="text-transparent bg-clip-text"
-                    style={{
-                      backgroundImage: `linear-gradient(to right, #fff, ${tenantConfig.accentColor})`,
-                    }}
+                  className="w-1 h-8 rounded-full"
+                  style={{ backgroundColor: tenantConfig.primaryColor }}
+                ></div>
+                <div>
+                  <p
+                    className="text-xs font-bold uppercase tracking-widest"
+                    style={{ color: tenantConfig.primaryColor }}
                   >
-                    Excellence
-                  </span>
-                </h2>
+                    Awards &amp; Recognitions
+                  </p>
+                  <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight mt-1">
+                    Our Legacy of Excellence
+                  </h2>
+                </div>
               </div>
-              <div className="lg:max-w-sm">
-                <p className="text-gray-400 text-base md:text-lg font-medium leading-relaxed italic">
-                  "Recognizing the hard work and dedication of our community in
-                  building a brighter, better {tenantConfig.shortName}."
-                </p>
-              </div>
+              <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-gray-200">
+                A record of awards and recognitions received by the Barangay and its constituents, reflecting our commitment to public service excellence.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {achievements.map((achievement, idx) => (
                 <div
                   key={achievement.id || idx}
                   onClick={() => setSelectedAchievement(achievement)}
-                  className={`group relative bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 ${tenantId === "demo" ? "hover:border-[#C9A84C]/30 hover:bg-white/[0.04]" : "hover:border-emerald-500/30 hover:bg-white/[0.04]"}`}
+                  className="group flex flex-col cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200"
                 >
-                  <div className="aspect-[4/5] relative overflow-hidden">
+                  <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
                     <img
                       loading="lazy"
                       src={
@@ -2040,30 +2064,38 @@ export default function PortalPageContent({ initialTenantId }) {
                         "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800"
                       }
                       alt={achievement.title}
-                      className="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000 scale-[1.05] group-hover:scale-100"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent"></div>
-
-                    {/* Card Content Overlay */}
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                      <span
-                        className="text-[10px] font-black tracking-[0.3em] mb-3 uppercase"
-                        style={{ color: tenantConfig.accentColor }}
-                      >
-                        {achievement.year} Award
-                      </span>
-                      <h3 className="text-xl md:text-2xl font-black text-white leading-tight mb-3">
-                        {achievement.title}
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-0.5 transition-all duration-500 group-hover:w-20"
-                          style={{ backgroundColor: tenantConfig.accentColor }}
-                        ></div>
-                        <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">
-                          Detail View
-                        </span>
-                      </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div
+                      className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold text-white backdrop-blur-sm border border-white/20"
+                      style={{ backgroundColor: `${tenantConfig.primaryColor}cc` }}
+                    >
+                      <Award className="w-3 h-3" />
+                      {achievement.year}
+                    </div>
+                  </div>
+                  <div className="flex flex-col flex-1 p-5">
+                    <p
+                      className="text-[10px] font-bold uppercase tracking-wider mb-1.5"
+                      style={{ color: tenantConfig.primaryColor }}
+                    >
+                      {achievement.category || "Award"}
+                    </p>
+                    <h3 className="text-base font-bold text-gray-900 leading-snug mb-2">
+                      {achievement.title}
+                    </h3>
+                    {achievement.description && (
+                      <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 flex-1">
+                        {achievement.description}
+                      </p>
+                    )}
+                    <div
+                      className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pt-3 mt-3 border-t border-gray-100"
+                      style={{ color: tenantConfig.primaryColor }}
+                    >
+                      View Details
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </div>
@@ -2076,49 +2108,78 @@ export default function PortalPageContent({ initialTenantId }) {
       {/* Achievement Modal */}
       {selectedAchievement && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
           onClick={() => setSelectedAchievement(null)}
         >
           <div
-            className="bg-[#0a1f12] border border-[#d4af37]/20 rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden relative transform transition-all"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden relative transform transition-all"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setSelectedAchievement(null)}
-              className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-red-500 transition-colors backdrop-blur-md"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <div className="relative h-64 sm:h-80 lg:h-[450px] w-full group overflow-hidden">
-              <div className="absolute inset-0 bg-[#113821]/20 z-10"></div>
+            {/* Header Bar */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
+                >
+                  <Award className="w-5 h-5" style={{ color: tenantConfig.primaryColor }} />
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                    style={{ color: tenantConfig.primaryColor }}
+                  >
+                    {selectedAchievement.year} · {selectedAchievement.category || "Award"}
+                  </p>
+                  <h3 className="text-base md:text-lg font-bold text-gray-900 truncate">
+                    {selectedAchievement.title}
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedAchievement(null)}
+                className="w-9 h-9 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 rounded-xl flex items-center justify-center transition-colors border border-gray-200 shrink-0 ml-4"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Image */}
+            <div className="relative h-48 sm:h-56 lg:h-64 w-full overflow-hidden bg-gray-100">
               <img
                 loading="lazy"
                 src={selectedAchievement.image}
                 alt={selectedAchievement.title}
-                className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full object-cover"
               />
-              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#081a0f] to-transparent z-10"></div>
-              <div
-                className={`absolute top-6 left-6 z-20 bg-gradient-to-r from-[#d4af37] to-[#aa8c2c] text-[#0a1f12] text-white text-sm md:text-base font-bold px-4 md:px-5 py-2 md:py-2.5 rounded-full shadow-lg flex items-center gap-2 backdrop-blur-md`}
-              >
-                <Award className="w-5 h-5" />
-                {selectedAchievement.year}
-              </div>
             </div>
-            <div className="p-8 md:p-10 relative z-20 -mt-10 md:-mt-16 bg-[#0a1f12]/90 backdrop-blur-xl border-t border-[#d4af37]/30">
-              <div className="mb-4">
-                <p
-                  className={` text-sm md:text-base font-bold tracking-widest uppercase mb-2`}
-                >
-                  {selectedAchievement.category}
-                </p>
-                <h3 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
-                  {selectedAchievement.title}
-                </h3>
-              </div>
-              <p className="text-[#ebd78c]/90 leading-relaxed text-lg md:text-xl mt-6 lg:mt-8">
+
+            {/* Content */}
+            <div className="p-6 md:p-8">
+              <p className="text-gray-600 leading-relaxed text-sm md:text-base">
                 {selectedAchievement.description}
               </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+              <button
+                onClick={() => setSelectedAchievement(null)}
+                className="px-5 py-2.5 text-white rounded-xl font-bold transition-all text-sm flex items-center gap-2 group"
+                style={{ backgroundColor: tenantConfig.primaryColor }}
+              >
+                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Awards
+              </button>
+              <div className="flex items-center gap-2">
+                <Shield
+                  className="w-4 h-4"
+                  style={{ color: tenantConfig.primaryColor }}
+                />
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  Official Record
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -2951,27 +3012,38 @@ export default function PortalPageContent({ initialTenantId }) {
 
       <section
         id="contact"
-        className={`py-8 bg-gradient-to-br ${tenantConfig.darkBackground}`}
+        className={`py-12 md:py-16 bg-gradient-to-br ${tenantConfig.darkBackground}`}
       >
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-4">
-            <h2 className="text-2xl font-bold text-white mb-1">
-              Contact the Barangay Office
-            </h2>
-            <p
-              className={`text-base italic ${tenantId === "demo" ? "text-gray-400" : "text-green-400"}`}
-            >
-              For inquiries and assistance, please reach out to us
+        <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12">
+          {/* Section Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className="w-1 h-8 rounded-full bg-white/80"
+              ></div>
+              <div>
+                <p
+                  className="text-xs font-bold uppercase tracking-widest text-white/60"
+                >
+                  Get in Touch
+                </p>
+                <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight mt-1">
+                  Contact the Barangay Office
+                </h2>
+              </div>
+            </div>
+            <p className="text-white/60 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-white/20">
+              For inquiries, service requests, and other concerns, please reach out to our office during business hours or send us a message below.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {/* Contact Form */}
-            <div className="bg-white rounded-2xl p-5 shadow-xl h-full">
+            <div className="bg-white rounded-xl p-5 shadow-lg h-full">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="contact-firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="contact-firstName" className="block text-sm font-medium text-gray-700 mb-1.5">
                       First Name
                     </label>
                     <input
@@ -2981,13 +3053,14 @@ export default function PortalPageContent({ initialTenantId }) {
                       onChange={(e) =>
                         setFormData({ ...formData, firstName: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all text-sm"
+                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
                       placeholder="Juan"
                       required
                     />
                   </div>
                   <div>
-                    <label htmlFor="contact-lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="contact-lastName" className="block text-sm font-medium text-gray-700 mb-1.5">
                       Last Name
                     </label>
                     <input
@@ -2997,7 +3070,8 @@ export default function PortalPageContent({ initialTenantId }) {
                       onChange={(e) =>
                         setFormData({ ...formData, lastName: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all text-sm"
+                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
                       placeholder="Dela Cruz"
                       required
                     />
@@ -3005,8 +3079,8 @@ export default function PortalPageContent({ initialTenantId }) {
                 </div>
 
                 <div>
-                  <label htmlFor="contact-email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email / Email Address
+                  <label htmlFor="contact-email" className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Email Address
                   </label>
                   <input
                     id="contact-email"
@@ -3015,15 +3089,16 @@ export default function PortalPageContent({ initialTenantId }) {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all text-sm"
+                    style={{ '--tw-ring-color': tenantConfig.primaryColor }}
                     placeholder="juan@example.com"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="contact-phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone / Numero ng Telepono
+                  <label htmlFor="contact-phone" className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Phone Number
                   </label>
                   <input
                     id="contact-phone"
@@ -3032,13 +3107,14 @@ export default function PortalPageContent({ initialTenantId }) {
                     onChange={(e) =>
                       setFormData({ ...formData, phone: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all text-sm"
+                    style={{ '--tw-ring-color': tenantConfig.primaryColor }}
                     placeholder="09XX XXX XXXX"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="contact-message" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="contact-message" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Message
                   </label>
                   <textarea
@@ -3048,7 +3124,8 @@ export default function PortalPageContent({ initialTenantId }) {
                       setFormData({ ...formData, message: e.target.value })
                     }
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all resize-none text-sm"
+                    style={{ '--tw-ring-color': tenantConfig.primaryColor }}
                     placeholder="Your message here..."
                     required
                   />
@@ -3056,10 +3133,10 @@ export default function PortalPageContent({ initialTenantId }) {
 
                 <button
                   type="submit"
-                  className="w-full text-white py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 transform hover:scale-105 shadow-lg"
+                  className="w-full text-white py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 hover:opacity-90 shadow-sm text-sm"
                   style={{ backgroundColor: tenantConfig.primaryColor }}
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4" />
                   Send Message
                 </button>
               </form>
@@ -3067,69 +3144,50 @@ export default function PortalPageContent({ initialTenantId }) {
 
             {/* Contact Info & Office Hours */}
             <div className="space-y-6 h-full flex flex-col">
-              <div
-                className={`backdrop-blur-sm rounded-2xl p-8 border flex-1 ${tenantId === "demo" ? "bg-black/80 border-white/10" : "bg-green-950/50 border-green-800/50"}`}
-              >
-                <h3 className="text-xl font-bold text-white mb-4">
+              {/* Contact Information */}
+              <div className="bg-white/10 rounded-xl p-5 border border-white/15 flex-1">
+                <h3 className="text-base font-bold text-white mb-4">
                   Contact Information
                 </h3>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
                     <div
-                      className="p-3 rounded-lg"
-                      style={{ backgroundColor: tenantConfig.primaryColor }}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${tenantConfig.primaryColor}30` }}
                     >
-                      <MapPin className="w-6 h-6 text-white" />
+                      <MapPin className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-medium">Address</p>
-                      <p
-                        className={
-                          tenantId === "demo"
-                            ? "text-gray-300"
-                            : "text-green-200"
-                        }
-                      >
+                      <p className="text-white/90 text-sm font-medium">Address</p>
+                      <p className="text-white/60 text-sm leading-relaxed">
                         {tenantConfig.subtitle}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
                     <div
-                      className="p-3 rounded-lg"
-                      style={{ backgroundColor: tenantConfig.secondaryColor }}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${tenantConfig.primaryColor}30` }}
                     >
-                      <Phone className="w-6 h-6 text-white" />
+                      <Phone className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-medium">Phone</p>
-                      <p
-                        className={
-                          tenantId === "demo"
-                            ? "text-gray-300"
-                            : "text-green-200"
-                        }
-                      >
+                      <p className="text-white/90 text-sm font-medium">Phone</p>
+                      <p className="text-white/60 text-sm">
                         (044) 123-4567
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
                     <div
-                      className="p-3 rounded-lg"
-                      style={{ backgroundColor: tenantConfig.secondaryColor }}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${tenantConfig.primaryColor}30` }}
                     >
-                      <Mail className="w-6 h-6 text-white" />
+                      <Mail className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-medium">Email</p>
-                      <p
-                        className={
-                          tenantId === "demo"
-                            ? "text-gray-300"
-                            : "text-green-200"
-                        }
-                      >
+                      <p className="text-white/90 text-sm font-medium">Email</p>
+                      <p className="text-white/60 text-sm">
                         {tenantId === "demo"
                           ? "contact@brgydesk.com"
                           : "ibaoeste@calumpit.gov.ph"}
@@ -3139,49 +3197,49 @@ export default function PortalPageContent({ initialTenantId }) {
                 </div>
               </div>
 
-              <div
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10"
-                style={{ borderColor: `${tenantConfig.secondaryColor}40` }}
-              >
-                <h3 className="text-xl font-bold text-white mb-4">
+              {/* Office Hours */}
+              <div className="bg-white/10 rounded-xl p-5 border border-white/15">
+                <h3 className="text-base font-bold text-white mb-3 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-white/60" />
                   Office Hours
                 </h3>
-                <div
-                  className={`space-y-2 ${tenantId === "demo" ? "text-gray-300" : "text-green-200"}`}
-                >
-                  <p>Monday - Friday: 8:00 AM - 5:00 PM</p>
-                  <p>Saturday: 8:00 AM - 12:00 PM</p>
-                  <p>Sunday: Closed</p>
+                <div className="space-y-1.5 text-sm text-white/60">
+                  <div className="flex justify-between">
+                    <span>Monday - Friday</span>
+                    <span className="text-white/80 font-medium">8:00 AM - 5:00 PM</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Saturday</span>
+                    <span className="text-white/80 font-medium">8:00 AM - 12:00 PM</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Sunday</span>
+                    <span className="text-white/50">Closed</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Emergency Hotlines */}
-            <div
-              className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 h-full"
-              style={{ borderColor: `${tenantConfig.secondaryColor}40` }}
-            >
-              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-6 h-6 text-red-500 animate-pulse" />
+            <div className="bg-white/10 rounded-xl p-5 border border-white/15 h-full">
+              <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-400" />
                 Emergency Hotlines
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {hotlines.map((hotline, index) => (
-                  <div key={index} className="flex items-start gap-4 group">
+                  <div key={index} className="flex items-center gap-3 group">
                     <div
-                      className="p-3 rounded-lg group-hover:opacity-80 transition-colors"
-                      style={{
-                        backgroundColor:
-                          tenantId === "demo" ? "#4a4a4a" : "#991b1b",
-                      }}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${tenantConfig.primaryColor}30` }}
                     >
-                      <Phone className="w-6 h-6 text-white" />
+                      <Phone className="w-4 h-4 text-white" />
                     </div>
-                    <div>
-                      <p className="text-white font-medium">{hotline.name}</p>
+                    <div className="min-w-0">
+                      <p className="text-white/90 text-sm font-medium">{hotline.name}</p>
                       <a
                         href={`tel:${hotline.number}`}
-                        className={`transition-colors text-xl font-bold ${tenantId === "demo" ? "text-gray-300 hover:text-white" : "text-gray-200 hover:text-white"}`}
+                        className="text-white/60 hover:text-white transition-colors text-sm font-bold"
                       >
                         {hotline.number}
                       </a>
@@ -3189,13 +3247,10 @@ export default function PortalPageContent({ initialTenantId }) {
                   </div>
                 ))}
               </div>
-              <div className="mt-6 p-4 bg-white/10 rounded-xl text-center border border-white/10">
-                <p
-                  className={`${tenantId === "demo" ? "text-gray-400" : "text-green-300"} text-[10px] font-bold tracking-widest mb-1 uppercase`}
-                >
-                  Available 24/7
+              <div className="mt-4 pt-4 border-t border-white/10 text-center">
+                <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider">
+                  Available 24/7 for Emergencies
                 </p>
-                <p className="text-white font-bold">READY TO RESPOND</p>
               </div>
             </div>
           </div>
@@ -3258,76 +3313,385 @@ export default function PortalPageContent({ initialTenantId }) {
           </div>
         </div>
       </footer>
-      {/* Floating Action Buttons — KapChat & Brgy Assistance */}
-      <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3">
-        <button
-          onClick={() => router.push("/login")}
-          className="group flex items-center gap-2 bg-white rounded-full shadow-xl border border-gray-100 px-4 py-3 hover:shadow-2xl transition-all"
-          aria-label="KapChat — Chat with the Barangay"
-        >
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${tenantConfig.primaryColor}15` }}
-          >
-            <MessageCircle className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
-          </div>
-          <span className="text-sm font-bold text-gray-900 hidden sm:inline">KapChat</span>
-        </button>
-        <button
-          onClick={() => router.push("/login")}
-          className="group flex items-center gap-2 bg-white rounded-full shadow-xl border border-gray-100 px-4 py-3 hover:shadow-2xl transition-all"
-          aria-label="Brgy Assistance"
-        >
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${tenantConfig.accentColor}15` }}
-          >
-            <HeadphonesIcon className="w-4 h-4" style={{ color: tenantConfig.accentColor }} />
-          </div>
-          <span className="text-sm font-bold text-gray-900 hidden sm:inline">Brgy Assistance</span>
-        </button>
-      </div>
 
-      <div className="fixed bottom-6 right-6 z-50">
-        {showHotlines && (
-          <div className="mb-4 bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 w-80 animate-fade-in">
-            <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              Emergency Hotlines
-            </h4>
-            <div className="space-y-3">
-              {hotlines.map((hotline, index) => (
+      {/* Floating Assistance Widget — Government Style */}
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
+        {/* Expanded Panel */}
+        {showAssistance && !assistanceMode && (
+          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden animate-fade-in">
+            {/* Panel Header */}
+            <div
+              className="px-4 py-3 border-b border-gray-100"
+              style={{ backgroundColor: `${tenantConfig.primaryColor}08` }}
+            >
+              <p
+                className="text-[10px] font-bold uppercase tracking-wider"
+                style={{ color: tenantConfig.primaryColor }}
+              >
+                Barangay Assistance
+              </p>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="p-3 space-y-2">
+              <button
+                onClick={() => openAssistance("kapchat")}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors text-left"
+              >
                 <div
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
                 >
-                  <span className="text-sm font-medium text-gray-700">
-                    {hotline.name}
-                  </span>
-                  <a
-                    href={`tel:${hotline.number}`}
-                    className={`font-semibold transition-colors ${tenantId === "demo" ? "text-gray-900 hover:text-[#C9A84C]" : "text-green-700 hover:text-green-800"}`}
-                  >
-                    {hotline.number}
-                  </a>
+                  <MessageCircle className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
                 </div>
-              ))}
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900">KapChat</p>
+                  <p className="text-xs text-gray-500">Direct message to the Barangay Captain</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => openAssistance("assistance")}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors text-left"
+              >
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
+                >
+                  <HeadphonesIcon className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900">Brgy Assistance</p>
+                  <p className="text-xs text-gray-500">Send an inquiry to the office</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Emergency Hotlines Divider */}
+            <div className="px-3 pb-3">
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
+                  Emergency Hotlines
+                </p>
+                <div className="space-y-1.5">
+                  {hotlines.map((hotline, index) => (
+                    <a
+                      key={index}
+                      href={`tel:${hotline.number}`}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="text-xs font-medium text-gray-700">
+                        {hotline.name}
+                      </span>
+                      <span
+                        className="text-xs font-bold"
+                        style={{ color: tenantConfig.primaryColor }}
+                      >
+                        {hotline.number}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
+        {/* KapChat Panel — Chat with Barangay Captain */}
+        {showAssistance && assistanceMode === "kapchat" && (
+          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-80 overflow-hidden animate-fade-in flex flex-col" style={{ maxHeight: '520px' }}>
+            {/* Chat Header */}
+            <div
+              className="px-4 py-3 border-b border-gray-100 flex items-center justify-between"
+              style={{ backgroundColor: `${tenantConfig.primaryColor}08` }}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `${tenantConfig.primaryColor}20` }}
+                >
+                  <Shield className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">
+                    {captain?.full_name || "Barangay Captain"}
+                  </p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: tenantConfig.primaryColor }}>
+                    KapChat · Online
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => closeAssistance()}
+                className="w-7 h-7 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-lg flex items-center justify-center transition-colors shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Pre-chat: Name & Contact Form */}
+            {!chatStarted && (
+              <div className="p-4">
+                <div className="text-center mb-4">
+                  <MessageCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    You are about to chat with {captain?.full_name || "the Barangay Captain"}. Please provide your name and contact so we can get back to you.
+                  </p>
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (chatUserInfo.name.trim() && chatUserInfo.contact.trim()) {
+                      setChatStarted(true);
+                    }
+                  }}
+                  className="space-y-3"
+                >
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Your Name</label>
+                    <input
+                      type="text"
+                      value={chatUserInfo.name}
+                      onChange={(e) => setChatUserInfo({ ...chatUserInfo, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
+                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+                      placeholder="Juan Dela Cruz"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Contact Number</label>
+                    <input
+                      type="tel"
+                      value={chatUserInfo.contact}
+                      onChange={(e) => setChatUserInfo({ ...chatUserInfo, contact: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
+                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+                      placeholder="09XX XXX XXXX"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full text-white py-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-2 text-sm"
+                    style={{ backgroundColor: tenantConfig.primaryColor }}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Start Chat
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* Chat Messages */}
+            {chatStarted && (
+              <>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50" style={{ minHeight: '180px' }}>
+                  {chatMessages.length === 0 && (
+                    <div className="text-center py-6">
+                      <MessageCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-xs text-gray-400 leading-relaxed">
+                        Hi {chatUserInfo.name.split(" ")[0]}, send a message to {captain?.full_name || "the Barangay Captain"}. Your concern will be reviewed and addressed.
+                      </p>
+                    </div>
+                  )}
+                  {chatMessages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[80%] rounded-lg px-3 py-2 ${msg.sender === "user" ? "text-white" : "bg-white border border-gray-200 text-gray-700"}`}
+                        style={msg.sender === "user" ? { backgroundColor: tenantConfig.primaryColor } : {}}
+                      >
+                        <p className="text-xs leading-relaxed">{msg.text}</p>
+                        <p className={`text-[9px] mt-1 ${msg.sender === "user" ? "text-white/60" : "text-gray-400"}`}>
+                          {msg.time}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {chatSending && (
+                    <div className="flex justify-start">
+                      <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
+                        <div className="flex gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Chat Input */}
+                <form onSubmit={handleChatSend} className="p-3 border-t border-gray-100 bg-white">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Type your message..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
+                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatInput.trim() || chatSending}
+                      className="px-3 py-2 text-white rounded-lg font-bold transition-all shrink-0 disabled:opacity-50"
+                      style={{ backgroundColor: tenantConfig.primaryColor }}
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Brgy Assistance Panel — Contact Form */}
+        {showAssistance && assistanceMode === "assistance" && (
+          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-80 overflow-hidden animate-fade-in flex flex-col" style={{ maxHeight: '560px' }}>
+            {/* Form Header */}
+            <div
+              className="px-4 py-3 border-b border-gray-100 flex items-center justify-between"
+              style={{ backgroundColor: `${tenantConfig.primaryColor}08` }}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
+                >
+                  <HeadphonesIcon className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900">Brgy Assistance</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: tenantConfig.primaryColor }}>
+                    Send an Inquiry
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => closeAssistance()}
+                className="w-7 h-7 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-lg flex items-center justify-center transition-colors shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {assistanceSuccess ? (
+                <div className="text-center py-8">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                    style={{ backgroundColor: `${tenantConfig.primaryColor}15` }}
+                  >
+                    <CheckCircle className="w-6 h-6" style={{ color: tenantConfig.primaryColor }} />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900 mb-1">Message Sent</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Your inquiry has been received. We will get back to you soon.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleAssistanceSubmit} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
+                      <input
+                        type="text"
+                        value={assistanceFormData.firstName}
+                        onChange={(e) => setAssistanceFormData({ ...assistanceFormData, firstName: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
+                        style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+                        placeholder="Juan"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
+                      <input
+                        type="text"
+                        value={assistanceFormData.lastName}
+                        onChange={(e) => setAssistanceFormData({ ...assistanceFormData, lastName: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
+                        style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+                        placeholder="Dela Cruz"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={assistanceFormData.email}
+                      onChange={(e) => setAssistanceFormData({ ...assistanceFormData, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
+                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+                      placeholder="juan@example.com"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      value={assistanceFormData.phone}
+                      onChange={(e) => setAssistanceFormData({ ...assistanceFormData, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
+                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+                      placeholder="09XX XXX XXXX"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Message</label>
+                    <textarea
+                      value={assistanceFormData.message}
+                      onChange={(e) => setAssistanceFormData({ ...assistanceFormData, message: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all resize-none"
+                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+                      placeholder="How can we help you?"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={assistanceSubmitting}
+                    className="w-full text-white py-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
+                    style={{ backgroundColor: tenantConfig.primaryColor }}
+                  >
+                    {assistanceSubmitting ? (
+                      <>Sending...</>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Send Inquiry
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Toggle Button */}
         <button
-          onClick={() => setShowHotlines(!showHotlines)}
-          className={`${
-            showHotlines
-              ? "bg-gray-600"
-              : "bg-red-600 hover:bg-red-700 animate-pulse"
-          } text-white p-4 rounded-full shadow-lg transition-all transform hover:scale-110`}
+          onClick={() => showAssistance ? closeAssistance() : setShowAssistance(true)}
+          className="flex items-center gap-2 text-white rounded-xl shadow-lg transition-all px-4 py-3"
+          style={{ backgroundColor: tenantConfig.primaryColor }}
         >
-          {showHotlines ? (
-            <X className="w-6 h-6" />
+          {showAssistance ? (
+            <>
+              <X className="w-4 h-4" />
+              <span className="text-sm font-bold">Close</span>
+            </>
           ) : (
-            <Phone className="w-6 h-6" />
+            <>
+              <HeadphonesIcon className="w-4 h-4" />
+              <span className="text-sm font-bold">Need Help?</span>
+            </>
           )}
         </button>
       </div>
@@ -3533,23 +3897,47 @@ export default function PortalPageContent({ initialTenantId }) {
 
       {/* Facility Photo Slider Modal */}
       {selectedFacility && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 pb-20 sm:pb-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <div
-            className="absolute inset-0 bg-black/95 backdrop-blur-md transition-opacity duration-300"
+            className="absolute inset-0 bg-black/90 backdrop-blur-sm transition-opacity duration-300"
             onClick={() => setSelectedFacility(null)}
           ></div>
 
-          <div className="relative z-10 w-full max-w-5xl h-[80vh] flex flex-col bg-transparent rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(141,198,63,0.15)] animate-in zoom-in-95 duration-300">
-            {/* Floating Close Button */}
-            <button
-              onClick={() => setSelectedFacility(null)}
-              className="absolute top-4 right-4 z-50 w-10 h-10 bg-black/50 hover:bg-red-500/80 rounded-full flex items-center justify-center text-white/90 transition-colors border border-white/20 backdrop-blur-md"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <div className="relative z-10 w-full max-w-4xl flex flex-col bg-white rounded-2xl overflow-hidden shadow-2xl">
+            {/* Header Bar */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
+                >
+                  {(() => {
+                    const FacilityIcon = selectedFacility.icon || Building2;
+                    return <FacilityIcon className="w-5 h-5" style={{ color: tenantConfig.primaryColor }} />;
+                  })()}
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                    style={{ color: tenantConfig.primaryColor }}
+                  >
+                    Barangay Facility
+                  </p>
+                  <h3 className="text-base md:text-lg font-bold text-gray-900 truncate">
+                    {selectedFacility.name}
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedFacility(null)}
+                className="w-9 h-9 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 rounded-xl flex items-center justify-center transition-colors border border-gray-200 shrink-0 ml-4"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
             {/* Main Image Content */}
-            <div className="relative flex-1 bg-transparent overflow-hidden flex items-center justify-center group">
+            <div className="relative flex-1 bg-gray-900 overflow-hidden flex items-center justify-center group" style={{ minHeight: '300px', maxHeight: '70vh' }}>
               {(() => {
                 const images = selectedFacility.images || ["/background.jpg"];
                 return (
@@ -3560,7 +3948,7 @@ export default function PortalPageContent({ initialTenantId }) {
                         className={`absolute inset-0 transition-opacity duration-500 ease-in-out flex items-center justify-center ${facilityImageIndex === idx ? "opacity-100 z-10" : "opacity-0 z-0"}`}
                       >
                         <img loading="lazy" src={img}
-                          alt={`${selectedFacility.name} image ${idx + 1}`}
+                          alt={`${selectedFacility.name} photo ${idx + 1}`}
                           className="w-full h-full object-contain"
                         />
                       </div>
@@ -3576,14 +3964,9 @@ export default function PortalPageContent({ initialTenantId }) {
                               prev === 0 ? images.length - 1 : prev - 1,
                             );
                           }}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 opacity-0 group-hover:opacity-100 mx-2 z-50 cursor-pointer hover:opacity-100"
-                          style={{
-                            hover: {
-                              backgroundColor: tenantConfig.accentColor,
-                            },
-                          }}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/80 flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 z-50 cursor-pointer"
                         >
-                          <ChevronLeft className="w-6 h-6" />
+                          <ChevronLeft className="w-5 h-5" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -3592,18 +3975,13 @@ export default function PortalPageContent({ initialTenantId }) {
                               prev === images.length - 1 ? 0 : prev + 1,
                             );
                           }}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 opacity-0 group-hover:opacity-100 mx-2 z-50 cursor-pointer hover:opacity-100"
-                          style={{
-                            hover: {
-                              backgroundColor: tenantConfig.accentColor,
-                            },
-                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/80 flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 z-50 cursor-pointer"
                         >
-                          <ChevronRight className="w-6 h-6" />
+                          <ChevronRight className="w-5 h-5" />
                         </button>
 
                         {/* Image Counter */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 px-4 py-1.5 rounded-full text-white/90 text-sm font-semibold tracking-widest border border-white/20 backdrop-blur-sm z-50">
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 px-3 py-1 rounded-full text-white/90 text-xs font-medium border border-white/20 backdrop-blur-sm z-50">
                           {facilityImageIndex + 1} / {images.length}
                         </div>
                       </>
@@ -3612,6 +3990,15 @@ export default function PortalPageContent({ initialTenantId }) {
                 );
               })()}
             </div>
+
+            {/* Description Footer */}
+            {selectedFacility.description && (
+              <div className="px-5 py-4 border-t border-gray-100 bg-gray-50">
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {selectedFacility.description}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

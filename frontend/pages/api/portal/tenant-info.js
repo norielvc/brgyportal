@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
     const { data: tenant, error } = await supabase
       .from("tenants")
-      .select("id, name, domain, plan_tier, status")
+      .select("id, name, domain, plan_tier, status, municipality, region")
       .eq("id", tenantId)
       .single();
 
