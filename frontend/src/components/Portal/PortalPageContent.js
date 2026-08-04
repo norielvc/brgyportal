@@ -1030,6 +1030,15 @@ export default function PortalPageContent({ initialTenantId }) {
           color: ${tenantConfig.accentColor} !important;
         }
       `}</style>
+      {/* RP Government Masthead */}
+      <div className="bg-gray-900 text-white/90 py-1.5 px-4 text-center text-[10px] sm:text-xs font-medium tracking-wide border-b border-white/10">
+        <span className="hidden sm:inline">Republic of the Philippines</span>
+        <span className="hidden sm:inline mx-2 text-white/30">|</span>
+        <span>{tenantConfig.subtitle}</span>
+        <span className="hidden sm:inline mx-2 text-white/30">|</span>
+        <span className="hidden sm:inline">Official Barangay Portal</span>
+      </div>
+
       {/* Portal Header */}
       <div
         className="py-3 md:py-4 relative overflow-hidden"
@@ -2992,7 +3001,61 @@ export default function PortalPageContent({ initialTenantId }) {
         </div>
       </section>
 
-      {/* Emergency Hotlines - Floating Button */}
+      {/* Government Footer */}
+      <footer className="bg-gray-900 text-white/70 py-10 px-4 sm:px-6 lg:px-8 border-t border-white/10">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* Official Identity */}
+            <div className="flex flex-col items-center md:items-start gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  loading="lazy"
+                  src={tenantConfig.logo}
+                  alt={`${tenantConfig.shortName} seal`}
+                  className="h-14 w-14 object-contain opacity-80"
+                />
+                <div>
+                  <p className="text-white font-bold text-sm leading-tight">{tenantConfig.name}</p>
+                  <p className="text-white/50 text-xs mt-0.5">{tenantConfig.subtitle}</p>
+                </div>
+              </div>
+              <p className="text-xs text-white/40 leading-relaxed text-center md:text-left max-w-xs">
+                An official digital portal of the Barangay Government, providing transparent and accessible public services to our constituents.
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div className="flex flex-col items-center md:items-start gap-2">
+              <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">Services</h4>
+              <a href="#forms" className="text-xs text-white/50 hover:text-white transition-colors">Barangay Forms & Certificates</a>
+              <a href="#track" className="text-xs text-white/50 hover:text-white transition-colors">Track Your Request</a>
+              <a href="#directory" className="text-xs text-white/50 hover:text-white transition-colors">Facilities & Infrastructure</a>
+              <a href="#officials" className="text-xs text-white/50 hover:text-white transition-colors">Barangay Officials</a>
+              <a href="#contact" className="text-xs text-white/50 hover:text-white transition-colors">Contact Us</a>
+            </div>
+
+            {/* Privacy & Compliance */}
+            <div className="flex flex-col items-center md:items-start gap-2">
+              <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">Privacy & Compliance</h4>
+              <p className="text-xs text-white/40 leading-relaxed">
+                This portal collects and processes personal data in accordance with the <span className="text-white/60 font-medium">Data Privacy Act of 2012 (RA 10173)</span>. Information submitted through this platform is used solely for official barangay services and is protected under government data security standards.
+              </p>
+              <p className="text-xs text-white/40 leading-relaxed mt-1">
+                © {new Date().getFullYear()} {tenantConfig.name}. All rights reserved. Powered by BrgyDesk.
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-[10px] text-white/30 uppercase tracking-widest text-center sm:text-left">
+              Republic of the Philippines · Local Government Unit · Barangay Portal
+            </p>
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] text-white/30">An LGU Digital Service</span>
+            </div>
+          </div>
+        </div>
+      </footer>
       <div className="fixed bottom-6 right-6 z-50">
         {showHotlines && (
           <div className="mb-4 bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 w-80 animate-fade-in">
