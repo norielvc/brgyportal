@@ -21,6 +21,8 @@ import {
   Home,
 } from "lucide-react";
 import ResidentSearchModal from "../Modals/ResidentSearchModal";
+import LanguageGate from "./LanguageGate";
+import { getStrings } from "../../lib/certLang";
 
 const defaultOfficials = {
   chairman: "ALEXANDER C. MANIO",
@@ -292,21 +294,17 @@ const SearchableDropdown = ({
   );
 
   return (
-    <div className="space-y-1 relative" ref={dropdownRef}>
-      <p
-        className={`text-sm font-bold ${colorClass.label} uppercase tracking-widest ml-1`}
-      >
+    <div className="space-y-1.5 relative" ref={dropdownRef}>
+      <p className={`text-xs font-semibold ${colorClass.label}`}>
         {label}
       </p>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full text-sm p-2 bg-white border border-gray-200 rounded-lg font-bold ${colorClass.text} flex items-center justify-between shadow-sm hover:bg-gray-50 transition-all uppercase outline-none focus:ring-2 focus:ring-emerald-500/20`}
+        className={`w-full text-sm px-3 py-2.5 bg-white border border-gray-300 rounded-lg font-medium ${colorClass.text} flex items-center justify-between gap-2 hover:bg-gray-50 transition-colors outline-none focus:ring-2 focus:ring-gray-200`}
       >
         <span className="truncate">{placeholder}</span>
-        <Search
-          className={`w-3 h-3 ml-2 ${colorClass.icon} ${isOpen ? "rotate-180" : ""} transition-transform`}
-        />
+        <Search className={`w-3.5 h-3.5 shrink-0 ${colorClass.icon}`} />
       </button>
 
       {isOpen && (
@@ -337,7 +335,7 @@ const SearchableDropdown = ({
                     setIsOpen(false);
                     setSearch("");
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm font-bold ${colorClass.text} hover:${colorClass.bg} transition-colors uppercase border-b border-gray-50 last:border-0`}
+                  className={`w-full text-left px-4 py-2.5 text-sm ${colorClass.text} hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0`}
                 >
                   {item}
                 </button>
@@ -394,6 +392,8 @@ export default function BarangayClearanceModal({
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const accentColor = tenantConfig.primaryColor || '#059669';
+  const [lang, setLang] = useState(null);
+  const t = getStrings(lang || 'en');
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -594,33 +594,33 @@ export default function BarangayClearanceModal({
                 onClick={onClose}
               />
               <div
-                className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-fade-in no-scrollbar"
+                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-fade-in"
                 style={{
-                  height: "92vh",
-                  maxHeight: "95vh",
+                  maxHeight: "92vh",
                   fontFamily: "'Open Sans', sans-serif",
                 }}
               >
                 {/* Header */}
-                <div className="px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0" style={{ backgroundColor: accentColor }}>
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20">
+                <div className="px-6 sm:px-8 py-5 flex items-start justify-between shrink-0" style={{ backgroundColor: accentColor }}>
+                  <div className="flex items-center gap-3.5">
+                    <div className="bg-white/15 p-2.5 rounded-xl border border-white/25 shrink-0">
                       <FileText className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">
-                        Clearance Acquisition
-                      </h2>
-                      <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">
-                        {tenantConfig.shortName || "Barangay"} Official Portal
+                      <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">
+                        {tenantConfig.shortName || "Barangay"} &middot; {t.officialForm}
                       </p>
+                      <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
+                        Barangay Clearance
+                      </h2>
                     </div>
                   </div>
                   <button
                     onClick={onClose}
-                    className="text-white/40 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all group"
+                    aria-label="Close"
+                    className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0"
                   >
-                    <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
 
@@ -635,88 +635,126 @@ export default function BarangayClearanceModal({
                   </div>
                 )}
 
+                {/* Language gate — shown before the wizard begins */}
+                {!lang && (
+                  <LanguageGate accentColor={accentColor} lang={lang} onSelect={setLang} />
+                )}
+
                 {/* Progress */}
-                <div className="px-8 pt-5 shrink-0">
-                  <div className="max-w-3xl mx-auto flex items-center justify-between">
-                    {[1, 2, 3].map((s) => (
-                      <React.Fragment key={s}>
-                        <div className="flex flex-col items-center">
+                {lang && (
+                <div className="px-6 sm:px-8 py-5 bg-gray-50 border-b border-gray-200 shrink-0">
+                  <div className="flex items-start">
+                    {[
+                      { n: 1, label: t.stepIdentity },
+                      { n: 2, label: t.stepContact },
+                      { n: 3, label: t.stepPurpose },
+                    ].map(({ n, label }) => (
+                      <React.Fragment key={n}>
+                        <div className="flex flex-col items-center gap-2 w-[88px] shrink-0">
                           <div
-                            className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? "text-white scale-110" : "bg-gray-100 text-gray-300"}`}
-                            style={currentStep >= s ? { backgroundColor: accentColor } : undefined}
+                            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${currentStep >= n ? "text-white" : "bg-white text-gray-400 border-2 border-gray-200"}`}
+                            style={currentStep >= n ? { backgroundColor: accentColor } : undefined}
                           >
-                            {currentStep > s ? (
-                              <CheckCircle className="w-6 h-6 text-white" />
-                            ) : (
-                              s
-                            )}
+                            {currentStep > n ? <CheckCircle className="w-5 h-5" /> : n}
                           </div>
+                          <span
+                            className={`text-[11px] font-semibold text-center leading-tight ${currentStep >= n ? "text-gray-800" : "text-gray-400"}`}
+                          >
+                            {label}
+                          </span>
                         </div>
-                        {s < 3 && (
+                        {n < 3 && (
                           <div
-                            className="flex-1 h-1 mx-4 rounded-full"
-                            style={{ backgroundColor: currentStep > s ? accentColor : undefined }}
+                            className="flex-1 h-[3px] rounded-full mt-[18px] bg-gray-200"
+                            style={{ backgroundColor: currentStep > n ? accentColor : undefined }}
                           />
                         )}
                       </React.Fragment>
                     ))}
                   </div>
                 </div>
+                )}
 
-                <div className="flex-1 overflow-y-auto px-8 py-6">
-                  <div className="max-w-3xl mx-auto">
+                {lang && (
+                <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6">
+                  <div>
                     {currentStep === 1 && (
-                      <div className="space-y-3 animate-in slide-in-from-right-8 duration-500">
-                        <div
-                          className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer transition-all relative overflow-hidden active:scale-95 shadow-sm hover:shadow-xl"
-                          style={{ borderColor: undefined }}
-                          onClick={() => setIsResidentModalOpen(true)}
-                        >
-                          <div className="relative z-10 flex flex-col items-center">
-                            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-all duration-500 shadow-inner"
-                              onMouseEnter={e => { e.currentTarget.style.backgroundColor = accentColor; e.currentTarget.style.color = 'white'; }}
-                              onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                              <Search className="w-5 h-5" />
-                            </div>
-                            <h3 className="text-base font-black uppercase tracking-tighter mb-1">
-                              Search Directory / Hanapin sa Direktoryo
-                            </h3>
-                            <p className="text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] max-w-[240px] mx-auto leading-relaxed">
-                              Find your profile and sync your details instantly.
-                              / Hanapin ang iyong profile at i-sync agad ang mga
-                              detalye.
-                            </p>
-                          </div>
+                      <div className="space-y-4 animate-in fade-in duration-300">
+                        <div>
+                          <h3 className="text-base font-bold text-gray-900 mb-1">
+                            {t.identityHeading}
+                          </h3>
+                          <p className="text-sm text-gray-500 leading-relaxed">
+                            {t.identityHelp}
+                          </p>
                         </div>
 
-                        {formData.fullName && (
-                          <div className="text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5" style={{ backgroundColor: accentColor }}>
-                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                              <CheckCircle className="w-16 h-16 text-white" />
-                            </div>
-                            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">
-                              Confirmed Applicant / Kumpirmadong Aplikante
+                        <button
+                          type="button"
+                          onClick={() => setIsResidentModalOpen(true)}
+                          className="w-full flex items-center gap-4 p-5 bg-white border-2 border-dashed border-gray-300 rounded-xl text-left transition-colors hover:bg-gray-50"
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = accentColor; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = ''; }}
+                        >
+                          <div
+                            className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 text-white"
+                            style={{ backgroundColor: accentColor }}
+                          >
+                            <Search className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-gray-900">
+                              {t.searchDirectory}
                             </p>
-                            <h4 className="text-2xl font-black tracking-tighter mb-4 leading-none uppercase">
-                              {formData.fullName}
-                            </h4>
-                            <div className="grid grid-cols-2 gap-2 relative z-10">
-                              <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
-                                <p className="text-white/30 text-[8px] tracking-widest mb-0.5">
-                                  Status
-                                </p>
-                                <p className="text-emerald-400 text-xs">
-                                  Verified Member / Beripikadong Miyembro
-                                </p>
-                              </div>
-                              <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
-                                <p className="text-white/30 text-[8px] tracking-widest mb-0.5">
-                                  DB ID
-                                </p>
-                                <p className="text-xs">
-                                  #{formData.residentId}
-                                </p>
-                              </div>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {t.searchDirectorySub}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-gray-400 ml-auto shrink-0" />
+                        </button>
+
+                        {errors.fullName && (
+                          <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-200 rounded-lg">
+                            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                            <p className="text-sm text-red-700">
+                              {t.errNoRecord}
+                            </p>
+                          </div>
+                        )}
+
+                        {formData.fullName && (
+                          <div className="border border-gray-200 rounded-xl overflow-hidden animate-in fade-in duration-300">
+                            <div
+                              className="px-5 py-2.5 flex items-center gap-2"
+                              style={{ backgroundColor: `${accentColor}12` }}
+                            >
+                              <CheckCircle className="w-4 h-4 shrink-0" style={{ color: accentColor }} />
+                              <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: accentColor }}>
+                                {t.verifiedApplicant}
+                              </p>
+                            </div>
+                            <div className="p-5 bg-white">
+                              <p className="text-lg font-bold text-gray-900 leading-tight">
+                                {formData.fullName}
+                              </p>
+                              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4 pt-4 border-t border-gray-100">
+                                <div>
+                                  <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.12em] mb-0.5">
+                                    {t.recordNo}
+                                  </dt>
+                                  <dd className="text-sm font-semibold text-gray-800">
+                                    #{formData.residentId}
+                                  </dd>
+                                </div>
+                                <div className="min-w-0">
+                                  <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.12em] mb-0.5">
+                                    {t.address}
+                                  </dt>
+                                  <dd className="text-sm font-semibold text-gray-800 truncate">
+                                    {formData.address || <span className="text-gray-400 italic font-normal">{t.notRecorded}</span>}
+                                  </dd>
+                                </div>
+                              </dl>
                             </div>
                           </div>
                         )}
@@ -724,118 +762,154 @@ export default function BarangayClearanceModal({
                     )}
 
                     {currentStep === 2 && (
-                      <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
-                        <div className="space-y-4">
-                          <div className="group">
-                            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-                              Cellular Number / Numero ng Cellphone{" "}
-                              <span className="text-red-500">*</span>
-                            </label>
-                            <div className="relative">
-                              <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
-                              <input
-                                type="tel"
-                                name="contactNumber"
-                                value={formData.contactNumber}
-                                onChange={handleInputChange}
-                                placeholder="09XX XXX XXXX"
-                                className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.contactNumber ? "border-red-500" : "border-gray-50"} rounded-2xl focus:border-black outline-none font-black text-xl`}
-                              />
-                            </div>
+                      <div className="space-y-5 animate-in fade-in duration-300">
+                        <div>
+                          <h3 className="text-base font-bold text-gray-900 mb-1">
+                            {t.contactHeading}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {t.contactHelp}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label htmlFor="bc-contact" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                            {t.mobileLabel} <span className="text-red-600">*</span>
+                          </label>
+                          <div className="relative">
+                            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <input
+                              id="bc-contact"
+                              type="tel"
+                              name="contactNumber"
+                              value={formData.contactNumber}
+                              onChange={handleInputChange}
+                              placeholder="09XX XXX XXXX"
+                              className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-offset-0 ${errors.contactNumber ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                            />
                           </div>
-                          <div className="group">
-                            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-                              Email (Optional)
-                            </label>
-                            <div className="relative">
-                              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
-                              <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                placeholder="YOUR@EMAIL.COM"
-                                className="w-full pl-14 pr-6 py-4 bg-white border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl"
-                              />
-                            </div>
+                          {errors.contactNumber ? (
+                            <p className="text-xs text-red-600 mt-1.5">{t.errMobile}</p>
+                          ) : (
+                            <p className="text-xs text-gray-500 mt-1.5">{t.mobileHelp}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label htmlFor="bc-email" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                            {t.emailLabel} <span className="font-normal text-gray-400">{t.optional}</span>
+                          </label>
+                          <div className="relative">
+                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <input
+                              id="bc-email"
+                              type="email"
+                              name="email"
+                              value={formData.email}
+                              onChange={handleInputChange}
+                              placeholder="you@example.com"
+                              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+                            />
                           </div>
                         </div>
                       </div>
                     )}
 
                     {currentStep === 3 && (
-                      <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
-                        <div className="group">
-                          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">
-                            State Your Purpose / Sabihin ang Layunin{" "}
-                            <span className="text-red-500">*</span>
+                      <div className="space-y-5 animate-in fade-in duration-300">
+                        <div>
+                          <h3 className="text-base font-bold text-gray-900 mb-1">
+                            {t.purposeHeading}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {t.purposeHelp}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label htmlFor="bc-purpose" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                            {t.purposeLabel} <span className="text-red-600">*</span>
                           </label>
                           <textarea
+                            id="bc-purpose"
                             name="purpose"
                             value={formData.purpose}
                             onChange={handleInputChange}
                             rows={4}
-                            placeholder="E.G. EMPLOYMENT, LOAN, ETC..."
-                            className={`w-full px-6 py-4 bg-gray-50 border-4 ${errors.purpose ? "border-red-500" : "border-gray-50"} rounded-2xl focus:border-black focus:bg-white outline-none font-black text-xl uppercase tracking-tighter resize-none`}
+                            placeholder={t.purposePlaceholder}
+                            className={`w-full px-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors resize-none focus:ring-2 ${errors.purpose ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
                           />
+                          {errors.purpose && (
+                            <p className="text-xs text-red-600 mt-1.5">{t.errPurpose}</p>
+                          )}
                         </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          <SearchableDropdown
-                            label="Job & Gov't"
-                            placeholder="SELECT..."
-                            items={PURPOSE_LIST_1}
-                            onSelect={handlePurposeSelect}
-                            colorClass={{
-                              label: "text-blue-400",
-                              text: "text-blue-600",
-                              icon: "text-blue-300",
-                              bg: "bg-blue-50",
-                              ring: "ring-blue-300",
-                            }}
-                          />
-                          <SearchableDropdown
-                            label="Utility"
-                            placeholder="SELECT..."
-                            items={PURPOSE_LIST_2}
-                            onSelect={handlePurposeSelect}
-                            colorClass={{
-                              label: "text-indigo-400",
-                              text: "text-indigo-600",
-                              icon: "text-indigo-300",
-                              bg: "bg-indigo-50",
-                              ring: "ring-indigo-300",
-                            }}
-                          />
-                          <SearchableDropdown
-                            label="Medical"
-                            placeholder="SELECT..."
-                            items={PURPOSE_LIST_3}
-                            onSelect={handlePurposeSelect}
-                            colorClass={{
-                              label: "text-emerald-500",
-                              text: "text-emerald-600",
-                              icon: "text-emerald-300",
-                              bg: "bg-emerald-50",
-                              ring: "ring-emerald-300",
-                            }}
-                          />
+
+                        <div className="pt-1">
+                          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.12em] mb-2.5">
+                            {t.quickAdd}
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <SearchableDropdown
+                              label={t.catWork}
+                              placeholder={t.select}
+                              items={PURPOSE_LIST_1}
+                              onSelect={handlePurposeSelect}
+                              colorClass={{
+                                label: "text-gray-500",
+                                text: "text-gray-800",
+                                icon: "text-gray-400",
+                                bg: "bg-gray-50",
+                                ring: "ring-gray-200",
+                              }}
+                            />
+                            <SearchableDropdown
+                              label={t.catUtility}
+                              placeholder={t.select}
+                              items={PURPOSE_LIST_2}
+                              onSelect={handlePurposeSelect}
+                              colorClass={{
+                                label: "text-gray-500",
+                                text: "text-gray-800",
+                                icon: "text-gray-400",
+                                bg: "bg-gray-50",
+                                ring: "ring-gray-200",
+                              }}
+                            />
+                            <SearchableDropdown
+                              label={t.catMedical}
+                              placeholder={t.select}
+                              items={PURPOSE_LIST_3}
+                              onSelect={handlePurposeSelect}
+                              colorClass={{
+                                label: "text-gray-500",
+                                text: "text-gray-800",
+                                icon: "text-gray-400",
+                                bg: "bg-gray-50",
+                                ring: "ring-gray-200",
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
+                )}
 
                 {/* Footer Nav */}
-                <div className="border-t bg-white px-8 py-4 flex items-center justify-between shrink-0">
+                {lang && (
+                <div className="border-t border-gray-200 bg-gray-50 px-6 sm:px-8 py-4 flex items-center justify-between gap-4 shrink-0">
                   {currentStep > 1 ? (
                     <button
                       onClick={() => setCurrentStep((prev) => prev - 1)}
-                      className="px-8 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 hover:text-black transition-all"
+                      className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
                     >
-                      Previous / Nakaraan
+                      {t.back}
                     </button>
                   ) : (
-                    <div />
+                    <p className="text-xs text-gray-500">
+                      <span className="text-red-600">*</span> {t.requiredFields}
+                    </p>
                   )}
 
                   {currentStep < totalSteps ? (
@@ -851,20 +925,22 @@ export default function BarangayClearanceModal({
                         }
                         setCurrentStep((prev) => prev + 1);
                       }}
-                      className="px-12 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all flex items-center gap-3" style={{ backgroundColor: accentColor }}
+                      className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+                      style={{ backgroundColor: accentColor }}
                     >
-                      Next Step / Susunod <ChevronRight className="w-5 h-5" />
+                      {t.continue} <ChevronRight className="w-4 h-4" />
                     </button>
                   ) : (
                     <button
                       onClick={handleSubmit}
-                      className="px-12 py-4 bg-[#c9a84c] text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#a07830] transition-all flex items-center gap-3"
+                      className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+                      style={{ backgroundColor: accentColor }}
                     >
-                      <Send className="w-5 h-5" /> Submit Request / I-submit ang
-                      Request
+                      <Send className="w-4 h-4" /> {t.reviewSubmit}
                     </button>
                   )}
                 </div>
+                )}
               </div>
             </div>
           </div>
@@ -877,28 +953,32 @@ export default function BarangayClearanceModal({
                 className="fixed inset-0 bg-black/80 backdrop-blur-md"
                 onClick={() => setShowConfirmationPopup(false)}
               />
-              <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300" style={{ maxHeight: "92vh" }}>
                 {/* Header */}
-                <div className="px-10 py-7 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
+                <div className="px-6 sm:px-8 py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
                   <div>
-                    <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-tight">
-                      Confirmation
-                    </h2>
-                    <p className="text-white/40 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">
-                      Review your application before submitting
+                    <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">
+                      {t.reviewEyebrow}
                     </p>
+                    <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
+                      {t.reviewTitle}
+                    </h2>
                   </div>
                   <button
                     onClick={() => setShowConfirmationPopup(false)}
-                    className="bg-white/10 p-3 rounded-2xl text-white/40 hover:text-white hover:bg-red-500/20 transition-all group"
+                    aria-label="Close"
+                    className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0"
                   >
-                    <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
 
                 {/* Cards */}
-                <div className="p-8 bg-gray-50">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="px-6 sm:px-8 py-6 bg-gray-50 overflow-y-auto">
+                  <p className="text-sm text-gray-600 mb-4">
+                    {t.reviewHelp}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {Object.entries(formData).map(([k, v]) => {
                       const skip = [
                         "residentId",
@@ -920,20 +1000,27 @@ export default function BarangayClearanceModal({
                         purpose: FileText,
                       };
                       const Icon = iconMap[k] || Info;
-                      const label = k.replace(/([A-Z])/g, " $1").toUpperCase();
+                      const labelMap = {
+                        fullName: lang === 'tl' ? "Buong Pangalan" : "Full Name",
+                        contactNumber: t.mobileLabel,
+                        email: t.emailLabel,
+                        purpose: t.purposeLabel,
+                      };
+                      const label = labelMap[k] || k.replace(/([A-Z])/g, " $1");
 
                       return (
                         <div
                           key={k}
-                          className={`flex items-start gap-4 p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group ${k === "purpose" || k === "email" ? "sm:col-span-2" : ""}`}
+                          className={`flex items-start gap-3.5 p-4 bg-white border border-gray-200 rounded-xl ${k === "purpose" || k === "email" ? "sm:col-span-2" : ""}`}
                         >
-                          <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 transition-all shrink-0"
-                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = accentColor; e.currentTarget.style.color = 'white'; }}
-                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                            <Icon className="w-5 h-5" />
+                          <div
+                            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                            style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+                          >
+                            <Icon className="w-4 h-4" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.14em] block mb-1">
                               {label}
                             </span>
                             {k === "purpose" ? (
@@ -942,13 +1029,13 @@ export default function BarangayClearanceModal({
                                   .map(s => s.trim()).filter(Boolean)
                                   .map((line, i) => (
                                     <div key={i} className="flex items-start gap-2">
-                                      <span className="text-gray-300 mt-1 shrink-0">•</span>
-                                      <span className="text-base font-black text-black leading-snug uppercase">{line}</span>
+                                      <span className="text-gray-400 mt-0.5 shrink-0">&bull;</span>
+                                      <span className="text-[15px] font-semibold text-gray-900 leading-snug">{line}</span>
                                     </div>
                                   ))}
                               </div>
                             ) : (
-                              <span className="text-lg font-black text-black leading-tight break-all uppercase">
+                              <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
                                 {v.toString()}
                               </span>
                             )}
@@ -962,56 +1049,63 @@ export default function BarangayClearanceModal({
                     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
                         <button onClick={() => setShowPrivacyModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-black"><X className="w-5 h-5" /></button>
-                        <h3 className="text-lg font-black uppercase tracking-tight mb-4">Data Privacy Consent</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">{t.privacyTitle}</h3>
                         <div className="text-sm text-gray-700 leading-relaxed space-y-3">
                           <p>By proceeding with this submission, I voluntarily agree to the collection and processing of my personal data by this Barangay for the purpose of certificate request processing and public service delivery.</p>
                           <p>I understand that the information processed includes my personal details, contact information, and related data, and that such data will be treated with strict confidentiality and used only for legitimate barangay administrative purposes in accordance with the <strong>Data Privacy Act of 2012 (R.A. 10173)</strong>.</p>
                           <p>I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.</p>
                         </div>
-                        <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 text-white rounded-xl font-black uppercase tracking-widest text-xs" style={{ backgroundColor: accentColor }}>Close</button>
+                        <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 text-white rounded-lg font-semibold text-sm" style={{ backgroundColor: accentColor }}>{t.close}</button>
                       </div>
                     </div>
                   )}
-                  <div className="mt-4 flex items-center gap-2">
+                  <div className="mt-5 flex items-start gap-2.5 p-4 bg-white border border-gray-200 rounded-xl">
                     <input
                       type="checkbox"
                       id="brgy-consent"
                       checked={consentChecked}
                       onChange={e => setConsentChecked(e.target.checked)}
-                      className="w-4 h-4 accent-black shrink-0 cursor-pointer"
+                      className="w-4 h-4 shrink-0 cursor-pointer mt-0.5"
+                      style={{ accentColor }}
                     />
-                    <label htmlFor="brgy-consent" className="text-[12px] text-gray-600 cursor-pointer select-none">
-                      I agree to the{' '}
+                    <label htmlFor="brgy-consent" className="text-sm text-gray-700 cursor-pointer select-none leading-relaxed">
+                      {t.consentPrefix}{' '}
                       <button
                         type="button"
                         onClick={e => { e.preventDefault(); setShowPrivacyModal(true); }}
-                        className="text-blue-600 underline hover:text-blue-800 font-semibold"
+                        className="underline font-semibold hover:opacity-80"
+                        style={{ color: accentColor }}
                       >
-                        Data Privacy Consent
-                      </button>.
-                      <span className="text-red-500"> *</span>
+                        {t.consentLink}
+                      </button>{' '}
+                      {t.consentSuffix}
+                      <span className="text-red-600"> *</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Footer */}
-                <div className="border-t bg-white px-8 py-6 flex justify-between items-center shrink-0">
+                <div className="border-t border-gray-200 bg-white px-6 sm:px-8 py-4 flex justify-between items-center gap-4 shrink-0">
                   <button
                     onClick={() => setShowConfirmationPopup(false)}
-                    className="px-6 py-3 font-black uppercase tracking-[0.2em] text-[10px] text-gray-400 hover:text-black transition-all"
+                    className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
                   >
-                    ← Back / Edit
+                    {t.backToEdit}
                   </button>
                   <button
                     onClick={handleProceedSubmission}
                     disabled={isSubmitting || !consentChecked}
-                    className="px-10 py-4 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:opacity-90 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: accentColor }}
+                    className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: accentColor }}
                   >
                     {isSubmitting ? (
-                      "Submitting..."
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        {t.submitting}
+                      </>
                     ) : (
                       <>
-                        Confirm Submission <ChevronRight className="w-4 h-4" />
+                        <Send className="w-4 h-4" /> {t.submitRequest}
                       </>
                     )}
                   </button>
@@ -1025,19 +1119,28 @@ export default function BarangayClearanceModal({
           <div className="fixed inset-0 z-[70] overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4">
               <div className="fixed inset-0 bg-black/90 backdrop-blur-xl" />
-              <div className="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in p-12 text-center">
-                <div className="w-24 h-24 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border-4 border-emerald-100 shadow-2xl">
-                  <CheckCircle className="w-12 h-12 text-emerald-500" />
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in p-8 text-center">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+                  style={{ backgroundColor: `${accentColor}18` }}
+                >
+                  <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
                 </div>
-                <h2 className="text-3xl font-black tracking-tighter uppercase mb-4">
-                  Request Complete
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  {t.successTitle}
                 </h2>
-                <div className="bg-gray-50 rounded-[2.5rem] p-8 mb-10 border-4 border-gray-100">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                    Tracking ID
+                <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                  {t.successBody}
+                </p>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">
+                    {t.referenceNumber}
                   </p>
-                  <p className="text-4xl font-black tracking-tighter">
+                  <p className="text-2xl font-bold font-mono tracking-tight" style={{ color: accentColor }}>
                     {submittedReferenceNumber}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {t.saveReference}
                   </p>
                 </div>
                 <button
@@ -1046,9 +1149,10 @@ export default function BarangayClearanceModal({
                     resetForm();
                     onClose();
                   }}
-                  className="w-full text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all shadow-2xl" style={{ backgroundColor: accentColor }}
+                  className="w-full text-white py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: accentColor }}
                 >
-                  Back to Dashboard / Bumalik sa Dashboard
+                  {t.done}
                 </button>
               </div>
             </div>
@@ -1061,6 +1165,8 @@ export default function BarangayClearanceModal({
             onClose={() => setIsResidentModalOpen(false)}
             onSelect={handleResidentSelect}
             isDemo={isDemo}
+            tenantConfig={tenantConfig}
+            lang={lang || 'en'}
           />
         )}
         <style jsx>{`

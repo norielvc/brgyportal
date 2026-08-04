@@ -3,18 +3,14 @@ import {
   Search,
   X,
   User,
-  MapPin,
-  Calendar,
-  Phone,
   Check,
-  AlertCircle,
-  Database,
-  ArrowRight,
+  Users,
   UserPlus,
   ShieldAlert,
+  ChevronRight,
+  MapPin,
 } from "lucide-react";
-
-const API_URL = "/api";
+import { getStrings } from "../../lib/certLang";
 
 export default function ResidentSearchModal({
   isOpen,
@@ -23,7 +19,9 @@ export default function ResidentSearchModal({
   isDemo = false,
   tenantConfig = {},
   tenantId: tenantIdProp,
+  lang = "en",
 }) {
+  const t = getStrings(lang);
   useEffect(() => {
     if (typeof window !== "undefined") {
       if (isOpen) {
@@ -157,281 +155,227 @@ export default function ResidentSearchModal({
 
   if (!isOpen) return null;
 
-  // Use tenantConfig colors if provided, fall back to isDemo theme
-  const primaryColor = tenantConfig.primaryColor || (isDemo ? "#111111" : "#112e1f");
-  const accentColor = tenantConfig.accentColor || (isDemo ? "#C9A84C" : "#10b981");
-  const headerBg = tenantConfig.darkHeader
-    ? `bg-gradient-to-r ${tenantConfig.darkHeader}`
-    : `bg-[${primaryColor}]`;
-
-  const theme = {
-    headerStyle: {
-      background: tenantConfig.colorStyle?.background ||
-        (isDemo ? "linear-gradient(135deg,#000 0%,#1a1a1a 100%)" : "linear-gradient(135deg,#112e1f 0%,#022c22 100%)"),
-    },
-    accentColor,
-    primaryColor,
-    spinnerColor: accentColor,
-    hoverBorder: accentColor,
-  };
+  const accentColor = tenantConfig.primaryColor || (isDemo ? "#111111" : "#059669");
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/80 backdrop-blur-xl transition-opacity"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      <div className="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95 fade-in duration-300 border-4 border-white/10">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 fade-in duration-300">
         {/* Header */}
         <div
-          className="px-10 py-8 flex items-center justify-between text-white relative overflow-hidden flex-shrink-0"
-          style={{ background: theme.headerStyle.background }}
+          className="px-6 sm:px-8 py-5 flex items-start justify-between shrink-0"
+          style={{ backgroundColor: accentColor }}
         >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-
-          <div className="flex items-center gap-6 relative z-10">
-            <div className="bg-white/10 backdrop-blur-2xl p-4 rounded-2xl border border-white/20 shadow-2xl">
-              <Database className="w-6 h-6" style={{ color: theme.accentColor }} />
+          <div className="flex items-center gap-3.5">
+            <div className="bg-white/15 p-2.5 rounded-xl border border-white/25 shrink-0">
+              <Users className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-black tracking-tighter leading-none uppercase">
-                Census Database
-              </h2>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-2 opacity-40">
-                Official Verification Node
+              <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">
+                {tenantConfig.shortName || "Barangay"} &middot; {t.dirSubtitle}
               </p>
+              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
+                {t.dirTitle}
+              </h2>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-3 hover:bg-white/10 rounded-2xl transition-all group shrink-0 relative z-10"
+            aria-label={t.close}
+            className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0"
           >
-            <X className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search Field */}
-        <div className="p-10 border-b border-gray-100 bg-gray-50/50 shrink-0">
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-8 flex items-center pointer-events-none">
-              <Search
-                className={`w-6 h-6 text-gray-300 group-focus-within:${theme.activeText} transition-colors`}
-              />
-            </div>
+        <div className="px-6 sm:px-8 py-5 border-b border-gray-200 bg-gray-50 shrink-0">
+          <label htmlFor="resident-search" className="block text-sm font-semibold text-gray-800 mb-1.5">
+            {t.dirTitle}
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
+              id="resident-search"
               type="text"
               autoFocus
-              placeholder="ENTER NAME TO SEARCH..."
-              className="w-full pl-20 pr-10 py-6 bg-white border-4 border-gray-50 rounded-[2rem] outline-none transition-all font-black text-gray-900 placeholder:text-gray-200 text-xl tracking-tight shadow-inner focus:border-gray-300"
-              style={{ caretColor: theme.primaryColor }}
+              placeholder={t.dirPlaceholder}
+              className="w-full pl-10 pr-11 py-3 bg-white border border-gray-300 rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             {isLoading && (
-              <div className="absolute right-8 top-1/2 -translate-y-1/2">
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
                 <div
-                  className="w-6 h-6 border-4 border-t-transparent rounded-full animate-spin"
-                  style={{ borderColor: `${theme.accentColor}40`, borderTopColor: theme.accentColor }}
-                ></div>
+                  className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"
+                  style={{ borderColor: `${accentColor}40`, borderTopColor: accentColor }}
+                />
               </div>
             )}
           </div>
+          <p className="text-xs text-gray-500 mt-1.5">{t.dirEmptyBody}</p>
         </div>
 
         {/* Results Area */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-white [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/10">
+        <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 bg-white">
           {error ? (
-            <div className="py-10 flex flex-col items-center justify-center text-center animate-in fade-in duration-500 max-w-lg mx-auto">
-              <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-6 border-2 border-rose-100 shadow-sm">
-                <ShieldAlert className="w-10 h-10 text-rose-500 opacity-80" />
+            <div className="py-8 flex flex-col items-center justify-center text-center max-w-sm mx-auto">
+              <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4 border border-amber-200">
+                <ShieldAlert className="w-7 h-7 text-amber-600" />
               </div>
-              <h3 className="text-black font-black uppercase tracking-tighter text-2xl mb-2">
-                Service Paused
+              <h3 className="text-base font-bold text-gray-900 mb-1.5">
+                {t.dirErrTitle}
               </h3>
-              <p className="text-gray-400 font-bold uppercase tracking-widest text-[9px] mb-8 leading-relaxed max-w-xs italic">
-                Database connection is restricted or token expired. Please use
-                manual entry for urgent requests.
+              <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                {t.dirErrBody}
               </p>
 
               <button
                 onClick={handleManualEntry}
-                className="px-10 py-5 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-4 group border-2 border-white/10"
-                style={{ backgroundColor: theme.primaryColor }}
+                className="px-5 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+                style={{ backgroundColor: accentColor }}
               >
-                <UserPlus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                Emergency Manual Entry
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <UserPlus className="w-4 h-4" />
+                {t.dirManual}
               </button>
-
-              <p className="mt-6 text-[8px] font-black text-rose-500 uppercase tracking-[0.3em] animate-pulse">
-                * Proceeding with local verification node *
-              </p>
+              <p className="mt-3 text-xs text-gray-400">{t.dirManualNote}</p>
             </div>
           ) : results.length > 0 ? (
-            <div className="grid gap-2">
-              {results.map((resident) => (
-                <button
-                  key={resident.id}
-                  onClick={() => handleResidentClick(resident)}
-                  className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-white border-[3px] border-gray-50 rounded-[1.5rem] hover:border-gray-200 transition-all text-left group relative overflow-hidden active:scale-[0.98] shadow-sm"
-                  style={{ '--hover-border': theme.accentColor }}
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-150 transition-transform duration-1000 opacity-10"
-                    style={{ backgroundColor: theme.accentColor }}
-                  ></div>
-
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 group-hover:text-white transition-all shadow-inner border border-black/5"
-                    style={{ backgroundColor: `${theme.accentColor}20`, color: theme.primaryColor }}
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.12em] mb-3">
+                {results.length} {results.length === 1 ? "record" : "records"}
+              </p>
+              {results.map((resident) => {
+                const brgy = resident.residential_address?.match(/brgy\.?\s[\w\s']+/i);
+                return (
+                  <button
+                    key={resident.id}
+                    onClick={() => handleResidentClick(resident)}
+                    className="w-full flex items-center gap-3.5 p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-left group"
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = accentColor; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = ''; }}
                   >
-                    <User className="w-6 h-6" />
-                  </div>
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+                    >
+                      <User className="w-5 h-5" />
+                    </div>
 
-                  <div className="flex-1 min-w-0 relative z-10">
-                    <div className="flex items-center flex-wrap gap-2 mb-1">
-                      <h4
-                        className="font-black text-gray-900 text-lg md:text-xl tracking-tighter uppercase group-hover:translate-x-1 transition-transform"
-                      >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-bold text-gray-900 leading-snug truncate">
                         {resident.full_name}
-                      </h4>
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Check className="w-3 h-3 shrink-0" style={{ color: accentColor }} />
+                        <span className="text-xs text-gray-500 truncate">
+                          {t.dirVerified}
+                          {brgy && ` · ${brgy[0].trim()}`}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: `${theme.accentColor}60` }}
-                      ></div>
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] italic">
-                        Validated Record Verified 2026
-                        {resident.residential_address &&
-                          (() => {
-                            const match =
-                              resident.residential_address.match(
-                                /brgy\.?\s[\w\s']+/i,
-                              );
-                            return match
-                              ? ` · ${match[0].trim().toUpperCase()}`
-                              : null;
-                          })()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`shrink-0 flex items-center gap-3 ${isDemo ? "text-black" : "text-emerald-600"} font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-8 group-hover:translate-x-0`}
-                  >
-                    SELECT PROFILE <Check className="w-4 h-4" />
-                  </div>
-                </button>
-              ))}
+                    <ChevronRight className="w-5 h-5 text-gray-300 shrink-0 group-hover:text-gray-500 transition-colors" />
+                  </button>
+                );
+              })}
             </div>
           ) : searchTerm.length >= 3 && !isLoading ? (
-            <div className="py-24 text-center space-y-6">
-              <div className="w-24 h-24 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto border-4 border-gray-100 shadow-inner">
-                <Search className="w-10 h-10 text-gray-200" />
+            <div className="py-8 text-center max-w-sm mx-auto">
+              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-6 h-6 text-gray-400" />
               </div>
-              <div className="px-12">
-                <p className="text-black font-black uppercase tracking-tighter text-2xl">
-                  Profile Not Found
-                </p>
-                <p className="text-gray-400 text-xs font-bold mt-2 uppercase tracking-widest italic">
-                  No record matches your search criteria
-                </p>
+              <p className="text-base font-bold text-gray-900 mb-1.5">
+                {t.dirNoneTitle}
+              </p>
+              <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                {t.dirNoneBody}
+              </p>
 
-                <div className="mt-10 flex flex-col items-center gap-4">
-                  <button
-                    onClick={handleManualEntry}
-                    className="px-10 py-5 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-105 transition-all flex items-center gap-4"
-                    style={{ backgroundColor: theme.primaryColor }}
-                  >
-                    <UserPlus className="w-5 h-5" />
-                    Override with Manual Entry
-                  </button>
-                  <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest animate-pulse">
-                    * Use only if resident is unregistered *
-                  </p>
-                </div>
-              </div>
+              <button
+                onClick={handleManualEntry}
+                className="px-5 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2"
+                style={{ backgroundColor: accentColor }}
+              >
+                <UserPlus className="w-4 h-4" />
+                {t.dirManual}
+              </button>
+              <p className="mt-3 text-xs text-gray-400">{t.dirManualNote}</p>
             </div>
           ) : (
-            <div className="py-24 text-center space-y-8 opacity-40 group hover:opacity-100 transition-all">
+            <div className="py-10 text-center max-w-sm mx-auto">
               <div
-                className="w-32 h-32 rounded-[3rem] flex items-center justify-center mx-auto transition-transform duration-1000 group-hover:scale-110 border-4 border-gray-50"
-                style={{ backgroundColor: `${theme.accentColor}15` }}
+                className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ backgroundColor: `${accentColor}12`, color: accentColor }}
               >
-                <Database className="w-12 h-12" style={{ color: theme.primaryColor }} />
+                <Users className="w-6 h-6" />
               </div>
-              <div>
-                <p className="text-black font-black uppercase tracking-widest text-xs">
-                  Census Search Protocol
-                </p>
-                <p className="text-gray-400 text-[10px] font-black mt-2 tracking-[0.3em] uppercase">
-                  Enter characters to initialize query
-                </p>
-              </div>
+              <p className="text-base font-bold text-gray-900 mb-1.5">
+                {t.dirEmptyTitle}
+              </p>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                {t.dirEmptyBody}
+              </p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-10 py-8 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div
-              className="w-3 h-3 rounded-full animate-pulse shadow-2xl"
-              style={{ backgroundColor: theme.accentColor }}
-            ></div>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">
-              Security Protocol: SEC-TLS-256
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] block">
-              Press ESC to Cancel Request
-            </span>
-          </div>
+        <div className="px-6 sm:px-8 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-4 shrink-0">
+          <span className="text-xs text-gray-500">
+            {tenantConfig.shortName || "Barangay"} official records
+          </span>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
+          >
+            {t.close}
+          </button>
         </div>
       </div>
 
       {/* Pending Case Modal */}
       {showPendingCaseModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 duration-300">
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                <ShieldAlert className="w-8 h-8 text-amber-600" />
+              <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4 border border-amber-200">
+                <ShieldAlert className="w-7 h-7 text-amber-600" />
               </div>
-              
-              <h3 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">
-                In-Person Visit Required
+
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                {t.dirVisitTitle}
               </h3>
-              
-              <p className="text-gray-600 text-base leading-relaxed mb-6">
-                We kindly request that you visit our barangay office in person to process your certificate request. Due to data privacy regulations and the sensitive nature of certain records, we are unable to process this request through our online portal.
+
+              <p className="text-sm text-gray-600 leading-relaxed mb-5">
+                {t.dirVisitBody}
               </p>
-              
-              <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-4 mb-6 w-full">
-                <p className="text-sm font-bold text-blue-900 mb-2">
-                  📍 Visit Us At:
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-5 w-full text-left">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.14em] mb-1.5 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" /> {t.dirVisitAt}
                 </p>
-                <p className="text-sm text-blue-800 leading-relaxed">
-                  {tenantConfig.shortName || 'Barangay'} Office<br />
-                  Office Hours: Monday - Friday, 8:00 AM - 5:00 PM
+                <p className="text-sm font-semibold text-gray-900">
+                  {tenantConfig.shortName || 'Barangay'} Office
+                </p>
+                <p className="text-sm text-gray-600 mt-0.5">
+                  {t.dirOfficeHours}
                 </p>
               </div>
-              
-              <p className="text-xs text-gray-500 italic mb-6">
-                We appreciate your understanding and cooperation in maintaining the confidentiality and security of all resident records.
-              </p>
-              
+
               <button
                 onClick={() => {
                   setShowPendingCaseModal(false);
                   onClose();
                 }}
-                className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl active:scale-95"
+                className="w-full px-6 py-3 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: accentColor }}
               >
-                I Understand
+                {t.dirUnderstand}
               </button>
             </div>
           </div>

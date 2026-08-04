@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, AlertCircle, Building2, MapPin, Store } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
+import LanguageGate from './LanguageGate';
+import { getStrings } from '../../lib/certLang';
 
 const BUSINESS_TYPES = [
   'SARI-SARI STORE', 'CARINDERIA / EATERY', 'BAKERY', 'SALON / BARBERSHOP',
@@ -23,6 +25,8 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [lang, setLang] = useState(null);
+  const t = getStrings(lang || 'en');
 
   const [formData, setFormData] = useState({
     // Owner info
@@ -46,6 +50,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
     if (!isOpen) {
       setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
       setErrors({}); setNotification(null); setConsentChecked(false); setConsentExpanded(false); setShowPrivacyModal(false);
+      setLang(null);
       setFormData({
         ownerFullName: '', residentId: null, age: '', sex: '', civilStatus: '',
         ownerAddress: '', dateOfBirth: '', placeOfBirth: '',
@@ -122,18 +127,19 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   if (showSuccess) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 text-center animate-in zoom-in-95 duration-300">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${accentColor}20` }}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-in zoom-in-95 duration-300">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: `${accentColor}18` }}>
             <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
           </div>
-          <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">Request Submitted!</h3>
-          <p className="text-gray-500 text-sm mb-4">Your business permit application has been received.</p>
-          <div className="bg-gray-50 rounded-2xl p-4 mb-6">
-            <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Reference Number</p>
-            <p className="text-2xl font-black font-mono" style={{ color: accentColor }}>{referenceNumber}</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">{t.successTitle}</h3>
+          <p className="text-sm text-gray-500 leading-relaxed mb-6">{t.successBody}</p>
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">{t.referenceNumber}</p>
+            <p className="text-2xl font-bold font-mono tracking-tight" style={{ color: accentColor }}>{referenceNumber}</p>
+            <p className="text-xs text-gray-500 mt-2">{t.saveReference}</p>
           </div>
-          <button onClick={onClose} className="w-full py-3 text-white rounded-2xl font-black uppercase tracking-widest text-sm" style={{ backgroundColor: accentColor }}>
-            Close / Isara
+          <button onClick={onClose} className="w-full py-3 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity" style={{ backgroundColor: accentColor }}>
+            {t.done}
           </button>
         </div>
       </div>
@@ -143,35 +149,34 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   // Confirmation
   if (showConfirmation) {
     const fields = [
-      { label: 'Owner Name', value: formData.ownerFullName },
-      { label: 'Contact No.', value: formData.contactNumber },
-      { label: 'Email', value: formData.email },
-      { label: 'Business Name', value: formData.businessName },
-      { label: 'Nature of Business', value: formData.natureOfBusiness },
-      { label: 'Business Address', value: formData.businessAddress },
-      { label: 'Permit Type', value: formData.clearanceType },
+      { key: 'owner', label: lang === 'tl' ? 'Pangalan ng May-ari' : 'Owner Name', value: formData.ownerFullName },
+      { key: 'contact', label: t.mobileLabel, value: formData.contactNumber },
+      { key: 'email', label: t.emailLabel, value: formData.email, wide: true },
+      { key: 'bizName', label: t.businessNameLabel, value: formData.businessName },
+      { key: 'nature', label: t.natureLabel, value: formData.natureOfBusiness },
+      { key: 'bizAddress', label: t.businessAddressLabel, value: formData.businessAddress, wide: true },
+      { key: 'permit', label: t.permitLabel, value: formData.clearanceType },
     ].filter(f => f.value);
 
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-          <div className="px-10 py-7 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300" style={{ maxHeight: '92vh' }}>
+          <div className="px-6 sm:px-8 py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
             <div>
-              <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Confirmation</h2>
-              <p className="text-white/40 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">Review your application before submitting</p>
+              <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">{t.reviewEyebrow}</p>
+              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">{t.reviewTitle}</h2>
             </div>
-            <button onClick={() => setShowConfirmation(false)} className="bg-white/10 p-3 rounded-2xl text-white/40 hover:text-white hover:bg-red-500/20 transition-all group">
-              <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+            <button onClick={() => setShowConfirmation(false)} aria-label={t.close} className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0">
+              <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="p-8 bg-gray-50">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {fields.map(({ label, value }) => (
-                <div key={label} className={`flex items-start gap-4 p-5 bg-white border-2 border-gray-100 rounded-3xl shadow-sm ${label === 'Business Address' || label === 'Email' ? 'sm:col-span-2' : ''}`}>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">{label}</span>
-                    <span className="text-lg font-black text-black leading-tight break-words uppercase">{value}</span>
-                  </div>
+          <div className="px-6 sm:px-8 py-6 bg-gray-50 overflow-y-auto">
+            <p className="text-sm text-gray-600 mb-4">{t.reviewHelp}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {fields.map(({ key, label, value, wide }) => (
+                <div key={key} className={`p-4 bg-white border border-gray-200 rounded-xl ${wide ? 'sm:col-span-2' : ''}`}>
+                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.14em] block mb-1">{label}</span>
+                  <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">{value}</span>
                 </div>
               ))}
             </div>
@@ -179,42 +184,45 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
                   <button onClick={() => setShowPrivacyModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-black"><X className="w-5 h-5" /></button>
-                  <h3 className="text-lg font-black uppercase tracking-tight mb-4">Data Privacy Consent</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">{t.privacyTitle}</h3>
                   <div className="text-sm text-gray-700 leading-relaxed space-y-3">
-                    <p>By proceeding with this submission, I voluntarily agree to the collection and processing of my personal data by this Barangay for the purpose of certificate request processing and public service delivery.</p>
+                    <p>By proceeding with this submission, I voluntarily agree to the collection and processing of my personal data by this Barangay for the purpose of permit request processing and public service delivery.</p>
                     <p>I understand that the information processed includes my personal details, contact information, and related data, and that such data will be treated with strict confidentiality and used only for legitimate barangay administrative purposes in accordance with the <strong>Data Privacy Act of 2012 (R.A. 10173)</strong>.</p>
                     <p>I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.</p>
                   </div>
-                  <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 text-white rounded-xl font-black uppercase tracking-widest text-xs" style={{ backgroundColor: accentColor }}>Close</button>
+                  <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 text-white rounded-lg font-semibold text-sm" style={{ backgroundColor: accentColor }}>{t.close}</button>
                 </div>
               </div>
             )}
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-5 flex items-start gap-2.5 p-4 bg-white border border-gray-200 rounded-xl">
               <input
                 type="checkbox"
                 id="biz-consent"
                 checked={consentChecked}
                 onChange={e => setConsentChecked(e.target.checked)}
-                className="w-4 h-4 accent-black shrink-0 cursor-pointer"
+                className="w-4 h-4 shrink-0 cursor-pointer mt-0.5"
+                style={{ accentColor }}
               />
-              <label htmlFor="biz-consent" className="text-[12px] text-gray-600 cursor-pointer select-none">
-                I agree to the{' '}
+              <label htmlFor="biz-consent" className="text-sm text-gray-700 cursor-pointer select-none leading-relaxed">
+                {t.consentPrefix}{' '}
                 <button
                   type="button"
                   onClick={e => { e.preventDefault(); setShowPrivacyModal(true); }}
-                  className="text-blue-600 underline hover:text-blue-800 font-semibold"
+                  className="underline font-semibold hover:opacity-80"
+                  style={{ color: accentColor }}
                 >
-                  Data Privacy Consent
-                </button>.
-                <span className="text-red-500"> *</span>
+                  {t.consentLink}
+                </button>{' '}
+                {t.consentSuffix}
+                <span className="text-red-600"> *</span>
               </label>
             </div>
           </div>
-          <div className="border-t bg-white px-8 py-6 flex justify-between items-center shrink-0">
-            <button onClick={() => setShowConfirmation(false)} className="px-6 py-3 font-black uppercase tracking-[0.2em] text-[10px] text-gray-400 hover:text-black transition-all">← Back / Edit</button>
-            <button onClick={handleSubmit} disabled={isSubmitting || !consentChecked} className="px-10 py-4 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:opacity-90 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: accentColor }}>
+          <div className="border-t border-gray-200 bg-white px-6 sm:px-8 py-4 flex justify-between items-center gap-4 shrink-0">
+            <button onClick={() => setShowConfirmation(false)} className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">{t.backToEdit}</button>
+            <button onClick={handleSubmit} disabled={isSubmitting || !consentChecked} className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed" style={{ backgroundColor: accentColor }}>
               {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
-              Confirm Submission
+              {isSubmitting ? t.submitting : t.submitRequest}
             </button>
           </div>
         </div>
@@ -222,33 +230,33 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
     );
   }
 
-  const stepLabels = ['Owner Info', 'Business Details', 'Permit Type'];
+  const stepLabels = [t.stepOwner, t.stepBusiness, t.stepPermit];
 
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-10">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
-        <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 no-scrollbar" style={{ height: '92vh', maxHeight: '95vh' }}>
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300" style={{ maxHeight: '92vh' }}>
 
           {/* Header */}
-          <div className="px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0" style={{ backgroundColor: accentColor }}>
-            <div className="flex items-center gap-4">
-              <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20">
+          <div className="px-6 sm:px-8 py-5 flex items-start justify-between shrink-0" style={{ backgroundColor: accentColor }}>
+            <div className="flex items-center gap-3.5">
+              <div className="bg-white/15 p-2.5 rounded-xl border border-white/25 shrink-0">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-black text-white uppercase tracking-tighter">Business Permit Application</h2>
-                <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{tenantConfig.shortName || 'Barangay'} Official Portal</p>
+                <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">{tenantConfig.shortName || 'Barangay'} &middot; {t.officialForm}</p>
+                <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Business Permit</h2>
               </div>
             </div>
-            <button onClick={onClose} className="text-white/40 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all group">
-              <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+            <button onClick={onClose} aria-label="Close" className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0">
+              <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Notification */}
           {notification && (
-            <div className="px-8 pt-4 shrink-0">
+            <div className="px-6 sm:px-8 pt-4 shrink-0">
               <div className={`flex items-start gap-3 p-4 rounded-xl border ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
                 {notification.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
                 <div className="flex-1">
@@ -260,65 +268,83 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
             </div>
           )}
 
+          {/* Language gate — shown before the wizard begins */}
+          {!lang && (
+            <LanguageGate accentColor={accentColor} lang={lang} onSelect={setLang} />
+          )}
+
           {/* Progress */}
-          <div className="px-8 pt-5 shrink-0">
-            <div className="max-w-3xl mx-auto flex items-center justify-between">
+          {lang && (
+          <div className="px-6 sm:px-8 py-5 bg-gray-50 border-b border-gray-200 shrink-0">
+            <div className="flex items-start">
               {[1, 2, 3].map((s) => (
                 <React.Fragment key={s}>
-                  <div className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? 'text-white scale-110' : 'bg-gray-100 text-gray-300'}`} style={currentStep >= s ? { backgroundColor: accentColor } : undefined}>
-                      {currentStep > s ? <CheckCircle className="w-6 h-6 text-white" /> : s}
+                  <div className="flex flex-col items-center gap-2 w-[88px] shrink-0">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${currentStep >= s ? 'text-white' : 'bg-white text-gray-400 border-2 border-gray-200'}`} style={currentStep >= s ? { backgroundColor: accentColor } : undefined}>
+                      {currentStep > s ? <CheckCircle className="w-5 h-5" /> : s}
                     </div>
-                    <p className={`text-[9px] font-black uppercase tracking-widest mt-1.5 ${currentStep >= s ? 'text-gray-700' : 'text-gray-300'}`}>{stepLabels[s-1]}</p>
+                    <span className={`text-[11px] font-semibold text-center leading-tight ${currentStep >= s ? 'text-gray-800' : 'text-gray-400'}`}>{stepLabels[s-1]}</span>
                   </div>
-                  {s < 3 && <div className="flex-1 h-1 mx-4 rounded-full mb-5" style={{ backgroundColor: currentStep > s ? accentColor : undefined }} />}
+                  {s < 3 && <div className="flex-1 h-[3px] rounded-full mt-[18px] bg-gray-200" style={{ backgroundColor: currentStep > s ? accentColor : undefined }} />}
                 </React.Fragment>
               ))}
             </div>
           </div>
+          )}
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-8 py-6">
-            <div className="max-w-3xl mx-auto">
+          {lang && (
+          <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6">
+            <div>
 
               {/* Step 1: Owner Info */}
               {currentStep === 1 && (
-                <div className="space-y-3 animate-in slide-in-from-right-8 duration-500">
-                  <div className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer transition-all active:scale-95 shadow-sm hover:shadow-xl"
-                    onClick={() => setIsResidentModalOpen(true)}>
-                    <div className="relative z-10 flex flex-col items-center">
-                      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-all duration-500 shadow-inner"
-                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = accentColor; e.currentTarget.style.color = 'white'; }}
-                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                        <Search className="w-5 h-5" />
-                      </div>
-                      <h3 className="text-base font-black uppercase tracking-tighter mb-1">Search Owner / Hanapin ang May-ari</h3>
-                      <p className="text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] max-w-[240px] mx-auto leading-relaxed">
-                        Find the business owner's profile from the resident directory.
-                      </p>
-                    </div>
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 mb-1">{t.ownerHeading}</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed">{t.ownerHelp}</p>
                   </div>
 
+                  <button type="button" onClick={() => setIsResidentModalOpen(true)}
+                    className="w-full flex items-center gap-4 p-5 bg-white border-2 border-dashed border-gray-300 rounded-xl text-left transition-colors hover:bg-gray-50"
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = accentColor; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = ''; }}>
+                    <div className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: accentColor }}>
+                      <Search className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-gray-900">{t.searchOwner}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{t.searchOwnerSub}</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400 ml-auto shrink-0" />
+                  </button>
+
                   {errors.ownerFullName && (
-                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
-                      <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                      <p className="text-red-600 text-xs font-bold uppercase">Please select the business owner from the directory.</p>
+                    <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      <p className="text-sm text-red-700">{t.errNoOwner}</p>
                     </div>
                   )}
 
                   {formData.ownerFullName && (
-                    <div className="text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5" style={{ backgroundColor: accentColor }}>
-                      <div className="absolute top-0 right-0 p-3 opacity-10"><CheckCircle className="w-16 h-16 text-white" /></div>
-                      <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">Business Owner / May-ari ng Negosyo</p>
-                      <h4 className="text-2xl font-black tracking-tighter mb-4 leading-none uppercase">{formData.ownerFullName}</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
-                          <p className="text-white/30 text-[8px] tracking-widest mb-0.5">Status</p>
-                          <p className="text-emerald-400 text-xs">Verified Resident</p>
-                        </div>
-                        <div className="p-3 bg-white/5 rounded-xl border border-white/10 uppercase font-black">
-                          <p className="text-white/30 text-[8px] tracking-widest mb-0.5">Address</p>
-                          <p className="text-xs truncate">{formData.ownerAddress || 'On file'}</p>
+                    <div className="border border-gray-200 rounded-xl overflow-hidden animate-in fade-in duration-300">
+                      <div className="px-5 py-2.5 flex items-center gap-2" style={{ backgroundColor: `${accentColor}12` }}>
+                        <CheckCircle className="w-4 h-4 shrink-0" style={{ color: accentColor }} />
+                        <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: accentColor }}>{t.verifiedOwner}</p>
+                      </div>
+                      <div className="p-5 bg-white">
+                        <p className="text-lg font-bold text-gray-900 leading-tight">{formData.ownerFullName}</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4 pt-4 border-t border-gray-100">
+                          <div>
+                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.12em] mb-0.5">{t.recordNo}</p>
+                            <p className="text-sm font-semibold text-gray-800">#{formData.residentId}</p>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.12em] mb-0.5">{t.address}</p>
+                            <p className="text-sm font-semibold text-gray-800 truncate">
+                              {formData.ownerAddress || <span className="text-gray-400 italic font-normal">{t.notRecorded}</span>}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -326,25 +352,30 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
 
                   {/* Contact in Step 1 for BP */}
                   {formData.ownerFullName && (
-                    <div className="space-y-4 pt-2">
-                      <div className="group">
-                        <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-                          Contact Number <span className="text-red-500">*</span>
+                    <div className="space-y-5 pt-2">
+                      <div>
+                        <label htmlFor="bp-contact" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                          {t.mobileLabel} <span className="text-red-600">*</span>
                         </label>
                         <div className="relative">
-                          <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
-                          <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange}
+                          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          <input id="bp-contact" type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange}
                             placeholder="09XX XXX XXXX"
-                            className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.contactNumber ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl`} />
+                            className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 ${errors.contactNumber ? 'border-red-400 focus:ring-red-100' : 'border-gray-300 focus:ring-gray-200'}`} />
                         </div>
+                        {errors.contactNumber && (
+                          <p className="text-xs text-red-600 mt-1.5">{t.errMobile}</p>
+                        )}
                       </div>
-                      <div className="group">
-                        <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Email (Optional)</label>
+                      <div>
+                        <label htmlFor="bp-email" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                          {t.emailLabel} <span className="font-normal text-gray-400">{t.optional}</span>
+                        </label>
                         <div className="relative">
-                          <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-black transition-colors" />
-                          <input type="email" name="email" value={formData.email} onChange={handleInputChange}
-                            placeholder="YOUR@EMAIL.COM"
-                            className="w-full pl-14 pr-6 py-4 bg-white border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl" />
+                          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          <input id="bp-email" type="email" name="email" value={formData.email} onChange={handleInputChange}
+                            placeholder="you@example.com"
+                            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200" />
                         </div>
                       </div>
                     </div>
@@ -354,87 +385,123 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
 
               {/* Step 2: Business Details */}
               {currentStep === 2 && (
-                <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
+                <div className="space-y-5 animate-in fade-in duration-300">
                   <div>
-                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-                      Business Name / Pangalan ng Negosyo <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Store className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
-                      <input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange}
-                        placeholder="ENTER BUSINESS NAME..."
-                        className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.businessName ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl uppercase`} />
-                    </div>
+                    <h3 className="text-base font-bold text-gray-900 mb-1">{t.businessHeading}</h3>
+                    <p className="text-sm text-gray-500">{t.businessHelp}</p>
                   </div>
 
                   <div>
-                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-                      Nature of Business / Uri ng Negosyo <span className="text-red-500">*</span>
+                    <label htmlFor="bp-name" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                      {t.businessNameLabel} <span className="text-red-600">*</span>
                     </label>
-                    <select name="natureOfBusiness" value={formData.natureOfBusiness} onChange={handleInputChange}
-                      className={`w-full px-6 py-4 bg-gray-50 border-4 ${errors.natureOfBusiness ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl uppercase`}>
-                      <option value="">SELECT TYPE OF BUSINESS...</option>
-                      {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    <div className="relative">
+                      <Store className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <input id="bp-name" type="text" name="businessName" value={formData.businessName} onChange={handleInputChange}
+                        placeholder={t.businessNamePlaceholder}
+                        className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 ${errors.businessName ? 'border-red-400 focus:ring-red-100' : 'border-gray-300 focus:ring-gray-200'}`} />
+                    </div>
+                    {errors.businessName && (
+                      <p className="text-xs text-red-600 mt-1.5">{t.errBusinessName}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="bp-nature" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                      {t.natureLabel} <span className="text-red-600">*</span>
+                    </label>
+                    <select id="bp-nature" name="natureOfBusiness" value={formData.natureOfBusiness} onChange={handleInputChange}
+                      className={`w-full px-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 ${errors.natureOfBusiness ? 'border-red-400 focus:ring-red-100' : 'border-gray-300 focus:ring-gray-200'}`}>
+                      <option value="">{t.naturePlaceholder}</option>
+                      {BUSINESS_TYPES.map(bt => <option key={bt} value={bt}>{bt}</option>)}
                     </select>
+                    {errors.natureOfBusiness && (
+                      <p className="text-xs text-red-600 mt-1.5">{t.errNature}</p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-                      Business Address / Lokasyon ng Negosyo <span className="text-red-500">*</span>
+                    <label htmlFor="bp-address" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                      {t.businessAddressLabel} <span className="text-red-600">*</span>
                     </label>
                     <div className="relative">
-                      <MapPin className="absolute left-5 top-4 w-5 h-5 text-gray-300" />
-                      <textarea name="businessAddress" value={formData.businessAddress} onChange={handleInputChange}
-                        placeholder="COMPLETE BUSINESS ADDRESS..."
+                      <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <textarea id="bp-address" name="businessAddress" value={formData.businessAddress} onChange={handleInputChange}
+                        placeholder={t.businessAddressPlaceholder}
                         rows={3}
-                        className={`w-full pl-14 pr-6 py-4 bg-white border-4 ${errors.businessAddress ? 'border-red-500' : 'border-gray-50'} rounded-2xl focus:border-black outline-none font-black text-xl uppercase resize-none`} />
+                        className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors resize-none focus:ring-2 ${errors.businessAddress ? 'border-red-400 focus:ring-red-100' : 'border-gray-300 focus:ring-gray-200'}`} />
                     </div>
+                    {errors.businessAddress && (
+                      <p className="text-xs text-red-600 mt-1.5">{t.errBusinessAddress}</p>
+                    )}
                   </div>
                 </div>
               )}
 
               {/* Step 3: Permit Type */}
               {currentStep === 3 && (
-                <div className="space-y-5 animate-in slide-in-from-right-8 duration-500">
+                <div className="space-y-5 animate-in fade-in duration-300">
                   <div>
-                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-3 block">
-                      Permit Type / Uri ng Permit <span className="text-red-500">*</span>
-                    </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      {['NEW', 'RENEWAL'].map(type => (
-                        <button key={type} type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, clearanceType: type }))}
-                          className={`p-6 rounded-3xl border-4 font-black text-lg uppercase tracking-tight transition-all ${formData.clearanceType === type ? 'text-white border-transparent scale-105 shadow-xl' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300 hover:text-gray-700'}`}
-                          style={formData.clearanceType === type ? { backgroundColor: accentColor, borderColor: accentColor } : undefined}>
-                          {type}
-                        </button>
-                      ))}
+                    <h3 className="text-base font-bold text-gray-900 mb-1">{t.permitHeading}</h3>
+                    <p className="text-sm text-gray-500">{t.permitHelp}</p>
+                  </div>
+
+                  <div>
+                    <span className="block text-sm font-semibold text-gray-800 mb-2">
+                      {t.permitLabel} <span className="text-red-600">*</span>
+                    </span>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: 'NEW', label: t.permitNew, sub: t.permitNewSub },
+                        { value: 'RENEWAL', label: t.permitRenewal, sub: t.permitRenewalSub },
+                      ].map(({ value, label, sub }) => {
+                        const selected = formData.clearanceType === value;
+                        return (
+                          <button key={value} type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, clearanceType: value }))}
+                            className={`p-4 rounded-xl border-2 text-left transition-colors ${selected ? 'bg-white' : 'bg-white border-gray-200 hover:border-gray-300'}`}
+                            style={selected ? { borderColor: accentColor, backgroundColor: `${accentColor}0D` } : undefined}>
+                            <span className="block text-sm font-bold" style={selected ? { color: accentColor } : undefined}>
+                              {label}
+                            </span>
+                            <span className="block text-xs text-gray-500 mt-0.5">{sub}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">Application Date</label>
-                    <input type="date" name="applicationDate" value={formData.applicationDate} onChange={handleInputChange}
-                      className="w-full px-6 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl" />
+                    <label htmlFor="bp-date" className="block text-sm font-semibold text-gray-800 mb-1.5">{t.applicationDate}</label>
+                    <input id="bp-date" type="date" name="applicationDate" value={formData.applicationDate} onChange={handleInputChange}
+                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200" />
                   </div>
 
-                  <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100">
-                    <p className="text-amber-800 text-xs font-bold uppercase tracking-wide">
-                      📋 After submission, a physical inspection will be scheduled. Please prepare your business premises for the inspection committee.
-                    </p>
+                  <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-900 mb-0.5">{t.inspectionTitle}</p>
+                      <p className="text-sm text-amber-800 leading-relaxed">
+                        {t.inspectionBody}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
+          )}
 
           {/* Footer */}
-          <div className="border-t bg-white px-8 py-4 flex items-center justify-between shrink-0">
+          {lang && (
+          <div className="border-t border-gray-200 bg-gray-50 px-6 sm:px-8 py-4 flex items-center justify-between gap-4 shrink-0">
             {currentStep > 1 ? (
-              <button onClick={() => setCurrentStep(p => p - 1)} className="px-8 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 hover:text-black transition-all">
-                Previous / Nakaraan
+              <button onClick={() => setCurrentStep(p => p - 1)} className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">
+                {t.back}
               </button>
-            ) : <div />}
+            ) : (
+              <p className="text-xs text-gray-500"><span className="text-red-600">*</span> {t.requiredFields}</p>
+            )}
 
             {currentStep < 3 ? (
               <button onClick={() => {
@@ -450,17 +517,18 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                   if (Object.keys(e).length) { setErrors(e); return; }
                 }
                 setCurrentStep(p => p + 1);
-              }} className="px-12 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all flex items-center gap-3" style={{ backgroundColor: accentColor }}>
-                Next Step / Susunod <ChevronRight className="w-5 h-5" />
+              }} className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2" style={{ backgroundColor: accentColor }}>
+                {t.continue} <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
               <button onClick={() => setShowConfirmation(true)}
-                className="px-12 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-3 hover:opacity-90 active:scale-95"
+                className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
                 style={{ backgroundColor: accentColor }}>
-                <Send className="w-5 h-5" /> Submit Application
+                <Send className="w-4 h-4" /> {t.reviewSubmit}
               </button>
             )}
           </div>
+          )}
         </div>
       </div>
 
@@ -471,6 +539,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
           onSelect={handleResidentSelect}
           isDemo={isDemo}
           tenantConfig={tenantConfig}
+          lang={lang || 'en'}
         />
       )}
     </>
