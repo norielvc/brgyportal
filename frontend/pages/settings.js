@@ -1198,25 +1198,41 @@ export default function Settings() {
                           });
 
                           const token = getAuthToken();
-                          const res = await fetch(
-                            `${API_URL}/residents/bulk-insert`,
-                            {
-                              method: "POST",
-                              headers: { 
-                                "Content-Type": "application/json",
-                                "Authorization": `Bearer ${token}`
-                              },
-                              body: JSON.stringify({ residents: mappedData }),
-                            },
-                          );
+                          const BATCH_SIZE = 100;
+                          const total = mappedData.length;
 
-                          const data = await res.json();
-                          if (data.success) {
-                            setSuccessMessage(data.message);
+                          let imported = 0;
+                          let failed = false;
+
+                          for (let i = 0; i < total; i += BATCH_SIZE) {
+                            const batch = mappedData.slice(i, i + BATCH_SIZE);
+                            const res = await fetch(
+                              `${API_URL}/residents/bulk-insert`,
+                              {
+                                method: "POST",
+                                headers: { 
+                                  "Content-Type": "application/json",
+                                  "Authorization": `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ residents: batch }),
+                              },
+                            );
+
+                            const data = await res.json();
+                            if (!res.ok || !data.success) {
+                              setErrorMessage(data.message || `Import failed at batch ${Math.floor(i / BATCH_SIZE) + 1}`);
+                              failed = true;
+                              break;
+                            }
+
+                            imported += data.inserted || batch.length;
+                            setSuccessMessage(`Imported ${imported} of ${total} residents...`);
+                          }
+
+                          if (!failed) {
+                            setSuccessMessage(`Successfully imported ${imported} residents!`);
                             setImportFile(null);
                             setImportPreview([]);
-                          } else {
-                            setErrorMessage(data.message);
                           }
                         } catch (err) {
                           setErrorMessage("Import failed: " + err.message);
