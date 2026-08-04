@@ -2380,11 +2380,11 @@ function RequestDetailsModal({
       />
 
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col overflow-hidden"
-        style={{ height: "92vh" }}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden"
+        style={{ maxHeight: "90vh" }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-7 py-3.5 flex items-center justify-between shrink-0">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <div className="bg-white/10 p-2 rounded-xl border border-white/10">
               <FileText className="w-5 h-5 text-white" />
@@ -2421,7 +2421,7 @@ function RequestDetailsModal({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-blue-100 bg-blue-50/30 px-6 shrink-0">
+        <div className="flex border-b border-blue-100 bg-blue-50/30 px-4 shrink-0">
           <button
             onClick={() => setActiveTab("details")}
             className={`pb-3 pt-3 px-4 text-sm font-semibold border-b-2 transition-colors ${activeTab === "details"
@@ -2445,25 +2445,24 @@ function RequestDetailsModal({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto overflow-x-hidden flex-1 space-y-5 custom-scrollbar bg-slate-50/50">
+        <div className="p-4 overflow-y-auto overflow-x-hidden flex-1 space-y-4 custom-scrollbar bg-slate-50/50">
           {activeTab === "details" && (
             <>
               {/* OIC / Ready Guidance Banner */}
               {["oic_review", "ready", "ready_for_pickup"].includes(
                 request.status,
               ) && (
-                  <div className="bg-green-600 p-3 rounded-xl shadow-lg border-2 border-green-400 text-white mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-white/20 p-2 rounded-lg">
-                        <Printer className="w-6 h-6 text-white" />
+                  <div className="bg-green-600 p-2.5 rounded-xl shadow-sm border border-green-400 text-white">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/20 p-1.5 rounded-lg">
+                        <Printer className="w-4 h-4 text-white" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-lg font-black uppercase leading-tight">
+                        <h4 className="text-xs font-black uppercase leading-tight">
                           APPROVED REQUEST
                         </h4>
-                        <p className="text-sm font-bold opacity-90">
-                          Please print the certificate and contact the requestor
-                          for collection.
+                        <p className="text-[11px] font-medium opacity-90">
+                          Print the certificate and contact the requestor for collection.
                         </p>
                       </div>
                     </div>
@@ -2518,10 +2517,10 @@ function RequestDetailsModal({
 
               {/* Data Mismatch Warning */}
               {hasMismatch && !isEditing && (
-                <div className="bg-amber-50/80 border border-amber-100 rounded-xl p-3.5 mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="bg-amber-50/80 border border-amber-100 rounded-xl p-3 mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="flex items-start gap-3">
-                    <div className="bg-amber-100 p-2 rounded-lg text-amber-600">
-                      <AlertTriangle className="w-5 h-5" />
+                    <div className="bg-amber-100 p-1.5 rounded-lg text-amber-600">
+                      <AlertTriangle className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
                       <h4 className="text-xs font-semibold text-amber-800">
@@ -2538,7 +2537,7 @@ function RequestDetailsModal({
                     <button
                       onClick={handleSyncToResident}
                       disabled={isSyncing}
-                      className="self-center px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 tracking-widest"
+                      className="self-center px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 tracking-widest"
                     >
                       {isSyncing ? (
                         <RefreshCw className="w-3 h-3 animate-spin" />
@@ -2552,8 +2551,8 @@ function RequestDetailsModal({
               )}
 
               {/* Compact Applicant Info Grid */}
-              <div className="bg-white rounded-2xl p-6 border border-blue-50 shadow-sm">
-                <div className="flex justify-between items-center mb-4 border-l-4 border-blue-500 pl-4">
+              <div className="bg-white rounded-xl p-4 border border-blue-50 shadow-sm">
+                <div className="flex justify-between items-center mb-3 border-l-4 border-blue-500 pl-3">
                   <h3 className="font-semibold text-blue-700 flex items-center gap-2 text-xs uppercase tracking-widest">
                     <User className="w-4 h-4 text-blue-500" />
                     Applicant Information
@@ -2567,42 +2566,34 @@ function RequestDetailsModal({
                 </div>
 
                 {request.residents?.pending_case && (
-                  <div className="mb-6 bg-red-600 border-2 border-red-400 rounded-xl p-5 shadow-xl animate-pulse ring-4 ring-red-600/20">
-                    <div className="flex items-start gap-4">
-                      <div className="bg-white/20 p-2.5 rounded-xl border border-white/20 shadow-lg">
-                        <ShieldAlert className="w-6 h-6 text-white" />
+                  <div className="mb-4 bg-red-600 border border-red-400 rounded-xl p-3 shadow-sm ring-2 ring-red-600/20">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-white/20 p-1.5 rounded-lg border border-white/20">
+                        <ShieldAlert className="w-4 h-4 text-white" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-white font-black uppercase text-xl leading-tight tracking-wider">
+                          <h4 className="text-white font-black uppercase text-sm leading-tight tracking-wider">
                             RESTRICTED APPLICANT RECORD
                           </h4>
-                          <span className="bg-black/40 text-white text-[10px] font-black px-3 py-1.5 rounded-lg border border-white/20 uppercase tracking-widest">
+                          <span className="bg-black/40 text-white text-[9px] font-black px-2 py-1 rounded-lg border border-white/20 uppercase tracking-widest">
                             Legal Hold Active
                           </span>
                         </div>
-                        <p className="text-red-100 text-[11px] font-bold uppercase mt-1 leading-relaxed">
-                          This resident has a PENDING CASE in the Master
-                          Database. This request requires immediate
-                          administrative attention.
+                        <p className="text-red-100 text-[10px] font-bold uppercase mt-1 leading-relaxed">
+                          This resident has a PENDING CASE in the Master Database. Requires immediate administrative attention.
                         </p>
-                        <div className="mt-4 bg-black/30 p-4 rounded-[1.25rem] border border-white/10 backdrop-blur-sm">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Info className="w-3.5 h-3.5 text-red-200" />
-                            <p className="text-[10px] font-black text-red-200 uppercase tracking-widest">
-                              OFFICIAL CASE REMARKS:
-                            </p>
-                          </div>
-                          <p className="text-[15px] font-bold text-white italic leading-relaxed">
-                            "
-                            {request.residents?.case_record_history ||
-                              "No specific case details provided in record."}
-                            "
+                        <div className="mt-2 bg-black/30 p-2.5 rounded-lg border border-white/10 backdrop-blur-sm">
+                          <p className="text-[9px] font-black text-red-200 uppercase tracking-widest mb-1">
+                            OFFICIAL CASE REMARKS:
+                          </p>
+                          <p className="text-xs font-bold text-white italic leading-relaxed">
+                            "{request.residents?.case_record_history || "No specific case details provided in record."}"
                           </p>
                         </div>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <p className="text-[11px] font-black text-white bg-black/50 px-4 py-2.5 rounded-xl border border-white/10 inline-flex items-center gap-2 shadow-inner">
-                            <XCircle className="w-4 h-4 text-red-400" />
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <p className="text-[10px] font-black text-white bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 inline-flex items-center gap-2">
+                            <XCircle className="w-3 h-3 text-red-400" />
                             BARANGAY CLEARANCE ISSUANCE IS STRONGLY PROHIBITED
                           </p>
                         </div>
@@ -2611,9 +2602,9 @@ function RequestDetailsModal({
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-4">
                   {/* LEFT COLUMN */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {isEditing ? (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -2869,7 +2860,7 @@ function RequestDetailsModal({
                   </div>
 
                   {/* RIGHT COLUMN */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div>
                       <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                         Residential Address
@@ -2969,8 +2960,8 @@ function RequestDetailsModal({
               </div>
 
               {request.certificate_type === "barangay_cohabitation" && (
-                <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm mt-4">
-                  <div className="flex justify-between items-center mb-4 border-l-4 border-rose-500 pl-3">
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mt-4">
+                  <div className="flex justify-between items-center mb-3 border-l-4 border-rose-500 pl-3">
                     <h3 className="font-black text-gray-900 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em]">
                       <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
                       Partner Information
@@ -3182,15 +3173,15 @@ function RequestDetailsModal({
               )}
 
               {isBusinessPermit && (
-                <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm mt-4">
-                  <div className="flex justify-between items-center mb-5 border-l-4 border-emerald-500 pl-3">
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mt-4">
+                  <div className="flex justify-between items-center mb-3 border-l-4 border-emerald-500 pl-3">
                     <h3 className="font-black text-gray-900 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em]">
                       <Store className="w-4 h-4 text-emerald-500" />
                       Business Details
                     </h3>
                   </div>
                   <div
-                    className={`grid gap-6 ${["oic_review", "ready", "ready_for_pickup"].includes(request.status) ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}
+                    className={`grid gap-4 ${["oic_review", "ready", "ready_for_pickup"].includes(request.status) ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}
                   >
                     {!isEditing && (
                       <>
@@ -3257,19 +3248,19 @@ function RequestDetailsModal({
                 request.status,
               ) && (
                   <div
-                    className={`grid gap-6 ${isMedicoLegal ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
+                    className={`grid gap-4 ${isMedicoLegal ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
                   >
                     {isBusinessPermit &&
                       (request.status === "physical_inspection" ||
                         request.status === "secretary_approval") && (
                         <div className="col-span-full">
-                          <div className="bg-amber-600 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+                          <div className="bg-amber-600 px-4 py-3 rounded-t-2xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-white/20 rounded-lg">
-                                <ClipboardCheck className="w-5 h-5 text-white" />
+                              <div className="p-1.5 bg-white/20 rounded-lg">
+                                <ClipboardCheck className="w-4 h-4 text-white" />
                               </div>
                               <div>
-                                <h3 className="text-white font-black uppercase tracking-widest text-sm">
+                                <h3 className="text-white font-black uppercase tracking-widest text-xs">
                                   Physical Inspection Report
                                 </h3>
                                 <p className="text-white/70 text-[10px] font-bold uppercase">
@@ -3280,14 +3271,14 @@ function RequestDetailsModal({
                             <button
                               onClick={() => handleSaveInspectionResults(false)}
                               disabled={isUpdatingInspection}
-                              className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/20"
+                              className="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-white/20"
                             >
                               {isUpdatingInspection
                                 ? "Saving..."
                                 : "Save Draft Findings"}
                             </button>
                           </div>
-                          <div className="bg-white rounded-b-2xl border-x border-b border-gray-100 shadow-xl p-6">
+                          <div className="bg-white rounded-b-2xl border-x border-b border-gray-100 shadow-xl p-4">
                             <div className="overflow-x-auto">
                               <table className="w-full text-left border-collapse">
                                 <thead>
@@ -3375,7 +3366,7 @@ function RequestDetailsModal({
                               </table>
                             </div>
 
-                            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 py-6 border-y border-gray-100">
+                            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 py-4 border-y border-gray-100">
                               <div>
                                 <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
                                   Date and Time of Visit
@@ -3411,8 +3402,8 @@ function RequestDetailsModal({
                               </div>
                             </div>
 
-                            <div className="mt-6 pt-4">
-                              <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <div className="mt-4 pt-3">
+                              <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-3 flex items-center gap-2">
                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
                                 Recommending Approval
                               </h4>
@@ -3488,14 +3479,14 @@ function RequestDetailsModal({
                       )}
 
                     {isGuardianship && (
-                      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col">
-                        <div className="border-l-4 border-blue-500 pl-3 mb-5">
+                      <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
+                        <div className="border-l-4 border-blue-500 pl-3 mb-3">
                           <h3 className="font-black text-gray-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
                             <User className="w-4 h-4 text-blue-500" />
                             Guardian Information
                           </h3>
                         </div>
-                        <div className="space-y-5 flex-1">
+                        <div className="space-y-3 flex-1">
                           {isEditing ? (
                             <>
                               <div>
@@ -3560,8 +3551,8 @@ function RequestDetailsModal({
                     )}
 
                     {request.admin_comment && (
-                      <div className="bg-orange-50 rounded-xl p-5 border border-orange-100 shadow-sm">
-                        <div className="flex items-center gap-2 mb-4">
+                      <div className="bg-orange-50 rounded-xl p-4 border border-orange-100 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
                           <div className="bg-orange-100 p-1.5 rounded-lg">
                             <FileText className="w-4 h-4 text-orange-600" />
                           </div>
@@ -3569,7 +3560,7 @@ function RequestDetailsModal({
                             Admin Remarks
                           </h3>
                         </div>
-                        <p className="text-sm text-orange-800 italic leading-relaxed font-medium">
+                        <p className="text-xs text-orange-800 italic leading-relaxed font-medium">
                           "{request.admin_comment}"
                         </p>
                       </div>
@@ -3578,8 +3569,8 @@ function RequestDetailsModal({
                 )}
 
               {(isDeath || isMedicoLegal) && (
-                <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm mt-6">
-                  <div className="flex justify-between items-center mb-5 border-l-4 border-blue-600 pl-3">
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mt-4">
+                  <div className="flex justify-between items-center mb-3 border-l-4 border-blue-600 pl-3">
                     <h3 className="font-black text-gray-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
                       <Activity className="w-4 h-4 text-blue-500" />
                       {isMedicoLegal
@@ -3588,7 +3579,7 @@ function RequestDetailsModal({
                     </h3>
                   </div>
 
-                  <div className="grid gap-6 text-sm grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
+                  <div className="grid gap-4 text-sm grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
                     {isEditing ? (
                       <>
                         {isDeath && (
@@ -3809,7 +3800,7 @@ function RequestDetailsModal({
           )}
 
           {activeTab === "history" && (
-            <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm min-h-[400px] flex flex-col gap-5">
+            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm min-h-[400px] flex flex-col gap-4">
               <div className="flex justify-between items-center border-l-4 border-indigo-500 pl-3">
                 <h3 className="font-black text-gray-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
                   <Clock className="w-4 h-4 text-indigo-500" />
@@ -4584,25 +4575,25 @@ function RequestDetailsModal({
           ].includes(request.status) ||
             (request.status === "ready_for_pickup" &&
               isUserAssignedToRequest(request))) && (
-            <div className="border-t bg-gray-50 px-6 py-4 pb-6 shrink-0 mt-auto">
+            <div className="border-t bg-gray-50 px-4 py-3 pb-4 shrink-0 mt-auto">
               {request.residents?.pending_case && (
-                <div className="bg-red-600 p-4 rounded-xl shadow-lg border-2 border-red-400 text-white mb-6">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-white/20 p-2 rounded-lg">
-                      <ShieldAlert className="w-6 h-6 text-white" />
+                <div className="bg-red-600 p-3 rounded-xl shadow-sm border border-red-400 text-white mb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-white/20 p-1.5 rounded-lg">
+                      <ShieldAlert className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">
                         Legal Hold Notification
                       </p>
-                      <h4 className="text-lg font-black uppercase leading-tight">
+                      <h4 className="text-sm font-black uppercase leading-tight">
                         This applicant has a PENDING CASE
                       </h4>
-                      <div className="mt-3 p-3 bg-black/20 rounded-lg border border-white/20">
-                        <p className="text-[10px] font-bold uppercase mb-1 opacity-70">
+                      <div className="mt-2 p-2.5 bg-black/20 rounded-lg border border-white/20">
+                        <p className="text-[9px] font-bold uppercase mb-1 opacity-70">
                           Official Record History / Remarks:
                         </p>
-                        <p className="text-sm font-semibold italic">
+                        <p className="text-xs font-semibold italic">
                           "
                           {request.residents.case_record_history ||
                             "No detail remarks provided."}
@@ -4615,12 +4606,12 @@ function RequestDetailsModal({
               )}
 
               {currentStep?.status === "staff_review" ? (
-                <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-blue-50">
+                <div className="flex gap-2 justify-end pt-3 mt-2 border-t border-blue-50">
                   {request.status === "physical_inspection" ? (
                     <button
                       onClick={() => handleSaveInspectionResults(true)}
                       disabled={isUpdatingInspection}
-                      className={`px-5 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                      className={`px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                     >
                       <CheckCircle className="w-4 h-4" />
                       Submit Inspection Result & Forward
@@ -4630,7 +4621,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "reject")}
                         disabled={isEditing}
-                        className={`px-4 py-2 bg-white border border-red-200 text-red-500 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
+                        className={`px-4 py-2 bg-white border border-red-200 text-red-500 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
                       >
                         <XCircle className="w-4 h-4" />
                         Mark as Ineligible
@@ -4638,7 +4629,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "approve")}
                         disabled={isEditing}
-                        className={`px-5 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                        className={`px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                       >
                         <CheckCircle className="w-4 h-4" />
                         Verify & Forward
@@ -4649,7 +4640,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "reject")}
                         disabled={isEditing}
-                        className={`px-4 py-2 bg-white border border-red-200 text-red-500 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
+                        className={`px-4 py-2 bg-white border border-red-200 text-red-500 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
                       >
                         <XCircle className="w-4 h-4" />
                         Reject Application
@@ -4659,7 +4650,7 @@ function RequestDetailsModal({
                           <button
                             onClick={() => setShowInspectionStartModal(true)}
                             disabled={isEditing}
-                            className={`px-8 py-3.5 bg-amber-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-lg shadow-amber-200 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-700 transform hover:-translate-y-0.5 active:scale-95"}`}
+                            className={`px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-700 transform hover:-translate-y-0.5 active:scale-95"}`}
                           >
                             <ClipboardCheck className="w-4 h-4" />
                             Proceed to Physical Inspection
@@ -4670,11 +4661,11 @@ function RequestDetailsModal({
                 </div>
               ) : currentStep?.status === "physical_inspection" ||
                 request.status === "physical_inspection" ? (
-                <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-blue-50">
+                <div className="flex gap-2 justify-end pt-3 mt-2 border-t border-blue-50">
                   <button
                     onClick={() => handleSaveInspectionResults(false)}
                     disabled={isUpdatingInspection}
-                    className={`px-6 py-3.5 bg-white border-2 border-amber-200 text-amber-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
+                    className={`px-4 py-2 bg-white border border-amber-200 text-amber-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
                   >
                     <Database className="w-4 h-4" />
                     Save Draft
@@ -4682,7 +4673,7 @@ function RequestDetailsModal({
                   <button
                     onClick={() => onAction(request, "reject")}
                     disabled={isEditing}
-                    className={`px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
+                    className={`px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
                   >
                     <XCircle className="w-4 h-4" />
                     Reject Application
@@ -4690,7 +4681,7 @@ function RequestDetailsModal({
                   <button
                     onClick={() => onAction(request, "return")}
                     disabled={isEditing}
-                    className={`px-6 py-3.5 bg-white border-2 border-orange-200 text-orange-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-orange-50 hover:border-orange-300 active:scale-95"}`}
+                    className={`px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-orange-50 hover:border-orange-300 active:scale-95"}`}
                   >
                     <RotateCcw className="w-4 h-4" />
                     Send Back
@@ -4698,7 +4689,7 @@ function RequestDetailsModal({
                   <button
                     onClick={() => handleSaveInspectionResults(true)}
                     disabled={isUpdatingInspection}
-                    className={`px-5 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                    className={`px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                   >
                     <CheckCircle className="w-4 h-4" />
                     Submit & Forward to Captain
@@ -4706,11 +4697,11 @@ function RequestDetailsModal({
                 </div>
               ) : currentStep?.status === "Treasury" ||
                 request.status === "Treasury" ? (
-                <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-blue-50">
+                <div className="flex gap-2 justify-end pt-3 mt-2 border-t border-blue-50">
                   <button
                     onClick={() => onAction(request, "return")}
                     disabled={isEditing}
-                    className={`px-6 py-3.5 bg-white border-2 border-amber-200 text-amber-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
+                    className={`px-4 py-2 bg-white border border-amber-200 text-amber-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
                   >
                     <RotateCcw className="w-4 h-4" />
                     Send Back
@@ -4718,19 +4709,19 @@ function RequestDetailsModal({
                   <button
                     onClick={() => setShowORModal(true)}
                     disabled={isEditing}
-                    className={`px-10 py-3.5 bg-green-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-lg shadow-green-200 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-green-700 hover:shadow-green-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                    className={`px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-green-700 hover:shadow-green-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                   >
                     <CheckCircle className="w-4 h-4" />
                     Mark as Paid & Generate OR
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-blue-50">
+                <div className="flex gap-2 justify-end pt-3 mt-2 border-t border-blue-50">
                   {["ready", "ready_for_pickup"].includes(request.status) ? (
                     <button
                       onClick={() => onAction(request, "approve")}
                       disabled={isEditing}
-                      className={`px-10 py-3.5 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-lg shadow-emerald-200 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-emerald-700 hover:shadow-emerald-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                      className={`px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-emerald-700 hover:shadow-emerald-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                     >
                       <CheckCircle className="w-4 h-4" />
                       Confirm Official Release
@@ -4752,7 +4743,7 @@ function RequestDetailsModal({
                                   )
                                 }
                                 disabled={isEditing}
-                                className={`px-6 py-3.5 bg-white border-2 border-amber-200 text-amber-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
+                                className={`px-4 py-2 bg-white border border-amber-200 text-amber-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
                               >
                                 <RotateCcw className="w-4 h-4" />
                                 Send Back
@@ -4761,7 +4752,7 @@ function RequestDetailsModal({
                             <button
                               onClick={() => onAction(request, "reject")}
                               disabled={isEditing}
-                              className={`px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
+                              className={`px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
                             >
                               <XCircle className="w-4 h-4" />
                               Reject
@@ -4771,7 +4762,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "approve")}
                         disabled={isEditing}
-                        className={`px-5 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                        className={`px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
                       >
                         <CheckCircle className="w-4 h-4" />
                         {request.status === "Treasury"
