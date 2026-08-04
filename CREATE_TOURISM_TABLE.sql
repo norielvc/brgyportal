@@ -35,8 +35,22 @@ END $$;
 ALTER TABLE tourism_destinations ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies first to avoid "already exists" errors
-DROP POLICY IF EXISTS "Public can read tourism" ON tourism_destinations;
-DROP POLICY IF EXISTS "Authenticated can manage tourism" ON tourism_destinations;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'tourism_destinations' AND policyname = 'Public can read tourism'
+  ) THEN
+    DROP POLICY "Public can read tourism" ON tourism_destinations;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'tourism_destinations' AND policyname = 'Authenticated can manage tourism'
+  ) THEN
+    DROP POLICY "Authenticated can manage tourism" ON tourism_destinations;
+  END IF;
+END $$;
 
 -- Policy: Anyone can read (public portal)
 CREATE POLICY "Public can read tourism" ON tourism_destinations
