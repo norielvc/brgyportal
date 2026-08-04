@@ -444,26 +444,7 @@ export default function PortalPageContent({ initialTenantId }) {
   const [achievements, setAchievements] = useState([]);
 
   const [programs, setPrograms] = useState([]);
-  const [tourismDestinations, setTourismDestinations] = useState([
-    {
-      id: 1,
-      name: "Wildflour Restaurant",
-      image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=80&w=800",
-      directions: "https://maps.google.com/?q=Wildflour+Restaurant",
-    },
-    {
-      id: 2,
-      name: "BORRO",
-      image: "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=800",
-      directions: "https://maps.google.com/?q=BORRO+cafe",
-    },
-    {
-      id: 3,
-      name: "VICE COMEDY CLUB",
-      image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=800",
-      directions: "https://maps.google.com/?q=Vice+Comedy+Club",
-    },
-  ]);
+  const [tourismDestinations, setTourismDestinations] = useState([]);
   const [heroSettings, setHeroSettings] = useState({
     title: "BARANGAY OFFICIALS",
     subtitle: "Meet our dedicated team serving our community",
@@ -740,6 +721,28 @@ export default function PortalPageContent({ initialTenantId }) {
         console.error("❌ Programs API failed - no fallback data will be shown", error.message);
         // Don't show fake data - leave empty
         setPrograms([]);
+      }
+
+      try {
+        // Fetch Tourism via resilient Next.js API
+        const tourismRes = await fetch(`/api/portal/tourism`, {
+          headers: { "x-tenant-id": tenantId },
+        });
+        if (tourismRes.ok) {
+          const tourismData = await tourismRes.json();
+          if (tourismData.success && Array.isArray(tourismData.data)) {
+            const mapped = tourismData.data.map((d) => ({
+              id: d.id,
+              name: d.name,
+              image: d.image || "",
+              description: d.description || "",
+              directions: d.directions_url || `https://maps.google.com/?q=${encodeURIComponent(d.name)}`,
+            }));
+            setTourismDestinations(mapped);
+          }
+        }
+      } catch (error) {
+        console.error("❌ Tourism API failed:", error.message);
       }
 
       try {
@@ -1883,6 +1886,7 @@ export default function PortalPageContent({ initialTenantId }) {
       )}
 
       {/* Tourism and Lifestyle Section */}
+      {tourismDestinations.length > 0 && (
       <section id="tourism" className="py-20 md:py-28 bg-white relative overflow-hidden">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
@@ -1937,6 +1941,7 @@ export default function PortalPageContent({ initialTenantId }) {
           </div>
         </div>
       </section>
+      )}
 
       {/* Barangay Achievement and Awards Section */}
       {!isFeatureLocked('achievements') && (

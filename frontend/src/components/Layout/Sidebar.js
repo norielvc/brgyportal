@@ -26,6 +26,7 @@ import {
   Award,
   Lock,
   CheckCircle,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout, getUserData } from "@/lib/auth";
@@ -140,6 +141,13 @@ const mainMenuItems = [
         adminOnly: true,
         starterOnly: true, // Lock for Starter plan only
         description: "Barangay Initiatives",
+      },
+      {
+        name: "Tourism",
+        href: "/tourism",
+        icon: MapPin,
+        adminOnly: true,
+        description: "Tourism & Lifestyle",
       },
     ],
   },

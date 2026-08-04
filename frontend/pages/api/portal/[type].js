@@ -18,6 +18,7 @@ export default async function handler(req, res) {
     "achievements",
     "programs",
     "config",
+    "tourism",
   ];
   if (!validTypes.includes(type)) {
     return res
@@ -69,6 +70,7 @@ export default async function handler(req, res) {
       facilities: "facilities",
       achievements: "achievements",
       programs: "programs",
+      tourism: "tourism_destinations",
     };
 
     if (type === "config") {
@@ -103,7 +105,7 @@ export default async function handler(req, res) {
     // Apply sorting
     if (type === "officials") {
       query = query.eq("is_active", true);
-    } else if (type === "events" || type === "facilities" || type === "programs" || type === "achievements") {
+    } else if (type === "events" || type === "facilities" || type === "programs" || type === "achievements" || type === "tourism") {
       // Order by order_index for content that has it
       query = query.order("order_index", { ascending: true });
     } else {
