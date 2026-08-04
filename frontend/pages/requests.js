@@ -2473,38 +2473,36 @@ function RequestDetailsModal({
               {request.status === "oic_review" && request.certificate_type === "business_permit" && (
                 <ORPreviewSection request={request} />
               )}
-              {/* Status and Step */}
-              <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-                <div className="flex items-center gap-3 flex-wrap">
+              {/* Request Summary Card */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Reference No.</p>
+                    <p className="font-mono text-sm font-bold text-gray-900">{request.reference_number || "—"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Certificate Type</p>
+                    <p className="text-sm font-bold text-gray-900">{getTypeLabel(request.certificate_type)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current Step</p>
+                    <p className="text-sm font-bold text-blue-700">{currentStep?.name?.toUpperCase() || request.status?.replace(/_/g, " ").toUpperCase()}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date Submitted</p>
+                    <p className="text-sm font-semibold text-gray-700">{formatDate(request.created_at)}</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-3">
                   <span
                     className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black tracking-[0.1em] border shadow-sm ${getStatusColor(request.status)}`}
                   >
                     {request.status?.replace(/_/g, " ").toUpperCase()}
                   </span>
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-gray-900 font-extrabold text-[13.5px] tracking-tight">
-                      {getTypeLabel(request.certificate_type)}
-                    </span>
-                    {currentStep && (
-                      <>
-                        <span className="text-gray-300 font-light text-lg">/</span>
-                        <span className="text-blue-600 font-extrabold text-[13.5px] uppercase tracking-wide">
-                          {currentStep.name}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-end">
-                  <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-tighter bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{formatDate(request.created_at)}</span>
-                  </div>
                   {request.residents?.pending_case && (
-                    <span className="mt-2 bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black animate-pulse flex items-center gap-1 shadow-sm uppercase tracking-widest">
+                    <span className="bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 shadow-sm uppercase tracking-widest">
                       <ShieldAlert className="w-3 h-3" />
-                      CRITICAL: CASE RECORDED
+                      Legal Hold
                     </span>
                   )}
                 </div>
@@ -2653,9 +2651,9 @@ function RequestDetailsModal({
                       </div>
                     ) : (
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-xs text-gray-400 uppercase font-black tracking-widest">
-                            Applicant Identity
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">
+                            Full Name
                           </p>
                           {request.residents && !isEditing && (
                             <button
@@ -2681,14 +2679,14 @@ function RequestDetailsModal({
                                 } catch (err) { }
                                 setShowResidentDb(true);
                               }}
-                              className="p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50/50 hover:bg-blue-100 rounded-lg border border-blue-100/50 group relative active:scale-90"
-                              title="VIEW MASTER RECORD"
+                              className="p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-100/50 active:scale-90"
+                              title="View Master Record"
                             >
-                              <Database className="w-4 h-4" />
+                              <Database className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
-                        <p className="font-bold text-gray-900 text-xl tracking-tight">
+                        <p className="font-extrabold text-gray-900 text-[22px] leading-tight tracking-tight uppercase">
                           {request.applicant_name ||
                             request.full_name ||
                             "NOT RECORDED"}
@@ -2730,9 +2728,9 @@ function RequestDetailsModal({
                     )}
 
                     {/* Key fields row */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
                       <div>
-                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
                           Date of Birth
                         </p>
                         {isEditing ? (
@@ -2755,7 +2753,7 @@ function RequestDetailsModal({
                         )}
                       </div>
                       <div>
-                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
                           Civil Status
                         </p>
                         {isEditing ? (
@@ -2777,7 +2775,7 @@ function RequestDetailsModal({
                         )}
                       </div>
                       <div>
-                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
                           Age / Sex
                         </p>
                         {isEditing ? (
@@ -2808,7 +2806,7 @@ function RequestDetailsModal({
                         )}
                       </div>
                       <div>
-                        <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
                           Contact No.
                         </p>
                         <div className="flex items-center gap-2">
@@ -2819,7 +2817,7 @@ function RequestDetailsModal({
                       </div>
                     </div>
                     <div>
-                      <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
                         Place of Birth
                       </p>
                       {isEditing ? (
@@ -2841,7 +2839,7 @@ function RequestDetailsModal({
                   {/* RIGHT COLUMN */}
                   <div className="space-y-3">
                     <div>
-                      <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
                         Residential Address
                       </p>
                       {isEditing ? (
