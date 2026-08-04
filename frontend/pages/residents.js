@@ -483,8 +483,8 @@ export default function Residents() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Resident Official Profile"
-        size="xl"
+        title="Resident Profile"
+        size="full"
       >
         {selectedResident && (
           <div className="space-y-5">
@@ -493,23 +493,19 @@ export default function Residents() {
               <div className="h-20 w-20 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 text-white text-3xl font-black shadow-lg relative z-10 shrink-0">
                 {selectedResident.last_name?.charAt(0)}
               </div>
-              <div className="space-y-1 relative z-10 flex-1">
-                <h2 className="text-3xl font-black uppercase tracking-tight leading-none mb-1">
+              <div className="space-y-2 relative z-10 flex-1">
+                <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tight leading-none mb-2">
                   {selectedResident.last_name}, {selectedResident.first_name}{" "}
                   {selectedResident.middle_name} {selectedResident.suffix}
                 </h2>
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl border border-white/20 text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
-                    <Shield className="w-3.5 h-3.5 text-blue-200" /> OFFICIAL
-                    DATABASE RECORD
-                  </span>
                   {selectedResident.is_deceased ? (
-                    <span className="bg-rose-500 px-3 py-1 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 shadow-lg shadow-rose-900/20">
-                      <Skull className="w-3.5 h-3.5" /> DECEASED RECORD
+                    <span className="bg-rose-500 px-4 py-1.5 rounded-xl text-[11px] font-black tracking-widest uppercase flex items-center gap-2 shadow-lg shadow-rose-900/20">
+                      <Skull className="w-4 h-4" /> DECEASED RECORD
                     </span>
                   ) : (
-                    <span className="bg-emerald-500 px-3 py-1 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 shadow-lg shadow-emerald-900/20">
-                      <Activity className="w-3.5 h-3.5" /> ACTIVE RESIDENT
+                    <span className="bg-emerald-500 px-4 py-1.5 rounded-xl text-[11px] font-black tracking-widest uppercase flex items-center gap-2 shadow-lg shadow-emerald-900/20">
+                      <Activity className="w-4 h-4" /> ACTIVE RESIDENT
                     </span>
                   )}
                 </div>
@@ -519,16 +515,16 @@ export default function Residents() {
             </div>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               <div className="space-y-3">
-                <div className="p-5 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
+                <div className="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
+                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
                     <User className="w-3.5 h-3.5 text-blue-500" />
                     Personal Metrics
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                         Gender & Maturity
                       </p>
                       <p className="text-[14px] font-black text-gray-800 uppercase tracking-tight">
@@ -537,7 +533,7 @@ export default function Residents() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                         Social Status
                       </p>
                       <p className="text-[14px] font-black text-gray-800 uppercase tracking-tight">
@@ -545,7 +541,7 @@ export default function Residents() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                         Birth Information
                       </p>
                       <p className="text-[14px] font-black text-gray-800 font-mono tracking-tighter">
@@ -557,14 +553,14 @@ export default function Residents() {
               </div>
 
               <div className="space-y-3">
-                <div className="p-5 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
+                <div className="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
+                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
                     <MapPin className="w-3.5 h-3.5 text-purple-500" />
                     Location Profile
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                         Residential Address
                       </p>
                       <p className="text-[13px] font-black text-gray-800 uppercase leading-relaxed font-medium">
@@ -580,7 +576,7 @@ export default function Residents() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                         Place of Birth
                       </p>
                       <p className="text-[13px] font-black text-gray-800 uppercase leading-relaxed font-medium">
@@ -593,9 +589,9 @@ export default function Residents() {
 
               <div className="space-y-3">
                 <div
-                  className={`p-5 border rounded-2xl h-full flex flex-col ${selectedResident.is_deceased ? "bg-rose-50 border-rose-100" : "bg-white border-gray-100 shadow-sm"}`}
+                  className={`p-6 border rounded-2xl h-full flex flex-col ${selectedResident.is_deceased ? "bg-rose-50 border-rose-100" : "bg-white border-gray-100 shadow-sm"}`}
                 >
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
+                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
                     <Phone className="w-3.5 h-3.5 text-orange-500" />
                     Contact Channels
                   </p>
@@ -634,7 +630,7 @@ export default function Residents() {
                       <div className="bg-emerald-100 p-1.5 rounded-lg">
                         <Activity className="w-4 h-4 text-emerald-600" />
                       </div>
-                      <span className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em]">
+                      <span className="text-[11px] font-black text-emerald-700 uppercase tracking-[0.2em]">
                         Live Status Active
                       </span>
                     </div>
@@ -644,14 +640,14 @@ export default function Residents() {
 
               {/* Guardian Information Section */}
               <div className="space-y-3">
-                <div className="p-5 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
+                <div className="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
+                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
                     <Shield className="w-3.5 h-3.5 text-emerald-500" />
                     Guardian Information
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                         Guardian Name
                       </p>
                       <p className="text-[14px] font-black text-gray-800 uppercase tracking-tight">
@@ -659,7 +655,7 @@ export default function Residents() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                         Relationship
                       </p>
                       <p className="text-[14px] font-black text-gray-800 uppercase tracking-tight">
@@ -696,7 +692,7 @@ export default function Residents() {
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div className="md:col-span-1">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
                     Electronic Tag
                   </p>
                   <div
@@ -713,7 +709,7 @@ export default function Residents() {
                 </div>
 
                 <div className="md:col-span-3">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
                     Case History & Administrative Remarks
                   </p>
                   <div
