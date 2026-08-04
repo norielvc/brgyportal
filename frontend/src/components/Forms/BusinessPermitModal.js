@@ -186,9 +186,9 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                   <button onClick={() => setShowPrivacyModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-black"><X className="w-5 h-5" /></button>
                   <h3 className="text-lg font-bold text-gray-900 mb-4">{t.privacyTitle}</h3>
                   <div className="text-sm text-gray-700 leading-relaxed space-y-3">
-                    <p>By proceeding with this submission, I voluntarily agree to the collection and processing of my personal data by this Barangay for the purpose of permit request processing and public service delivery.</p>
-                    <p>I understand that the information processed includes my personal details, contact information, and related data, and that such data will be treated with strict confidentiality and used only for legitimate barangay administrative purposes in accordance with the <strong>Data Privacy Act of 2012 (R.A. 10173)</strong>.</p>
-                    <p>I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.</p>
+                    <p>{t.privacyP1}</p>
+                    <p>{t.privacyP2} <strong>{t.privacyAct}</strong>.</p>
+                    <p>{t.privacyP3}</p>
                   </div>
                   <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 text-white rounded-lg font-semibold text-sm" style={{ backgroundColor: accentColor }}>{t.close}</button>
                 </div>

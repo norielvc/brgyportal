@@ -101,6 +101,10 @@ const STRINGS = {
     consentLink: "Data Privacy Consent",
     consentSuffix: "under R.A. 10173.",
     privacyTitle: "Data Privacy Consent",
+    privacyP1: "By proceeding with this submission, I voluntarily agree to the collection and processing of my personal data by this Barangay for the purpose of certificate request processing and public service delivery.",
+    privacyP2: "I understand that the information processed includes my personal details, contact information, and related data, and that such data will be treated with strict confidentiality and used only for legitimate barangay administrative purposes in accordance with the",
+    privacyP3: "I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.",
+    privacyAct: "Data Privacy Act of 2012 (R.A. 10173)",
 
     // Buttons
     back: "Back",
@@ -230,6 +234,10 @@ const STRINGS = {
     consentLink: "Data Privacy Consent",
     consentSuffix: "sa ilalim ng R.A. 10173.",
     privacyTitle: "Pahintulot sa Data Privacy",
+    privacyP1: "Sa pagpapatuloy sa paghahandog na ito, kusang-loob akong sumasang-ayon sa pangongolekta at pagpoproseso ng aking personal na datos ng Barangay na ito para sa layunin ng pagpoproseso ng kahilingan ng sertipiko at pagbibigay ng pampublikong serbisyo.",
+    privacyP2: "Nauunawaan ko na ang impormasyong pinoproseso ay kinabibilang ng aking personal na detalye, impormasyon ng kontak, at kaugnay na datos, at ang nasabing datos ay tratuhin ng mahigpit na pagiging-kumpidensiyal at gagamitin lamang para sa lehitimong administratibong layunin ng barangay alinsunod sa",
+    privacyP3: "Nauunawaan ko rin na ang aking personal na datos ay hindi ibabahagi sa ikatlong partido nang walang aking pahintulot, maliban kung kinakailangan ng batas o awtorisado ng naaangkop na regulasyon.",
+    privacyAct: "Data Privacy Act of 2012 (R.A. 10173)",
 
     // Buttons
     back: "Bumalik",
