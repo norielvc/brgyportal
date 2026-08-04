@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Layout from "@/components/Layout/Layout";
 import {
   Plus,
@@ -14,6 +14,9 @@ import {
   Save,
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
+import { deleteStorageImage } from "@/lib/deleteStorageImage";
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const API_URL = "/api";
 
@@ -24,6 +27,9 @@ export default function TourismPage() {
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
+  const editFileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -130,8 +136,62 @@ export default function TourismPage() {
     }
   };
 
+  const handleImageUpload = async (e, isEditing = false, destId = null) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setNotification({ type: "error", message: "Image size must be less than 5MB" });
+      e.target.value = "";
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setNotification({ type: "error", message: "Please select an image file" });
+      e.target.value = "";
+      return;
+    }
+
+    setUploadingImage(true);
+    setNotification({ type: "info", message: "Uploading image..." });
+
+    const oldUrl = isEditing
+      ? destinations.find((d) => d.id === destId)?.image
+      : formData.image;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const token = getAuthToken();
+        const response = await fetch("/api/upload/image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ base64: reader.result, folder: "tourism", oldUrl }),
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+
+        if (isEditing && destId) {
+          setDestinations((prev) =>
+            prev.map((d) => (d.id === destId ? { ...d, image: data.url } : d))
+          );
+        } else {
+          setFormData((prev) => ({ ...prev, image: data.url }));
+        }
+        setNotification({ type: "success", message: "Image uploaded successfully" });
+      } catch (err) {
+        setNotification({ type: "error", message: `Upload failed: ${err.message}` });
+      } finally {
+        setUploadingImage(false);
+        e.target.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this destination?")) return;
+    const dest = destinations.find((d) => d.id === id);
+    if (dest?.image) deleteStorageImage(dest.image);
     try {
       const token = getAuthToken();
       const response = await fetch(`${API_URL}/cms/tourism?id=${id}`, {
@@ -247,13 +307,45 @@ export default function TourismPage() {
                         placeholder="Description"
                         rows={2}
                       />
-                      <input
-                        type="text"
-                        value={dest.image || ""}
-                        onChange={(e) => handleUpdate(dest.id, "image", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                        placeholder="Image URL"
-                      />
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Image</label>
+                        {dest.image ? (
+                          <div className="relative group mb-2">
+                            <img src={dest.image} alt="Preview" className="w-full h-32 object-cover rounded-lg border border-gray-200" />
+                            <button
+                              onClick={() => {
+                                deleteStorageImage(dest.image);
+                                handleUpdate(dest.id, "image", "");
+                              }}
+                              className="absolute top-1 right-1 w-7 h-7 bg-red-500 text-white rounded-lg flex items-center justify-center shadow-sm hover:bg-red-600"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => editFileInputRef.current?.click()}
+                            disabled={uploadingImage}
+                            className="w-full h-32 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-gray-300 transition-colors disabled:opacity-50"
+                          >
+                            {uploadingImage ? (
+                              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                            ) : (
+                              <>
+                                <Upload className="w-6 h-6 text-gray-400" />
+                                <span className="text-xs text-gray-400">Click to upload (max 5MB)</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                        <input
+                          ref={editFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, true, dest.id)}
+                          className="hidden"
+                        />
+                      </div>
                       <input
                         type="text"
                         value={dest.directions_url || ""}
@@ -331,13 +423,42 @@ export default function TourismPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Image URL</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Image</label>
+                {formData.image ? (
+                  <div className="relative group mb-2">
+                    <img src={formData.image} alt="Preview" className="w-full h-32 object-cover rounded-lg border border-gray-200" />
+                    <button
+                      onClick={() => {
+                        deleteStorageImage(formData.image);
+                        setFormData({ ...formData, image: "" });
+                      }}
+                      className="absolute top-1 right-1 w-7 h-7 bg-red-500 text-white rounded-lg flex items-center justify-center shadow-sm hover:bg-red-600"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="w-full h-32 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-gray-300 transition-colors disabled:opacity-50"
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    ) : (
+                      <>
+                        <Upload className="w-6 h-6 text-gray-400" />
+                        <span className="text-xs text-gray-400">Click to upload (max 5MB)</span>
+                      </>
+                    )}
+                  </button>
+                )}
                 <input
-                  type="text"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm"
-                  placeholder="https://..."
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, false)}
+                  className="hidden"
                 />
               </div>
               <div>
