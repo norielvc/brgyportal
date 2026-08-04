@@ -155,7 +155,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
         <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-          <div className="bg-black px-10 py-7 flex items-center justify-between shrink-0">
+          <div className="px-10 py-7 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
             <div>
               <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Confirmation</h2>
               <p className="text-white/40 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">Review your application before submitting</p>
@@ -185,7 +185,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                     <p>I understand that the information processed includes my personal details, contact information, and related data, and that such data will be treated with strict confidentiality and used only for legitimate barangay administrative purposes in accordance with the <strong>Data Privacy Act of 2012 (R.A. 10173)</strong>.</p>
                     <p>I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.</p>
                   </div>
-                  <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 bg-black text-white rounded-xl font-black uppercase tracking-widest text-xs">Close</button>
+                  <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 text-white rounded-xl font-black uppercase tracking-widest text-xs" style={{ backgroundColor: accentColor }}>Close</button>
                 </div>
               </div>
             )}
@@ -212,7 +212,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
           </div>
           <div className="border-t bg-white px-8 py-6 flex justify-between items-center shrink-0">
             <button onClick={() => setShowConfirmation(false)} className="px-6 py-3 font-black uppercase tracking-[0.2em] text-[10px] text-gray-400 hover:text-black transition-all">← Back / Edit</button>
-            <button onClick={handleSubmit} disabled={isSubmitting || !consentChecked} className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={handleSubmit} disabled={isSubmitting || !consentChecked} className="px-10 py-4 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:opacity-90 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: accentColor }}>
               {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
               Confirm Submission
             </button>
@@ -231,7 +231,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
         <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 no-scrollbar" style={{ height: '92vh', maxHeight: '95vh' }}>
 
           {/* Header */}
-          <div className="bg-black px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0">
+          <div className="px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0" style={{ backgroundColor: accentColor }}>
             <div className="flex items-center gap-4">
               <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20">
                 <Building2 className="w-5 h-5 text-white" />
@@ -266,12 +266,12 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               {[1, 2, 3].map((s) => (
                 <React.Fragment key={s}>
                   <div className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? 'bg-black text-white scale-110' : 'bg-gray-100 text-gray-300'}`}>
-                      {currentStep > s ? <CheckCircle className="w-6 h-6 text-emerald-400" /> : s}
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? 'text-white scale-110' : 'bg-gray-100 text-gray-300'}`} style={currentStep >= s ? { backgroundColor: accentColor } : undefined}>
+                      {currentStep > s ? <CheckCircle className="w-6 h-6 text-white" /> : s}
                     </div>
                     <p className={`text-[9px] font-black uppercase tracking-widest mt-1.5 ${currentStep >= s ? 'text-gray-700' : 'text-gray-300'}`}>{stepLabels[s-1]}</p>
                   </div>
-                  {s < 3 && <div className={`flex-1 h-1 mx-4 rounded-full mb-5 ${currentStep > s ? 'bg-black' : 'bg-gray-100'}`} />}
+                  {s < 3 && <div className="flex-1 h-1 mx-4 rounded-full mb-5" style={{ backgroundColor: currentStep > s ? accentColor : undefined }} />}
                 </React.Fragment>
               ))}
             </div>
@@ -284,10 +284,12 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               {/* Step 1: Owner Info */}
               {currentStep === 1 && (
                 <div className="space-y-3 animate-in slide-in-from-right-8 duration-500">
-                  <div className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer hover:bg-black/5 hover:border-black transition-all active:scale-95 shadow-sm hover:shadow-xl"
+                  <div className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer transition-all active:scale-95 shadow-sm hover:shadow-xl"
                     onClick={() => setIsResidentModalOpen(true)}>
                     <div className="relative z-10 flex flex-col items-center">
-                      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-inner">
+                      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-all duration-500 shadow-inner"
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = accentColor; e.currentTarget.style.color = 'white'; }}
+                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                         <Search className="w-5 h-5" />
                       </div>
                       <h3 className="text-base font-black uppercase tracking-tighter mb-1">Search Owner / Hanapin ang May-ari</h3>
@@ -305,7 +307,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                   )}
 
                   {formData.ownerFullName && (
-                    <div className="bg-black text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5">
+                    <div className="text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5" style={{ backgroundColor: accentColor }}>
                       <div className="absolute top-0 right-0 p-3 opacity-10"><CheckCircle className="w-16 h-16 text-white" /></div>
                       <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">Business Owner / May-ari ng Negosyo</p>
                       <h4 className="text-2xl font-black tracking-tighter mb-4 leading-none uppercase">{formData.ownerFullName}</h4>
@@ -402,7 +404,8 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                       {['NEW', 'RENEWAL'].map(type => (
                         <button key={type} type="button"
                           onClick={() => setFormData(prev => ({ ...prev, clearanceType: type }))}
-                          className={`p-6 rounded-3xl border-4 font-black text-lg uppercase tracking-tight transition-all ${formData.clearanceType === type ? 'bg-black text-white border-black scale-105 shadow-xl' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300 hover:text-gray-700'}`}>
+                          className={`p-6 rounded-3xl border-4 font-black text-lg uppercase tracking-tight transition-all ${formData.clearanceType === type ? 'text-white border-transparent scale-105 shadow-xl' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300 hover:text-gray-700'}`}
+                          style={formData.clearanceType === type ? { backgroundColor: accentColor, borderColor: accentColor } : undefined}>
                           {type}
                         </button>
                       ))}
@@ -447,7 +450,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                   if (Object.keys(e).length) { setErrors(e); return; }
                 }
                 setCurrentStep(p => p + 1);
-              }} className="px-12 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all flex items-center gap-3">
+              }} className="px-12 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all flex items-center gap-3" style={{ backgroundColor: accentColor }}>
                 Next Step / Susunod <ChevronRight className="w-5 h-5" />
               </button>
             ) : (

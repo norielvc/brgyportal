@@ -393,6 +393,8 @@ export default function BarangayClearanceModal({
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
+  const accentColor = tenantConfig.primaryColor || '#059669';
+
   const [formData, setFormData] = useState({
     fullName: "",
     age: "",
@@ -600,7 +602,7 @@ export default function BarangayClearanceModal({
                 }}
               >
                 {/* Header */}
-                <div className="bg-black px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0">
+                <div className="px-8 py-5 flex items-center justify-between border-b border-white/10 shrink-0" style={{ backgroundColor: accentColor }}>
                   <div className="flex items-center gap-4">
                     <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20">
                       <FileText className="w-5 h-5 text-white" />
@@ -640,10 +642,11 @@ export default function BarangayClearanceModal({
                       <React.Fragment key={s}>
                         <div className="flex flex-col items-center">
                           <div
-                            className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? "bg-black text-white scale-110" : "bg-gray-100 text-gray-300"}`}
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${currentStep >= s ? "text-white scale-110" : "bg-gray-100 text-gray-300"}`}
+                            style={currentStep >= s ? { backgroundColor: accentColor } : undefined}
                           >
                             {currentStep > s ? (
-                              <CheckCircle className="w-6 h-6 text-emerald-400" />
+                              <CheckCircle className="w-6 h-6 text-white" />
                             ) : (
                               s
                             )}
@@ -651,7 +654,8 @@ export default function BarangayClearanceModal({
                         </div>
                         {s < 3 && (
                           <div
-                            className={`flex-1 h-1 mx-4 rounded-full ${currentStep > s ? "bg-black" : "bg-gray-100"}`}
+                            className="flex-1 h-1 mx-4 rounded-full"
+                            style={{ backgroundColor: currentStep > s ? accentColor : undefined }}
                           />
                         )}
                       </React.Fragment>
@@ -664,11 +668,14 @@ export default function BarangayClearanceModal({
                     {currentStep === 1 && (
                       <div className="space-y-3 animate-in slide-in-from-right-8 duration-500">
                         <div
-                          className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer hover:bg-black/5 hover:border-black transition-all relative overflow-hidden active:scale-95 shadow-sm hover:shadow-xl"
+                          className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-6 text-center group cursor-pointer transition-all relative overflow-hidden active:scale-95 shadow-sm hover:shadow-xl"
+                          style={{ borderColor: undefined }}
                           onClick={() => setIsResidentModalOpen(true)}
                         >
                           <div className="relative z-10 flex flex-col items-center">
-                            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-inner">
+                            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-all duration-500 shadow-inner"
+                              onMouseEnter={e => { e.currentTarget.style.backgroundColor = accentColor; e.currentTarget.style.color = 'white'; }}
+                              onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                               <Search className="w-5 h-5" />
                             </div>
                             <h3 className="text-base font-black uppercase tracking-tighter mb-1">
@@ -683,7 +690,7 @@ export default function BarangayClearanceModal({
                         </div>
 
                         {formData.fullName && (
-                          <div className="bg-black text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5">
+                          <div className="text-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 group relative overflow-hidden border border-white/5" style={{ backgroundColor: accentColor }}>
                             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                               <CheckCircle className="w-16 h-16 text-white" />
                             </div>
@@ -844,7 +851,7 @@ export default function BarangayClearanceModal({
                         }
                         setCurrentStep((prev) => prev + 1);
                       }}
-                      className="px-12 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all flex items-center gap-3"
+                      className="px-12 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all flex items-center gap-3" style={{ backgroundColor: accentColor }}
                     >
                       Next Step / Susunod <ChevronRight className="w-5 h-5" />
                     </button>
@@ -872,7 +879,7 @@ export default function BarangayClearanceModal({
               />
               <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
                 {/* Header */}
-                <div className="bg-black px-10 py-7 flex items-center justify-between shrink-0">
+                <div className="px-10 py-7 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
                   <div>
                     <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-tight">
                       Confirmation
@@ -920,7 +927,9 @@ export default function BarangayClearanceModal({
                           key={k}
                           className={`flex items-start gap-4 p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group ${k === "purpose" || k === "email" ? "sm:col-span-2" : ""}`}
                         >
-                          <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition-all shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 transition-all shrink-0"
+                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = accentColor; e.currentTarget.style.color = 'white'; }}
+                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                             <Icon className="w-5 h-5" />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -959,7 +968,7 @@ export default function BarangayClearanceModal({
                           <p>I understand that the information processed includes my personal details, contact information, and related data, and that such data will be treated with strict confidentiality and used only for legitimate barangay administrative purposes in accordance with the <strong>Data Privacy Act of 2012 (R.A. 10173)</strong>.</p>
                           <p>I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.</p>
                         </div>
-                        <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 bg-black text-white rounded-xl font-black uppercase tracking-widest text-xs">Close</button>
+                        <button onClick={() => setShowPrivacyModal(false)} className="mt-6 w-full py-3 text-white rounded-xl font-black uppercase tracking-widest text-xs" style={{ backgroundColor: accentColor }}>Close</button>
                       </div>
                     </div>
                   )}
@@ -996,7 +1005,7 @@ export default function BarangayClearanceModal({
                   <button
                     onClick={handleProceedSubmission}
                     disabled={isSubmitting || !consentChecked}
-                    className="px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-10 py-4 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] hover:opacity-90 active:scale-95 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: accentColor }}
                   >
                     {isSubmitting ? (
                       "Submitting..."
@@ -1037,7 +1046,7 @@ export default function BarangayClearanceModal({
                     resetForm();
                     onClose();
                   }}
-                  className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all shadow-2xl"
+                  className="w-full text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all shadow-2xl" style={{ backgroundColor: accentColor }}
                 >
                   Back to Dashboard / Bumalik sa Dashboard
                 </button>
