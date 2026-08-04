@@ -1767,63 +1767,70 @@ export default function PortalPageContent({ initialTenantId }) {
 
       {/* Programs Section */}
       {!isFeatureLocked('programs') && (
-        <section className="py-16 md:py-24 bg-white w-full border-t border-gray-100">
+        <section id="programs" className="py-16 md:py-24 bg-gray-50 w-full border-t border-gray-100">
           <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-              <div className="max-w-2xl">
+            {/* Section Header — Government Style */}
+            <div className="mb-10">
+              <div className="flex items-center gap-3 mb-4">
                 <div
-                  className="h-1 w-12 mb-6 rounded-full"
-                  style={{ backgroundColor: tenantConfig.accentColor }}
+                  className="w-1 h-8 rounded-full"
+                  style={{ backgroundColor: tenantConfig.primaryColor }}
                 ></div>
-                <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-tight">
-                  Community{" "}
-                  <span style={{ color: tenantConfig.accentColor }}>
-                    Programs
-                  </span>{" "}
-                  & Initiatives
-                </h2>
+                <div>
+                  <p
+                    className="text-xs font-bold uppercase tracking-widest"
+                    style={{ color: tenantConfig.primaryColor }}
+                  >
+                    Official Barangay Programs
+                  </p>
+                  <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight mt-1">
+                    Community Programs &amp; Initiatives
+                  </h2>
+                </div>
               </div>
-              <p className="text-gray-500 text-base md:text-lg font-medium max-w-sm">
-                Empowering our residents through sustainable and inclusive
-                programs.
+              <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-gray-200">
+                Programs and services implemented by the Barangay Council to promote the welfare, development, and well-being of our constituents.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Programs Grid — Landscape Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {programs.map((program, idx) => (
                 <div
                   key={program.id || idx}
-                  className="flex flex-col group cursor-pointer h-full program-card"
+                  className="flex flex-col group cursor-pointer h-full bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 program-card"
                   onClick={() => setSelectedProgram(program)}
                 >
-                  <div className="w-full aspect-[4/5] rounded-2xl overflow-hidden mb-5 bg-gray-100 premium-shadow transition-all duration-700 group-hover:-translate-y-2">
+                  <div className="relative w-full aspect-[16/10] overflow-hidden bg-gray-100">
                     <img
                       loading="lazy"
                       src={program.image || "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800"}
                       alt={program.title}
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                  </div>
-                  <div className="flex flex-col flex-1 px-2">
-                    <p
-                      className="text-[10px] font-black uppercase tracking-[0.3em] mb-3"
-                      style={{ color: tenantConfig.accentColor }}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60 group-hover:opacity-70 transition-opacity" />
+                    <div
+                      className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm border border-white/20"
+                      style={{ backgroundColor: `${tenantConfig.primaryColor}cc` }}
                     >
                       {program.category}
-                    </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col flex-1 p-5">
                     <h3
-                      className="text-gray-900 text-xl font-black mb-3 leading-snug transition-colors"
+                      className="text-gray-900 text-base md:text-lg font-bold mb-2 leading-snug transition-colors"
                     >
                       {program.title}
                     </h3>
-                    <p className="text-gray-500 text-sm md:text-base leading-relaxed mb-4 flex-1 font-medium">
+                    <p className="text-gray-500 text-sm leading-relaxed mb-4 flex-1">
                       {program.description}
                     </p>
                     <div
-                      className="flex items-center gap-2 font-bold text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all"
-                      style={{ color: tenantConfig.accentColor }}
+                      className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pt-3 border-t border-gray-100"
+                      style={{ color: tenantConfig.primaryColor }}
                     >
-                      View Impact <ChevronRight className="w-4 h-4" />
+                      Learn More
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </div>
@@ -2124,98 +2131,100 @@ export default function PortalPageContent({ initialTenantId }) {
           onClick={() => setSelectedProgram(null)}
         >
           <div
-            className="bg-white rounded-[40px] shadow-2xl w-full max-w-5xl overflow-hidden relative transform transition-all flex flex-col md:flex-row h-full max-h-[90vh] md:max-h-[80vh]"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden relative transform transition-all flex flex-col md:flex-row h-full max-h-[90vh] md:max-h-[80vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Column: Fixed Image on Desktop */}
-            <div className="relative w-full md:w-[45%] h-64 md:h-full group overflow-hidden shrink-0">
+            <div className="relative w-full md:w-[45%] h-56 md:h-full group overflow-hidden shrink-0">
               <img
                 loading="lazy"
                 src={selectedProgram.image}
                 alt={selectedProgram.title}
-                className="w-full h-full object-cover transform transition-transform duration-1000 group-hover:scale-105"
+                className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 
-              {/* Floating Category Badge */}
-              <div className="absolute top-6 left-6 z-20 bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-black px-4 py-2 rounded-full flex items-center gap-2 shadow-2xl uppercase tracking-[0.2em]">
-                <Target
-                  className="w-4 h-4"
-                  style={{ color: tenantConfig.accentColor }}
-                />
+              {/* Category Badge */}
+              <div
+                className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm border border-white/20"
+                style={{ backgroundColor: `${tenantConfig.primaryColor}cc` }}
+              >
                 {selectedProgram.category}
               </div>
 
               {/* Mobile Close Button */}
               <button
                 onClick={() => setSelectedProgram(null)}
-                className="md:hidden absolute top-4 right-4 z-30 w-10 h-10 bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10"
+                className="md:hidden absolute top-4 right-4 z-30 w-9 h-9 bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Right Column: Scrollable Content */}
-            <div className="flex-1 flex flex-col overflow-hidden bg-gray-50/50 text-left">
+            <div className="flex-1 flex flex-col overflow-hidden bg-white text-left">
               {/* Desktop Close Button */}
               <button
                 onClick={() => setSelectedProgram(null)}
-                className="hidden md:flex absolute top-6 right-6 z-30 w-12 h-12 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-red-500 rounded-2xl items-center justify-center transition-all shadow-sm border border-gray-200"
+                className="hidden md:flex absolute top-5 right-5 z-30 w-10 h-10 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-red-500 rounded-xl items-center justify-center transition-all shadow-sm border border-gray-200"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
 
-              <div className="flex-1 overflow-y-auto p-8 md:p-12">
-                <div className="space-y-8">
+              <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                <div className="space-y-6">
                   {/* Header */}
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <div
-                        className="w-8 h-1 rounded-full"
-                        style={{ backgroundColor: tenantConfig.accentColor }}
+                        className="w-6 h-0.5 rounded-full"
+                        style={{ backgroundColor: tenantConfig.primaryColor }}
                       ></div>
                       <p
-                        className="font-black text-[10px] tracking-[0.4em] uppercase"
-                        style={{ color: tenantConfig.accentColor }}
+                        className="font-bold text-[10px] tracking-widest uppercase"
+                        style={{ color: tenantConfig.primaryColor }}
                       >
-                        PROGRAM PORTFOLIO
+                        Barangay Program
                       </p>
                     </div>
-                    <h2 className="text-3xl md:text-5xl font-black text-gray-900 leading-[1.1] tracking-tight">
+                    <h2 className="text-2xl md:text-3xl font-black text-gray-900 leading-[1.2] tracking-tight">
                       {selectedProgram.title}
                     </h2>
                   </div>
 
                   {/* Body Text */}
                   <div className="max-w-none">
-                    <p className="text-gray-600 leading-relaxed font-medium text-lg md:text-xl italic">
-                      "{selectedProgram.description}"
+                    <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                      {selectedProgram.description}
                     </p>
                   </div>
 
                   {/* Action Footer */}
-                  <div className="pt-8 flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 gap-6">
+                  <div className="pt-6 flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 gap-4">
                     <button
                       onClick={() => setSelectedProgram(null)}
-                      className={`w-full sm:w-auto px-10 py-4 ${tenantId === "demo" ? "bg-black" : "bg-[#112117]"} text-white rounded-2xl font-black hover:bg-black transition-all shadow-xl ${tenantId === "demo" ? "hover:shadow-zinc-900/20" : "hover:shadow-green-900/20"} text-sm flex items-center justify-center gap-3 group`}
+                      className="w-full sm:w-auto px-6 py-3 text-white rounded-xl font-bold transition-all shadow-sm text-sm flex items-center justify-center gap-2 group"
+                      style={{ backgroundColor: tenantConfig.primaryColor }}
                     >
-                      <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                      BACK
+                      <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                      Back to Programs
                     </button>
                     <div className="flex items-center gap-3">
                       <div className="text-right hidden sm:block">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                          Authenticated by
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                          Implemented by
                         </p>
-                        <p className="text-xs font-black text-gray-900 uppercase">
-                          Barangay Secretariat
+                        <p className="text-xs font-bold text-gray-700 uppercase">
+                          {tenantConfig.shortName} Council
                         </p>
                       </div>
                       <div
-                        className={`w-10 h-10 ${tenantId === "demo" ? "bg-zinc-100" : "bg-green-50"} rounded-full flex items-center justify-center`}
+                        className="w-9 h-9 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: `${tenantConfig.primaryColor}15` }}
                       >
                         <Shield
-                          className={`w-5 h-5 ${tenantId === "demo" ? "text-zinc-600" : "text-green-600"}`}
+                          className="w-4 h-4"
+                          style={{ color: tenantConfig.primaryColor }}
                         />
                       </div>
                     </div>
