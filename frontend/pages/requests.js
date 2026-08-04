@@ -22,7 +22,6 @@ import {
   Shield,
   Printer,
   Download,
-  PenTool,
   ShieldAlert,
   Info,
   Edit,
@@ -44,11 +43,9 @@ import {
   Store,
   Check,
   FilterX,
-  Upload,
 } from "lucide-react";
 import { getAuthToken, getUserData } from "@/lib/auth";
 import Modal from "@/components/UI/Modal";
-import SignatureUpload from "@/components/UI/SignatureUpload";
 // API Configuration
 const API_URL = "/api";
 
@@ -328,7 +325,6 @@ export default function RequestsPage() {
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [pickupName, setPickupName] = useState("");
 
-  const [userSignature, setUserSignature] = useState(null);
   const [requestHistory, setRequestHistory] = useState([]);
 
   // Handle clicking outside of dropdowns
@@ -424,40 +420,12 @@ export default function RequestsPage() {
         }
       }
 
-      // 2. Fetch User Signatures
-      fetchUserSignature();
-
-      // 3. Now fetch requests (passing the loaded workflows so the Smart Merge works immediately)
+      // 2. Now fetch requests (passing the loaded workflows so the Smart Merge works immediately)
       await fetchRequests(loadedWorkflows, user);
     };
 
     initializeData();
   }, []);
-
-  const fetchUserSignature = async () => {
-    try {
-      const token = getAuthToken();
-      if (!token) return;
-
-      const response = await fetch(`${API_URL}/user/signatures`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await response.json();
-      if (data.success && data.signatures && data.signatures.length > 0) {
-        // Find default or use the first one
-        const defaultSig =
-          data.signatures.find((s) => s.id === data.defaultSignatureId) ||
-          data.signatures[0];
-        setUserSignature(defaultSig.signatureData);
-      }
-    } catch (error) {
-      console.error("Error fetching user signature:", error);
-    }
-  };
 
   // Re-fetch requests when view mode changes
   useEffect(() => {
@@ -1617,7 +1585,6 @@ export default function RequestsPage() {
                 : selectedRequest.status),
           )}
           history={requestHistory}
-          userSignature={userSignature}
         />
       )}
 
@@ -4886,12 +4853,8 @@ function ActionModal({
   onClose,
   processing,
   currentStep,
-  userSignature,
   history = [],
 }) {
-  const [tempSignature, setTempSignature] = useState(null);
-  const [showSignPad, setShowSignPad] = useState(false);
-
   // Dynamic config based on current step
   const isReviewStep = currentStep?.status === "staff_review";
 
@@ -5001,16 +4964,6 @@ function ActionModal({
   const cfg = config[actionType];
   const Icon = cfg.icon;
 
-  const isEsignRole =
-    currentStep &&
-    currentStep.officialRole &&
-    currentStep.officialRole !== "None";
-  const canUseEsign =
-    actionType === "approve" &&
-    !["oic_review", "ready", "ready_for_pickup", "Treasury"].includes(
-      request.status,
-    ); // Disable sign pad for OIC/Ready/Treasury steps
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
       <div
@@ -5092,74 +5045,6 @@ function ActionModal({
                     : "REQUIRED: Please provide a detailed justification for this decision..."}
                 />
               </div>
-
-              {/* Signature Block (Conditional) */}
-              {canUseEsign && (
-                <div className="border-t-2 border-dashed border-gray-200 pt-4 shrink-0">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600"><Shield className="w-4 h-4" /></div>
-                      <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Digital Authorization</p>
-                    </div>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase">{isEsignRole ? currentStep.officialRole : "Official Sign"}</p>
-                  </div>
-                  <div className="bg-white rounded-xl border border-blue-200 p-1 shadow-sm">
-                    {!showSignPad && (userSignature || tempSignature) ? (
-                      <div className="relative h-28 flex items-center justify-center rounded-2xl bg-emerald-50/30 border-2 border-dashed border-emerald-500/20 hover:border-emerald-500/40 cursor-pointer overflow-hidden group transition-all" onClick={() => setShowSignPad(true)}>
-                        <img
-                          src={tempSignature || userSignature}
-                          className="h-full object-contain p-4 mix-blend-multiply"
-                          alt="Signature Preview"
-                        />
-                        <div className="absolute inset-0 bg-emerald-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                          <span className="text-white text-[10px] font-black uppercase tracking-widest bg-emerald-900/60 px-4 py-2 rounded-full backdrop-blur-md">
-                            Change Signature
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-emerald-50 hover:border-emerald-500 cursor-pointer transition-all group bg-gray-50/30">
-                          <div className="flex flex-col items-center gap-4 text-center">
-                            <div className="p-4 bg-emerald-100/50 text-emerald-600 rounded-2xl group-hover:bg-emerald-200/50 group-hover:scale-110 transition-all duration-300">
-                              <Upload className="w-8 h-8" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-black text-gray-800 uppercase tracking-[0.15em] mb-1">Upload Signature File</p>
-                              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest opacity-60">PNG or JPG (transparent bg preferred)</p>
-                            </div>
-                            {(userSignature || tempSignature) && (
-                              <button 
-                                type="button" 
-                                onClick={(e) => { e.preventDefault(); setShowSignPad(false); }}
-                                className="mt-2 text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:underline"
-                              >
-                                ← Back to saved signature
-                              </button>
-                            )}
-                          </div>
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (readerEvent) => {
-                                  setTempSignature(readerEvent.target.result);
-                                  setShowSignPad(false);
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -5175,63 +5060,21 @@ function ActionModal({
           </button>
 
           <div className="flex items-center gap-3">
-            {actionType === "approve" && canUseEsign ? (
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => onSubmit(null, null, null, comment)}
-                  disabled={processing}
-                  className="px-8 py-4 rounded-2xl border-2 border-gray-100 text-[12px] font-black text-gray-500 uppercase tracking-widest hover:border-emerald-200 hover:text-emerald-600 hover:bg-emerald-50/50 transition-all disabled:opacity-50"
-                >
-                  Approve Without Signature
-                </button>
-                
-                <div className="relative group">
-                  <button
-                    onClick={() => {
-                      const finalSig = tempSignature || userSignature;
-                      if (!finalSig) {
-                        toast.error("Please provide or select a signature to use this option.");
-                        return;
-                      }
-                      onSubmit(finalSig, null, null, comment);
-                    }}
-                    disabled={processing || (!tempSignature && !userSignature)}
-                    className={`px-10 py-4 bg-emerald-600 text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-3 ${
-                      (!tempSignature && !userSignature) ? "opacity-30 cursor-not-allowed grayscale" : ""
-                    }`}
-                  >
-                    {processing ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <PenTool className="w-5 h-5" />
-                    )}
-                    Approve With Signature
-                  </button>
-                  
-                  {isEsignRole && !tempSignature && !userSignature && (
-                    <p className="absolute -top-10 right-0 text-[10px] font-bold text-rose-500 uppercase animate-pulse whitespace-nowrap bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-rose-100 shadow-sm pointer-events-none">
-                      ⚠️ Upload signature to use this option
-                    </p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => onSubmit(null, null, null, comment)}
-                disabled={
-                  processing ||
-                  (["reject", "return"].includes(actionType) && !comment.trim())
-                }
-                className={`px-10 py-4 ${cfg.buttonBg} text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {processing ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <cfg.icon className="w-5 h-5" />
-                )}
-                {cfg.buttonText}
-              </button>
-            )}
+            <button
+              onClick={() => onSubmit(null, null, null, comment)}
+              disabled={
+                processing ||
+                (["reject", "return"].includes(actionType) && !comment.trim())
+              }
+              className={`px-10 py-4 ${cfg.buttonBg} text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {processing ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <cfg.icon className="w-5 h-5" />
+              )}
+              {cfg.buttonText}
+            </button>
           </div>
         </div>
       </div>
