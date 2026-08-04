@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import {
   Menu,
   X,
@@ -94,6 +95,20 @@ export default function PortalPageContent({ initialTenantId }) {
     if (initialTenantId) setTenantId(initialTenantId.toLowerCase());
   }, [initialTenantId]);
 
+  // Default color palette for non-demo tenants
+  const defaultColors = {
+    primaryColor: "#059669",
+    primaryHover: "#047857",
+    accentColor: "#10b981",
+    secondaryColor: "#34d399",
+    cardBackground: "#064e3b",
+    colorStyle: {
+      background: "linear-gradient(135deg, #064e3b 0%, #022c22 100%)",
+    },
+    darkBackground: "from-[#064e3b] to-[#022c22]",
+    darkHeader: "from-[#022c22] via-[#064e3b] to-[#022c22]",
+  };
+
   useEffect(() => {
     if (tenantId === "demo") {
       setTenantConfig({
@@ -113,25 +128,50 @@ export default function PortalPageContent({ initialTenantId }) {
         darkBackground: "from-black to-zinc-900",
         darkHeader: "from-black via-zinc-950 to-black",
       });
-    } else {
-      setTenantConfig({
-        tenant_id: tenantId,
-        name: "IBA O' ESTE",
-        shortName: "Iba O' Este",
-        subtitle: "Calumpit, Bulacan",
-        logo: "/logo.png",
-        colorStyle: {
-          background: "linear-gradient(135deg, #064e3b 0%, #022c22 100%)",
-        },
-        primaryColor: "#059669",
-        primaryHover: "#047857",
-        accentColor: "#10b981",
-        secondaryColor: "#34d399",
-        cardBackground: "#064e3b",
-        darkBackground: "from-[#064e3b] to-[#022c22]",
-        darkHeader: "from-[#022c22] via-[#064e3b] to-[#022c22]",
-      });
+      return;
     }
+
+    // Fetch tenant info from DB
+    let cancelled = false;
+    const fetchTenantInfo = async () => {
+      try {
+        const res = await fetch("/api/portal/tenant-info", {
+          headers: { "x-tenant-id": tenantId },
+        });
+        const json = await res.json();
+        if (cancelled) return;
+
+        const tenant = json.data;
+        const displayName = tenant?.name || "BARANGAY";
+        const shortName = displayName
+          .toLowerCase()
+          .split(" ")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+        const subtitle = tenant?.domain || "Official Barangay Portal";
+
+        setTenantConfig({
+          tenant_id: tenantId,
+          name: displayName.toUpperCase(),
+          shortName,
+          subtitle,
+          logo: "/logo.png",
+          ...defaultColors,
+        });
+      } catch {
+        if (cancelled) return;
+        setTenantConfig({
+          tenant_id: tenantId,
+          name: "BARANGAY",
+          shortName: "Barangay",
+          subtitle: "Official Barangay Portal",
+          logo: "/logo.png",
+          ...defaultColors,
+        });
+      }
+    };
+    fetchTenantInfo();
+    return () => { cancelled = true; };
   }, [tenantId]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -885,6 +925,31 @@ export default function PortalPageContent({ initialTenantId }) {
       className="min-h-screen bg-gray-50"
       style={{ fontFamily: "'Outfit', 'Inter', sans-serif" }}
     >
+      <Head>
+        <title>{tenantConfig.shortName} — Official Barangay Portal</title>
+        <meta name="description" content={`Official online portal of ${tenantConfig.name}, ${tenantConfig.subtitle}. Request certificates, track requests, and access barangay services online.`} />
+        <meta name="keywords" content="barangay, portal, certificate, clearance, permit, online services, Philippines, local government" />
+        <meta name="author" content={tenantConfig.name} />
+        <meta name="robots" content="index, follow" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={`${tenantConfig.shortName} — Official Barangay Portal`} />
+        <meta property="og:description" content={`Official online portal of ${tenantConfig.name}, ${tenantConfig.subtitle}. Request certificates, track requests, and access barangay services online.`} />
+        <meta property="og:image" content={tenantConfig.logo} />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${tenantConfig.shortName} — Official Barangay Portal`} />
+        <meta name="twitter:description" content={`Official online portal of ${tenantConfig.name}, ${tenantConfig.subtitle}.`} />
+
+        {/* Theme Color */}
+        <meta name="theme-color" content={tenantConfig.primaryColor} />
+
+        {/* Canonical */}
+        <link rel="canonical" href={`https://brgydesk.vercel.app/${tenantId}`} />
+      </Head>
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
@@ -1087,19 +1152,20 @@ export default function PortalPageContent({ initialTenantId }) {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100 py-6 px-6 space-y-4 animate-in slide-in-from-top-4 duration-300">
             {[
-              "News & Updates",
-              "Barangay Forms",
-              "Facilities",
-              "Achievements & Awards",
-              "Barangay Officials",
-              "Contact Us",
-            ].map((item) => (
+              { href: "#news", label: "News & Updates" },
+              { href: "#forms", label: "Barangay Forms" },
+              { href: "#directory", label: "Facilities" },
+              { href: "#achievements", label: "Achievements & Awards" },
+              { href: "#officials", label: "Barangay Officials" },
+              { href: "#contact", label: "Contact Us" },
+            ].map((link) => (
               <a
-                key={item}
-                href={`#${item.toLowerCase().split(" ")[0]}`}
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
                 className="block py-3 text-gray-800 font-bold text-lg mobile-nav-link border-b border-gray-50 last:border-0"
               >
-                {item}
+                {link.label}
               </a>
             ))}
             <a
