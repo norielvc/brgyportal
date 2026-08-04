@@ -1,5 +1,5 @@
 -- Tourism & Lifestyle Destinations Table
--- Run this in Supabase SQL Editor to create the tourism_destinations table
+-- Run this in Supabase SQL Editor to create (or update) the tourism_destinations table
 
 CREATE TABLE IF NOT EXISTS tourism_destinations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -8,15 +8,35 @@ CREATE TABLE IF NOT EXISTS tourism_destinations (
   description TEXT,
   image TEXT,
   directions_url TEXT,
-  latitude DOUBLE PRECISION,
-  longitude DOUBLE PRECISION,
   order_index INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Add GPS columns if they do not already exist (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'tourism_destinations' AND column_name = 'latitude'
+  ) THEN
+    ALTER TABLE tourism_destinations ADD COLUMN latitude DOUBLE PRECISION;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'tourism_destinations' AND column_name = 'longitude'
+  ) THEN
+    ALTER TABLE tourism_destinations ADD COLUMN longitude DOUBLE PRECISION;
+  END IF;
+END $$;
+
 -- Enable RLS
 ALTER TABLE tourism_destinations ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies first to avoid "already exists" errors
+DROP POLICY IF EXISTS "Public can read tourism" ON tourism_destinations;
+DROP POLICY IF EXISTS "Authenticated can manage tourism" ON tourism_destinations;
 
 -- Policy: Anyone can read (public portal)
 CREATE POLICY "Public can read tourism" ON tourism_destinations
