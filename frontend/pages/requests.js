@@ -2470,15 +2470,12 @@ function RequestDetailsModal({
                 )}
 
               {/* OR Preview Section for Releasing Team */}
-              {request.status === "oic_review" &&
-                request.certificate_type === "business_permit" && (
-                  <ORPreviewSection request={request} />
-                )}
+              {request.status === "oic_review" && request.certificate_type === "business_permit" && (
+                <ORPreviewSection request={request} />
+              )}
               {/* Status and Step */}
-              {/* Status, Type, and Step Layout */}
-              {/* Status, Type, and Step Layout */}
               <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-                <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span
                     className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black tracking-[0.1em] border shadow-sm ${getStatusColor(request.status)}`}
                   >
@@ -2490,9 +2487,7 @@ function RequestDetailsModal({
                     </span>
                     {currentStep && (
                       <>
-                        <span className="text-gray-300 font-light text-xl">
-                          /
-                        </span>
+                        <span className="text-gray-300 font-light text-lg">/</span>
                         <span className="text-blue-600 font-extrabold text-[13.5px] uppercase tracking-wide">
                           {currentStep.name}
                         </span>
@@ -2820,22 +2815,6 @@ function RequestDetailsModal({
                           <p className="font-semibold text-gray-800 text-sm font-mono tracking-tighter">
                             {request.contact_number || "NOT RECORDED"}
                           </p>
-                          {!isEditing && request.contact_number && (
-                            <div className="flex items-center gap-1">
-                              <a
-                                href={`tel:${request.contact_number}`}
-                                className="p-1 hover:bg-blue-50 rounded text-blue-500 transition-colors"
-                              >
-                                <Phone className="w-3.5 h-3.5" />
-                              </a>
-                              <a
-                                href={`sms:${request.contact_number}`}
-                                className="p-1 hover:bg-emerald-50 rounded text-emerald-500 transition-colors"
-                              >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                              </a>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
