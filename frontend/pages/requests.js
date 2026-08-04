@@ -22,6 +22,7 @@ import {
   Shield,
   Printer,
   Download,
+  PenTool,
   ShieldAlert,
   Info,
   Edit,
@@ -325,6 +326,7 @@ export default function RequestsPage() {
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [pickupName, setPickupName] = useState("");
 
+  const [userSignature, setUserSignature] = useState(null);
   const [requestHistory, setRequestHistory] = useState([]);
 
   // Handle clicking outside of dropdowns
@@ -420,12 +422,40 @@ export default function RequestsPage() {
         }
       }
 
-      // 2. Now fetch requests (passing the loaded workflows so the Smart Merge works immediately)
+      // 2. Fetch User Signatures
+      fetchUserSignature();
+
+      // 3. Now fetch requests (passing the loaded workflows so the Smart Merge works immediately)
       await fetchRequests(loadedWorkflows, user);
     };
 
     initializeData();
   }, []);
+
+  const fetchUserSignature = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/user/signatures`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      if (data.success && data.signatures && data.signatures.length > 0) {
+        // Find default or use the first one
+        const defaultSig =
+          data.signatures.find((s) => s.id === data.defaultSignatureId) ||
+          data.signatures[0];
+        setUserSignature(defaultSig.signatureData);
+      }
+    } catch (error) {
+      console.error("Error fetching user signature:", error);
+    }
+  };
 
   // Re-fetch requests when view mode changes
   useEffect(() => {
@@ -1585,6 +1615,7 @@ export default function RequestsPage() {
                 : selectedRequest.status),
           )}
           history={requestHistory}
+          userSignature={userSignature}
         />
       )}
 
@@ -4853,10 +4884,21 @@ function ActionModal({
   onClose,
   processing,
   currentStep,
+  userSignature,
   history = [],
 }) {
   // Dynamic config based on current step
   const isReviewStep = currentStep?.status === "staff_review";
+
+  const isEsignRole =
+    currentStep &&
+    currentStep.officialRole &&
+    currentStep.officialRole !== "None";
+  const canUseEsign =
+    actionType === "approve" &&
+    !["oic_review", "ready", "ready_for_pickup", "Treasury"].includes(
+      request.status,
+    );
 
   const config = {
     approve: isReviewStep
@@ -5045,6 +5087,39 @@ function ActionModal({
                     : "REQUIRED: Please provide a detailed justification for this decision..."}
                 />
               </div>
+
+              {/* Signature Preview (Conditional) */}
+              {canUseEsign && (
+                <div className="border-t-2 border-dashed border-gray-200 pt-4 shrink-0">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600"><Shield className="w-4 h-4" /></div>
+                      <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Digital Authorization</p>
+                    </div>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase">{isEsignRole ? currentStep.officialRole : "Official Sign"}</p>
+                  </div>
+                  {userSignature ? (
+                    <div className="bg-white rounded-xl border border-blue-200 p-1 shadow-sm">
+                      <div className="relative h-28 flex items-center justify-center rounded-2xl bg-emerald-50/30 border-2 border-dashed border-emerald-500/20 overflow-hidden">
+                        <img
+                          src={userSignature}
+                          className="h-full object-contain p-4 mix-blend-multiply"
+                          alt="Signature Preview"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3">
+                      <div className="p-1.5 bg-amber-100 rounded-lg text-amber-600">
+                        <AlertTriangle className="w-4 h-4" />
+                      </div>
+                      <p className="text-[11px] font-bold text-amber-800 uppercase leading-relaxed">
+                        No saved signature found. Please upload your signature in Settings to use this option.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -5060,21 +5135,62 @@ function ActionModal({
           </button>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => onSubmit(null, null, null, comment)}
-              disabled={
-                processing ||
-                (["reject", "return"].includes(actionType) && !comment.trim())
-              }
-              className={`px-10 py-4 ${cfg.buttonBg} text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {processing ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <cfg.icon className="w-5 h-5" />
-              )}
-              {cfg.buttonText}
-            </button>
+            {actionType === "approve" && canUseEsign ? (
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => onSubmit(null, null, null, comment)}
+                  disabled={processing}
+                  className="px-8 py-4 rounded-2xl border-2 border-gray-100 text-[12px] font-black text-gray-500 uppercase tracking-widest hover:border-emerald-200 hover:text-emerald-600 hover:bg-emerald-50/50 transition-all disabled:opacity-50"
+                >
+                  {cfg.buttonText} Without Signature
+                </button>
+
+                <div className="relative group">
+                  <button
+                    onClick={() => {
+                      if (!userSignature) {
+                        toast.error("Please upload your signature in Settings to use this option.");
+                        return;
+                      }
+                      onSubmit(userSignature, null, null, comment);
+                    }}
+                    disabled={processing || !userSignature}
+                    className={`px-10 py-4 bg-emerald-600 text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-3 ${
+                      !userSignature ? "opacity-30 cursor-not-allowed grayscale" : ""
+                    }`}
+                  >
+                    {processing ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <PenTool className="w-5 h-5" />
+                    )}
+                    {cfg.buttonText} With Signature
+                  </button>
+
+                  {isEsignRole && !userSignature && (
+                    <p className="absolute -top-10 right-0 text-[10px] font-bold text-rose-500 uppercase animate-pulse whitespace-nowrap bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-rose-100 shadow-sm pointer-events-none">
+                      ⚠️ Upload signature in Settings
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => onSubmit(null, null, null, comment)}
+                disabled={
+                  processing ||
+                  (["reject", "return"].includes(actionType) && !comment.trim())
+                }
+                className={`px-10 py-4 ${cfg.buttonBg} text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {processing ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <cfg.icon className="w-5 h-5" />
+                )}
+                {cfg.buttonText}
+              </button>
+            )}
           </div>
         </div>
       </div>
