@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS tourism_destinations (
   description TEXT,
   image TEXT,
   directions_url TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
   order_index INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()

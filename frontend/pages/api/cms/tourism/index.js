@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const { name, description, image, directions_url } = req.body;
+      const { name, description, image, directions_url, latitude, longitude } = req.body;
 
       const { data: maxOrder } = await supabase
         .from("tourism_destinations")
@@ -39,6 +39,8 @@ export default async function handler(req, res) {
           description: description || "",
           image: image || "",
           directions_url: directions_url || "",
+          latitude: latitude || null,
+          longitude: longitude || null,
           order_index: newOrderIndex,
           tenant_id: tenantId,
         })
@@ -61,6 +63,8 @@ export default async function handler(req, res) {
           description: d.description || "",
           image: d.image || "",
           directions_url: d.directions_url || "",
+          latitude: d.latitude || null,
+          longitude: d.longitude || null,
           order_index: index,
           tenant_id: tenantId,
         }));
@@ -80,6 +84,8 @@ export default async function handler(req, res) {
         description,
         image,
         directions_url,
+        latitude,
+        longitude,
         order_index,
       } = req.body;
       const { data, error } = await supabase
@@ -89,6 +95,8 @@ export default async function handler(req, res) {
           description,
           image,
           directions_url,
+          latitude: latitude || null,
+          longitude: longitude || null,
           order_index,
           updated_at: new Date().toISOString(),
         })

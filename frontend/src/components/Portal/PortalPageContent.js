@@ -731,13 +731,23 @@ export default function PortalPageContent({ initialTenantId }) {
         if (tourismRes.ok) {
           const tourismData = await tourismRes.json();
           if (tourismData.success && Array.isArray(tourismData.data)) {
-            const mapped = tourismData.data.map((d) => ({
-              id: d.id,
-              name: d.name,
-              image: d.image || "",
-              description: d.description || "",
-              directions: d.directions_url || `https://maps.google.com/?q=${encodeURIComponent(d.name)}`,
-            }));
+            const mapped = tourismData.data.map((d) => {
+              const hasCoords = d.latitude != null && d.longitude != null;
+              const directions = d.directions_url
+                || (hasCoords
+                  ? `https://www.google.com/maps/search/?api=1&query=${d.latitude},${d.longitude}`
+                  : `https://maps.google.com/?q=${encodeURIComponent(d.name)}`);
+              return {
+                id: d.id,
+                name: d.name,
+                image: d.image || "",
+                description: d.description || "",
+                directions,
+                latitude: d.latitude,
+                longitude: d.longitude,
+                hasCoords,
+              };
+            });
             setTourismDestinations(mapped);
           }
         }
@@ -1922,9 +1932,17 @@ export default function PortalPageContent({ initialTenantId }) {
                   </a>
                 </div>
                 <div className="p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
                     {destination.name}
                   </h3>
+                  {destination.description && (
+                    <p className="text-gray-500 text-sm mb-3 line-clamp-2">{destination.description}</p>
+                  )}
+                  {destination.hasCoords && (
+                    <p className="text-xs text-gray-400 mb-3 font-mono">
+                      {destination.latitude.toFixed(6)}, {destination.longitude.toFixed(6)}
+                    </p>
+                  )}
                   <a
                     href={destination.directions}
                     target="_blank"
@@ -1933,7 +1951,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     style={{ color: tenantConfig.primaryColor }}
                   >
                     <MapPin className="w-4 h-4" />
-                    Get Directions
+                    {destination.hasCoords ? "View on Google Maps" : "Get Directions"}
                   </a>
                 </div>
               </div>
