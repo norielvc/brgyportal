@@ -1029,7 +1029,30 @@ export default function PortalPageContent({ initialTenantId }) {
         .program-card:hover .program-title {
           color: ${tenantConfig.accentColor} !important;
         }
+
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+          }
+          .animate-on-scroll {
+            opacity: 1 !important;
+            transform: none !important;
+          }
+        }
       `}</style>
+      {/* Skip to Content — Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-white focus:text-gray-900 focus:rounded-lg focus:shadow-xl focus:text-sm focus:font-bold"
+      >
+        Skip to content
+      </a>
+
       {/* RP Government Masthead */}
       <div className="bg-gray-900 text-white/90 py-1.5 px-4 text-center text-[10px] sm:text-xs font-medium tracking-wide border-b border-white/10">
         <span className="hidden sm:inline">Republic of the Philippines</span>
@@ -1146,6 +1169,8 @@ export default function PortalPageContent({ initialTenantId }) {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
               className="md:hidden p-2.5 rounded-xl bg-gray-100/50 hover:bg-gray-100 transition-colors"
             >
               {mobileMenuOpen ? (
@@ -1200,6 +1225,8 @@ export default function PortalPageContent({ initialTenantId }) {
       {/* Hero Section with News Carousel - Trimmed Balanced Height */}
       <section
         id="news"
+        aria-label="News and announcements carousel"
+        tabIndex={-1}
         className="relative h-[360px] md:h-[420px] lg:h-[520px] xl:h-[580px] overflow-hidden bg-gray-900"
       >
         {/* Loading Skeleton */}
@@ -1266,6 +1293,7 @@ export default function PortalPageContent({ initialTenantId }) {
                 (prev) => (prev - 1 + newsItems.length) % newsItems.length,
               )
             }
+            aria-label="Previous slide"
             className="bg-white/30 hover:bg-white/50 backdrop-blur-sm p-2 rounded-full transition-all touch-manipulation"
           >
             <ChevronLeft className="w-4 h-4 text-white" />
@@ -1277,6 +1305,8 @@ export default function PortalPageContent({ initialTenantId }) {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
+                aria-label={`Go to slide ${index + 1}`}
+                aria-current={currentSlide === index}
                 className={`w-3 h-3 rounded-full transition-all ${
                   currentSlide === index
                     ? "bg-white w-8"
@@ -1291,6 +1321,7 @@ export default function PortalPageContent({ initialTenantId }) {
             onClick={() =>
               setCurrentSlide((prev) => (prev + 1) % newsItems.length)
             }
+            aria-label="Next slide"
             className="bg-white/30 hover:bg-white/50 backdrop-blur-sm p-2 rounded-full transition-all touch-manipulation"
           >
             <ChevronRight className="w-4 h-4 text-white" />
@@ -2775,10 +2806,11 @@ export default function PortalPageContent({ initialTenantId }) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="contact-firstName" className="block text-sm font-medium text-gray-700 mb-2">
                       First Name
                     </label>
                     <input
+                      id="contact-firstName"
                       type="text"
                       value={formData.firstName}
                       onChange={(e) =>
@@ -2790,10 +2822,11 @@ export default function PortalPageContent({ initialTenantId }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="contact-lastName" className="block text-sm font-medium text-gray-700 mb-2">
                       Last Name
                     </label>
                     <input
+                      id="contact-lastName"
                       type="text"
                       value={formData.lastName}
                       onChange={(e) =>
@@ -2807,10 +2840,11 @@ export default function PortalPageContent({ initialTenantId }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="contact-email" className="block text-sm font-medium text-gray-700 mb-2">
                     Email / Email Address
                   </label>
                   <input
+                    id="contact-email"
                     type="email"
                     value={formData.email}
                     onChange={(e) =>
@@ -2823,10 +2857,11 @@ export default function PortalPageContent({ initialTenantId }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="contact-phone" className="block text-sm font-medium text-gray-700 mb-2">
                     Phone / Numero ng Telepono
                   </label>
                   <input
+                    id="contact-phone"
                     type="tel"
                     value={formData.phone}
                     onChange={(e) =>
@@ -2838,10 +2873,11 @@ export default function PortalPageContent({ initialTenantId }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="contact-message" className="block text-sm font-medium text-gray-700 mb-2">
                     Message
                   </label>
                   <textarea
+                    id="contact-message"
                     value={formData.message}
                     onChange={(e) =>
                       setFormData({ ...formData, message: e.target.value })
