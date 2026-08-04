@@ -43,6 +43,9 @@ import {
   Trophy,
   Target,
   Quote,
+  Navigation,
+  MessageCircle,
+  HeadphonesIcon,
   Image as ImageIcon,
 } from "lucide-react";
 import BarangayClearanceModal from "@/components/Forms/BarangayClearanceModal";
@@ -441,6 +444,26 @@ export default function PortalPageContent({ initialTenantId }) {
   const [achievements, setAchievements] = useState([]);
 
   const [programs, setPrograms] = useState([]);
+  const [tourismDestinations, setTourismDestinations] = useState([
+    {
+      id: 1,
+      name: "Wildflour Restaurant",
+      image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=80&w=800",
+      directions: "https://maps.google.com/?q=Wildflour+Restaurant",
+    },
+    {
+      id: 2,
+      name: "BORRO",
+      image: "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=800",
+      directions: "https://maps.google.com/?q=BORRO+cafe",
+    },
+    {
+      id: 3,
+      name: "VICE COMEDY CLUB",
+      image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=800",
+      directions: "https://maps.google.com/?q=Vice+Comedy+Club",
+    },
+  ]);
   const [heroSettings, setHeroSettings] = useState({
     title: "BARANGAY OFFICIALS",
     subtitle: "Meet our dedicated team serving our community",
@@ -1134,6 +1157,7 @@ export default function PortalPageContent({ initialTenantId }) {
                 { href: "#news", label: "News & Updates" },
                 { href: "#forms", label: "Barangay Forms" },
                 { href: "#directory", label: "Facilities" },
+                { href: "#tourism", label: "Tourism" },
                 { href: "#achievements", label: "Achievements" },
                 { href: "#officials", label: "Officials" },
                 { href: "#contact", label: "Contact Us" },
@@ -1189,6 +1213,7 @@ export default function PortalPageContent({ initialTenantId }) {
               { href: "#news", label: "News & Updates" },
               { href: "#forms", label: "Barangay Forms" },
               { href: "#directory", label: "Facilities" },
+              { href: "#tourism", label: "Tourism & Lifestyle" },
               { href: "#achievements", label: "Achievements & Awards" },
               { href: "#officials", label: "Barangay Officials" },
               { href: "#contact", label: "Contact Us" },
@@ -1856,6 +1881,62 @@ export default function PortalPageContent({ initialTenantId }) {
           </div>
         </section>
       )}
+
+      {/* Tourism and Lifestyle Section */}
+      <section id="tourism" className="py-20 md:py-28 bg-white relative overflow-hidden">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-5">
+              Tourism and Lifestyle
+            </h2>
+            <p className="text-gray-500 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+              Discover exciting destinations and lifestyle spots in our barangay. Click on any card to get directions.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {tourismDestinations.map((destination) => (
+              <div
+                key={destination.id}
+                className="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_-8px_rgba(0,0,0,0.12)] border border-gray-100 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.18)] hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+                  <img
+                    src={destination.image}
+                    alt={destination.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <a
+                    href={destination.directions}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg hover:bg-white transition-all"
+                    aria-label={`Get directions to ${destination.name}`}
+                  >
+                    <Navigation className="w-5 h-5" style={{ color: tenantConfig.primaryColor }} />
+                  </a>
+                </div>
+                <div className="p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">
+                    {destination.name}
+                  </h3>
+                  <a
+                    href={destination.directions}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-bold hover:gap-2.5 transition-all"
+                    style={{ color: tenantConfig.primaryColor }}
+                  >
+                    <MapPin className="w-4 h-4" />
+                    Get Directions
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Barangay Achievement and Awards Section */}
       {!isFeatureLocked('achievements') && (
@@ -3118,6 +3199,7 @@ export default function PortalPageContent({ initialTenantId }) {
               <a href="#forms" className="text-xs text-white/50 hover:text-white transition-colors">Barangay Forms & Certificates</a>
               <a href="#track" className="text-xs text-white/50 hover:text-white transition-colors">Track Your Request</a>
               <a href="#directory" className="text-xs text-white/50 hover:text-white transition-colors">Facilities & Infrastructure</a>
+              <a href="#tourism" className="text-xs text-white/50 hover:text-white transition-colors">Tourism & Lifestyle</a>
               <a href="#officials" className="text-xs text-white/50 hover:text-white transition-colors">Barangay Officials</a>
               <a href="#contact" className="text-xs text-white/50 hover:text-white transition-colors">Contact Us</a>
             </div>
@@ -3144,6 +3226,36 @@ export default function PortalPageContent({ initialTenantId }) {
           </div>
         </div>
       </footer>
+      {/* Floating Action Buttons — KapChat & Brgy Assistance */}
+      <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3">
+        <button
+          onClick={() => router.push("/login")}
+          className="group flex items-center gap-2 bg-white rounded-full shadow-xl border border-gray-100 px-4 py-3 hover:shadow-2xl transition-all"
+          aria-label="KapChat — Chat with the Barangay"
+        >
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${tenantConfig.primaryColor}15` }}
+          >
+            <MessageCircle className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
+          </div>
+          <span className="text-sm font-bold text-gray-900 hidden sm:inline">KapChat</span>
+        </button>
+        <button
+          onClick={() => router.push("/login")}
+          className="group flex items-center gap-2 bg-white rounded-full shadow-xl border border-gray-100 px-4 py-3 hover:shadow-2xl transition-all"
+          aria-label="Brgy Assistance"
+        >
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${tenantConfig.accentColor}15` }}
+          >
+            <HeadphonesIcon className="w-4 h-4" style={{ color: tenantConfig.accentColor }} />
+          </div>
+          <span className="text-sm font-bold text-gray-900 hidden sm:inline">Brgy Assistance</span>
+        </button>
+      </div>
+
       <div className="fixed bottom-6 right-6 z-50">
         {showHotlines && (
           <div className="mb-4 bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 w-80 animate-fade-in">
