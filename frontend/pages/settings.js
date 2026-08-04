@@ -1014,6 +1014,7 @@ export default function Settings() {
                         Papa.parse(file, {
                           header: true,
                           skipEmptyLines: true,
+                          encoding: "UTF-8",
                           complete: (results) =>
                             setImportPreview(results.data.slice(0, 5)),
                         });
@@ -1098,6 +1099,7 @@ export default function Settings() {
                     Papa.parse(importFile, {
                       header: true,
                       skipEmptyLines: true,
+                      encoding: "UTF-8",
                       complete: async (results) => {
                         try {
                           // Helper function to parse various date formats

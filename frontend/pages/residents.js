@@ -22,6 +22,9 @@ import {
   Skull,
   Activity,
   ArrowLeft,
+  FileText,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Layout from "@/components/Layout/Layout";
@@ -61,6 +64,18 @@ export default function Residents() {
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [limit, setLimit] = useState(30);
+
+  // Advanced filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    gender: "",
+    civil_status: "",
+    purok: "",
+    is_deceased: "",
+    pending_case: "",
+    sort: "newest",
+  });
+  const [activeFilterCount, setActiveFilterCount] = useState(0);
 
   // Tenant-specific address fields
   const [tenantAddressDefaults, setTenantAddressDefaults] = useState({
@@ -103,6 +118,11 @@ export default function Residents() {
   });
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const count = Object.entries(filters).filter(([k, v]) => k !== "sort" && v !== "").length;
+    setActiveFilterCount(count);
+  }, [filters]);
 
   useEffect(() => {
     setMounted(true);
@@ -159,7 +179,7 @@ export default function Residents() {
     if (mounted && currentUser) {
       fetchResidents();
     }
-  }, [mounted, currentUser, currentPage, searchTerm, limit]);
+  }, [mounted, currentUser, currentPage, searchTerm, limit, filters]);
 
   const handleOpenAddModal = () => {
     // Determine purok options based on tenant
@@ -302,9 +322,9 @@ export default function Residents() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-xl h-10 w-10 border-4 border-blue-600 border-t-transparent shadow-lg shadow-blue-100"></div>
-          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.3em]">
-            Loading System...
+          <div className="animate-spin rounded-lg h-8 w-8 border-4 border-[#03254c] border-t-transparent"></div>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+            Loading...
           </p>
         </div>
       </div>
@@ -314,8 +334,20 @@ export default function Residents() {
   const fetchResidents = async () => {
     setIsLoading(true);
     try {
+      const params = new URLSearchParams({
+        name: searchTerm || "",
+        page: currentPage.toString(),
+        limit: limit.toString(),
+      });
+      if (filters.gender) params.set("gender", filters.gender);
+      if (filters.civil_status) params.set("civil_status", filters.civil_status);
+      if (filters.purok) params.set("purok", filters.purok);
+      if (filters.is_deceased) params.set("is_deceased", filters.is_deceased);
+      if (filters.pending_case) params.set("pending_case", filters.pending_case);
+      if (filters.sort) params.set("sort", filters.sort);
+
       const response = await fetch(
-        `${API_URL}/residents/search?name=${encodeURIComponent(searchTerm || "")}&page=${currentPage}&limit=${limit}`,
+        `${API_URL}/residents/search?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${getAuthToken()}`,
@@ -328,11 +360,6 @@ export default function Residents() {
         setResidents(data.residents);
         setTotalItems(data.totalItems);
         setTotalPages(data.totalPages);
-        if (data.residents.length === 0) {
-          toast.error(
-            `No residents found for tenant: ${currentUser?.tenant_id}`,
-          );
-        }
       } else {
         toast.error(data.message || "Failed to fetch residents");
       }
@@ -349,65 +376,203 @@ export default function Residents() {
     setCurrentPage(1);
   }, 300);
 
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setFilters({ gender: "", civil_status: "", purok: "", is_deceased: "", pending_case: "", sort: "newest" });
+    setCurrentPage(1);
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Search & Actions Top Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between pb-6 border-b border-gray-100">
-        <div className="relative w-full md:w-1/3 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+    <div className="p-4 sm:p-6 space-y-4">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="SEARCH OFFICIAL RECORDS..."
-            className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-black text-gray-900 uppercase text-xs tracking-tight placeholder:font-black placeholder:text-gray-300 shadow-inner"
+            placeholder="Search residents..."
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#03254c] focus:ring-2 focus:ring-[#03254c]/10 outline-none transition-all text-sm text-gray-900 placeholder:text-gray-400"
             onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex items-center gap-3">
-            <div className="bg-white p-1.5 rounded-lg border border-gray-100 shadow-sm">
-              <UsersIcon className="w-4 h-4 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">
-                Total Population
-              </p>
-              <p className="text-[15px] font-black text-gray-800 tracking-tighter leading-none">
-                {totalItems || 0}
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors border ${showFilters || activeFilterCount > 0 ? "bg-[#03254c] text-white border-[#03254c]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="bg-white text-[#03254c] text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+          </button>
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200">
+            <UsersIcon className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-bold text-gray-700">{totalItems || 0}</span>
           </div>
           <button
             onClick={handleOpenAddModal}
-            className="px-8 py-3.5 bg-blue-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2"
+            className="px-4 py-2.5 bg-[#03254c] text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Register Resident
+            Register
           </button>
         </div>
       </div>
 
-      {/* Residents Table */}
+      {/* Advanced Filter Panel */}
+      {showFilters && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+            <p className="text-sm font-bold text-gray-700">Advanced Filters</p>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="text-xs font-semibold text-gray-400 hover:text-rose-500 transition-colors flex items-center gap-1"
+              >
+                <X className="w-3 h-3" /> Clear all
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Gender</label>
+              <select
+                value={filters.gender}
+                onChange={(e) => handleFilterChange("gender", e.target.value)}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:border-[#03254c] focus:ring-2 focus:ring-[#03254c]/10 outline-none transition-all"
+              >
+                <option value="">All genders</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Civil Status</label>
+              <select
+                value={filters.civil_status}
+                onChange={(e) => handleFilterChange("civil_status", e.target.value)}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:border-[#03254c] focus:ring-2 focus:ring-[#03254c]/10 outline-none transition-all"
+              >
+                <option value="">All statuses</option>
+                <option value="SINGLE">Single</option>
+                <option value="MARRIED">Married</option>
+                <option value="WIDOWED">Widowed</option>
+                <option value="SEPARATED">Separated</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Purok</label>
+              <select
+                value={filters.purok}
+                onChange={(e) => handleFilterChange("purok", e.target.value)}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:border-[#03254c] focus:ring-2 focus:ring-[#03254c]/10 outline-none transition-all"
+              >
+                <option value="">All puroks</option>
+                {purokOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Vital Status</label>
+              <select
+                value={filters.is_deceased}
+                onChange={(e) => handleFilterChange("is_deceased", e.target.value)}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:border-[#03254c] focus:ring-2 focus:ring-[#03254c]/10 outline-none transition-all"
+              >
+                <option value="">All residents</option>
+                <option value="false">Active only</option>
+                <option value="true">Deceased only</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Legal Status</label>
+              <select
+                value={filters.pending_case}
+                onChange={(e) => handleFilterChange("pending_case", e.target.value)}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:border-[#03254c] focus:ring-2 focus:ring-[#03254c]/10 outline-none transition-all"
+              >
+                <option value="">All records</option>
+                <option value="false">No pending case</option>
+                <option value="true">With pending case</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Sort By</label>
+              <select
+                value={filters.sort}
+                onChange={(e) => handleFilterChange("sort", e.target.value)}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:border-[#03254c] focus:ring-2 focus:ring-[#03254c]/10 outline-none transition-all"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="name_desc">Name (Z-A)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Active Filter Chips */}
+      {activeFilterCount > 0 && !showFilters && (
+        <div className="flex flex-wrap items-center gap-2">
+          {filters.gender && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#03254c]/10 text-[#03254c] rounded-full text-xs font-semibold">
+              {filters.gender === "MALE" ? "Male" : "Female"}
+              <button onClick={() => handleFilterChange("gender", "")}><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {filters.civil_status && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#03254c]/10 text-[#03254c] rounded-full text-xs font-semibold capitalize">
+              {filters.civil_status.toLowerCase()}
+              <button onClick={() => handleFilterChange("civil_status", "")}><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {filters.purok && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#03254c]/10 text-[#03254c] rounded-full text-xs font-semibold">
+              {filters.purok}
+              <button onClick={() => handleFilterChange("purok", "")}><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {filters.is_deceased && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#03254c]/10 text-[#03254c] rounded-full text-xs font-semibold">
+              {filters.is_deceased === "true" ? "Deceased" : "Active"}
+              <button onClick={() => handleFilterChange("is_deceased", "")}><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {filters.pending_case && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#03254c]/10 text-[#03254c] rounded-full text-xs font-semibold">
+              {filters.pending_case === "true" ? "With case" : "No case"}
+              <button onClick={() => handleFilterChange("pending_case", "")}><X className="w-3 h-3" /></button>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Residents Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="animate-pulse bg-white border border-gray-100 rounded-2xl h-48"
-            ></div>
+            <div key={i} className="animate-pulse bg-white border border-gray-100 rounded-xl h-40" />
           ))}
         </div>
       ) : residents.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-          <UsersIcon className="w-16 h-16 text-gray-300 mb-4 opacity-50" />
-          <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">
-            No Records Found
-          </h3>
-          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-            Try adjusting your search filters
-          </p>
+        <div className="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+          <UsersIcon className="w-12 h-12 text-gray-300 mb-3" />
+          <h3 className="text-lg font-bold text-gray-700">No residents found</h3>
+          <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {residents.map((resident) => (
             <div
               key={resident.id}
@@ -415,66 +580,50 @@ export default function Residents() {
                 setSelectedResident(resident);
                 setIsModalOpen(true);
               }}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all group cursor-pointer relative overflow-hidden flex flex-col"
+              className="bg-white rounded-xl border border-gray-200 hover:border-[#03254c]/30 hover:shadow-md transition-all cursor-pointer flex flex-col"
             >
-              <div className="p-6 flex-1 pt-6 bg-gradient-to-br from-white via-white to-gray-50/50 group-hover:to-blue-50/30 transition-all duration-500">
-                <div className="flex justify-between items-start mb-5">
-                  <div className="h-16 w-16 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100/50 group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:border-transparent rounded-2xl flex items-center justify-center text-indigo-600 group-hover:text-white text-2xl font-black transition-all duration-300 shadow-sm group-hover:shadow-blue-500/25 group-hover:-translate-y-1">
+              <div className="p-4 flex-1">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="h-10 w-10 bg-[#03254c]/10 rounded-lg flex items-center justify-center text-[#03254c] text-base font-bold shrink-0">
                     {resident.last_name?.charAt(0)}
                   </div>
-                  <div className="text-right">
-                    <span
-                      className={`inline-block px-3 py-1.5 rounded-xl text-[9px] font-black tracking-[0.2em] uppercase border shadow-sm ${resident.is_deceased ? "bg-gradient-to-r from-rose-50 to-red-50 text-rose-700 border-rose-200/50" : "bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-emerald-200/50"}`}
-                    >
-                      {resident.is_deceased ? "DECEASED" : "ACTIVE"}
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${resident.is_deceased ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"}`}>
+                      {resident.is_deceased ? (
+                        <><Skull className="w-3 h-3 mr-1" /> Deceased</>
+                      ) : (
+                        <><Activity className="w-3 h-3 mr-1" /> Active</>
+                      )}
                     </span>
-                    <p className="text-[10px] font-mono font-bold text-gray-400/80 tracking-tighter mt-1.5 group-hover:text-blue-400 transition-colors">
-                      #RID-{String(resident.id).padStart(6, "0")}
-                    </p>
+                    {resident.pending_case && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-600 text-white">
+                        <Shield className="w-3 h-3 mr-1" /> Case
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-1.5 pb-5">
-                  <h3 className="text-[19px] font-black text-gray-900 group-hover:text-blue-700 uppercase tracking-tight leading-none transition-colors truncate drop-shadow-sm">
-                    {resident.last_name}, {resident.first_name}{" "}
-                    {resident.middle_name
-                      ? resident.middle_name.charAt(0) + "."
-                      : ""}
-                  </h3>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-                    {resident.gender || "UNKNOWN"} • {resident.age || "N/A"} Y/O
-                    • {resident.civil_status || "SINGLE"}
-                  </p>
-                </div>
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight truncate mb-1">
+                  {resident.last_name}, {resident.first_name}{" "}
+                  {resident.middle_name ? resident.middle_name.charAt(0) + "." : ""}
+                </h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  {resident.gender || "Unknown"} • {resident.age || "N/A"} y/o • {resident.civil_status || "Single"}
+                </p>
 
-                <div className="space-y-2 pt-4 border-t border-gray-50/50">
+                <div className="space-y-1.5 pt-3 border-t border-gray-100">
                   <div className="flex items-start gap-2">
                     <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-                    <p className="text-[11px] font-bold text-gray-600 uppercase tracking-tight leading-relaxed line-clamp-2">
-                      {resident.residential_address}
-                    </p>
+                    <p className="text-xs text-gray-600 line-clamp-1">{resident.residential_address}</p>
                   </div>
                   {resident.contact_number && (
                     <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                      <p className="text-[11px] font-mono font-black text-gray-500 tracking-tighter">
-                        {resident.contact_number}
-                      </p>
+                      <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <p className="text-xs text-gray-600">{resident.contact_number}</p>
                     </div>
                   )}
                 </div>
               </div>
-
-              {resident.pending_case && (
-                <div className="bg-rose-600 py-1.5 px-4 flex items-center justify-between text-white border-t border-rose-700">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-3 h-3 text-rose-200" />
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                      PENDING LEGAL CASE RECORDED
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -484,268 +633,187 @@ export default function Residents() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Resident Profile"
-        size="full"
+        size="lg"
       >
         {selectedResident && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {/* Profile Header */}
-            <div className="flex items-center gap-5 p-5 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl text-white shadow-xl relative overflow-hidden">
-              <div className="h-20 w-20 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 text-white text-3xl font-black shadow-lg relative z-10 shrink-0">
+            <div className="flex items-center gap-4 p-4 bg-[#03254c] rounded-xl text-white">
+              <div className="h-12 w-12 bg-white/15 rounded-lg flex items-center justify-center border border-white/20 text-lg font-bold shrink-0">
                 {selectedResident.last_name?.charAt(0)}
               </div>
-              <div className="space-y-2 relative z-10 flex-1">
-                <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tight leading-none mb-2">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold leading-tight truncate">
                   {selectedResident.last_name}, {selectedResident.first_name}{" "}
                   {selectedResident.middle_name} {selectedResident.suffix}
                 </h2>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 mt-1.5">
                   {selectedResident.is_deceased ? (
-                    <span className="bg-rose-500 px-4 py-1.5 rounded-xl text-[11px] font-black tracking-widest uppercase flex items-center gap-2 shadow-lg shadow-rose-900/20">
-                      <Skull className="w-4 h-4" /> DECEASED RECORD
+                    <span className="bg-rose-500/80 px-2.5 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1.5">
+                      <Skull className="w-3 h-3" /> Deceased
                     </span>
                   ) : (
-                    <span className="bg-emerald-500 px-4 py-1.5 rounded-xl text-[11px] font-black tracking-widest uppercase flex items-center gap-2 shadow-lg shadow-emerald-900/20">
-                      <Activity className="w-4 h-4" /> ACTIVE RESIDENT
+                    <span className="bg-white/15 px-2.5 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1.5">
+                      <Activity className="w-3 h-3" /> Active
                     </span>
                   )}
                 </div>
               </div>
-              {/* Decorative background icons */}
-              <UsersIcon className="absolute -bottom-8 -right-8 w-48 h-48 text-white/5 -rotate-12" />
             </div>
 
-            {/* Info Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-              <div className="space-y-3">
-                <div className="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
-                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
-                    <User className="w-3.5 h-3.5 text-blue-500" />
-                    Personal Metrics
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        Gender & Maturity
-                      </p>
-                      <p className="text-[15px] font-semibold text-gray-900 tracking-tight">
-                        {selectedResident.gender} • {selectedResident.age} YEARS
-                        OLD
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        Social Status
-                      </p>
-                      <p className="text-[15px] font-semibold text-gray-900 tracking-tight">
-                        {selectedResident.civil_status || "SINGLE"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        Birth Information
-                      </p>
-                      <p className="text-[15px] font-medium text-gray-900 tracking-tight">
-                        {selectedResident.date_of_birth || "Not recorded"}
-                      </p>
-                    </div>
+            {/* Info Grid — 2×2 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Personal Information */}
+              <div className="p-4 border border-gray-100 rounded-xl bg-white">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-gray-50 pb-2">
+                  <User className="w-3.5 h-3.5 text-blue-500" />
+                  Personal Information
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                      Gender & Age
+                    </p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {selectedResident.gender} • {selectedResident.age} years old
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                      Civil Status
+                    </p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {selectedResident.civil_status || "Single"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                      Date of Birth
+                    </p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedResident.date_of_birth || "Not recorded"}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
-                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
-                    <MapPin className="w-3.5 h-3.5 text-purple-500" />
-                    Location Profile
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        Residential Address
-                      </p>
-                      <p className="text-[15px] font-medium text-gray-900 leading-relaxed">
-                        {selectedResident.residential_address ||
-                          generateFullAddress({
-                            house_number: selectedResident.house_number,
-                            purok: selectedResident.purok,
-                            barangay: selectedResident.barangay,
-                            municipality: selectedResident.municipality,
-                            province: selectedResident.province,
-                          }) ||
-                          "Not recorded"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        Place of Birth
-                      </p>
-                      <p className="text-[15px] font-medium text-gray-900 leading-relaxed">
-                        {selectedResident.place_of_birth || "Not specified"}
-                      </p>
-                    </div>
+              {/* Location */}
+              <div className="p-4 border border-gray-100 rounded-xl bg-white">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-gray-50 pb-2">
+                  <MapPin className="w-3.5 h-3.5 text-purple-500" />
+                  Location
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                      Residential Address
+                    </p>
+                    <p className="text-sm font-medium text-gray-900 leading-relaxed">
+                      {selectedResident.residential_address ||
+                        generateFullAddress({
+                          house_number: selectedResident.house_number,
+                          purok: selectedResident.purok,
+                          barangay: selectedResident.barangay,
+                          municipality: selectedResident.municipality,
+                          province: selectedResident.province,
+                        }) ||
+                        "Not recorded"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                      Place of Birth
+                    </p>
+                    <p className="text-sm font-medium text-gray-900 leading-relaxed">
+                      {selectedResident.place_of_birth || "Not specified"}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div
-                  className={`p-6 border rounded-2xl h-full flex flex-col ${selectedResident.is_deceased ? "bg-rose-50 border-rose-100" : "bg-white border-gray-100 shadow-sm"}`}
-                >
-                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
-                    <Phone className="w-3.5 h-3.5 text-orange-500" />
-                    Contact Channels
-                  </p>
-
-                  <div className="space-y-4 flex-1">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
-                        <Phone className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                          Primary Phone
-                        </p>
-                        <p className="text-[15px] font-medium text-gray-900 tracking-tight">
-                          {selectedResident.contact_number || "None"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 opacity-40 grayscale">
-                      <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                        <Mail className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                          Email Sync
-                        </p>
-                        <p className="text-[14px] font-medium text-gray-400 italic">
-                          Not connected
-                        </p>
-                      </div>
-                    </div>
+              {/* Contact & Guardian */}
+              <div className="p-4 border border-gray-100 rounded-xl bg-white">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-gray-50 pb-2">
+                  <Phone className="w-3.5 h-3.5 text-orange-500" />
+                  Contact & Guardian
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                      Phone
+                    </p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedResident.contact_number || "None"}
+                    </p>
                   </div>
-
-                  {!selectedResident.is_deceased && (
-                    <div className="mt-4 p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-3">
-                      <div className="bg-emerald-100 p-1.5 rounded-lg">
-                        <Activity className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-emerald-700 tracking-wide">
-                        Live Status Active
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Guardian Information Section */}
-              <div className="space-y-3">
-                <div className="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm h-full">
-                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-b border-gray-50 pb-3">
-                    <Shield className="w-3.5 h-3.5 text-emerald-500" />
-                    Guardian Information
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        Guardian Name
-                      </p>
-                      <p className="text-[15px] font-semibold text-gray-900 tracking-tight">
-                        {selectedResident.guardian_name || "Not recorded"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        Relationship
-                      </p>
-                      <p className="text-[15px] font-semibold text-gray-900 tracking-tight">
-                        {selectedResident.guardian_relationship ||
-                          "Not recorded"}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                      Guardian
+                    </p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedResident.guardian_name || "Not recorded"}
+                      {selectedResident.guardian_relationship && ` (${selectedResident.guardian_relationship})`}
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Legal Records Section */}
-            <div
-              className={`mt-6 p-5 rounded-2xl border-2 shadow-xl ${selectedResident.pending_case ? "bg-rose-50/50 border-rose-200" : "bg-white border-gray-100"}`}
-            >
-              <div className="flex items-center gap-3 mb-5 border-b border-gray-100 pb-3">
-                <div
-                  className={`p-1.5 rounded-lg border ${selectedResident.pending_case ? "bg-rose-100 border-rose-200 text-rose-600" : "bg-gray-100 border-gray-200 text-gray-400"}`}
-                >
-                  <Shield className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3
-                    className={`text-[12px] font-black uppercase tracking-[0.2em] leading-none ${selectedResident.pending_case ? "text-rose-900" : "text-gray-900"}`}
-                  >
-                    Official Clearance Status
-                  </h3>
-                  <p className="text-[11px] font-medium text-gray-500 tracking-tight mt-0.5">
-                    Verification against Barangay Law Records
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                <div className="md:col-span-1">
-                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Electronic Tag
-                  </p>
-                  <div
-                    className={`inline-flex items-center px-4 py-2.5 rounded-xl text-[11px] font-semibold tracking-wide border shadow-sm ${
-                      selectedResident.pending_case
-                        ? "bg-rose-600 text-white border-rose-500 shadow-rose-200 animate-pulse"
-                        : "bg-emerald-600 text-white border-emerald-500 shadow-emerald-200"
-                    }`}
-                  >
-                    {selectedResident.pending_case
-                      ? "HOLD / PENDING CASE"
-                      : "CLEARED / ACTIVE"}
+              {/* Clearance Status */}
+              <div className={`p-4 border rounded-xl ${selectedResident.pending_case ? "bg-rose-50 border-rose-200" : "bg-white border-gray-100"}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2 border-b pb-2 ${selectedResident.pending_case ? "text-rose-400 border-rose-100" : "text-gray-400 border-gray-50"}`}>
+                  <Shield className={`w-3.5 h-3.5 ${selectedResident.pending_case ? "text-rose-500" : "text-emerald-500"}`} />
+                  Clearance Status
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                      Status
+                    </p>
+                    <div
+                      className={`inline-flex items-center px-2.5 py-1 rounded text-[10px] font-bold tracking-wide ${
+                        selectedResident.pending_case
+                          ? "bg-rose-600 text-white animate-pulse"
+                          : "bg-emerald-600 text-white"
+                      }`}
+                    >
+                      {selectedResident.pending_case
+                        ? "HOLD / PENDING CASE"
+                        : "CLEARED / ACTIVE"}
+                    </div>
                   </div>
-                </div>
-
-                <div className="md:col-span-3">
-                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Case History & Administrative Remarks
-                  </p>
-                  <div
-                    className={`p-4 rounded-xl border-2 text-[15px] font-normal leading-relaxed min-h-[80px] shadow-inner ${
-                      selectedResident.pending_case
-                        ? "bg-white border-rose-100 text-rose-900 italic"
-                        : "bg-gray-50 border-gray-100 text-gray-400 border-dashed"
-                    }`}
-                  >
-                    {selectedResident.case_record_history ||
-                      "No previous legal history or pending cases reported for this resident record."}
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                      Case History
+                    </p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {selectedResident.case_record_history ||
+                        "No previous legal history or pending cases reported."}
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Footer Actions */}
-            <div className="pt-5 flex justify-between items-center border-t border-gray-100">
+            <div className="pt-4 flex justify-between items-center border-t border-gray-100">
               <button
                 onClick={() => setIsDeleteConfirmOpen(true)}
-                className="px-5 py-3 text-rose-600 font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2"
+                className="px-4 py-2.5 text-rose-600 font-bold text-[10px] uppercase tracking-wider hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-2"
               >
-                <Trash2 className="w-4 h-4" /> Purge Record
+                <Trash2 className="w-3.5 h-3.5" /> Delete
               </button>
               <div className="flex gap-3">
                 <button
                   onClick={handleOpenEditModal}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-xl text-[11px] font-semibold tracking-wide shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2"
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
                 >
-                  <Edit className="w-4 h-4" /> Edit Profile
+                  <Edit className="w-3.5 h-3.5" /> Edit Profile
                 </button>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl text-[11px] font-semibold tracking-wide hover:bg-gray-200 active:scale-95 transition-all"
+                  className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors"
                 >
-                  Close Window
+                  Close
                 </button>
               </div>
             </div>
@@ -759,15 +827,17 @@ export default function Residents() {
         title={
           selectedResident ? "Update Resident Record" : "Register New Resident"
         }
-        size="xl"
+        size="lg"
       >
-        <form onSubmit={handleSaveResident} className="space-y-6">
-          <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 space-y-4">
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
-              Identity Details
+        <form onSubmit={handleSaveResident} className="space-y-4">
+          {/* Identity */}
+          <div className="p-4 border border-gray-100 rounded-xl space-y-3">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
+              <User className="w-3.5 h-3.5 text-blue-500" />
+              Identity
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
                 <label className="label">First Name</label>
                 <input
                   type="text"
@@ -779,7 +849,7 @@ export default function Residents() {
                   }
                 />
               </div>
-              <div className="md:col-span-1">
+              <div>
                 <label className="label">Middle Name</label>
                 <input
                   type="text"
@@ -790,7 +860,7 @@ export default function Residents() {
                   }
                 />
               </div>
-              <div className="md:col-span-1">
+              <div>
                 <label className="label">Last Name</label>
                 <input
                   type="text"
@@ -802,7 +872,7 @@ export default function Residents() {
                   }
                 />
               </div>
-              <div className="md:col-span-1">
+              <div>
                 <label className="label">Suffix</label>
                 <input
                   type="text"
@@ -815,148 +885,142 @@ export default function Residents() {
                 />
               </div>
             </div>
+          </div>
 
-            <div className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 space-y-4 shadow-inner">
-              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                <Shield className="w-3 h-3 text-emerald-500" />
-                Guardian Information
+          {/* Personal & Contact */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 border border-gray-100 rounded-xl space-y-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
+                <Calendar className="w-3.5 h-3.5 text-purple-500" />
+                Personal
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="col-span-1">
-                  <label className="label">Guardian Name</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Birth Date</label>
                   <input
-                    type="text"
-                    className="input uppercase font-bold bg-white"
-                    value={formData.guardian_name || ""}
-                    onChange={(e) =>
+                    type="date"
+                    className="input"
+                    value={formData.date_of_birth}
+                    onChange={(e) => {
+                      const birthDate = e.target.value;
                       setFormData({
                         ...formData,
-                        guardian_name: e.target.value,
-                      })
-                    }
-                    placeholder="FULL NAME OF GUARDIAN"
+                        date_of_birth: birthDate,
+                        age: birthDate ? calculateAge(birthDate) : '',
+                      });
+                    }}
                   />
                 </div>
-                <div className="col-span-1">
-                  <label className="label">Relationship</label>
+                <div>
+                  <label className="label">
+                    Age <span className="text-gray-400 text-[9px]">(auto)</span>
+                  </label>
                   <input
-                    type="text"
-                    className="input uppercase font-bold bg-white"
-                    value={formData.guardian_relationship || ""}
+                    type="number"
+                    readOnly
+                    className="input bg-gray-100 cursor-not-allowed"
+                    value={formData.age}
+                    placeholder="Auto"
+                  />
+                </div>
+                <div>
+                  <label className="label">Gender</label>
+                  <select
+                    className="input font-bold"
+                    value={formData.gender}
+                    onChange={(e) =>
+                      setFormData({ ...formData, gender: e.target.value })
+                    }
+                  >
+                    <option value="MALE">MALE</option>
+                    <option value="FEMALE">FEMALE</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Civil Status</label>
+                  <select
+                    className="input font-bold"
+                    value={formData.civil_status}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        guardian_relationship: e.target.value,
+                        civil_status: e.target.value,
                       })
                     }
-                    placeholder="E.G. PARENT, SIBLING"
-                  />
+                  >
+                    <option value="SINGLE">SINGLE</option>
+                    <option value="MARRIED">MARRIED</option>
+                    <option value="WIDOWED">WIDOWED</option>
+                    <option value="SEPARATED">SEPARATED</option>
+                  </select>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                  Personal Info
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Birth Date</label>
-                    <input
-                      type="date"
-                      className="input"
-                      value={formData.date_of_birth}
-                      onChange={(e) => {
-                        const birthDate = e.target.value;
-                        setFormData({
-                          ...formData,
-                          date_of_birth: birthDate,
-                          age: birthDate ? calculateAge(birthDate) : '',
-                        });
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">
-                      Age <span className="text-blue-500 text-[9px]">(Auto)</span>
-                    </label>
-                    <input
-                      type="number"
-                      readOnly
-                      className="input bg-gray-100 cursor-not-allowed"
-                      value={formData.age}
-                      placeholder="Auto from birth date"
-                    />
-                  </div>
+            <div className="p-4 border border-gray-100 rounded-xl space-y-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
+                <Phone className="w-3.5 h-3.5 text-orange-500" />
+                Contact & Guardian
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <label className="label">Contact No.</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={formData.contact_number}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contact_number: e.target.value,
+                      })
+                    }
+                    placeholder="09..."
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Gender</label>
-                    <select
-                      className="input font-bold"
-                      value={formData.gender}
-                      onChange={(e) =>
-                        setFormData({ ...formData, gender: e.target.value })
-                      }
-                    >
-                      <option value="MALE">MALE</option>
-                      <option value="FEMALE">FEMALE</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label">Civil Status</label>
-                    <select
-                      className="input font-bold"
-                      value={formData.civil_status}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          civil_status: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="SINGLE">SINGLE</option>
-                      <option value="MARRIED">MARRIED</option>
-                      <option value="WIDOWED">WIDOWED</option>
-                      <option value="SEPARATED">SEPARATED</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="label">Birth Place</label>
+                  <input
+                    type="text"
+                    className="input uppercase"
+                    value={formData.place_of_birth}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        place_of_birth: e.target.value,
+                      })
+                    }
+                  />
                 </div>
-              </div>
-
-              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                  Contact & Birth Place
-                </p>
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="label">Contact No.</label>
+                    <label className="label">Guardian Name</label>
                     <input
                       type="text"
-                      className="input"
-                      value={formData.contact_number}
+                      className="input uppercase font-bold"
+                      value={formData.guardian_name || ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          contact_number: e.target.value,
+                          guardian_name: e.target.value,
                         })
                       }
-                      placeholder="09..."
+                      placeholder="Full name"
                     />
                   </div>
                   <div>
-                    <label className="label">Birth Place</label>
+                    <label className="label">Relationship</label>
                     <input
                       type="text"
-                      className="input uppercase"
-                      value={formData.place_of_birth}
+                      className="input uppercase font-bold"
+                      value={formData.guardian_relationship || ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          place_of_birth: e.target.value,
+                          guardian_relationship: e.target.value,
                         })
                       }
+                      placeholder="Parent, sibling"
                     />
                   </div>
                 </div>
@@ -964,12 +1028,12 @@ export default function Residents() {
             </div>
           </div>
 
-          {/* Legal Status Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Pending Case Toggle */}
-            <div className="bg-red-50 p-6 rounded-2xl border border-red-100 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">
+          {/* Legal & Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`p-4 border rounded-xl space-y-3 ${formData.pending_case ? "bg-rose-50 border-rose-200" : "border-gray-100"}`}>
+              <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5 text-emerald-500" />
                   Legal Status
                 </p>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -984,14 +1048,14 @@ export default function Residents() {
                       })
                     }
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-                  <span className="ml-3 text-xs font-bold text-red-700 uppercase">
+                  <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+                  <span className="ml-2.5 text-xs font-bold text-rose-700 uppercase">
                     With Case
                   </span>
                 </label>
               </div>
               <textarea
-                className="input min-h-[80px] resize-none uppercase p-4 text-xs"
+                className="input min-h-[60px] resize-none uppercase text-xs"
                 placeholder="Enter case records..."
                 value={formData.case_record_history}
                 onChange={(e) =>
@@ -1003,14 +1067,10 @@ export default function Residents() {
               />
             </div>
 
-            {/* Deceased Toggle */}
-            <div
-              className={`p-6 rounded-2xl border transition-all space-y-4 ${formData.is_deceased ? "bg-[#FFE6E6] border-red-200 shadow-sm" : "bg-gray-50 border-gray-100"}`}
-            >
-              <div className="flex items-center justify-between">
-                <p
-                  className={`text-[11px] font-semibold tracking-wide ${formData.is_deceased ? "text-red-500" : "text-gray-500"}`}
-                >
+            <div className={`p-4 border rounded-xl space-y-3 ${formData.is_deceased ? "bg-rose-50 border-rose-200" : "border-gray-100"}`}>
+              <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <Skull className="w-3.5 h-3.5 text-gray-400" />
                   Deceased Status
                 </p>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -1025,24 +1085,20 @@ export default function Residents() {
                       })
                     }
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600"></div>
-                  <span
-                    className={`ml-3 text-xs font-bold uppercase ${formData.is_deceased ? "text-gray-900" : "text-gray-700"}`}
-                  >
-                    Mark as Deceased
+                  <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600"></div>
+                  <span className="ml-2.5 text-xs font-bold uppercase text-gray-700">
+                    Mark
                   </span>
                 </label>
               </div>
               {formData.is_deceased && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[9px] font-bold text-red-500 uppercase block mb-1">
-                        Date of Death
-                      </label>
+                      <label className="label">Date of Death</label>
                       <input
                         type="date"
-                        className="w-full bg-white border border-red-200 text-gray-900 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-red-500"
+                        className="input"
                         value={formData.date_of_death}
                         onChange={(e) =>
                           setFormData({
@@ -1052,11 +1108,11 @@ export default function Residents() {
                         }
                       />
                     </div>
-                    <div className="flex items-end pb-1">
-                      <label className="flex items-center gap-2 cursor-pointer group">
+                    <div className="flex items-end">
+                      <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
-                          className="w-4 h-4 rounded border-red-200 bg-white text-red-600 focus:ring-red-500"
+                          className="w-4 h-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
                           checked={formData.covid_related}
                           onChange={(e) =>
                             setFormData({
@@ -1065,19 +1121,17 @@ export default function Residents() {
                             })
                           }
                         />
-                        <span className="text-[10px] font-black text-red-600 uppercase group-hover:text-red-500 transition-colors">
-                          COVID-19 Related
+                        <span className="text-[10px] font-bold text-gray-600 uppercase">
+                          COVID-19
                         </span>
                       </label>
                     </div>
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-red-500 uppercase block mb-1">
-                      Cause of Death
-                    </label>
+                    <label className="label">Cause of Death</label>
                     <input
                       type="text"
-                      className="w-full bg-white border border-red-200 text-gray-900 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-red-500 uppercase"
+                      className="input uppercase"
                       placeholder="Enter cause of death..."
                       value={formData.cause_of_death}
                       onChange={(e) =>
@@ -1093,37 +1147,28 @@ export default function Residents() {
             </div>
           </div>
 
-          <div className="bg-purple-50/50 p-6 rounded-2xl border border-purple-100 space-y-4">
-            <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest">
-              📍 Residential Address
+          {/* Address */}
+          <div className="p-4 border border-gray-100 rounded-xl space-y-3">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
+              <Home className="w-3.5 h-3.5 text-purple-500" />
+              Residential Address
             </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* House Number */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="label">
-                  🏠 House Number <span className="text-red-500">*</span>
-                </label>
+                <label className="label">House Number <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g., 2706, 123-A, Blk 5 Lot 10"
+                  placeholder="e.g., 2706, 123-A"
                   className="input uppercase font-bold"
                   value={formData.house_number}
                   onChange={(e) =>
                     setFormData({ ...formData, house_number: e.target.value })
                   }
                 />
-                <p className="text-[9px] text-gray-500 mt-1 font-semibold">
-                  Enter your house/building number
-                </p>
               </div>
-
-              {/* Purok Dropdown */}
               <div>
-                <label className="label">
-                  📌 Purok / Sitio <span className="text-red-500">*</span>
-                </label>
+                <label className="label">Purok / Sitio <span className="text-red-500">*</span></label>
                 <select
                   required
                   className="input uppercase font-bold"
@@ -1132,79 +1177,53 @@ export default function Residents() {
                     setFormData({ ...formData, purok: e.target.value })
                   }
                 >
-                  <option value="">-- SELECT PUROK --</option>
+                  <option value="">-- Select --</option>
                   {purokOptions.map(option => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </select>
-                <p className="text-[9px] text-gray-500 mt-1 font-semibold">
-                  Select your purok or sitio
-                </p>
               </div>
-
-              {/* Barangay (Auto-populated, Read-only) */}
               <div>
-                <label className="label">
-                  🏘️ Barangay <span className="text-blue-500">(Automatic)</span>
-                </label>
+                <label className="label">Barangay <span className="text-gray-400 text-[9px]">(auto)</span></label>
                 <input
                   type="text"
                   readOnly
                   className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
                   value={formData.barangay}
                 />
-                <p className="text-[9px] text-blue-600 mt-1 font-semibold">
-                  ✓ Auto-filled from system settings
-                </p>
               </div>
-
-              {/* Municipality (Auto-populated, Read-only) */}
               <div>
-                <label className="label">
-                  🏛️ Municipality <span className="text-blue-500">(Automatic)</span>
-                </label>
+                <label className="label">Municipality <span className="text-gray-400 text-[9px]">(auto)</span></label>
                 <input
                   type="text"
                   readOnly
                   className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
                   value={formData.municipality}
                 />
-                <p className="text-[9px] text-blue-600 mt-1 font-semibold">
-                  ✓ Auto-filled from system settings
-                </p>
               </div>
-
-              {/* Province (Auto-populated, Read-only) - Full Width */}
               <div className="md:col-span-2">
-                <label className="label">
-                  🗺️ Province <span className="text-blue-500">(Automatic)</span>
-                </label>
+                <label className="label">Province <span className="text-gray-400 text-[9px]">(auto)</span></label>
                 <input
                   type="text"
                   readOnly
                   className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
                   value={formData.province}
                 />
-                <p className="text-[9px] text-blue-600 mt-1 font-semibold">
-                  ✓ Auto-filled from system settings
-                </p>
               </div>
             </div>
-
-            {/* Full Address Preview */}
-            <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                📋 Full Address Preview:
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                Full Address Preview
               </p>
-              <p className="text-[13px] font-bold text-gray-800 uppercase">
+              <p className="text-sm font-semibold text-gray-800 uppercase">
                 {generateFullAddress(formData) || 'Enter house number and purok to see preview'}
               </p>
             </div>
           </div>
 
-          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-4">
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
             <button
               type="button"
               onClick={() => {
@@ -1213,21 +1232,21 @@ export default function Residents() {
                   setIsModalOpen(true);
                 }
               }}
-              className="px-6 py-3 text-gray-400 font-bold hover:text-gray-600 transition-colors"
+              className="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black text-sm hover:bg-blue-700 transition-all flex items-center gap-3 shadow-xl shadow-blue-100 hover:scale-[1.02] active:scale-95"
+              className="px-6 py-2.5 bg-[#03254c] text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors flex items-center gap-2"
             >
               {isSubmitting ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               ) : (
-                <Save className="w-5 h-5" />
+                <Save className="w-4 h-4" />
               )}
-              {selectedResident ? "COMMIT UPDATES" : "FINALIZE REGISTRATION"}
+              {selectedResident ? "Save Changes" : "Register"}
             </button>
           </div>
         </form>
@@ -1279,7 +1298,7 @@ export default function Residents() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="pt-10 border-t border-gray-100">
+        <div className="pt-6 border-t border-gray-100">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -1293,8 +1312,8 @@ export default function Residents() {
 
 Residents.getLayout = (page) => (
   <Layout
-    title="Resident Master Database"
-    subtitle="BRGYDESK OFFICIAL RECORDS & CENSUS"
+    title="Residents"
+    subtitle="Resident Records & Census"
   >
     {page}
   </Layout>

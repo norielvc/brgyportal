@@ -411,7 +411,7 @@ export default function UnifiedCertModal({
   // Main 3-step modal
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-10">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300" style={{ maxHeight: '92vh' }}>
 

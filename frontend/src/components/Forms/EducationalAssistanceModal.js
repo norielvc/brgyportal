@@ -316,68 +316,47 @@ export default function EducationalAssistanceModal({
       <div className="brgy-modal-wrap">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 overflow-hidden">
           <div
-            className="relative bg-white md:rounded-3xl shadow-2xl w-full max-w-[1400px] h-full md:h-auto md:max-h-[85vh] flex flex-col overflow-hidden animate-fade-in no-scrollbar"
+            className="relative bg-white md:rounded-2xl shadow-2xl w-full max-w-2xl h-full md:h-auto md:max-h-[90vh] flex flex-col overflow-hidden animate-fade-in no-scrollbar"
             style={{ fontFamily: "'Open Sans', sans-serif" }}
           >
-            {/* Premium Nature Header */}
-            <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-4 py-4 md:px-8 md:py-8 flex items-center justify-between border-b border-white/10 relative overflow-hidden flex-shrink-0">
-              {/* Decorative elements */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
-
-              <div className="flex items-center gap-3 md:gap-5 relative z-10">
-                <div className="bg-white/10 backdrop-blur-lg p-2 md:p-3.5 rounded-xl md:rounded-2xl border border-white/20 shadow-xl">
-                  <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-white" />
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#112e1f] via-[#2d5a3d] to-[#112117] px-6 py-5 flex items-start justify-between shrink-0">
+              <div className="flex items-center gap-3.5">
+                <div className="bg-white/15 p-2.5 rounded-xl border border-white/25 shrink-0">
+                  <GraduationCap className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg md:text-2xl font-black text-white leading-none tracking-tight">
+                  <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">
+                    {tenantConfig.shortName || "Barangay"} &middot; Official Form
+                  </p>
+                  <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
                     Educational Assistance
                   </h2>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                    <p className="text-white text-sm md:text-sm font-black uppercase tracking-widest px-4 py-1.5 bg-red-600 rounded-l-full rounded-tr-md rounded-br-md shadow-md mt-2 block">
-                      Scholarship Filing Portal
-                    </p>
-                  </div>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="text-white/40 hover:text-white p-2 md:p-2.5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all duration-300 group"
+                className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0"
               >
-                <X className="w-5 h-5 md:w-6 md:h-6 group-hover:rotate-90 transition-transform duration-300" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Optimized Form Body */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {/* Status/Notice Section */}
-              <div className="p-4 md:p-8 space-y-6">
-                <div className="bg-amber-50 border-l-[6px] border-amber-500 rounded-r-2xl p-5 shadow-sm relative overflow-hidden mb-6 flex-shrink-0">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-                  <div className="flex items-start gap-4 relative z-10">
-                    <div className="bg-gradient-to-br from-amber-400 to-amber-600 p-2.5 rounded-full shadow-md mt-1 shrink-0">
-                      <Info className="w-5 h-5 text-white" />
+            {/* Form Body */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6 sm:p-8 space-y-5">
+                <div className="bg-amber-50 border-l-4 border-amber-500 rounded-r-lg p-4 flex-shrink-0">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-amber-500 p-2 rounded-lg shrink-0">
+                      <Info className="w-4 h-4 text-white" />
                     </div>
-                    <div className="space-y-2.5 flex-1">
-                      <div>
-                        <h4 className="font-extrabold text-amber-900 uppercase tracking-widest text-sm flex items-center gap-2 mb-1">
-                          Registration Notice
-                          <span class="hidden sm:inline"> / Paunawa</span>
-                        </h4>
-                        <p className="text-amber-800 text-sm font-bold leading-relaxed mb-1">
-                          If no record is found in the resident directory,
-                          please visit the Barangay Hall and coordinate with the
-                          staff to register.
-                        </p>
-                        <p className="text-amber-800/80 text-sm font-bold leading-relaxed">
-                          <span class="hidden sm:block">
-                            Kung walang rekord sa direktoryo ng residente,
-                            mangyaring pumunta sa Barangay Hall upang
-                            magparehistro sa ating mga kawani.
-                          </span>
-                        </p>
-                      </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-amber-900 text-xs uppercase tracking-wider mb-1">
+                        Registration Notice
+                      </h4>
+                      <p className="text-amber-800 text-sm leading-relaxed">
+                        If no record is found in the resident directory, please visit the Barangay Hall to register.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -886,76 +865,55 @@ export default function EducationalAssistanceModal({
 
           {/* Success Modal Overlay */}
           {showSuccessModal && (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-              <div className="fixed inset-0 bg-[#0a1b12]/90 backdrop-blur-xl animate-fade-in" />
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-in zoom-in-95 duration-300">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: `${accentColor}18` }}>
+                  <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Filing Successful!</h2>
+                <p className="text-sm text-gray-500 mb-6">Application Queued For Review</p>
 
-              <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-scale-in border border-white/20">
-                {/* Success Header */}
-                <div className="bg-gradient-to-br from-[#112e1f] to-[#214431] px-10 py-12 text-center relative">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-                  <div className="w-24 h-24 bg-emerald-500/20 backdrop-blur-md rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-emerald-500/30 shadow-2xl animate-bounce-subtle">
-                    <CheckCircle className="w-12 h-12 text-emerald-400" />
-                  </div>
-                  <h2 className="text-3xl font-black text-white uppercase tracking-tight leading-none mb-2">
-                    Filing Successful!
-                  </h2>
-                  <p className="text-emerald-300/60 text-sm font-black uppercase tracking-[0.2em]">
-                    Application Queued For Review
-                  </p>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Reference ID</p>
+                  <p className="text-2xl font-bold text-gray-900 font-mono">{referenceNumber}</p>
                 </div>
 
-                {/* Success Details */}
-                <div className="p-8 text-center space-y-4 md:space-y-6">
-                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-[2rem] p-8 shadow-inner relative group">
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-                    <p className="text-sm font-black text-emerald-800 uppercase tracking-[0.3em] mb-4 opacity-50">
-                      Reference ID
-                    </p>
-                    <p className="text-4xl font-black text-[#112e1f] font-mono tracking-tighter scale-110">
-                      {referenceNumber}
-                    </p>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-left mb-6">
+                  <div className="flex items-center gap-2 text-gray-700 mb-3">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider">Next Procedures</h4>
                   </div>
-
-                  <div className="bg-[#112e1f]/5 border border-[#112e1f]/10 rounded-2xl p-6 relative overflow-hidden text-left">
-                    <div className="flex items-center gap-3 text-[#112e1f] mb-4">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                      <h4 className="text-sm font-black uppercase tracking-[0.1em]">
-                        Next Procedures
-                      </h4>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center border border-gray-100 shrink-0">
+                        <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        System-wide verification of your GWA and Residence status will commence immediately.
+                      </p>
                     </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-4">
-                        <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center border border-gray-100 shrink-0 shadow-sm mt-0.5">
-                          <Clock className="w-4 h-4 text-emerald-700" />
-                        </div>
-                        <p className="text-sm text-gray-600 font-bold leading-relaxed">
-                          System-wide verification of your GWA and Residence
-                          status will commence immediately.
-                        </p>
+                    <div className="flex items-start gap-3">
+                      <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center border border-gray-100 shrink-0">
+                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
                       </div>
-                      <div className="flex items-start gap-4">
-                        <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center border border-gray-100 shrink-0 shadow-sm mt-0.5">
-                          <Phone className="w-4 h-4 text-emerald-700" />
-                        </div>
-                        <p className="text-sm text-gray-600 font-bold leading-relaxed">
-                          Our staff will coordinate via <strong>SMS</strong> to
-                          confirm if you meet the scholarship criteria.
-                        </p>
-                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        Our staff will coordinate via SMS to confirm if you meet the scholarship criteria.
+                      </p>
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => {
-                      setShowSuccessModal(false);
-                      resetForm();
-                      onClose();
-                    }}
-                    className="w-full bg-[#112e1f] hover:bg-[#112117] text-white py-5 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-sm transition-all shadow-xl hover:shadow-emerald-900/30 transform active:scale-95 group"
-                  >
-                    Return to Dashboard
-                  </button>
                 </div>
+
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    resetForm();
+                    onClose();
+                  }}
+                  className="w-full text-white py-3 rounded-lg font-semibold text-sm transition-colors hover:opacity-90"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  Return to Dashboard
+                </button>
               </div>
             </div>
           )}

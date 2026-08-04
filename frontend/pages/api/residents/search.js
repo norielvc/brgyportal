@@ -8,7 +8,7 @@ import fs from "fs/promises";
  * Implements "Resilience Fallback" for paused Supabase plans.
  */
 export default async function handler(req, res) {
-  const { name } = req.query;
+  const { name, gender, civil_status, purok, is_deceased, pending_case, sort } = req.query;
   const tenantId = req.headers["x-tenant-id"];
   if (!tenantId)
     return res
@@ -32,18 +32,36 @@ export default async function handler(req, res) {
       process.env.SUPABASE_ANON_KEY,
     );
 
-    console.log(`📡 Cloud Search Attempt for: ${name} (Tenant: ${tenantId})`);
+    let query = supabase
+      .from("residents")
+      .select("*", { count: "exact" })
+      .ilike("full_name", searchStr)
+      .eq("tenant_id", tenantId);
+
+    // Advanced filters
+    if (gender) query = query.eq("gender", gender.toUpperCase());
+    if (civil_status) query = query.eq("civil_status", civil_status.toUpperCase());
+    if (purok) query = query.ilike("purok", `%${purok}%`);
+    if (is_deceased === "true") query = query.eq("is_deceased", true);
+    if (is_deceased === "false") query = query.eq("is_deceased", false);
+    if (pending_case === "true") query = query.eq("pending_case", true);
+    if (pending_case === "false") query = query.eq("pending_case", false);
+
+    // Sorting
+    const sortMap = {
+      name_asc: { column: "full_name", ascending: true },
+      name_desc: { column: "full_name", ascending: false },
+      newest: { column: "id", ascending: false },
+      oldest: { column: "id", ascending: true },
+    };
+    const sortConfig = sortMap[sort] || sortMap.newest;
+    query = query.order(sortConfig.column, { ascending: sortConfig.ascending });
+
     const {
       data: residents,
       error,
       count,
-    } = await supabase
-      .from("residents")
-      .select("*", { count: "exact" })
-      .ilike("full_name", searchStr)
-      .eq("tenant_id", tenantId)
-      .order("id", { ascending: false })
-      .range(offset, offset + limit - 1);
+    } = await query.range(offset, offset + limit - 1);
 
     if (!error && residents) {
       console.log(

@@ -17,7 +17,15 @@ const nextConfig = {
     return [
       {
         source: "/:path*",
-        headers: [{ key: "X-DNS-Prefetch-Control", value: "on" }],
+        headers: [
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+        ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "Content-Type", value: "application/json; charset=utf-8" },
+        ],
       },
     ];
   },

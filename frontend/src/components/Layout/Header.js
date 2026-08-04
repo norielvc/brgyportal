@@ -1,4 +1,4 @@
-import { Bell, Search, User, Settings, LogOut, Menu } from "lucide-react";
+import { Bell, User, Settings, LogOut, Menu } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getUserData, logout, getAuthToken } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
@@ -136,20 +136,6 @@ export default function Header({
 
         {/* Right section */}
         <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="relative hidden md:block group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-            </div>
-            <input
-              type="text"
-              placeholder="SEARCH EMPLOYEES, REPORTS..."
-              value={searchTerm || ""}
-              onChange={(e) => onSearch && onSearch(e.target.value)}
-              className="block w-64 md:w-80 pl-11 pr-4 py-2.5 bg-gray-50/50 border border-gray-200/60 rounded-xl text-xs font-black uppercase tracking-wider placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white transition-all shadow-inner"
-            />
-          </div>
-
           {/* Notifications */}
           <div className="relative">
             <button

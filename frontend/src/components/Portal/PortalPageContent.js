@@ -229,6 +229,7 @@ export default function PortalPageContent({ initialTenantId }) {
   const [heroCarouselIndex, setHeroCarouselIndex] = useState(0);
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [facilityImageIndex, setFacilityImageIndex] = useState(0);
+  const [portalDataLoaded, setPortalDataLoaded] = useState(false);
 
   const [subscription, setSubscription] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -706,6 +707,8 @@ export default function PortalPageContent({ initialTenantId }) {
         if (data.heroSection) setHeroSettings(data.heroSection);
         if (data.visibility) setVisibilitySettings(data.visibility);
       }
+
+      setPortalDataLoaded(true);
     };
 
     fetchData();
@@ -1048,8 +1051,9 @@ export default function PortalPageContent({ initialTenantId }) {
         .hero-gradient {
           background: linear-gradient(
             to right,
-            rgba(0, 0, 0, 0.85) 0%,
-            rgba(0, 0, 0, 0.4) 100%
+            rgba(0, 0, 0, 0.8) 0%,
+            rgba(0, 0, 0, 0.3) 60%,
+            rgba(0, 0, 0, 0.1) 100%
           );
         }
 
@@ -1077,6 +1081,29 @@ export default function PortalPageContent({ initialTenantId }) {
             transform: none !important;
           }
         }
+
+        @keyframes skeleton-shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .skeleton {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: skeleton-shimmer 1.5s ease-in-out infinite;
+        }
+        .skeleton-dark {
+          background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+          background-size: 200% 100%;
+          animation: skeleton-shimmer 1.5s ease-in-out infinite;
+        }
+
+        @keyframes fade-in-up {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up {
+          animation: fade-in-up 0.5s ease-out forwards;
+        }
       `}</style>
       {/* Skip to Content — Accessibility */}
       <a
@@ -1086,74 +1113,66 @@ export default function PortalPageContent({ initialTenantId }) {
         Skip to content
       </a>
 
-      {/* Portal Header */}
+      {/* Portal Header — Government Identity Bar */}
       <div
-        className="py-3 md:py-4 relative overflow-hidden"
+        className="py-3 md:py-4 relative overflow-hidden border-b border-white/10"
         style={tenantConfig.colorStyle}
       >
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute top-[-50%] left-[-10%] w-[120%] h-[200%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/20 via-transparent to-transparent blur-3xl animate-pulse"></div>
-        </div>
-
         <div className="max-w-[1400px] mx-auto flex items-center justify-between px-4 lg:px-8 relative z-10">
-          {/* Left Side - Logo and Title */}
-          <div className="flex items-center gap-3 lg:gap-6">
-            <div className="relative group shrink-0">
-              <div className="absolute -inset-1 bg-white/20 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-500"></div>
+          {/* Left Side - Seal/Logo and Title */}
+          <div className="flex items-center gap-3 lg:gap-5">
+            <div className="shrink-0">
               <img
                 loading="eager"
                 src={tenantConfig.logo}
-                alt="Barangay Logo"
-                className="relative h-14 w-14 md:h-16 md:w-16 lg:h-24 lg:w-24 object-contain drop-shadow-2xl brightness-110"
+                alt="Barangay Seal"
+                className="h-12 w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 object-contain"
               />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight drop-shadow-xl leading-tight">
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white tracking-tight leading-tight">
                 {tenantConfig.name}
               </h1>
-              <p className="text-[11px] sm:text-xs md:text-sm lg:text-base text-white/70 font-semibold uppercase tracking-[0.15em] mt-0.5">
+              <p className="text-[10px] sm:text-xs md:text-sm text-white/60 font-medium uppercase tracking-[0.12em] mt-0.5">
                 {tenantConfig.subtitle}
               </p>
             </div>
           </div>
 
-          {/* Right Side - Date/Time and Weather — hidden on small mobile */}
-          <div className="hidden sm:flex flex-col items-end gap-1.5 text-white">
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/10">
-              <Clock className="w-3 h-3 text-white/80 shrink-0" />
-              <span className="text-[10px] lg:text-xs font-bold tracking-wider truncate max-w-[200px] lg:max-w-none">
+          {/* Right Side - Date/Time and Weather */}
+          <div className="hidden sm:flex flex-col items-end gap-1 text-white/80">
+            <div className="flex items-center gap-2 text-[10px] lg:text-xs font-medium tracking-wide">
+              <Clock className="w-3 h-3 text-white/60 shrink-0" />
+              <span className="truncate max-w-[200px] lg:max-w-none">
                 {currentTime || "Loading..."}
               </span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/10">
+            <div className="flex items-center gap-2 text-[10px] lg:text-xs font-medium tracking-wide uppercase">
               {weatherInfo.icon &&
                 React.createElement(weatherInfo.icon, {
                   className: `w-3 h-3 ${weatherInfo.color} shrink-0`,
                 })}
-              <span className="text-[10px] lg:text-xs font-bold tracking-wider uppercase">
-                {weatherInfo.text}
-              </span>
+              <span>{weatherInfo.text}</span>
             </div>
           </div>
 
-          {/* Mobile: show only weather icon + time compact */}
-          <div className="flex sm:hidden items-center gap-2 text-white">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-full border border-white/10">
-              {weatherInfo.icon &&
-                React.createElement(weatherInfo.icon, {
-                  className: `w-3 h-3 ${weatherInfo.color}`,
-                })}
-              <span className="text-[9px] font-bold uppercase">{weatherInfo.text}</span>
-            </div>
+          {/* Mobile: compact weather */}
+          <div className="flex sm:hidden items-center gap-1.5 text-white/80">
+            {weatherInfo.icon &&
+              React.createElement(weatherInfo.icon, {
+                className: `w-3 h-3 ${weatherInfo.color}`,
+              })}
+            <span className="text-[9px] font-medium uppercase">{weatherInfo.text}</span>
           </div>
         </div>
       </div>
 
-      <nav className="sticky top-0 z-50 glass-nav transition-all duration-500 py-3">
+      {/* Navigation Bar */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 transition-all duration-300 py-2.5">
         <div className="max-w-[1400px] mx-auto px-6 sm:px-8">
-          <div className="flex justify-end items-center h-12 gap-10">
-            {/* Desktop Navigation - Right Side */}
-            <div className="hidden md:flex items-center gap-8">
+          <div className="flex justify-end items-center h-10 gap-8">
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-7">
               {[
                 { href: "#news", label: "News & Updates" },
                 { href: "#forms", label: "Barangay Forms" },
@@ -1166,7 +1185,7 @@ export default function PortalPageContent({ initialTenantId }) {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="nav-link text-gray-800 text-sm lg:text-[15px] transition-colors"
+                  className="nav-link text-gray-700 text-sm font-medium transition-colors"
                   style={{ "--hover-color": tenantConfig.accentColor }}
                 >
                   {link.label}
@@ -1175,19 +1194,18 @@ export default function PortalPageContent({ initialTenantId }) {
               {/* Track Request */}
               <a
                 href="#track"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all hover:-translate-y-0.5"
-                style={{ color: tenantConfig.primaryColor, borderColor: `${tenantConfig.primaryColor}40`, backgroundColor: `${tenantConfig.primaryColor}08` }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold border transition-colors"
+                style={{ color: tenantConfig.primaryColor, borderColor: `${tenantConfig.primaryColor}30`, backgroundColor: `${tenantConfig.primaryColor}05` }}
               >
                 <Search className="w-3.5 h-3.5" />
                 Track Request
               </a>
               <button
                 onClick={() => router.push("/login")}
-                className="group relative px-7 py-2.5 rounded-full text-sm font-bold text-white overflow-hidden transition-all shadow-[0_10px_20px_-5px_rgba(0,0,0,0.15)] hover:shadow-[0_15px_25px_-5px_rgba(0,0,0,0.2)] transform hover:-translate-y-0.5 active:scale-95 ml-2"
+                className="px-5 py-1.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 ml-1"
                 style={{ backgroundColor: tenantConfig.primaryColor }}
               >
-                <div className="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-[-20deg] -translate-x-full group-hover:translate-x-[250%] transition-transform duration-700"></div>
-                <span className="relative z-10">Login</span>
+                Login
               </button>
             </div>
 
@@ -1196,12 +1214,12 @@ export default function PortalPageContent({ initialTenantId }) {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
-              className="md:hidden p-2.5 rounded-xl bg-gray-100/50 hover:bg-gray-100 transition-colors"
+              className="md:hidden p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               {mobileMenuOpen ? (
-                <X className="w-6 h-6 text-gray-800" />
+                <X className="w-5 h-5 text-gray-800" />
               ) : (
-                <Menu className="w-6 h-6 text-gray-800" />
+                <Menu className="w-5 h-5 text-gray-800" />
               )}
             </button>
           </div>
@@ -1239,42 +1257,42 @@ export default function PortalPageContent({ initialTenantId }) {
             </a>
             <button
               onClick={() => router.push("/login")}
-              className="w-full text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl mt-4"
+              className="w-full text-white px-6 py-3 rounded-lg font-semibold text-sm mt-4"
               style={{ backgroundColor: tenantConfig.primaryColor }}
             >
-              Access Login
+              Login
             </button>
           </div>
         )}
       </nav>
 
-      {/* Hero Section with News Carousel - Trimmed Balanced Height */}
+      {/* Hero Section — News & Announcements */}
       <section
         id="news"
         aria-label="News and announcements carousel"
         tabIndex={-1}
-        className="relative h-[300px] md:h-[380px] lg:h-[440px] overflow-hidden bg-gray-900"
+        className="relative h-[320px] md:h-[420px] lg:h-[480px] overflow-hidden bg-gray-900"
       >
         {/* Loading Skeleton */}
         {newsItems.length === 0 && (
           <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
-            <div className="w-full max-w-[1400px] px-4 md:px-8 space-y-4 animate-pulse">
-              <div className="h-6 w-32 bg-white/10 rounded-full" />
-              <div className="h-12 w-1/2 bg-white/20 rounded-lg" />
-              <div className="h-20 w-3/4 bg-white/10 rounded-lg" />
-              <div className="h-12 w-40 bg-white/30 rounded-lg" />
+            <div className="w-full max-w-[1400px] px-6 md:px-12 space-y-4 animate-pulse">
+              <div className="h-5 w-28 bg-white/10 rounded" />
+              <div className="h-10 w-2/3 bg-white/15 rounded" />
+              <div className="h-16 w-3/4 bg-white/10 rounded" />
+              <div className="h-10 w-36 bg-white/20 rounded" />
             </div>
           </div>
         )}
         {newsItems.map((item, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
+            className={`absolute inset-0 transition-opacity duration-700 ${
               currentSlide === index ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
           >
             <div
-              className="absolute inset-0 bg-cover bg-center transition-opacity duration-700"
+              className="absolute inset-0 bg-cover bg-center"
               style={{
                 backgroundImage: item.image
                   ? `url(${item.image})`
@@ -1282,77 +1300,76 @@ export default function PortalPageContent({ initialTenantId }) {
               }}
             />
             <div className="absolute inset-0 hero-gradient" />
-            <div className="relative h-full max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-12 flex items-center">
+            <div className="relative h-full max-w-[1400px] mx-auto px-6 md:px-12 flex items-center">
               <div className="max-w-2xl text-white">
                 <span
-                  className={`inline-flex items-center px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-[0.2em] mb-6 text-white shadow-2xl backdrop-blur-md border border-white/10`}
+                  className="inline-flex items-center px-3 py-1 rounded text-[10px] font-bold uppercase tracking-[0.15em] mb-5 text-white"
                   style={{ backgroundColor: `${tenantConfig.accentColor}cc` }}
                 >
-                  <Calendar className="w-3.5 h-3.5 mr-2" />
+                  <Calendar className="w-3 h-3 mr-1.5" />
                   {item.date}
                 </span>
-                <h2 className="text-2xl md:text-4xl lg:text-5xl font-black mb-4 leading-[1.1] tracking-tight drop-shadow-2xl">
+                <h2 className="text-xl md:text-3xl lg:text-4xl font-bold mb-3 leading-tight tracking-tight">
                   {item.title}
                 </h2>
-                <p className="text-sm md:text-lg text-white/80 mb-8 line-clamp-3 leading-relaxed font-medium max-w-xl">
+                <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-3 leading-relaxed max-w-xl">
                   {item.description}
                 </p>
                 <button
                   onClick={() => setSelectedNewsItem(item)}
-                  className={`bg-white px-8 py-3.5 rounded-full font-bold transition-all transform hover:-translate-y-1 flex items-center gap-3 shadow-[0_15px_30px_-5px_rgba(0,0,0,0.3)] text-sm md:text-base group`}
+                  className="bg-white px-6 py-2.5 rounded-lg font-semibold transition-opacity hover:opacity-90 flex items-center gap-2 text-sm"
                   style={{ color: tenantConfig.primaryColor }}
                 >
-                  Read Full Announcement{" "}
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  Read Full Announcement
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
         ))}
 
-        {/* Carousel Navigation with Integrated Arrows */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-          {/* Left Arrow */}
-          <button
-            onClick={() =>
-              setCurrentSlide(
-                (prev) => (prev - 1 + newsItems.length) % newsItems.length,
-              )
-            }
-            aria-label="Previous slide"
-            className="bg-white/30 hover:bg-white/50 backdrop-blur-sm p-2 rounded-full transition-all touch-manipulation"
-          >
-            <ChevronLeft className="w-4 h-4 text-white" />
-          </button>
+        {/* Carousel Navigation */}
+        {newsItems.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-3">
+            <button
+              onClick={() =>
+                setCurrentSlide(
+                  (prev) => (prev - 1 + newsItems.length) % newsItems.length,
+                )
+              }
+              aria-label="Previous slide"
+              className="bg-white/20 hover:bg-white/40 p-1.5 rounded transition-colors touch-manipulation"
+            >
+              <ChevronLeft className="w-4 h-4 text-white" />
+            </button>
 
-          {/* Dots */}
-          <div className="flex gap-3">
-            {newsItems.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                aria-label={`Go to slide ${index + 1}`}
-                aria-current={currentSlide === index}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  currentSlide === index
-                    ? "bg-white w-8"
-                    : "bg-white/50 hover:bg-white/75"
-                }`}
-              />
-            ))}
+            <div className="flex gap-2">
+              {newsItems.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                  aria-current={currentSlide === index}
+                  className={`h-1.5 rounded-full transition-all ${
+                    currentSlide === index
+                      ? "bg-white w-6"
+                      : "bg-white/40 hover:bg-white/60 w-1.5"
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={() =>
+                setCurrentSlide((prev) => (prev + 1) % newsItems.length)
+              }
+              aria-label="Next slide"
+              className="bg-white/20 hover:bg-white/40 p-1.5 rounded transition-colors touch-manipulation"
+            >
+              <ChevronRight className="w-4 h-4 text-white" />
+            </button>
           </div>
-
-          {/* Right Arrow */}
-          <button
-            onClick={() =>
-              setCurrentSlide((prev) => (prev + 1) % newsItems.length)
-            }
-            aria-label="Next slide"
-            className="bg-white/30 hover:bg-white/50 backdrop-blur-sm p-2 rounded-full transition-all touch-manipulation"
-          >
-            <ChevronRight className="w-4 h-4 text-white" />
-          </button>
-        </div>
+        )}
       </section>
 
       {/* Quick Action Bar — Task-First Citizen Services */}
@@ -1783,10 +1800,32 @@ export default function PortalPageContent({ initialTenantId }) {
 
             {/* Programs Grid — Landscape Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {programs.map((program, idx) => (
+              {!portalDataLoaded && (
+                <>
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-200">
+                      <div className="skeleton w-full aspect-[16/10]" />
+                      <div className="p-5 space-y-3">
+                        <div className="skeleton h-4 w-3/4 rounded" />
+                        <div className="skeleton h-3 w-full rounded" />
+                        <div className="skeleton h-3 w-2/3 rounded" />
+                        <div className="skeleton h-3 w-1/3 rounded mt-4" />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+              {portalDataLoaded && programs.length === 0 && (
+                <div className="col-span-full text-center py-12">
+                  <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-400 text-sm">Program information will be available soon.</p>
+                </div>
+              )}
+              {portalDataLoaded && programs.map((program, idx) => (
                 <div
                   key={program.id || idx}
-                  className="flex flex-col group cursor-pointer h-full bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 program-card"
+                  className="flex flex-col group cursor-pointer h-full bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 program-card fade-in-up"
+                  style={{ animationDelay: `${idx * 80}ms` }}
                   onClick={() => setSelectedProgram(program)}
                 >
                   <div className="relative w-full aspect-[16/10] overflow-hidden bg-gray-100">
@@ -1858,13 +1897,35 @@ export default function PortalPageContent({ initialTenantId }) {
 
             {/* Facilities Grid — Government Info Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {facilities.map((facility, index) => {
+              {!portalDataLoaded && (
+                <>
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-200">
+                      <div className="skeleton w-full aspect-[16/9]" />
+                      <div className="p-5 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="skeleton w-10 h-10 rounded-lg shrink-0" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="skeleton h-4 w-3/4 rounded" />
+                            <div className="skeleton h-2.5 w-1/2 rounded" />
+                          </div>
+                        </div>
+                        <div className="skeleton h-3 w-full rounded" />
+                        <div className="skeleton h-3 w-2/3 rounded" />
+                        <div className="skeleton h-3 w-1/3 rounded mt-3" />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+              {portalDataLoaded && facilities.map((facility, index) => {
                 const FacilityIcon = facility.icon || Building2;
                 const photoCount = (facility.images || []).length;
                 return (
                   <div
                     key={index}
-                    className="group flex flex-col cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200"
+                    className="group flex flex-col cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200 fade-in-up"
+                    style={{ animationDelay: `${index * 80}ms` }}
                     onClick={() => setSelectedFacility(facility)}
                   >
                     {/* Image */}
@@ -1925,7 +1986,7 @@ export default function PortalPageContent({ initialTenantId }) {
             </div>
 
             {/* Empty State */}
-            {facilities.length === 0 && (
+            {portalDataLoaded && facilities.length === 0 && (
               <div className="text-center py-12">
                 <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-400 text-sm">Facility information will be available soon.</p>
@@ -1964,10 +2025,11 @@ export default function PortalPageContent({ initialTenantId }) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {tourismDestinations.map((destination) => (
+            {tourismDestinations.map((destination, idx) => (
               <div
                 key={destination.id}
-                className="group flex flex-col bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200"
+                className="group flex flex-col bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200 fade-in-up"
+                style={{ animationDelay: `${idx * 80}ms` }}
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
                   <img
@@ -2050,11 +2112,34 @@ export default function PortalPageContent({ initialTenantId }) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {achievements.map((achievement, idx) => (
+              {!portalDataLoaded && (
+                <>
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-200">
+                      <div className="skeleton w-full aspect-[16/9]" />
+                      <div className="p-5 space-y-3">
+                        <div className="skeleton h-2.5 w-1/4 rounded" />
+                        <div className="skeleton h-4 w-3/4 rounded" />
+                        <div className="skeleton h-3 w-full rounded" />
+                        <div className="skeleton h-3 w-2/3 rounded" />
+                        <div className="skeleton h-3 w-1/3 rounded mt-3" />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+              {portalDataLoaded && achievements.length === 0 && (
+                <div className="col-span-full text-center py-12">
+                  <Award className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-400 text-sm">Achievement records will be available soon.</p>
+                </div>
+              )}
+              {portalDataLoaded && achievements.map((achievement, idx) => (
                 <div
                   key={achievement.id || idx}
                   onClick={() => setSelectedAchievement(achievement)}
-                  className="group flex flex-col cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200"
+                  className="group flex flex-col cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200 fade-in-up"
+                  style={{ animationDelay: `${idx * 80}ms` }}
                 >
                   <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
                     <img
@@ -3001,8 +3086,42 @@ export default function PortalPageContent({ initialTenantId }) {
                   })()}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 text-lg">Loading officials...</p>
+                <div className="space-y-8">
+                  {/* Captain Skeleton */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100">
+                      <div className="skeleton w-full aspect-[4/5]" />
+                      <div className="p-6 space-y-3">
+                        <div className="skeleton h-5 w-2/3 rounded mx-auto" />
+                        <div className="skeleton h-3 w-full rounded" />
+                        <div className="skeleton h-3 w-4/5 rounded mx-auto" />
+                      </div>
+                    </div>
+                    <div className="lg:col-span-2 space-y-6">
+                      <div className="px-4 py-6 space-y-3">
+                        <div className="skeleton h-5 w-1/3 rounded" />
+                        <div className="skeleton h-3 w-full rounded" />
+                        <div className="skeleton h-3 w-5/6 rounded" />
+                      </div>
+                      <div className="px-4 py-6 space-y-3">
+                        <div className="skeleton h-5 w-1/3 rounded" />
+                        <div className="skeleton h-3 w-full rounded" />
+                        <div className="skeleton h-3 w-5/6 rounded" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Kagawad Skeletons */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                    {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                      <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-100">
+                        <div className="skeleton w-full aspect-[4/5]" />
+                        <div className="p-3 space-y-2">
+                          <div className="skeleton h-3 w-3/4 rounded mx-auto" />
+                          <div className="skeleton h-2.5 w-1/2 rounded mx-auto" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

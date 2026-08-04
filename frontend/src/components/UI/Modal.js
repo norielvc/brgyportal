@@ -78,7 +78,7 @@ export default function Modal({
           "relative w-full overflow-hidden text-left bg-white shadow-xl rounded-xl flex flex-col",
           sizeClasses[size],
         )}
-        style={{ maxHeight: "96vh" }}
+        style={{ maxHeight: "90vh" }}
       >
         {/* Header */}
         {(title || showCloseButton) && (
