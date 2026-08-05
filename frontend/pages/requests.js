@@ -4613,6 +4613,8 @@ function RequestDetailsModal({
                                 return { current: safe(resident.suffix), new: safe(request.suffix) };
                               case "Contact Number":
                                 return { current: safe(resident.contact_number), new: safe(request.contact_number) };
+                              case "Email":
+                                return { current: safe(resident.email), new: safe(request.email) };
                               case "Address":
                               case "Address (Requestor)":
                                 return { current: safe(resident.residential_address), new: safe(request.address) };
