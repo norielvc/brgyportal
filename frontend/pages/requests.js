@@ -1927,62 +1927,52 @@ function RequestDetailsModal({
         .toUpperCase();
     if (
       request.first_name &&
-      resident.first_name &&
-      normalize(request.first_name) !== normalize(resident.first_name)
+      normalize(request.first_name) !== normalize(resident.first_name || "")
     )
       mismatches.push("First Name");
     if (
       request.middle_name &&
-      resident.middle_name &&
-      normalize(request.middle_name) !== normalize(resident.middle_name)
+      normalize(request.middle_name) !== normalize(resident.middle_name || "")
     )
       mismatches.push("Middle Name");
     if (
       request.last_name &&
-      resident.last_name &&
-      normalize(request.last_name) !== normalize(resident.last_name)
+      normalize(request.last_name) !== normalize(resident.last_name || "")
     )
       mismatches.push("Last Name");
     if (
       request.suffix &&
-      resident.suffix &&
-      normalize(request.suffix) !== normalize(resident.suffix)
+      normalize(request.suffix) !== normalize(resident.suffix || "")
     )
       mismatches.push("Suffix");
     if (
       request.contact_number &&
-      resident.contact_number &&
-      normalize(request.contact_number) !== normalize(resident.contact_number)
+      normalize(request.contact_number) !== normalize(resident.contact_number || "")
     )
       mismatches.push("Contact Number");
     if (
       request.address &&
-      resident.residential_address &&
-      normalize(request.address) !== normalize(resident.residential_address)
+      normalize(request.address) !== normalize(resident.residential_address || "")
     )
       mismatches.push("Address");
     if (
       request.date_of_birth &&
-      resident.date_of_birth &&
-      request.date_of_birth !== resident.date_of_birth
+      request.date_of_birth !== (resident.date_of_birth || "")
     )
       mismatches.push("Date of Birth");
     if (
       request.place_of_birth &&
-      resident.place_of_birth &&
-      normalize(request.place_of_birth) !== normalize(resident.place_of_birth)
+      normalize(request.place_of_birth) !== normalize(resident.place_of_birth || "")
     )
       mismatches.push("Place of Birth");
     if (
       request.sex &&
-      resident.gender &&
-      normalize(request.sex) !== normalize(resident.gender)
+      normalize(request.sex) !== normalize(resident.gender || "")
     )
       mismatches.push("Gender");
     if (
       request.civil_status &&
-      resident.civil_status &&
-      normalize(request.civil_status) !== normalize(resident.civil_status)
+      normalize(request.civil_status) !== normalize(resident.civil_status || "")
     )
       mismatches.push("Civil Status");
 
