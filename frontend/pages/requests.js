@@ -6078,8 +6078,11 @@ function ClearancePreviewForRequests({
     null;
 
   // Determine the display name and role for the Captain/Chairman section
+  const captainMiddleInitial = effectiveCaptain?.users?.middle_name
+    ? `${effectiveCaptain.users.middle_name.trim().charAt(0).toUpperCase()}.`
+    : '';
   const captainName = effectiveCaptain?.users
-    ? `${effectiveCaptain.users.first_name || ''} ${effectiveCaptain.users.last_name || ''}`.trim()
+    ? `${effectiveCaptain.users.first_name || ''}${captainMiddleInitial ? ` ${captainMiddleInitial} ` : ' '}${effectiveCaptain.users.last_name || ''}`.trim()
     : effectiveCaptain?.performed_by_name || officials?.chairman || '';
     
   const secretaryName = secretaryApproval?.users 

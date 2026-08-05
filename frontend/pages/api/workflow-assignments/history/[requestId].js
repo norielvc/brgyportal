@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   const { data, error } = await supabase
     .from("workflow_history")
-    .select("*, users:performed_by (first_name, last_name, email, role, employee_code)")
+    .select("*, users:performed_by (first_name, middle_name, last_name, email, role, employee_code)")
     .eq("request_id", requestId)
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: true });
