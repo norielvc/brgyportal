@@ -28,8 +28,14 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
 
   const accentColor = tenantConfig.primaryColor || '#059669';
 
-  // Auto barangay suffix from tenantConfig
-  const barangaySuffix = tenantConfig.subtitle || `BRGY. ${(tenantConfig.shortName || "IBA O' ESTE").toUpperCase()}, CALUMPIT, BULACAN`;
+  // Proper barangay/municipality/province from tenant certificate settings
+  const headerInfo = tenantConfig.certificate_settings?.headerInfo || {};
+  const barangay = (headerInfo.barangayName || "IBA O' ESTE").toUpperCase();
+  const municipality = (headerInfo.municipality || 'CALUMPIT').toUpperCase();
+  const province = (headerInfo.province || 'BULACAN').toUpperCase();
+
+  // Auto barangay suffix for the full address
+  const barangaySuffix = `BRGY. ${barangay}, ${municipality}, ${province}`;
 
   // Effective house number: combine phase/block/lot for North Ville 9
   const effectiveHouseNo = purok === 'NORTH VILLE 9'
