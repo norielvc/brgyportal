@@ -4332,7 +4332,7 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
                     <React.Fragment key={step}>
                       <div className="flex flex-col items-center">
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${isComplete ? 'text-white' : isCurrent ? 'text-white' : 'bg-gray-100 text-gray-400'}`}
-                          style={isActive ? { backgroundColor: tenantConfig.primaryColor } : {}}>
+                          style={isActive ? { backgroundColor: isComplete ? tenantConfig.primaryColor : '#4f46e5' } : {}}>
                           {isComplete ? '✓' : stepNum}
                         </div>
                         <p className={`text-[9px] font-medium mt-1.5 text-center w-14 leading-tight ${isActive ? 'text-gray-700' : 'text-gray-400'}`}>{step}</p>
