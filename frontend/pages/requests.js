@@ -33,6 +33,7 @@ import {
   Activity,
   Heart,
   Phone,
+  Mail,
   MessageCircle,
   MapPin,
   Home,
@@ -794,12 +795,15 @@ export default function RequestsPage() {
     setShowActionModal(true);
   };
 
-  const handlePickupConfirm = async () => {
-    if (!pickupName.trim()) return;
-
-    // Process release via the specialized pickup comment
-    const comment = `Manually released to: ${pickupName}`;
-    await submitAction(null, selectedRequest, "approve", comment);
+  const handlePickupConfirm = async (deliveryMode = "pickup") => {
+    if (deliveryMode === "pickup") {
+      if (!pickupName.trim()) return;
+      const comment = `Manually released to: ${pickupName}`;
+      await submitAction(null, selectedRequest, "approve", comment);
+    } else {
+      const comment = `Certificate sent via email to: ${selectedRequest.email}`;
+      await submitAction(null, selectedRequest, "approve", comment);
+    }
 
     setShowPickupModal(false);
     setPickupName("");
@@ -2508,7 +2512,7 @@ function RequestDetailsModal({
                     <p className="text-sm font-semibold text-gray-700">{formatDate(request.created_at)}</p>
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-3">
+                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-3 flex-wrap">
                   <span
                     className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black tracking-[0.1em] border shadow-sm ${getStatusColor(request.status)}`}
                   >
@@ -2518,6 +2522,18 @@ function RequestDetailsModal({
                     <span className="bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 shadow-sm uppercase tracking-widest">
                       <ShieldAlert className="w-3 h-3" />
                       Legal Hold
+                    </span>
+                  )}
+                  {request.pickup_method === "online" && (
+                    <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 shadow-sm uppercase tracking-widest">
+                      <Mail className="w-3 h-3" />
+                      Online Delivery
+                    </span>
+                  )}
+                  {request.pickup_method === "pickup" && (
+                    <span className="bg-gray-600 text-white px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 shadow-sm uppercase tracking-widest">
+                      <MapPin className="w-3 h-3" />
+                      Barangay Pickup
                     </span>
                   )}
                 </div>
@@ -7403,6 +7419,18 @@ function ConfirmPickupModal({
   confirming,
   getTypeLabel,
 }) {
+  const isOnlineDelivery = certificate.pickup_method === "online";
+  const [deliveryMode, setDeliveryMode] = useState(isOnlineDelivery ? "email" : "pickup");
+
+  const handleConfirm = () => {
+    if (deliveryMode === "email") {
+      onConfirm("email");
+    } else {
+      if (!pickupName.trim()) return;
+      onConfirm("pickup");
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div
@@ -7411,10 +7439,10 @@ function ConfirmPickupModal({
       />
 
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="bg-gradient-to-r from-green-600 to-green-700 px-8 py-5 flex items-center justify-between">
+        <div className={`px-8 py-5 flex items-center justify-between ${isOnlineDelivery ? "bg-gradient-to-r from-blue-600 to-blue-700" : "bg-gradient-to-r from-green-600 to-green-700"}`}>
           <h3 className="text-xl font-bold text-white flex items-center gap-3">
-            <CheckCircle className="w-6 h-6" />
-            Confirm Certificate Pickup
+            {isOnlineDelivery ? <Mail className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
+            {isOnlineDelivery ? "Send Certificate via Email" : "Confirm Certificate Pickup"}
           </h3>
           <button
             onClick={onClose}
@@ -7425,57 +7453,119 @@ function ConfirmPickupModal({
         </div>
 
         <div className="p-7 space-y-5">
-          <div className="bg-green-50 rounded-2xl p-5 border border-green-100">
+          <div className={`rounded-2xl p-5 border ${isOnlineDelivery ? "bg-blue-50 border-blue-100" : "bg-green-50 border-green-100"}`}>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-green-600 uppercase font-black tracking-wider mb-1">
+                <p className={`text-xs uppercase font-black tracking-wider mb-1 ${isOnlineDelivery ? "text-blue-600" : "text-green-600"}`}>
                   Reference No.
                 </p>
-                <p className="text-lg font-mono font-bold text-green-900">
+                <p className={`text-lg font-mono font-bold ${isOnlineDelivery ? "text-blue-900" : "text-green-900"}`}>
                   {certificate.reference_number}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-green-600 uppercase font-black tracking-wider mb-1">
+                <p className={`text-xs uppercase font-black tracking-wider mb-1 ${isOnlineDelivery ? "text-blue-600" : "text-green-600"}`}>
                   Certificate Type
                 </p>
-                <p className="text-sm font-bold text-green-800">
+                <p className={`text-sm font-bold ${isOnlineDelivery ? "text-blue-800" : "text-green-800"}`}>
                   {getTypeLabel(certificate.certificate_type)}
                 </p>
               </div>
-              <div className="col-span-2 pt-3 border-t border-green-200">
-                <p className="text-xs text-green-600 uppercase font-black tracking-wider mb-1">
+              <div className={`col-span-2 pt-3 border-t ${isOnlineDelivery ? "border-blue-200" : "border-green-200"}`}>
+                <p className={`text-xs uppercase font-black tracking-wider mb-1 ${isOnlineDelivery ? "text-blue-600" : "text-green-600"}`}>
                   Registered Applicant
                 </p>
-                <p className="text-2xl font-black text-green-900 uppercase tracking-tight">
+                <p className={`text-2xl font-black uppercase tracking-tight ${isOnlineDelivery ? "text-blue-900" : "text-green-900"}`}>
                   {certificate.full_name || certificate.applicant_name}
                 </p>
               </div>
+              {isOnlineDelivery && certificate.email && (
+                <div className="col-span-2 pt-3 border-t border-blue-200">
+                  <p className="text-xs text-blue-600 uppercase font-black tracking-wider mb-1">
+                    Email Address
+                  </p>
+                  <p className="text-sm font-bold text-blue-900 font-mono">
+                    {certificate.email}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
+          {/* Delivery Mode Toggle */}
           <div className="space-y-2">
             <label className="block text-sm font-bold text-gray-700 uppercase tracking-wide">
-              Name of Person Picking Up *
+              Delivery Method
             </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={pickupName}
-                onChange={(e) => setPickupName(e.target.value)}
-                placeholder="Enter receiver's full name"
-                className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none font-bold text-base"
-                autoFocus
-                onKeyPress={(e) =>
-                  e.key === "Enter" && pickupName.trim() && onConfirm()
-                }
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setDeliveryMode("pickup")}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${deliveryMode === "pickup" ? "border-green-500 bg-green-50" : "border-gray-200 bg-white hover:border-gray-300"}`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <MapPin className={`w-4 h-4 ${deliveryMode === "pickup" ? "text-green-600" : "text-gray-400"}`} />
+                  <p className={`text-sm font-bold ${deliveryMode === "pickup" ? "text-green-700" : "text-gray-700"}`}>Pickup at Barangay</p>
+                </div>
+                <p className="text-xs text-gray-500">Claim in person with valid ID</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeliveryMode("email")}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${deliveryMode === "email" ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white hover:border-gray-300"}`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail className={`w-4 h-4 ${deliveryMode === "email" ? "text-blue-600" : "text-gray-400"}`} />
+                  <p className={`text-sm font-bold ${deliveryMode === "email" ? "text-blue-700" : "text-gray-700"}`}>Send via Email</p>
+                </div>
+                <p className="text-xs text-gray-500">PDF sent to applicant's email</p>
+              </button>
             </div>
-            <p className="text-xs text-gray-500 italic">
-              Please verify the ID of the person picking up the certificate.
-            </p>
           </div>
+
+          {deliveryMode === "pickup" ? (
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-gray-700 uppercase tracking-wide">
+                Name of Person Picking Up *
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={pickupName}
+                  onChange={(e) => setPickupName(e.target.value)}
+                  placeholder="Enter receiver's full name"
+                  className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none font-bold text-base"
+                  autoFocus
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && pickupName.trim() && handleConfirm()
+                  }
+                />
+              </div>
+              <p className="text-xs text-gray-500 italic">
+                Please verify the ID of the person picking up the certificate.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {certificate.email ? (
+                <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                  <p className="text-xs text-blue-700 font-bold uppercase tracking-wide mb-1">
+                    The certificate PDF will be sent to:
+                  </p>
+                  <p className="text-sm font-bold text-blue-900 font-mono">
+                    {certificate.email}
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+                  <p className="text-xs text-amber-700 font-bold">
+                    No email address on file. Please switch to pickup mode or update the requestor's email.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-3 pt-2 border-t border-gray-100">
             <button
@@ -7486,14 +7576,19 @@ function ConfirmPickupModal({
               Cancel
             </button>
             <button
-              onClick={() => onConfirm()}
-              disabled={confirming || !pickupName.trim()}
-              className="flex-[2] px-4 py-3.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-all"
+              onClick={handleConfirm}
+              disabled={confirming || (deliveryMode === "pickup" ? !pickupName.trim() : !certificate.email)}
+              className={`flex-[2] px-4 py-3.5 text-white rounded-xl font-bold active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg transition-all ${deliveryMode === "email" ? "bg-blue-600 hover:bg-blue-700 shadow-blue-200" : "bg-green-600 hover:bg-green-700 shadow-green-200"}`}
             >
               {confirming ? (
                 <>
                   <RefreshCw className="w-5 h-5 animate-spin" />
                   Processing...
+                </>
+              ) : deliveryMode === "email" ? (
+                <>
+                  <Mail className="w-5 h-5" />
+                  Send to Email
                 </>
               ) : (
                 <>

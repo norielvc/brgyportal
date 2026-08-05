@@ -472,6 +472,22 @@ export default function RequestStatusPage() {
                       </div>
                     </div>
                   )}
+
+                  <div className="flex items-start gap-3">
+                    {request.pickup_method === "online" ? (
+                      <Mail className="w-4 h-4 text-blue-500 mt-0.5" />
+                    ) : (
+                      <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                    )}
+                    <div>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">
+                        Delivery Method
+                      </p>
+                      <p className={`text-[12px] font-bold uppercase tracking-tight ${request.pickup_method === "online" ? "text-blue-700" : "text-gray-700"}`}>
+                        {request.pickup_method === "online" ? "Online Delivery (Email)" : "Pickup at Barangay Hall"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
