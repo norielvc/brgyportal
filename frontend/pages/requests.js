@@ -1593,6 +1593,8 @@ export default function RequestsPage() {
           getCurrentWorkflowStep={getCurrentWorkflowStep}
           history={requestHistory}
           onHistoryRefresh={(newHistory) => setRequestHistory(newHistory)}
+          currentUser={currentUser}
+          userSignature={userSignature}
         />
       )}
 
@@ -1703,6 +1705,8 @@ function RequestDetailsModal({
   getCurrentWorkflowStep,
   history = [],
   onHistoryRefresh,
+  currentUser,
+  userSignature,
 }) {
   const currentStep = getCurrentWorkflowStep(request);
   const canAct = canUserTakeAction(request);
