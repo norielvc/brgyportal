@@ -27,33 +27,42 @@ export default async function handler(req, res) {
       .eq("key", "certificate_settings")
       .single();
 
-    if (error) {
-      console.error("Error fetching settings:", error);
-      return res.status(404).json({ 
-        success: false, 
-        message: "Settings not found for this tenant",
-        settings: {
-          certificate_settings: {
-            headerInfo: {
-              barangayName: '',
-              municipality: '',
-              province: 'Province of Bulacan'
-            }
-          }
-        }
-      });
-    }
+    // Fetch tenant identity as fallback source (not hardcoded)
+    const { data: tenant } = await supabase
+      .from("tenants")
+      .select("name, municipality, region")
+      .eq("id", tenantId)
+      .maybeSingle();
+
+    const settingsValue = data?.value || {};
+    const headerInfo = settingsValue.certificate_settings?.headerInfo || settingsValue.headerInfo || {};
+
+    const effectiveHeaderInfo = {
+      ...headerInfo,
+      barangayName: headerInfo.barangayName || tenant?.name || '',
+      municipality: headerInfo.municipality || tenant?.municipality || '',
+      province: headerInfo.province || (tenant?.region ? `Province of ${tenant.region}` : 'Province of Bulacan'),
+    };
+
+    const merged = {
+      ...settingsValue,
+      certificate_settings: {
+        ...(settingsValue.certificate_settings || {}),
+        headerInfo: effectiveHeaderInfo,
+      },
+      headerInfo: effectiveHeaderInfo,
+    };
 
     return res.status(200).json({
       success: true,
-      settings: data.value || {}
+      settings: merged,
     });
   } catch (error) {
     console.error("Error in settings API:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message
+      error: error.message,
     });
   }
 }
