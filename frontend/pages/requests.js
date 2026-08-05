@@ -4466,8 +4466,8 @@ function RequestDetailsModal({
           <Modal
             isOpen={showSyncConfirm}
             onClose={() => setShowSyncConfirm(false)}
-            title="Confirm Database Synchronization"
-            size="sm"
+            title="Review & Sync Resident Data"
+            size="lg"
           >
             <div className="space-y-4">
               <div className="p-4 bg-amber-50 rounded-xl flex gap-3 items-start border border-amber-100">
@@ -4495,30 +4495,86 @@ function RequestDetailsModal({
                       </>
                     )}
                   </p>
-                  <div className="mt-3 bg-white/50 p-2 rounded border border-amber-100">
-                    <p className="text-[10px] font-bold text-amber-800 uppercase mb-1 underline">
-                      Select fields to sync:
-                    </p>
-                    <div className="space-y-1">
-                      {mismatches.map((m, i) => (
-                        <label key={i} className="flex items-center gap-2 text-[10px] text-amber-700 font-medium cursor-pointer hover:text-amber-900">
-                          <input
-                            type="checkbox"
-                            checked={selectedSyncFields.includes(m)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedSyncFields([...selectedSyncFields, m]);
-                              } else {
-                                setSelectedSyncFields(selectedSyncFields.filter((f) => f !== m));
-                              }
-                            }}
-                            className="w-3 h-3 rounded border-amber-300 text-amber-600 focus:ring-amber-400"
-                          />
-                          {m}
-                        </label>
-                      ))}
-                    </div>
-                    <div className="flex gap-2 mt-2">
+                  <div className="mt-3 bg-white rounded border border-amber-100 overflow-hidden">
+                    <table className="w-full text-[10px]">
+                      <thead>
+                        <tr className="bg-amber-100/50 text-amber-900 border-b border-amber-100">
+                          <th className="px-2 py-1.5 text-left font-black uppercase w-1/4">Field</th>
+                          <th className="px-2 py-1.5 text-left font-black uppercase w-1/3">Current Record</th>
+                          <th className="px-2 py-1.5 text-left font-black uppercase w-1/3">New Input</th>
+                          <th className="px-2 py-1.5 text-center font-black uppercase w-12">Sync</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mismatches.map((m, i) => {
+                          const diff = (() => {
+                            const safe = (v) => String(v || "(not set)").trim() || "(not set)";
+                            switch (m) {
+                              case "First Name":
+                                return { current: safe(resident.first_name), new: safe(request.first_name) };
+                              case "Middle Name":
+                                return { current: safe(resident.middle_name), new: safe(request.middle_name) };
+                              case "Last Name":
+                                return { current: safe(resident.last_name), new: safe(request.last_name) };
+                              case "Suffix":
+                                return { current: safe(resident.suffix), new: safe(request.suffix) };
+                              case "Contact Number":
+                                return { current: safe(resident.contact_number), new: safe(request.contact_number) };
+                              case "Address":
+                              case "Address (Requestor)":
+                                return { current: safe(resident.residential_address), new: safe(request.address) };
+                              case "Address (Partner)":
+                                return { current: safe(request.partner_residential_address || request.details?.partnerResidentialAddress), new: safe(request.address || request.details?.currentAddress) };
+                              case "Date of Birth":
+                                return { current: safe(resident.date_of_birth), new: safe(request.date_of_birth) };
+                              case "Place of Birth":
+                                return { current: safe(resident.place_of_birth), new: safe(request.place_of_birth) };
+                              case "Gender":
+                                return { current: safe(resident.gender || resident.sex), new: safe(request.sex) };
+                              case "Civil Status":
+                                return { current: safe(resident.civil_status), new: safe(request.civil_status) };
+                              case "Guardian Name":
+                                return { current: safe(resident.guardian_name), new: safe(request.guardian_name || request.details?.guardian_name) };
+                              case "Guardian Relationship":
+                                return { current: safe(resident.guardian_relationship), new: safe(request.guardian_relationship || request.details?.guardian_relationship) };
+                              case "Deceased Status":
+                                return { current: safe(resident.is_deceased ? "Yes" : "No"), new: safe("Yes") };
+                              case "Second Name":
+                                return { current: safe(resident.second_name), new: safe(request.details?.fullName2 || request.details?.name_2 || request.details?.name2) };
+                              default:
+                                return { current: safe(resident[m]), new: safe(request[m]) };
+                            }
+                          })();
+                          const isChanged = diff.current !== diff.new;
+                          return (
+                            <tr key={i} className={`border-b border-amber-50 last:border-b-0 ${isChanged ? "bg-white" : "bg-amber-50/20"}`}>
+                              <td className="px-2 py-1.5 font-bold text-amber-900 align-top">{m}</td>
+                              <td className={`px-2 py-1.5 align-top ${isChanged ? "text-gray-500 line-through" : "text-gray-700"}`}>
+                                {diff.current}
+                              </td>
+                              <td className="px-2 py-1.5 align-top font-semibold text-amber-800">
+                                {diff.new}
+                              </td>
+                              <td className="px-2 py-1.5 align-middle text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSyncFields.includes(m)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedSyncFields([...selectedSyncFields, m]);
+                                    } else {
+                                      setSelectedSyncFields(selectedSyncFields.filter((f) => f !== m));
+                                    }
+                                  }}
+                                  className="w-3.5 h-3.5 rounded border-amber-300 text-amber-600 focus:ring-amber-400"
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    <div className="flex gap-3 px-3 py-2 bg-amber-50/50 border-t border-amber-100">
                       <button
                         onClick={() => setSelectedSyncFields([...mismatches])}
                         className="text-[9px] font-bold text-amber-700 hover:text-amber-900 underline"
