@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const { type, status } = req.query;
     let query = supabase
       .from("certificate_requests")
-      .select("*, residents:resident_id (*)")
+      .select("*, residents:resident_id (id, first_name, middle_name, last_name, suffix, full_name, contact_number, email, residential_address, place_of_birth, date_of_birth, civil_status, sex, gender, guardian_name, guardian_relationship, is_deceased, second_name, age)")
       .eq("tenant_id", tenantId);
     if (type && type !== "all") query = query.eq("certificate_type", type);
     if (status && status !== "all") query = query.eq("status", status);
