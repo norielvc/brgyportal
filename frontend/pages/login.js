@@ -115,10 +115,10 @@ export default function Login() {
       />
 
       {/* ── PERSISTENT TOP NAVIGATION (Absolute to not affect centering) ── */}
-      <div className="absolute top-10 left-10 lg:left-24 xl:left-32 z-30">
+      <div className="absolute top-8 left-8 lg:left-12 xl:left-20 z-30">
         <button
           onClick={() => router.back()}
-          className="group flex items-center gap-2.5 px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-full transition-all text-sm font-medium border border-white/10 backdrop-blur-sm"
+          className="group flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm font-semibold"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           <span>Back</span>
