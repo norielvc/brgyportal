@@ -19,12 +19,10 @@ export default async function handler(req, res) {
   const limit = parseInt(req.query.limit, 10) || 20;
   const offset = (page - 1) * limit;
 
-  // If no name is provided, default to empty to match against anything in the full_name field
-  const searchStr = `%${name || ""}%`;
+  // Smart token search: split query into words and match each token against any name part
+  const searchName = name || "";
+  const tokens = searchName.trim().toLowerCase().split(/\s+/).filter(Boolean);
 
-  /**
-   * STAGE 1: Live Cloud Attempt
-   */
   try {
     const { createClient } = require("@supabase/supabase-js");
     const supabase = createClient(
@@ -35,8 +33,14 @@ export default async function handler(req, res) {
     let query = supabase
       .from("residents")
       .select("*", { count: "exact" })
-      .ilike("full_name", searchStr)
       .eq("tenant_id", tenantId);
+
+    if (tokens.length > 0) {
+      const tokenConditions = tokens.map(token =>
+        `or(full_name.ilike.%${token}%,first_name.ilike.%${token}%,last_name.ilike.%${token}%,middle_name.ilike.%${token}%)`
+      );
+      query = query.or(`and(${tokenConditions.join(",")})`);
+    }
 
     // Advanced filters
     if (gender) query = query.eq("gender", gender.toUpperCase());
