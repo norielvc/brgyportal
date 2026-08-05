@@ -12,7 +12,7 @@ const DEFAULT_WORKFLOW_STEPS = [
   { id: 1,   name: 'Review Request Team',          status: 'staff_review',       requiresApproval: true,  assignedUsers: [] },
   { id: 2,   name: 'Barangay Secretary Approval',  status: 'secretary_approval', requiresApproval: true,  assignedUsers: [], officialRole: 'Brgy. Secretary' },
   { id: 3,   name: 'Barangay Captain Approval',    status: 'captain_approval',   requiresApproval: true,  assignedUsers: [], officialRole: 'Brgy. Captain' },
-  { id: 999, name: 'Releasing Team',               status: 'oic_review',         requiresApproval: true,  assignedUsers: [] },
+  { id: 999, name: 'Releasing Team',               status: 'oic_review',         requiresApproval: true,  assignedUsers: [], description: 'Releasing team reviews and sets certificate as ready for pickup' },
 ];
 
 export default async function handler(req, res) {

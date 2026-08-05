@@ -4220,16 +4220,16 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
     processing:       { label: 'Secretary Approval',   color: 'bg-purple-100 text-purple-700', step: 3 },
     secretary_approval: { label: 'Secretary Approval', color: 'bg-purple-100 text-purple-700', step: 3 },
     captain_approval: { label: 'Captain Approval',     color: 'bg-violet-100 text-violet-700', step: 4 },
-    oic_review:       { label: 'Ready for Release',    color: 'bg-teal-100 text-teal-700',   step: 5 },
-    ready:            { label: 'Ready for Pickup',     color: 'bg-green-100 text-green-700', step: 5 },
-    ready_for_pickup: { label: 'Ready for Pickup',     color: 'bg-green-100 text-green-700', step: 5 },
-    released:         { label: 'Released / Claimed',   color: 'bg-gray-100 text-gray-600',   step: 6 },
+    oic_review:       { label: 'Releasing Team',       color: 'bg-indigo-100 text-indigo-700', step: 5 },
+    ready:            { label: 'Ready for Pickup',     color: 'bg-green-100 text-green-700', step: 6 },
+    ready_for_pickup: { label: 'Ready for Pickup',     color: 'bg-green-100 text-green-700', step: 6 },
+    released:         { label: 'Released / Claimed',   color: 'bg-gray-100 text-gray-600',   step: 7 },
     rejected:         { label: 'Rejected',             color: 'bg-red-100 text-red-700',     step: 0 },
     returned:         { label: 'Returned for Revision', color: 'bg-orange-100 text-orange-700', step: 2 },
     cancelled:        { label: 'Cancelled',            color: 'bg-gray-100 text-gray-500',   step: 0 },
   };
 
-  const steps = ['Submitted', 'Review', 'Secretary', 'Captain', 'Ready', 'Released'];
+  const steps = ['Submitted', 'Review', 'Secretary', 'Captain', 'Releasing', 'Ready', 'Released'];
 
   const handleTrack = async (e) => {
     e.preventDefault();
@@ -4353,9 +4353,14 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
               <p className="text-sm text-red-600 font-medium">Your request was not approved. Please visit the Barangay Hall for more information.</p>
             </div>
           )}
-          {['ready', 'ready_for_pickup', 'oic_review'].includes(result.status) && (
+          {['ready', 'ready_for_pickup'].includes(result.status) && (
             <div className="px-6 py-4 border-t border-gray-50" style={{ backgroundColor: `${tenantConfig.primaryColor}08` }}>
               <p className="text-sm font-semibold" style={{ color: tenantConfig.primaryColor }}>🎉 Your certificate is ready! Please visit the Barangay Hall to claim it. Bring a valid ID.</p>
+            </div>
+          )}
+          {result.status === 'oic_review' && (
+            <div className="px-6 py-4 border-t border-gray-50" style={{ backgroundColor: `${tenantConfig.primaryColor}08` }}>
+              <p className="text-sm font-semibold" style={{ color: tenantConfig.primaryColor }}>📦 Your request is at the Releasing Team for final review before release.</p>
             </div>
           )}
         </div>

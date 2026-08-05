@@ -117,7 +117,7 @@ const defaultSteps = [
   {
     id: 999,
     name: "Releasing Team",
-    description: "Certificate is ready for release",
+    description: "Releasing team reviews and sets certificate as ready for pickup",
     status: "oic_review",
     icon: "CheckCircle",
     autoApprove: false,

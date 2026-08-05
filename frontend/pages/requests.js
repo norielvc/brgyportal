@@ -2444,8 +2444,8 @@ function RequestDetailsModal({
         <div className="p-4 overflow-y-auto overflow-x-hidden flex-1 space-y-4 custom-scrollbar bg-slate-50/50">
           {activeTab === "details" && (
             <>
-              {/* OIC / Ready Guidance Banner */}
-              {["oic_review", "ready", "ready_for_pickup"].includes(
+              {/* Ready / Released Guidance Banner */}
+              {["ready", "ready_for_pickup"].includes(
                 request.status,
               ) && (
                   <div className="bg-green-600 p-2.5 rounded-xl shadow-sm border border-green-400 text-white">
@@ -2459,6 +2459,25 @@ function RequestDetailsModal({
                         </h4>
                         <p className="text-[11px] font-medium opacity-90">
                           Print the certificate and contact the requestor for collection.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              {/* Releasing Team Guidance Banner */}
+              {request.status === "oic_review" && (
+                  <div className="bg-indigo-600 p-2.5 rounded-xl shadow-sm border border-indigo-400 text-white">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/20 p-1.5 rounded-lg">
+                        <Printer className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xs font-black uppercase leading-tight">
+                          RELEASING TEAM REVIEW
+                        </h4>
+                        <p className="text-[11px] font-medium opacity-90">
+                          Review the certificate and click Set as Ready once approved for release.
                         </p>
                       </div>
                     </div>

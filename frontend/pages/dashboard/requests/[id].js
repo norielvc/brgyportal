@@ -33,8 +33,8 @@ const STATUS_CONFIG = {
   received: { color: "blue", label: "Received", icon: Clock },
   staff_review: { color: "yellow", label: "Staff Review", icon: Search },
   oic_review: {
-    color: "purple",
-    label: "Designated Approver Review",
+    color: "indigo",
+    label: "Releasing Team Review",
     icon: Shield,
   },
   kapitan_review: { color: "indigo", label: "Kapitan Review", icon: Shield },
