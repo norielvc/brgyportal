@@ -1854,6 +1854,7 @@ function RequestDetailsModal({
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
+  const [selectedSyncFields, setSelectedSyncFields] = useState([]);
   const isBusinessPermit = request.certificate_type === "business_permit";
   const isClearanceWithInspection = false; // Physical inspection is business permit only
   const requiresPhysicalInspection = isBusinessPermit;
@@ -2042,6 +2043,7 @@ function RequestDetailsModal({
   const hasMismatch = mismatches.length > 0;
 
   const handleSyncToResident = () => {
+    setSelectedSyncFields([...mismatches]);
     setShowSyncConfirm(true);
   };
 
@@ -2056,6 +2058,7 @@ function RequestDetailsModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             adminId: request.assigned_user_id || "manual-sync",
+            fields: selectedSyncFields,
           }),
         },
       );
@@ -4504,13 +4507,41 @@ function RequestDetailsModal({
                   </p>
                   <div className="mt-3 bg-white/50 p-2 rounded border border-amber-100">
                     <p className="text-[10px] font-bold text-amber-800 uppercase mb-1 underline">
-                      Updates to be applied:
+                      Select fields to sync:
                     </p>
-                    <ul className="text-[10px] text-amber-700 list-disc pl-4 space-y-0.5 font-medium">
+                    <div className="space-y-1">
                       {mismatches.map((m, i) => (
-                        <li key={i}>{m}</li>
+                        <label key={i} className="flex items-center gap-2 text-[10px] text-amber-700 font-medium cursor-pointer hover:text-amber-900">
+                          <input
+                            type="checkbox"
+                            checked={selectedSyncFields.includes(m)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedSyncFields([...selectedSyncFields, m]);
+                              } else {
+                                setSelectedSyncFields(selectedSyncFields.filter((f) => f !== m));
+                              }
+                            }}
+                            className="w-3 h-3 rounded border-amber-300 text-amber-600 focus:ring-amber-400"
+                          />
+                          {m}
+                        </label>
                       ))}
-                    </ul>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => setSelectedSyncFields([...mismatches])}
+                        className="text-[9px] font-bold text-amber-700 hover:text-amber-900 underline"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={() => setSelectedSyncFields([])}
+                        className="text-[9px] font-bold text-amber-700 hover:text-amber-900 underline"
+                      >
+                        Clear All
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4524,10 +4555,13 @@ function RequestDetailsModal({
                 </button>
                 <button
                   onClick={executeSync}
-                  className="px-6 py-2 bg-amber-600 text-white rounded-xl font-bold text-sm hover:bg-amber-700 transition-all flex items-center gap-2 shadow-lg shadow-amber-100"
+                  disabled={selectedSyncFields.length === 0}
+                  className="px-6 py-2 bg-amber-600 text-white rounded-xl font-bold text-sm hover:bg-amber-700 transition-all flex items-center gap-2 shadow-lg shadow-amber-100 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Database className="w-4 h-4" />
-                  YES, UPDATE PROFILE
+                  {selectedSyncFields.length > 0
+                    ? `SYNC ${selectedSyncFields.length} FIELD${selectedSyncFields.length > 1 ? "S" : ""}`
+                    : "SELECT FIELDS TO SYNC"}
                 </button>
               </div>
             </div>
