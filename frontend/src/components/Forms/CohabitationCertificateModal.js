@@ -35,7 +35,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
   const province = (headerInfo.province || 'BULACAN').toUpperCase();
 
   // Auto barangay suffix for the full address
-  const barangaySuffix = `BRGY. ${barangay}, ${municipality}, ${province}`;
+  const barangaySuffix = `${barangay}, ${municipality}, ${province}`;
 
   // Effective house number: combine phase/block/lot for North Ville 9
   const effectiveHouseNo = purok === 'NORTH VILLE 9'
