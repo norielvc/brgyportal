@@ -3566,7 +3566,35 @@ function RequestDetailsModal({
                                 <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight">
                                   {request.guardian_name || request.details?.guardian_name || "NOT SPECIFIED"}
                                 </p>
+                                {(request.details?.guardian_resident_id || request.guardian_resident_id) && (
+                                  <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-black bg-green-100 text-green-700 border border-green-200 uppercase tracking-widest">
+                                    <CheckCircle className="w-3 h-3" />
+                                    Verified Resident
+                                  </span>
+                                )}
                               </div>
+                              {(request.details?.guardian_resident_address || request.details?.guardian_resident_age || request.details?.guardian_resident_sex) && (
+                                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                                  {request.details?.guardian_resident_age && (
+                                    <div>
+                                      <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-0.5">Age</p>
+                                      <p className="text-sm font-bold text-gray-700">{request.details.guardian_resident_age}</p>
+                                    </div>
+                                  )}
+                                  {request.details?.guardian_resident_sex && (
+                                    <div>
+                                      <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-0.5">Sex</p>
+                                      <p className="text-sm font-bold text-gray-700 uppercase">{request.details.guardian_resident_sex}</p>
+                                    </div>
+                                  )}
+                                  {request.details?.guardian_resident_address && (
+                                    <div className="col-span-2">
+                                      <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-0.5">Address</p>
+                                      <p className="text-sm font-semibold text-gray-700">{request.details.guardian_resident_address}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                               <div>
                                 <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                                   Relationship

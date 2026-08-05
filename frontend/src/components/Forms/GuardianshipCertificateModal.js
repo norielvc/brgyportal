@@ -1,20 +1,90 @@
 import React, { useState } from 'react';
 import UnifiedCertModal from './UnifiedCertModal';
+import ResidentSearchModal from '../Modals/ResidentSearchModal';
+import { Search, User, CheckCircle, X } from 'lucide-react';
 
 export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
-  const [guardianName, setGuardianName] = useState('');
+  const [guardianResident, setGuardianResident] = useState(null);
   const [guardianRelationship, setGuardianRelationship] = useState('');
+  const [showGuardianSearch, setShowGuardianSearch] = useState(false);
+
+  const handleGuardianSelect = (resident) => {
+    setGuardianResident(resident);
+    setShowGuardianSearch(false);
+  };
+
+  const handleGuardianClear = () => {
+    setGuardianResident(null);
+  };
 
   const extraStep3 = (
     <div className="space-y-4">
       <div>
         <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-          Guardian's Full Name <span className="text-red-500">*</span>
+          Guardian (Legitimate Resident) <span className="text-red-500">*</span>
         </label>
-        <input type="text" value={guardianName} onChange={e => setGuardianName(e.target.value)}
-          placeholder="FULL NAME OF GUARDIAN"
-          className="w-full px-6 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl uppercase" />
+        <p className="text-[11px] text-gray-500 mb-3 ml-1">
+          The guardian must be a registered resident of this barangay.
+        </p>
+
+        {guardianResident ? (
+          <div className="relative p-5 bg-green-50 border-2 border-green-300 rounded-2xl">
+            <button
+              type="button"
+              onClick={handleGuardianClear}
+              className="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="font-black text-gray-900 text-lg uppercase tracking-tight leading-tight">
+                  {guardianResident.full_name}
+                </p>
+                <p className="text-xs text-gray-500 font-semibold">
+                  Record #{guardianResident.id?.slice(0, 8)}...
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-green-200">
+              <div>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Age</p>
+                <p className="text-sm font-bold text-gray-700">{guardianResident.age || "—"}</p>
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Sex</p>
+                <p className="text-sm font-bold text-gray-700 uppercase">{guardianResident.gender || guardianResident.sex || "—"}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Address</p>
+                <p className="text-sm font-semibold text-gray-700">{guardianResident.residential_address || "—"}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowGuardianSearch(true)}
+            className="w-full flex items-center gap-4 p-5 bg-white border-2 border-dashed border-gray-300 rounded-xl text-left transition-colors hover:bg-gray-50 hover:border-gray-400"
+          >
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center shrink-0">
+              <Search className="w-6 h-6 text-gray-400" />
+            </div>
+            <div>
+              <p className="font-black text-gray-700 text-base uppercase tracking-tight">
+                Search Resident Guardian
+              </p>
+              <p className="text-xs text-gray-400 font-semibold mt-0.5">
+                Click to search for the guardian in resident records
+              </p>
+            </div>
+          </button>
+        )}
       </div>
+
       <div>
         <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
           Relationship to Minor <span className="text-red-500">*</span>
@@ -30,13 +100,40 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
           <option value="OTHER RELATIVE">OTHER RELATIVE</option>
         </select>
       </div>
+
+      {showGuardianSearch && (
+        <ResidentSearchModal
+          isOpen={showGuardianSearch}
+          onClose={() => setShowGuardianSearch(false)}
+          onSelect={handleGuardianSelect}
+          isDemo={isDemo}
+          tenantConfig={tenantConfig}
+          lang="en"
+        />
+      )}
     </div>
   );
+
+  const extraFormData = guardianResident
+    ? {
+        guardianName: guardianResident.full_name,
+        guardianResidentId: guardianResident.id,
+        guardianResidentAddress: guardianResident.residential_address || "",
+        guardianResidentAge: guardianResident.age || "",
+        guardianResidentSex: guardianResident.gender || guardianResident.sex || "",
+        guardianRelationship,
+      }
+    : { guardianName: '', guardianRelationship };
 
   return (
     <UnifiedCertModal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        setGuardianResident(null);
+        setGuardianRelationship('');
+        setShowGuardianSearch(false);
+        onClose();
+      }}
       isDemo={isDemo}
       tenantConfig={tenantConfig}
       title="Guardianship Certificate"
@@ -44,7 +141,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
       step3Label="Purpose of Guardianship"
       extraStep3={extraStep3}
       requirePurpose={false}
-      extraFormData={{ guardianName, guardianRelationship }}
+      extraFormData={extraFormData}
     />
   );
 }

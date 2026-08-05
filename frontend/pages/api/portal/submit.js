@@ -285,6 +285,10 @@ export default async function handler(req, res) {
         // Guardianship
         guardian_name: formData.guardianName?.toUpperCase(),
         guardian_relationship: formData.guardianRelationship?.toUpperCase(),
+        guardian_resident_id: formData.guardianResidentId || null,
+        guardian_resident_address: formData.guardianResidentAddress?.toUpperCase(),
+        guardian_resident_age: formData.guardianResidentAge || null,
+        guardian_resident_sex: formData.guardianResidentSex?.toUpperCase(),
         // Cohabitation — store with all key variants for compatibility
         partner_name: formData.partnerFullName?.toUpperCase(),
         partnerFullName: formData.partnerFullName?.toUpperCase(),
