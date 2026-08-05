@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import UnifiedCertModal from './UnifiedCertModal';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
+import { PUROK_OPTIONS } from '../../lib/addressHelper';
 import { Search, CheckCircle, MapPin, Info } from 'lucide-react';
 
 export default function CohabitationCertificateModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
@@ -21,14 +22,30 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
   const [isPartnerSearchOpen, setIsPartnerSearchOpen] = useState(false);
   const [houseNo, setHouseNo] = useState('');
   const [purok, setPurok] = useState('');
+  const [phase, setPhase] = useState('');
+  const [block, setBlock] = useState('');
+  const [lot, setLot] = useState('');
 
   const accentColor = tenantConfig.primaryColor || '#059669';
 
   // Auto barangay suffix from tenantConfig
   const barangaySuffix = tenantConfig.subtitle || `BRGY. ${(tenantConfig.shortName || "IBA O' ESTE").toUpperCase()}, CALUMPIT, BULACAN`;
 
+  // Effective house number: combine phase/block/lot for North Ville 9
+  const effectiveHouseNo = purok === 'NORTH VILLE 9'
+    ? [phase.trim() && `PHASE ${phase.trim()}`, block.trim() && `BLOCK ${block.trim()}`, lot.trim() && `LOT ${lot.trim()}`].filter(Boolean).join(' ')
+    : houseNo;
+
   // Composed full address
-  const composedAddress = [houseNo, purok, barangaySuffix].filter(Boolean).join(', ');
+  const composedAddress = [effectiveHouseNo, purok, barangaySuffix].filter(Boolean).join(', ');
+
+  const handlePurokChange = (val) => {
+    setPurok(val);
+    setHouseNo('');
+    setPhase('');
+    setBlock('');
+    setLot('');
+  };
 
   const handlePartnerSelect = (resident) => {
     setPartnerName(resident.full_name || '');
@@ -46,6 +63,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
     setPartnerResidentialAddress('');
     setYearsLiving(''); setChildren('0');
     setHouseNo(''); setPurok('');
+    setPhase(''); setBlock(''); setLot('');
     onClose();
   };
 
@@ -133,34 +151,96 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
         </div>
       </div>
 
-      {/* House No. */}
+      {/* Purok — shown first */}
       <div>
         <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
-          House No. / <span className="text-gray-400 normal-case font-semibold">Numero ng Bahay</span>
-          <span className="text-red-500 ml-1">*</span>
+          Purok <span className="text-red-500">*</span>
         </label>
-        <input
-          type="text"
-          value={houseNo}
-          onChange={e => setHouseNo(e.target.value.toUpperCase())}
-          placeholder="E.G. 123 / BLK 4 LOT 5"
+        <select
+          required
+          value={purok}
+          onChange={e => handlePurokChange(e.target.value)}
           className="w-full px-5 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase"
-        />
+        >
+          <option value="">-- Select Purok --</option>
+          {PUROK_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
 
-      {/* Purok */}
-      <div>
-        <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
-          Purok / Sitio <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={purok}
-          onChange={e => setPurok(e.target.value.toUpperCase())}
-          placeholder="E.G. PUROK 3, SITIO BANAWE"
-          className="w-full px-5 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase"
-        />
-      </div>
+      {/* House No. or Phase/Block/Lot — conditional on purok */}
+      {purok === 'NORTH VILLE 9' ? (
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+              Phase <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={phase}
+              onChange={e => setPhase(e.target.value)}
+              placeholder="1"
+              className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+              Block <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={block}
+              onChange={e => setBlock(e.target.value)}
+              placeholder="1"
+              className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+              Lot <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={lot}
+              onChange={e => setLot(e.target.value)}
+              placeholder="2"
+              className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
+            />
+          </div>
+        </div>
+      ) : purok ? (
+        <div>
+          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+            House No. / <span className="text-gray-400 normal-case font-semibold">Numero ng Bahay</span>
+            <span className="text-red-500 ml-1">*</span>
+          </label>
+          <input
+            type="text"
+            required
+            value={houseNo}
+            onChange={e => setHouseNo(e.target.value.toUpperCase())}
+            placeholder="E.G. 123, 2706-A"
+            className="w-full px-5 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase"
+          />
+        </div>
+      ) : (
+        <div>
+          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+            House No. / <span className="text-gray-400 normal-case font-semibold">Numero ng Bahay</span>
+            <span className="text-red-500 ml-1">*</span>
+          </label>
+          <input
+            type="text"
+            disabled
+            placeholder="Select a purok first"
+            className="w-full px-5 py-4 bg-gray-100 border-4 border-gray-100 rounded-2xl font-black text-base uppercase cursor-not-allowed"
+          />
+        </div>
+      )}
 
       {/* Auto-filled barangay */}
       <div>
@@ -176,7 +256,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
       </div>
 
       {/* Live preview */}
-      {(houseNo || purok) && (
+      {(effectiveHouseNo || purok) && (
         <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
             Full Address Preview / Buong Tirahan
@@ -219,7 +299,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
         partnerResidentialAddress,
         yearsLiving,
         numberOfChildren: children,
-        houseNo,
+        houseNo: effectiveHouseNo,
         purok,
         currentAddress: composedAddress,
       }}
