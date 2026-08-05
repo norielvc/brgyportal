@@ -1326,7 +1326,12 @@ export default function Residents() {
                 Full Address Preview
               </p>
               <p className="text-sm font-semibold text-gray-800 uppercase">
-                {generateFullAddress(formData) || 'Enter house number and purok to see preview'}
+                {generateFullAddress({
+                  ...formData,
+                  house_number: formData.purok === 'NORTH VILLE 9'
+                    ? [formData.phase?.trim() && `PHASE ${formData.phase.trim()}`, formData.block?.trim() && `BLOCK ${formData.block.trim()}`, formData.lot?.trim() && `LOT ${formData.lot.trim()}`].filter(Boolean).join(' ')
+                    : formData.house_number,
+                }) || 'Enter house number and purok to see preview'}
               </p>
             </div>
           </div>
