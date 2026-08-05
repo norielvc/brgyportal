@@ -5982,10 +5982,16 @@ function ClearancePreviewForRequests({
     additionalDetails.aliasName ||
     "";
 
-  // Find the timestamp of the last "return" or "reject" event to reset codes
-  const returnEvents = (history || []).filter(
-    (h) => h.action === "return" || h.action === "reject",
-  );
+  // Find the timestamp of the last "return", "reject", or reset event to clear signatures/initials
+  const PROGRESS_ACTIONS = ['create', 'submitted', 'submit', 'approve', 'forward', 'physical_inspection'];
+  const returnEvents = (history || []).filter((h) => {
+    const action = (h.action || '').toLowerCase();
+    const newStatus = (h.new_status || '').toLowerCase();
+    if (PROGRESS_ACTIONS.includes(action)) return false;
+    if (['reject', 'return', 'send_back_to_start', 'send_back', 'sent_back', 'cancel', 'reset'].some(a => action.includes(a))) return true;
+    if (['rejected', 'returned', 'staff_review', 'cancelled'].includes(newStatus)) return true;
+    return false;
+  });
   const lastReturnTime =
     returnEvents.length > 0
       ? Math.max(...returnEvents.map((h) => new Date(h.created_at).getTime()))
