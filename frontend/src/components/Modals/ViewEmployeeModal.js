@@ -18,9 +18,11 @@ export default function ViewEmployeeModal({ employee, onClose }) {
 
   const formatDate = (date) => {
     if (!date) return 'NEVER LOGGED';
-    return new Date(date).toLocaleDateString('en-US', {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'INVALID DATE';
+    return d.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'SHORT',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
