@@ -907,9 +907,17 @@ export default function BarangayClearanceModal({
                       {t.back}
                     </button>
                   ) : (
-                    <p className="text-xs text-gray-500">
-                      <span className="text-red-600">*</span> {t.requiredFields}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setLang(null)}
+                        className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
+                      >
+                        {t.back}
+                      </button>
+                      <p className="text-xs text-gray-500">
+                        <span className="text-red-600">*</span> {t.requiredFields}
+                      </p>
+                    </div>
                   )}
 
                   {currentStep < totalSteps ? (
