@@ -409,7 +409,9 @@ export default function BarangayClearanceModal({
     residentId: null,
     pending_case: false,
     case_record_history: "",
+    pickupMethod: "pickup",
   });
+  const [pickupError, setPickupError] = useState("");
 
   const handleResidentSelect = (resident) => {
     if (!resident) {
@@ -514,6 +516,11 @@ export default function BarangayClearanceModal({
   };
 
   const handleProceedSubmission = async () => {
+    if (formData.pickupMethod === "online" && !formData.email?.trim()) {
+      setPickupError(t.pickupEmailRequired);
+      return;
+    }
+    setPickupError("");
     setIsSubmitting(true);
     try {
       // POINTED TO NEXT.JS RESILIENCE API
@@ -564,7 +571,9 @@ export default function BarangayClearanceModal({
       placeOfBirth: "",
       purpose: "",
       residentId: null,
+      pickupMethod: "pickup",
     });
+    setPickupError("");
     setCurrentStep(1);
     setShowConfirmationPopup(false);
     setShowSuccessModal(false);
@@ -1067,7 +1076,36 @@ export default function BarangayClearanceModal({
                       </div>
                     </div>
                   )}
-                  <div className="mt-5 flex items-start gap-2.5 p-4 bg-white border border-gray-200 rounded-xl">
+                  {/* Pickup Method Selection */}
+                <div className="mt-5">
+                  <h4 className="text-sm font-bold text-gray-900 mb-1">{t.pickupHeading}</h4>
+                  <p className="text-xs text-gray-500 mb-3">{t.pickupHelp}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => { setFormData(prev => ({ ...prev, pickupMethod: "pickup" })); setPickupError(""); }}
+                      className={`p-4 rounded-xl border-2 text-left transition-colors ${formData.pickupMethod === "pickup" ? "" : "bg-white border-gray-200 hover:border-gray-300"}`}
+                      style={formData.pickupMethod === "pickup" ? { borderColor: accentColor, backgroundColor: `${accentColor}0D` } : undefined}
+                    >
+                      <p className="text-sm font-bold" style={formData.pickupMethod === "pickup" ? { color: accentColor } : { color: "#111827" }}>{t.pickupPickup}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{t.pickupPickupSub}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setFormData(prev => ({ ...prev, pickupMethod: "online" })); setPickupError(""); }}
+                      className={`p-4 rounded-xl border-2 text-left transition-colors ${formData.pickupMethod === "online" ? "" : "bg-white border-gray-200 hover:border-gray-300"}`}
+                      style={formData.pickupMethod === "online" ? { borderColor: accentColor, backgroundColor: `${accentColor}0D` } : undefined}
+                    >
+                      <p className="text-sm font-bold" style={formData.pickupMethod === "online" ? { color: accentColor } : { color: "#111827" }}>{t.pickupOnline}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{t.pickupOnlineSub}</p>
+                    </button>
+                  </div>
+                  {pickupError && (
+                    <p className="text-xs text-red-600 mt-2">{pickupError}</p>
+                  )}
+                </div>
+
+                <div className="mt-5 flex items-start gap-2.5 p-4 bg-white border border-gray-200 rounded-xl">
                     <input
                       type="checkbox"
                       id="brgy-consent"

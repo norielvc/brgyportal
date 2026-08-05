@@ -246,6 +246,7 @@ export default async function handler(req, res) {
       date_of_birth: formData.dateOfBirth || null,
       place_of_birth: formData.placeOfBirth?.toUpperCase() || "",
       resident_id: formData.residentId || null,
+      pickup_method: formData.pickupMethod || "pickup",
       status: "staff_review",
       date_issued: new Date().toISOString(),
       created_at: new Date().toISOString(),

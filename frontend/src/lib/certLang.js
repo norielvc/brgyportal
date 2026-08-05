@@ -106,6 +106,15 @@ const STRINGS = {
     privacyP3: "I further understand that my personal data will not be shared with third parties without my consent, unless required by law or authorized by applicable regulations.",
     privacyAct: "Data Privacy Act of 2012 (R.A. 10173)",
 
+    // Pickup method
+    pickupHeading: "How would you like to receive your certificate?",
+    pickupHelp: "Choose your preferred delivery method below.",
+    pickupPickup: "Pickup at Barangay Hall",
+    pickupPickupSub: "Claim your certificate in person at the barangay office.",
+    pickupOnline: "Online Delivery (Email)",
+    pickupOnlineSub: "Receive a digital copy of your certificate via email.",
+    pickupEmailRequired: "Email address is required for online delivery.",
+
     // Buttons
     back: "Back",
     backToEdit: "Back to Edit",
@@ -238,6 +247,15 @@ const STRINGS = {
     privacyP2: "Nauunawaan ko na ang impormasyong pinoproseso ay kinabibilang ng aking personal na detalye, impormasyon ng kontak, at kaugnay na datos, at ang nasabing datos ay tratuhin ng mahigpit na pagiging-kumpidensiyal at gagamitin lamang para sa lehitimong administratibong layunin ng barangay alinsunod sa",
     privacyP3: "Nauunawaan ko rin na ang aking personal na datos ay hindi ibabahagi sa ikatlong partido nang walang aking pahintulot, maliban kung kinakailangan ng batas o awtorisado ng naaangkop na regulasyon.",
     privacyAct: "Data Privacy Act of 2012 (R.A. 10173)",
+
+    // Pickup method
+    pickupHeading: "Paano mo nais matanggap ang iyong sertipiko?",
+    pickupHelp: "Piliin ang iyong gustong paraan ng pagkuha sa ibaba.",
+    pickupPickup: "Kuhanin sa Barangay Hall",
+    pickupPickupSub: "Kunin ang iyong sertipiko nang personal sa tanggapan ng barangay.",
+    pickupOnline: "Online Delivery (Email)",
+    pickupOnlineSub: "Tumanggap ng digital na kopya ng sertipiko sa iyong email.",
+    pickupEmailRequired: "Kinakailangan ang email address para sa online delivery.",
 
     // Buttons
     back: "Bumalik",
