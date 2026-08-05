@@ -709,14 +709,14 @@ export default function Residents() {
                       Residential Address
                     </p>
                     <p className="text-sm font-medium text-gray-900 leading-relaxed">
-                      {selectedResident.residential_address ||
-                        generateFullAddress({
-                          house_number: selectedResident.house_number,
-                          purok: selectedResident.purok,
-                          barangay: selectedResident.barangay,
-                          municipality: selectedResident.municipality,
-                          province: selectedResident.province,
-                        }) ||
+                      {generateFullAddress({
+                        house_number: selectedResident.house_number,
+                        purok: selectedResident.purok,
+                        barangay: selectedResident.barangay || tenantAddressDefaults.barangay,
+                        municipality: selectedResident.municipality || tenantAddressDefaults.municipality,
+                        province: selectedResident.province || tenantAddressDefaults.province,
+                      }) ||
+                        selectedResident.residential_address ||
                         "Not recorded"}
                     </p>
                   </div>
