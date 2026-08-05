@@ -227,7 +227,12 @@ export default function Residents() {
   };
 
   const handleOpenEditModal = () => {
-    setFormData({ ...selectedResident });
+    setFormData({
+      ...selectedResident,
+      barangay: selectedResident.barangay || tenantAddressDefaults.barangay,
+      municipality: selectedResident.municipality || tenantAddressDefaults.municipality,
+      province: selectedResident.province || tenantAddressDefaults.province,
+    });
     setIsModalOpen(false);
     setIsFormModalOpen(true);
   };
@@ -239,14 +244,22 @@ export default function Residents() {
       // Clean up data for database compatibility
       const cleanedData = { ...formData };
 
-      // Generate full address for backward compatibility
+      // Generate full address for backward compatibility, filling in tenant defaults if needed
+      const effectiveBarangay = cleanedData.barangay || tenantAddressDefaults.barangay;
+      const effectiveMunicipality = cleanedData.municipality || tenantAddressDefaults.municipality;
+      const effectiveProvince = cleanedData.province || tenantAddressDefaults.province;
       cleanedData.residential_address = generateFullAddress({
         house_number: cleanedData.house_number,
         purok: cleanedData.purok,
-        barangay: cleanedData.barangay,
-        municipality: cleanedData.municipality,
-        province: cleanedData.province,
+        barangay: effectiveBarangay,
+        municipality: effectiveMunicipality,
+        province: effectiveProvince,
       });
+
+      // Backfill the stored structured fields too so the saved record is complete
+      cleanedData.barangay = effectiveBarangay;
+      cleanedData.municipality = effectiveMunicipality;
+      cleanedData.province = effectiveProvince;
 
       // Convert empty date strings to null to avoid timestamp syntax errors
       if (cleanedData.date_of_birth === "") cleanedData.date_of_birth = null;
