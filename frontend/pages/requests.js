@@ -520,12 +520,11 @@ export default function RequestsPage() {
       setAssignedCount(combined.length);
 
       // 4. Set the active requests list based on viewMode
-      const isFullAdmin = ['superadmin', 'super_admin', 'admin'].includes(activeUser?.role?.toLowerCase());
       if (viewMode === "assigned") {
         setRequests(combined);
       } else {
-        // Non-admins only see their own history, not all tenant requests
-        setRequests(isFullAdmin ? allCertificates : combined);
+        // Certificate Request History: show all certificates for the tenant
+        setRequests(allCertificates);
       }
     } catch (error) {
       console.error("Error fetching requests:", error);
