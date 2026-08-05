@@ -1959,6 +1959,11 @@ function RequestDetailsModal({
     )
       mismatches.push("Contact Number");
     if (
+      request.email &&
+      normalize(request.email) !== normalize(resident.email || "")
+    )
+      mismatches.push("Email");
+    if (
       request.address &&
       normalize(request.address) !== normalize(resident.residential_address || "")
     )
