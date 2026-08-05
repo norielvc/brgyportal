@@ -37,6 +37,7 @@ export default async function handler(req, res) {
 
     if (cert.address) residentUpdate.residential_address = cert.address;
     if (cert.contact_number) residentUpdate.contact_number = cert.contact_number;
+    if (cert.email) residentUpdate.email = cert.email;
     if (cert.place_of_birth) residentUpdate.place_of_birth = cert.place_of_birth;
     if (cert.civil_status) residentUpdate.civil_status = cert.civil_status;
 
