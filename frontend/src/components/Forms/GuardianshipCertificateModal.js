@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import UnifiedCertModal from './UnifiedCertModal';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
+import { getStrings } from '../../lib/certLang';
 import { Search, User, CheckCircle, X } from 'lucide-react';
 
 export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
@@ -17,14 +18,15 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
     setGuardianResident(null);
   };
 
-  const extraStep3 = (
+  const extraStep3 = (lang, t) => {
+    return (
     <div className="space-y-4">
       <div>
         <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-          Guardian (Legitimate Resident) <span className="text-red-500">*</span>
+          {t.guardianHeading} <span className="text-red-500">*</span>
         </label>
         <p className="text-[11px] text-gray-500 mb-3 ml-1">
-          The guardian must be a registered resident of this barangay.
+          {t.guardianHelp}
         </p>
 
         {guardianResident ? (
@@ -45,21 +47,21 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
                   {guardianResident.full_name}
                 </p>
                 <p className="text-xs text-gray-500 font-semibold">
-                  Record #{guardianResident.id?.slice(0, 8)}...
+                  {t.guardianRecordNo} #{guardianResident.id?.slice(0, 8)}...
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 pt-3 border-t border-green-200">
               <div>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Age</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">{t.guardianAge}</p>
                 <p className="text-sm font-bold text-gray-700">{guardianResident.age || "—"}</p>
               </div>
               <div>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Sex</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">{t.guardianSex}</p>
                 <p className="text-sm font-bold text-gray-700 uppercase">{guardianResident.gender || guardianResident.sex || "—"}</p>
               </div>
               <div className="col-span-2">
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Address</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">{t.guardianAddress}</p>
                 <p className="text-sm font-semibold text-gray-700">{guardianResident.residential_address || "—"}</p>
               </div>
             </div>
@@ -75,10 +77,10 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
             </div>
             <div>
               <p className="font-black text-gray-700 text-base uppercase tracking-tight">
-                Search Resident Guardian
+                {t.guardianSearch}
               </p>
               <p className="text-xs text-gray-400 font-semibold mt-0.5">
-                Click to search for the guardian in resident records
+                {t.guardianSearchSub}
               </p>
             </div>
           </button>
@@ -87,11 +89,11 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
 
       <div>
         <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-          Relationship to Minor <span className="text-red-500">*</span>
+          {t.guardianRelationship} <span className="text-red-500">*</span>
         </label>
         <select value={guardianRelationship} onChange={e => setGuardianRelationship(e.target.value)}
           className="w-full px-6 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl uppercase">
-          <option value="">SELECT RELATIONSHIP...</option>
+          <option value="">{t.guardianSelectRel}</option>
           <option value="PARENT">PARENT</option>
           <option value="GRANDPARENT">GRANDPARENT</option>
           <option value="SIBLING">SIBLING</option>
@@ -108,11 +110,12 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
           onSelect={handleGuardianSelect}
           isDemo={isDemo}
           tenantConfig={tenantConfig}
-          lang="en"
+          lang={lang || 'en'}
         />
       )}
     </div>
-  );
+    );
+  };
 
   const extraFormData = guardianResident
     ? {

@@ -6,31 +6,31 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose, isDemo =
   const [causeOfDeath, setCauseOfDeath] = useState('');
   const [requesterName, setRequesterName] = useState('');
 
-  const extraStep3 = (
+  const extraStep3 = (lang, t) => (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-            Date of Death <span className="text-red-500">*</span>
+            {t.deathDateOfDeath} <span className="text-red-500">*</span>
           </label>
           <input type="date" value={dateOfDeath} onChange={e => setDateOfDeath(e.target.value)}
             className="w-full px-4 py-3 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base" />
         </div>
         <div>
           <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-            Cause of Death <span className="text-red-500">*</span>
+            {t.deathCauseOfDeath} <span className="text-red-500">*</span>
           </label>
           <input type="text" value={causeOfDeath} onChange={e => setCauseOfDeath(e.target.value)}
-            placeholder="NATURAL CAUSE..."
+            placeholder={t.deathCausePlaceholder}
             className="w-full px-4 py-3 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase" />
         </div>
       </div>
       <div>
         <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-          Name of Requester (if different from applicant)
+          {t.deathRequesterName}
         </label>
         <input type="text" value={requesterName} onChange={e => setRequesterName(e.target.value)}
-          placeholder="FULL NAME OF REQUESTER"
+          placeholder={t.deathRequesterPlaceholder}
           className="w-full px-6 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl uppercase" />
       </div>
     </div>

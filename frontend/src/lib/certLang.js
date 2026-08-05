@@ -152,6 +152,40 @@ const STRINGS = {
     dirVisitAt: "Visit us at",
     dirOfficeHours: "Office Hours: Monday to Friday, 8:00 AM - 5:00 PM",
     dirUnderstand: "I Understand",
+
+    // Guardianship
+    guardianHeading: "Guardian (Legitimate Resident)",
+    guardianHelp: "The guardian must be a registered resident of this barangay.",
+    guardianSearch: "Search Resident Guardian",
+    guardianSearchSub: "Click to search for the guardian in resident records",
+    guardianRelationship: "Relationship to Minor",
+    guardianSelectRel: "SELECT RELATIONSHIP...",
+    guardianVerified: "Verified Resident",
+    guardianAge: "Age",
+    guardianSex: "Sex",
+    guardianAddress: "Address",
+    guardianRecordNo: "Record No.",
+
+    // Medico-Legal
+    medicoDateOfExam: "Date of Examination",
+    medicoUsapingNo: "Usaping Barangay No.",
+    medicoUsapingPlaceholder: "CASE NUMBER",
+    medicoDateOfHearing: "Date of Hearing",
+
+    // Natural Death
+    deathDateOfDeath: "Date of Death",
+    deathCauseOfDeath: "Cause of Death",
+    deathCausePlaceholder: "NATURAL CAUSE...",
+    deathRequesterName: "Name of Requester (if different from applicant)",
+    deathRequesterPlaceholder: "FULL NAME OF REQUESTER",
+
+    // Same Person
+    samePersonHeading: "Second Name / Other Name Used",
+    samePersonHelp: "Please provide the alternative name that belongs to the same person",
+    samePersonFirst: "First Name",
+    samePersonMiddle: "Middle Name",
+    samePersonLast: "Last Name",
+    samePersonSuffix: "Suffix",
   },
 
   tl: {
@@ -294,6 +328,40 @@ const STRINGS = {
     dirVisitAt: "Bisitahin kami sa",
     dirOfficeHours: "Oras ng Tanggapan: Lunes hanggang Biyernes, 8:00 AM - 5:00 PM",
     dirUnderstand: "Nauunawaan Ko",
+
+    // Guardianship
+    guardianHeading: "Tagapangalaga (Lehitimong Residente)",
+    guardianHelp: "Dapat nakarehistrong residente ng barangay na ito ang tagapangalaga.",
+    guardianSearch: "Maghanap ng Residenteng Tagapangalaga",
+    guardianSearchSub: "I-click upang maghanap ng tagapangalaga sa mga rekord ng residente",
+    guardianRelationship: "Relasyon sa Menor",
+    guardianSelectRel: "PUMILI NG RELASYON...",
+    guardianVerified: "Beripikadong Residente",
+    guardianAge: "Edad",
+    guardianSex: "Kasarian",
+    guardianAddress: "Tirahan",
+    guardianRecordNo: "Bilang ng Rekord",
+
+    // Medico-Legal
+    medicoDateOfExam: "Petsa ng Pagsusuri",
+    medicoUsapingNo: "Usaping Barangay No.",
+    medicoUsapingPlaceholder: "NUMERO NG KASO",
+    medicoDateOfHearing: "Petsa ng Pagdinig",
+
+    // Natural Death
+    deathDateOfDeath: "Petsa ng Kamatayan",
+    deathCauseOfDeath: "Sanhi ng Kamatayan",
+    deathCausePlaceholder: "LIKAS NA SANHI...",
+    deathRequesterName: "Pangalan ng Humihiling (kung iba sa aplikante)",
+    deathRequesterPlaceholder: "BUONG PANGALAN NG HUMIHINGI",
+
+    // Same Person
+    samePersonHeading: "Ikalawang Pangalan / Ibang Pangalang Ginamit",
+    samePersonHelp: "Mangyaring ilagay ang alternatibong pangalan ng parehong tao",
+    samePersonFirst: "Pangalan",
+    samePersonMiddle: "Gitnang Pangalan",
+    samePersonLast: "Apelyido",
+    samePersonSuffix: "Sufiks",
   },
 };
 

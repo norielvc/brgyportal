@@ -611,7 +611,7 @@ export default function UnifiedCertModal({
               {/* Step 3: Purpose + extra fields */}
               {currentStep === 3 && (
                 <div className="space-y-5 animate-in fade-in duration-300">
-                  {extraStep3}
+                  {typeof extraStep3 === 'function' ? extraStep3(lang, t) : extraStep3}
                   {requirePurpose && (
                     <>
                       <div>
@@ -648,7 +648,7 @@ export default function UnifiedCertModal({
               {/* Step 4: Optional extra step (e.g. address for cohabitation) */}
               {extraStep4 && currentStep === 4 && (
                 <div className="space-y-5 animate-in fade-in duration-300">
-                  {extraStep4}
+                  {typeof extraStep4 === 'function' ? extraStep4(lang, t) : extraStep4}
                 </div>
               )}
             </div>
