@@ -126,9 +126,9 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
         />
 
         {/* Modal Content */}
-        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-white/20 animate-in zoom-in-95 duration-200">
+        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto overflow-hidden border border-white/20 animate-in zoom-in-95 duration-200">
           {/* Premium Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-blue-700 px-10 py-10 text-white relative">
+          <div className="bg-gradient-to-r from-indigo-600 to-blue-700 px-8 py-6 text-white relative">
             <div className="relative z-10 flex items-center justify-between">
               <div className="flex items-center gap-5">
                 <div className="bg-white/20 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-lg">
@@ -152,15 +152,15 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-10">
+          <form onSubmit={handleSubmit} className="p-8">
             {errors.submit && (
-              <div className="mb-8 p-4 bg-rose-50 border-2 border-rose-100 rounded-2xl flex items-center gap-4 animate-in slide-in-from-top-2">
+              <div className="mb-6 p-4 bg-rose-50 border-2 border-rose-100 rounded-2xl flex items-center gap-4 animate-in slide-in-from-top-2">
                 <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
                 <p className="text-rose-900 text-[11px] font-black uppercase tracking-tight">{errors.submit}</p>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Identity Section */}
               <div className="col-span-1 md:col-span-2">
                 <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-2">
@@ -302,7 +302,7 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex gap-4 pt-10 mt-8 border-t border-gray-100">
+            <div className="flex gap-4 pt-6 mt-6 border-t border-gray-100">
               <button
                 type="button"
                 onClick={onClose}
