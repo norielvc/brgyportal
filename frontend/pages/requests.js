@@ -2406,7 +2406,7 @@ function RequestDetailsModal({
                   {isSaving ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin rounded-full" /> : <Save className="w-3.5 h-3.5" />}
                   <span>{isSaving ? "Saving..." : "Save"}</span>
                 </button>
-                <button onClick={() => { setIsEditing(false); setEditFormData({ full_name: request.full_name || request.applicant_name || "", contact_number: request.contact_number || "", age: request.age || "", sex: request.sex || "", civil_status: request.civil_status || "", date_of_birth: request.date_of_birth || "", place_of_birth: request.place_of_birth || "", address: request.address || "", purpose: request.purpose || "", date_of_death: request.date_of_death || "", cause_of_death: request.cause_of_death || "", covid_related: request.covid_related || false, requestor_name: request.requestor_name || "", guardian_name: request.guardian_name || "", guardian_relationship: request.guardian_relationship || "", partner_full_name: request.partner_full_name || "", partner_age: request.partner_age || "", partner_sex: request.partner_sex || "", partner_date_of_birth: request.partner_date_of_birth || "", no_of_children: request.no_of_children || "", living_together_years: request.living_together_years || "", living_together_months: request.living_together_months || "", date_of_examination: request.date_of_examination || "", usaping_barangay: request.usaping_barangay || "", date_of_hearing: request.date_of_hearing || "" }); }} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 transition-colors border border-white/10">
+                <button onClick={() => { setIsEditing(false); setEditFormData({ first_name: request.first_name || "", middle_name: request.middle_name || "", last_name: request.last_name || "", suffix: request.suffix || "", full_name: request.full_name || request.applicant_name || "", contact_number: request.contact_number || "", email: request.email || "", age: request.age || "", sex: request.sex || "", civil_status: request.civil_status || "", date_of_birth: request.date_of_birth || "", place_of_birth: request.place_of_birth || "", address: request.address || "", purpose: request.purpose || "", date_of_death: request.date_of_death || "", cause_of_death: request.cause_of_death || "", covid_related: request.covid_related || false, requestor_name: request.requestor_name || "", guardian_name: request.guardian_name || "", guardian_relationship: request.guardian_relationship || "", partner_full_name: request.partner_full_name || "", partner_age: request.partner_age || "", partner_sex: request.partner_sex || "", partner_date_of_birth: request.partner_date_of_birth || "", no_of_children: request.no_of_children || "", living_together_years: request.living_together_years || "", living_together_months: request.living_together_months || "", date_of_examination: request.date_of_examination || "", usaping_barangay: request.usaping_barangay || "", date_of_hearing: request.date_of_hearing || "" }); }} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 transition-colors border border-white/10">
                   Cancel
                 </button>
               </>
@@ -2895,6 +2895,25 @@ function RequestDetailsModal({
                             ].filter(Boolean);
                             return parts.length ? parts.join(", ").toUpperCase() : (r.residential_address || "NOT RECORDED");
                           })()}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                        Email Address
+                      </p>
+                      {isEditing ? (
+                        <input
+                          type="email"
+                          name="email"
+                          value={editFormData.email || ""}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                        />
+                      ) : (
+                        <p className="font-semibold text-gray-800 text-sm font-mono tracking-tighter">
+                          {request.email || "NOT RECORDED"}
                         </p>
                       )}
                     </div>
