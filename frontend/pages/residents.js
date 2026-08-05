@@ -215,6 +215,7 @@ export default function Residents() {
       municipality: tenantAddressDefaults.municipality,
       province: tenantAddressDefaults.province,
       contact_number: "",
+      email: "",
       pending_case: false,
       case_record_history: "",
       is_deceased: false,
@@ -222,8 +223,6 @@ export default function Residents() {
       cause_of_death: "",
       covid_related: false,
       second_name: "",
-      guardian_name: "",
-      guardian_relationship: "",
     });
     setSelectedResident(null);
     setIsFormModalOpen(true);
@@ -247,6 +246,7 @@ export default function Residents() {
       phase,
       block,
       lot,
+      email: selectedResident.email || "",
       barangay: selectedResident.barangay || tenantAddressDefaults.barangay,
       municipality: selectedResident.municipality || tenantAddressDefaults.municipality,
       province: selectedResident.province || tenantAddressDefaults.province,
@@ -286,6 +286,8 @@ export default function Residents() {
       delete cleanedData.phase;
       delete cleanedData.block;
       delete cleanedData.lot;
+      delete cleanedData.guardian_name;
+      delete cleanedData.guardian_relationship;
 
       // Backfill the stored structured fields too so the saved record is complete
       cleanedData.barangay = effectiveBarangay;
@@ -775,11 +777,11 @@ export default function Residents() {
                 </div>
               </div>
 
-              {/* Contact & Guardian */}
+              {/* Contact */}
               <div className="p-4 border border-gray-100 rounded-xl bg-white">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-gray-50 pb-2">
                   <Phone className="w-3.5 h-3.5 text-orange-500" />
-                  Contact & Guardian
+                  Contact
                 </p>
                 <div className="space-y-3">
                   <div>
@@ -792,11 +794,10 @@ export default function Residents() {
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
-                      Guardian
+                      Email
                     </p>
                     <p className="text-sm font-medium text-gray-900">
-                      {selectedResident.guardian_name || "Not recorded"}
-                      {selectedResident.guardian_relationship && ` (${selectedResident.guardian_relationship})`}
+                      {selectedResident.email || "Not recorded"}
                     </p>
                   </div>
                 </div>
@@ -1004,23 +1005,40 @@ export default function Residents() {
             <div className="p-4 border border-gray-100 rounded-xl space-y-3">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
                 <Phone className="w-3.5 h-3.5 text-orange-500" />
-                Contact & Guardian
+                Contact
               </p>
               <div className="space-y-3">
-                <div>
-                  <label className="label">Contact No.</label>
-                  <input
-                    type="text"
-                    className="input"
-                    value={formData.contact_number}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_number: e.target.value,
-                      })
-                    }
-                    placeholder="09..."
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Contact No.</label>
+                    <input
+                      type="text"
+                      className="input"
+                      value={formData.contact_number}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contact_number: e.target.value,
+                        })
+                      }
+                      placeholder="09..."
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Email</label>
+                    <input
+                      type="email"
+                      className="input lowercase font-bold"
+                      value={formData.email || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          email: e.target.value,
+                        })
+                      }
+                      placeholder="email@example.com"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="label">Birth Place</label>
@@ -1035,38 +1053,6 @@ export default function Residents() {
                       })
                     }
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="label">Guardian Name</label>
-                    <input
-                      type="text"
-                      className="input uppercase font-bold"
-                      value={formData.guardian_name || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          guardian_name: e.target.value,
-                        })
-                      }
-                      placeholder="Full name"
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Relationship</label>
-                    <input
-                      type="text"
-                      className="input uppercase font-bold"
-                      value={formData.guardian_relationship || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          guardian_relationship: e.target.value,
-                        })
-                      }
-                      placeholder="Parent, sibling"
-                    />
-                  </div>
                 </div>
               </div>
             </div>

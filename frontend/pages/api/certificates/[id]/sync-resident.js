@@ -56,14 +56,6 @@ export default async function handler(req, res) {
     "Middle Name": () => { if (cert.middle_name) residentUpdate.middle_name = cert.middle_name; },
     "Last Name": () => { if (cert.last_name) residentUpdate.last_name = cert.last_name; },
     "Suffix": () => { if (cert.suffix) residentUpdate.suffix = cert.suffix; },
-    "Guardian Name": () => {
-      const val = cert.guardian_name || certDetails.guardian_name;
-      if (val) residentUpdate.guardian_name = val;
-    },
-    "Guardian Relationship": () => {
-      const val = cert.guardian_relationship || certDetails.guardian_relationship;
-      if (val) residentUpdate.guardian_relationship = val;
-    },
     "Deceased Status": () => {
       if (cert.certificate_type === "natural_death") {
         residentUpdate.is_deceased = true;
@@ -92,10 +84,6 @@ export default async function handler(req, res) {
       if (cert.civil_status) residentUpdate.civil_status = cert.civil_status;
       if (cert.sex) residentUpdate.sex = cert.sex;
       if (cert.date_of_birth) residentUpdate.date_of_birth = cert.date_of_birth;
-      const gName = cert.guardian_name || certDetails.guardian_name;
-      const gRel = cert.guardian_relationship || certDetails.guardian_relationship;
-      if (gName) residentUpdate.guardian_name = gName;
-      if (gRel) residentUpdate.guardian_relationship = gRel;
 
       // Natural death
       if (cert.certificate_type === "natural_death") {

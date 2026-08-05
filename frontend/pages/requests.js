@@ -2030,18 +2030,6 @@ function RequestDetailsModal({
       if (submittedAddress && !requestorAddress) mismatches.push("Address (Requestor — not on file)");
       if (submittedAddress && !partnerAddress) mismatches.push("Address (Partner — not on file)");
     }
-
-    // Check for Guardian mismatch for Guardianship certificates
-    if (request.certificate_type === "barangay_guardianship") {
-      const reqGName = normalize(request.guardian_name || request.details?.guardian_name);
-      const resGName = normalize(resident.guardian_name);
-      if (reqGName && reqGName !== resGName) mismatches.push("Guardian Name");
-
-      const reqGRel = normalize(request.guardian_relationship || request.details?.guardian_relationship);
-      const resGRel = normalize(resident.guardian_relationship);
-      if (reqGRel && reqGRel !== resGRel)
-        mismatches.push("Guardian Relationship");
-    }
   }
   const hasMismatch = mismatches.length > 0;
 
@@ -4628,10 +4616,6 @@ function RequestDetailsModal({
                                 return { current: safe(resident.gender || resident.sex), new: safe(request.sex) };
                               case "Civil Status":
                                 return { current: safe(resident.civil_status), new: safe(request.civil_status) };
-                              case "Guardian Name":
-                                return { current: safe(resident.guardian_name), new: safe(request.guardian_name || request.details?.guardian_name) };
-                              case "Guardian Relationship":
-                                return { current: safe(resident.guardian_relationship), new: safe(request.guardian_relationship || request.details?.guardian_relationship) };
                               case "Deceased Status":
                                 return { current: safe(resident.is_deceased ? "Yes" : "No"), new: safe("Yes") };
                               case "Second Name":
