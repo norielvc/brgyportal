@@ -5982,7 +5982,7 @@ function ClearancePreviewForRequests({
       : 0;
 
   // Determine Issued Date (Final Approval Date or Current Date)
-  const CAPTAIN_ROLES = ["BRGY. CAPTAIN", "CHAIRMAN", "BARANGAY CHAIRMAN", "PUNONG BARANGAY"];
+  const CAPTAIN_ROLES = ["BRGY. CAPTAIN", "CHAIRMAN", "BARANGAY CHAIRMAN", "PUNONG BARANGAY", "CAPTAIN", "PUNONG"];
   const captainApproval = !history ? null : history.find(h => {
     const hasAction = h.action === 'approve' || h.action === 'forward' || h.action === 'create';
     if (!hasAction || !h.signature_data) return false;
@@ -5994,17 +5994,21 @@ function ClearancePreviewForRequests({
     const sName = (h.step_name || '').toUpperCase();
     if (sName.includes('CAPTAIN') || sName.includes('CHAIRMAN') || sName.includes('PUNONG')) return true;
     
-    // Check Roles (Case Insensitive)
+    // Check official role / privilege role
     const hRole = (h.officialRole || h.official_role || h.privilegeRole || h.privilege_role || '').toUpperCase();
     if (CAPTAIN_ROLES.some(r => hRole.includes(r))) return true;
+    
+    // Check user role from joined users table
+    const uRole = (h.users?.role || '').toUpperCase();
+    if (CAPTAIN_ROLES.some(r => uRole.includes(r))) return true;
     
     // Check Status — if previous_status was captain_approval, this was a captain action
     const prevStatus = (h.previous_status || '').toLowerCase();
     if (prevStatus === 'captain_approval') return true;
     
-    // Check Name Match
+    // Check name match with configured chairman
     const pName = h.users ? `${h.users.first_name || ''} ${h.users.last_name || ''}`.trim().toUpperCase() : (h.performed_by_name || '').toUpperCase();
-    const cName = (officials.chairman || 'RICARDO S. VILLANUEVA').toUpperCase();
+    const cName = (officials?.chairman || 'RICARDO S. VILLANUEVA').toUpperCase();
     if (pName && (pName.includes(cName) || cName.includes(pName))) return true;
     
     return false;
@@ -6015,29 +6019,40 @@ function ClearancePreviewForRequests({
     if (!hasAction || !h.signature_data) return false;
     if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
     
-    // Check Step Name or Role
+    // Check Step Name or official role
     const sName = (h.step_name || '').toUpperCase();
     const hRole = (h.officialRole || h.official_role || '').toUpperCase();
     if (sName.includes('SECRETARY') || hRole.includes('SECRETARY')) return true;
     
-    // Check Status — if previous_status was secretary_approval, this was a secretary action
+    // Check user role
+    const uRole = (h.users?.role || '').toUpperCase();
+    if (uRole.includes('SECRETARY')) return true;
+    
+    // Check Status
     const prevStatus = (h.previous_status || '').toLowerCase();
     if (prevStatus === 'secretary_approval' || prevStatus === 'processing') return true;
     
     return false;
   });
 
+  // Last resort: if no effectiveCaptain found but we have any signed approval history, use the latest one
+  const fallbackCaptain = !history ? null : [...history]
+    .filter(h => h.signature_data && (h.action === 'approve' || h.action === 'forward'))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
+  
+  const effectiveCaptain = captainApproval || fallbackCaptain;
+
   // Determine the display name and role for the Captain/Chairman section
-  const captainName = captainApproval?.users 
-    ? `${captainApproval.users.first_name || ''} ${captainApproval.users.last_name || ''}`.trim()
-    : captainApproval?.performed_by_name || officials.chairman || 'RICARDO S. VILLANUEVA';
+  const captainName = effectiveCaptain?.users
+    ? `${effectiveCaptain.users.first_name || ''} ${effectiveCaptain.users.last_name || ''}`.trim()
+    : effectiveCaptain?.performed_by_name || officials?.chairman || 'RICARDO S. VILLANUEVA';
     
   const secretaryName = secretaryApproval?.users 
     ? `${secretaryApproval.users.first_name || ''} ${secretaryApproval.users.last_name || ''}`.trim()
-    : secretaryApproval?.performed_by_name || officials.secretary || 'JOEY MANIO';
+    : secretaryApproval?.performed_by_name || officials?.secretary || 'JOEY MANIO';
     
-  const detectedRole = captainApproval 
-    ? (captainApproval.official_role || captainApproval.officialRole || captainApproval.privilege_role || captainApproval.privilegeRole || 'Barangay Chairman').toUpperCase()
+  const detectedRole = effectiveCaptain 
+    ? (effectiveCaptain.official_role || effectiveCaptain.officialRole || effectiveCaptain.privilege_role || effectiveCaptain.privilegeRole || 'Barangay Chairman').toUpperCase()
     : 'BARANGAY CHAIRMAN';
 
   const getSignatureForCommittee = (committee) => {
@@ -6065,8 +6080,8 @@ function ClearancePreviewForRequests({
 
   const uniqueProcessorCodes = [...new Set(previousProcessors)].join(" / ");
 
-  const issuedDate = captainApproval?.created_at
-    ? new Date(captainApproval.created_at).toLocaleDateString("en-US", {
+  const issuedDate = effectiveCaptain?.created_at
+    ? new Date(effectiveCaptain.created_at).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -6428,13 +6443,13 @@ function ClearancePreviewForRequests({
                           TRULY YOURS,
                         </p>
                         <div className="relative inline-block">
-                          {captainApproval?.signature_data && (
+                          {effectiveCaptain?.signature_data && (
                             <div
                               className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[80%] w-64 h-32 pointer-events-none z-0"
                               style={{ mixBlendMode: "multiply" }}
                             >
                               <img
-                                src={captainApproval.signature_data}
+                                src={effectiveCaptain.signature_data}
                                 className="w-full h-full object-contain"
                                 alt="Sig"
                               />
@@ -6764,13 +6779,13 @@ function ClearancePreviewForRequests({
 
                     <p className="font-bold mb-6">C. APPROVAL</p>
                     <div className="flex flex-col mb-4 relative ml-4">
-                      {captainApproval?.signature_data && (
+                      {effectiveCaptain?.signature_data && (
                         <div
                           className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[80%] w-60 h-32 pointer-events-none flex items-center justify-center z-20"
                           style={{ mixBlendMode: "multiply" }}
                         >
                           <img
-                            src={captainApproval.signature_data}
+                            src={effectiveCaptain.signature_data}
                             className="w-full h-full object-contain"
                             alt="Captain Sig"
                           />
@@ -7230,22 +7245,22 @@ function ClearancePreviewForRequests({
                         <div className="relative inline-block">
                           <div className="flex items-center gap-1 relative z-10">
                             <div className="relative">
-                              {captainApproval?.signature_data && (
+                              {effectiveCaptain?.signature_data && (
                                 <>
                                   <div
                                     className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[75%] w-64 h-32 pointer-events-none flex items-center justify-center z-20"
                                     style={{ mixBlendMode: "multiply" }}
                                   >
                                     <img
-                                      src={captainApproval.signature_data}
+                                      src={effectiveCaptain.signature_data}
                                       className="w-full h-full object-contain"
                                       alt="Captain Sig"
                                     />
                                   </div>
                                   <div className="absolute left-[70%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
                                       <span className="font-bold text-gray-500">{captainName}</span>
-                                      <span>{new Date(captainApproval.created_at).toLocaleDateString("en-US")}</span>
-                                      <span>{new Date(captainApproval.created_at).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                                      <span>{new Date(effectiveCaptain.created_at).toLocaleDateString("en-US")}</span>
+                                      <span>{new Date(effectiveCaptain.created_at).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                                   </div>
                                 </>
                               )}
