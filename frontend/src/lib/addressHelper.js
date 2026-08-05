@@ -34,8 +34,14 @@ export function generateFullAddress(addressData) {
 
   const parts = [];
 
+  const isPhaseBlockLot = /\b(PHASE|BLOCK|LOT)\b/i.test(house_number || '');
+
   if (house_number?.trim()) {
-    parts.push(`HOUSE NO. ${house_number.trim()}`);
+    if (isPhaseBlockLot) {
+      parts.push(house_number.trim().toUpperCase());
+    } else {
+      parts.push(`HOUSE NO. ${house_number.trim()}`);
+    }
   }
 
   if (purok?.trim()) {
@@ -94,7 +100,7 @@ export function parseAddress(addressString) {
   if (purokMatch) {
     result.purok = parts[0];
     parts.shift();
-  } else if (parts[0]?.match(/^(PUROK|SITIO|NV9)/i)) {
+  } else if (parts[0]?.match(/^(PUROK|SITIO|NV9|NORTH VILLE 9)/i)) {
     result.purok = parts[0];
     parts.shift();
   }
@@ -146,8 +152,5 @@ export const PUROK_OPTIONS = [
   { value: 'Purok 4', label: 'Purok 4' },
   { value: 'Purok 5', label: 'Purok 5' },
   { value: 'Purok 6', label: 'Purok 6' },
-  { value: 'NV9', label: 'NV9 (New Village 9)' },
-  { value: 'Purok Maharlika', label: 'Purok Maharlika' },
-  { value: 'Sitio Banawe', label: 'Sitio Banawe' },
-  { value: 'Other', label: 'Other (Specify)' },
+  { value: 'NORTH VILLE 9', label: 'NORTH VILLE 9' },
 ];

@@ -208,6 +208,9 @@ export default function Residents() {
       residential_address: "",
       house_number: "",
       purok: "",
+      phase: "",
+      block: "",
+      lot: "",
       barangay: tenantAddressDefaults.barangay,
       municipality: tenantAddressDefaults.municipality,
       province: tenantAddressDefaults.province,
@@ -227,8 +230,23 @@ export default function Residents() {
   };
 
   const handleOpenEditModal = () => {
+    const isNorthVille9 = selectedResident.purok === 'NORTH VILLE 9';
+    let phase = "";
+    let block = "";
+    let lot = "";
+    if (isNorthVille9 && selectedResident.house_number) {
+      const match = selectedResident.house_number.match(/PHASE\s*(\d+)\s*BLOCK\s*(\d+)\s*LOT\s*(\d+)/i);
+      if (match) {
+        phase = match[1] || "";
+        block = match[2] || "";
+        lot = match[3] || "";
+      }
+    }
     setFormData({
       ...selectedResident,
+      phase,
+      block,
+      lot,
       barangay: selectedResident.barangay || tenantAddressDefaults.barangay,
       municipality: selectedResident.municipality || tenantAddressDefaults.municipality,
       province: selectedResident.province || tenantAddressDefaults.province,
@@ -244,6 +262,14 @@ export default function Residents() {
       // Clean up data for database compatibility
       const cleanedData = { ...formData };
 
+      // For North Ville 9, combine phase/block/lot into house_number
+      if (cleanedData.purok === 'NORTH VILLE 9') {
+        const phase = cleanedData.phase?.trim() || '';
+        const block = cleanedData.block?.trim() || '';
+        const lot = cleanedData.lot?.trim() || '';
+        cleanedData.house_number = [phase && `PHASE ${phase}`, block && `BLOCK ${block}`, lot && `LOT ${lot}`].filter(Boolean).join(' ');
+      }
+
       // Generate full address for backward compatibility, filling in tenant defaults if needed
       const effectiveBarangay = cleanedData.barangay || tenantAddressDefaults.barangay;
       const effectiveMunicipality = cleanedData.municipality || tenantAddressDefaults.municipality;
@@ -255,6 +281,11 @@ export default function Residents() {
         municipality: effectiveMunicipality,
         province: effectiveProvince,
       });
+
+      // Remove helper fields not stored in DB
+      delete cleanedData.phase;
+      delete cleanedData.block;
+      delete cleanedData.lot;
 
       // Backfill the stored structured fields too so the saved record is complete
       cleanedData.barangay = effectiveBarangay;
@@ -1168,26 +1199,20 @@ export default function Residents() {
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="label">House Number <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., 2706, 123-A"
-                  className="input uppercase font-bold"
-                  value={formData.house_number}
-                  onChange={(e) =>
-                    setFormData({ ...formData, house_number: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="label">Purok / Sitio <span className="text-red-500">*</span></label>
+                <label className="label">Purok <span className="text-red-500">*</span></label>
                 <select
                   required
                   className="input uppercase font-bold"
                   value={formData.purok}
                   onChange={(e) =>
-                    setFormData({ ...formData, purok: e.target.value })
+                    setFormData({
+                      ...formData,
+                      purok: e.target.value,
+                      house_number: "",
+                      phase: "",
+                      block: "",
+                      lot: "",
+                    })
                   }
                 >
                   <option value="">-- Select --</option>
@@ -1198,6 +1223,76 @@ export default function Residents() {
                   ))}
                 </select>
               </div>
+
+              {formData.purok === 'NORTH VILLE 9' ? (
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="label">Phase <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="1"
+                      className="input uppercase font-bold text-center"
+                      value={formData.phase}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phase: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Block <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="1"
+                      className="input uppercase font-bold text-center"
+                      value={formData.block}
+                      onChange={(e) =>
+                        setFormData({ ...formData, block: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Lot <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="2"
+                      className="input uppercase font-bold text-center"
+                      value={formData.lot}
+                      onChange={(e) =>
+                        setFormData({ ...formData, lot: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              ) : formData.purok ? (
+                <div>
+                  <label className="label">House Number <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g., 2706, 123-A"
+                    className="input uppercase font-bold"
+                    value={formData.house_number}
+                    onChange={(e) =>
+                      setFormData({ ...formData, house_number: e.target.value })
+                    }
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="label">House Number <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    disabled
+                    placeholder="Select a purok first"
+                    className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
+                    value=""
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="label">Barangay <span className="text-gray-400 text-[9px]">(auto)</span></label>
                 <input
