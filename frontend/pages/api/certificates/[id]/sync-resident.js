@@ -31,10 +31,14 @@ export default async function handler(req, res) {
     return res.status(404).json({ success: false, message: "Certificate not found" });
 
   const updates = [];
+  let residentUpdate = {};
 
   // Helper: check if a field should be synced
   const shouldSync = (field) =>
     !selectedFields || !Array.isArray(selectedFields) || selectedFields.length === 0 || selectedFields.includes(field);
+
+  // Parse details once for use in fieldMap
+  const certDetails = typeof cert.details === "string" ? JSON.parse(cert.details || "{}") : (cert.details || {});
 
   // Map of mismatch labels to sync logic
   const fieldMap = {
@@ -53,11 +57,11 @@ export default async function handler(req, res) {
     "Last Name": () => { if (cert.last_name) residentUpdate.last_name = cert.last_name; },
     "Suffix": () => { if (cert.suffix) residentUpdate.suffix = cert.suffix; },
     "Guardian Name": () => {
-      const val = cert.guardian_name || cert.details?.guardian_name;
+      const val = cert.guardian_name || certDetails.guardian_name;
       if (val) residentUpdate.guardian_name = val;
     },
     "Guardian Relationship": () => {
-      const val = cert.guardian_relationship || cert.details?.guardian_relationship;
+      const val = cert.guardian_relationship || certDetails.guardian_relationship;
       if (val) residentUpdate.guardian_relationship = val;
     },
     "Deceased Status": () => {
@@ -71,7 +75,7 @@ export default async function handler(req, res) {
 
   // --- Requestor sync ---
   if (cert.resident_id) {
-    const residentUpdate = {};
+    residentUpdate = {};
 
     if (selectedFields && Array.isArray(selectedFields) && selectedFields.length > 0) {
       // Sync only selected fields
@@ -88,8 +92,8 @@ export default async function handler(req, res) {
       if (cert.civil_status) residentUpdate.civil_status = cert.civil_status;
       if (cert.sex) residentUpdate.sex = cert.sex;
       if (cert.date_of_birth) residentUpdate.date_of_birth = cert.date_of_birth;
-      const gName = cert.guardian_name || cert.details?.guardian_name;
-      const gRel = cert.guardian_relationship || cert.details?.guardian_relationship;
+      const gName = cert.guardian_name || certDetails.guardian_name;
+      const gRel = cert.guardian_relationship || certDetails.guardian_relationship;
       if (gName) residentUpdate.guardian_name = gName;
       if (gRel) residentUpdate.guardian_relationship = gRel;
 
