@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
   const { data, error } = await supabase
     .from("workflow_assignments")
-    .select("*, certificate_requests:request_id (*, residents:resident_id (id, first_name, middle_name, last_name, suffix, full_name, contact_number, email, residential_address, place_of_birth, date_of_birth, civil_status, sex, gender, guardian_name, guardian_relationship, is_deceased, second_name, age))")
+    .select("*, certificate_requests:request_id (*, residents:resident_id (*))")
     .eq("assigned_user_id", user._id)
     .eq("status", "pending")
     .eq("tenant_id", tenantId)
@@ -72,6 +72,23 @@ export default async function handler(req, res) {
       };
     })
     .filter(Boolean);
+
+  // Enrich resident residential_address from structured fields when flat field is empty
+  for (const cert of certificates) {
+    if (cert.residents && !cert.residents.residential_address) {
+      const r = cert.residents;
+      if (r.house_number || r.purok || r.barangay || r.municipality || r.province) {
+        const parts = [
+          r.house_number ? `HOUSE NO. ${String(r.house_number).trim()}` : null,
+          r.purok ? String(r.purok).trim().toUpperCase() : null,
+          r.barangay ? String(r.barangay).trim().toUpperCase() : null,
+          r.municipality ? String(r.municipality).trim().toUpperCase() : null,
+          r.province ? String(r.province).trim().toUpperCase() : null,
+        ].filter(Boolean);
+        cert.residents.residential_address = parts.join(", ");
+      }
+    }
+  }
 
   return res.json({ success: true, data: certificates, certificates });
 }

@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const { data, error } = await supabase
       .from("certificate_requests")
-      .select("*, residents:resident_id (id, first_name, middle_name, last_name, suffix, full_name, contact_number, email, residential_address, place_of_birth, date_of_birth, civil_status, sex, gender, guardian_name, guardian_relationship, is_deceased, second_name, age)")
+      .select("*, residents:resident_id (*)")
       .eq("id", id)
       .eq("tenant_id", tenantId)
       .single();
@@ -24,6 +24,22 @@ export default async function handler(req, res) {
       return res
         .status(404)
         .json({ success: false, message: "Certificate not found" });
+
+    // Enrich resident residential_address from structured fields when flat field is empty
+    if (data.residents && !data.residents.residential_address) {
+      const r = data.residents;
+      if (r.house_number || r.purok || r.barangay || r.municipality || r.province) {
+        const parts = [
+          r.house_number ? `HOUSE NO. ${String(r.house_number).trim()}` : null,
+          r.purok ? String(r.purok).trim().toUpperCase() : null,
+          r.barangay ? String(r.barangay).trim().toUpperCase() : null,
+          r.municipality ? String(r.municipality).trim().toUpperCase() : null,
+          r.province ? String(r.province).trim().toUpperCase() : null,
+        ].filter(Boolean);
+        data.residents.residential_address = parts.join(", ");
+      }
+    }
+
     return res.json({ success: true, data });
   }
 

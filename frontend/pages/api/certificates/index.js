@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const { type, status } = req.query;
     let query = supabase
       .from("certificate_requests")
-      .select("*, residents:resident_id (id, first_name, middle_name, last_name, suffix, full_name, contact_number, email, residential_address, place_of_birth, date_of_birth, civil_status, sex, gender, guardian_name, guardian_relationship, is_deceased, second_name, age)")
+      .select("*, residents:resident_id (*)")
       .eq("tenant_id", tenantId);
     if (type && type !== "all") query = query.eq("certificate_type", type);
     if (status && status !== "all") query = query.eq("status", status);
@@ -27,6 +27,23 @@ export default async function handler(req, res) {
 
     // For cohabitation requests, enrich with partner resident's place_of_birth
     const certificates = data || [];
+
+    // Enrich resident residential_address from structured fields when flat field is empty
+    for (const cert of certificates) {
+      if (cert.residents && !cert.residents.residential_address) {
+        const r = cert.residents;
+        if (r.house_number || r.purok || r.barangay || r.municipality || r.province) {
+          const parts = [
+            r.house_number ? `HOUSE NO. ${String(r.house_number).trim()}` : null,
+            r.purok ? String(r.purok).trim().toUpperCase() : null,
+            r.barangay ? String(r.barangay).trim().toUpperCase() : null,
+            r.municipality ? String(r.municipality).trim().toUpperCase() : null,
+            r.province ? String(r.province).trim().toUpperCase() : null,
+          ].filter(Boolean);
+          cert.residents.residential_address = parts.join(", ");
+        }
+      }
+    }
     const cohabitationRequests = certificates.filter(
       (c) => c.certificate_type === "barangay_cohabitation" && c.details?.partnerId
     );
