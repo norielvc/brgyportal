@@ -5812,6 +5812,8 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
               inspectionData={inspectionData}
               selectedTemplate={selectedTemplate}
               orData={orData}
+              currentUser={currentUser}
+              userSignature={userSignature}
             />
           )}
         </div>
@@ -5830,6 +5832,8 @@ function ClearancePreviewForRequests({
   inspectionData = null,
   selectedTemplate = "old",
   orData = null,
+  currentUser,
+  userSignature,
 }) {
   const logos = officials.logos || {};
   const headerStyle = officials.headerStyle || {};
