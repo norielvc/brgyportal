@@ -2358,6 +2358,8 @@ function RequestDetailsModal({
         onClose={() => setShowPdfPreview(false)}
         onBack={() => setShowPdfPreview(false)}
         getTypeLabel={getTypeLabel}
+        currentUser={currentUser}
+        userSignature={userSignature}
       />
     );
   }
@@ -5378,7 +5380,7 @@ const defaultOfficials = {
 };
 
 // Certificate Preview Modal Component
-function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel }) {
+function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, currentUser, userSignature }) {
   const certificateRef = useRef(null);
   const [officials, setOfficials] = useState(null); // null = loading, prevents flash of wrong data
   const [isDownloading, setIsDownloading] = useState(false);
@@ -6042,6 +6044,15 @@ function ClearancePreviewForRequests({
   
   const effectiveCaptain = captainApproval || fallbackCaptain;
 
+  const currentUserFullName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : '';
+  const isCurrentUserCaptain = currentUserFullName && officials?.chairman &&
+    (currentUserFullName.toUpperCase() === (officials.chairman).toUpperCase() ||
+     (officials.chairman).toUpperCase().includes(currentUserFullName.toUpperCase()));
+
+  const effectiveSignature = effectiveCaptain?.signature_data ||
+    (isCurrentUserCaptain ? userSignature : null) ||
+    null;
+
   // Determine the display name and role for the Captain/Chairman section
   const captainName = effectiveCaptain?.users
     ? `${effectiveCaptain.users.first_name || ''} ${effectiveCaptain.users.last_name || ''}`.trim()
@@ -6443,13 +6454,13 @@ function ClearancePreviewForRequests({
                           TRULY YOURS,
                         </p>
                         <div className="relative inline-block">
-                          {effectiveCaptain?.signature_data && (
+                          {effectiveSignature && (
                             <div
                               className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[80%] w-64 h-32 pointer-events-none z-0"
                               style={{ mixBlendMode: "multiply" }}
                             >
                               <img
-                                src={effectiveCaptain.signature_data}
+                                src={effectiveSignature}
                                 className="w-full h-full object-contain"
                                 alt="Sig"
                               />
@@ -6779,13 +6790,13 @@ function ClearancePreviewForRequests({
 
                     <p className="font-bold mb-6">C. APPROVAL</p>
                     <div className="flex flex-col mb-4 relative ml-4">
-                      {effectiveCaptain?.signature_data && (
+                      {effectiveSignature && (
                         <div
                           className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[80%] w-60 h-32 pointer-events-none flex items-center justify-center z-20"
                           style={{ mixBlendMode: "multiply" }}
                         >
                           <img
-                            src={effectiveCaptain.signature_data}
+                            src={effectiveSignature}
                             className="w-full h-full object-contain"
                             alt="Captain Sig"
                           />
@@ -7245,22 +7256,22 @@ function ClearancePreviewForRequests({
                         <div className="relative inline-block">
                           <div className="flex items-center gap-1 relative z-10">
                             <div className="relative">
-                              {effectiveCaptain?.signature_data && (
+                              {effectiveSignature && (
                                 <>
                                   <div
                                     className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[75%] w-64 h-32 pointer-events-none flex items-center justify-center z-20"
                                     style={{ mixBlendMode: "multiply" }}
                                   >
                                     <img
-                                      src={effectiveCaptain.signature_data}
+                                      src={effectiveSignature}
                                       className="w-full h-full object-contain"
                                       alt="Captain Sig"
                                     />
                                   </div>
                                   <div className="absolute left-[70%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
                                       <span className="font-bold text-gray-500">{captainName}</span>
-                                      <span>{new Date(effectiveCaptain.created_at).toLocaleDateString("en-US")}</span>
-                                      <span>{new Date(effectiveCaptain.created_at).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                                      <span>{new Date(effectiveCaptain?.created_at || Date.now()).toLocaleDateString("en-US")}</span>
+                                      <span>{new Date(effectiveCaptain?.created_at || Date.now()).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                                   </div>
                                 </>
                               )}
