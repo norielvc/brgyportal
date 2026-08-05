@@ -6047,7 +6047,8 @@ function ClearancePreviewForRequests({
 
   // Last resort: if no effectiveCaptain found but we have any signed approval history, use the latest one
   const fallbackCaptain = !history ? null : [...history]
-    .filter(h => h.signature_data && (h.action === 'approve' || h.action === 'forward'))
+    .filter(h => h.signature_data && (h.action === 'approve' || h.action === 'forward') &&
+      new Date(h.created_at).getTime() > lastReturnTime)
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
   
   const effectiveCaptain = captainApproval || fallbackCaptain;
@@ -6058,7 +6059,7 @@ function ClearancePreviewForRequests({
      (officials.chairman).toUpperCase().includes(currentUserFullName.toUpperCase()));
 
   const effectiveSignature = effectiveCaptain?.signature_data ||
-    (isCurrentUserCaptain ? userSignature : null) ||
+    (lastReturnTime === 0 && isCurrentUserCaptain ? userSignature : null) ||
     null;
 
   // Determine the display name and role for the Captain/Chairman section
