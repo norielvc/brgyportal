@@ -95,7 +95,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-black relative flex flex-col items-center justify-center p-6 lg:p-12 overflow-hidden">
+    <div className="h-screen bg-black relative flex flex-col items-center justify-center p-6 lg:p-12 overflow-hidden">
       {/* ── PERSISTENT BLACK BACKGROUND ────────────────────────── */}
       <div className="fixed inset-0 bg-black -z-50" />
 
@@ -125,17 +125,15 @@ export default function Login() {
         </button>
       </div>
 
-      {/* ── SPACER TO NUDGE CONTENT DOWN ── */}
-      <div className="h-24 hidden lg:block" />
 
       {/* ── MAIN CONTENT GRID ───────────────────────────────────── */}
       <div className="relative z-10 w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-20">
         {/* ── BRANDING SECTION ───────────────────────────────────── */}
-        <div className="flex-1 hidden lg:flex flex-col space-y-12 lg:pr-20">
+        <div className="flex-1 hidden lg:flex flex-col space-y-6 lg:pr-20">
           {/* wordmark */}
           <div className="space-y-6">
             <div className="flex flex-col">
-              <h1 className="text-6xl lg:text-7xl xl:text-8xl font-black leading-tight tracking-tight flex items-center gap-1.5 lg:gap-2">
+              <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-tight tracking-tight flex items-center gap-1.5 lg:gap-2">
                 <span className="text-white drop-shadow-sm">Brgy</span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-br from-amber-100 via-amber-200 to-amber-400 drop-shadow-sm">
                   Desk
@@ -148,7 +146,7 @@ export default function Login() {
 
             <div className="w-20 h-1 bg-gradient-to-r from-amber-200 to-transparent rounded-full" />
 
-            <p className="text-slate-400 text-base lg:text-lg leading-relaxed max-w-xl font-medium text-balance">
+            <p className="text-slate-400 text-sm lg:text-base leading-relaxed max-w-xl font-medium text-balance">
               Seamlessly digitizing barangay operations with{" "}
               <span className="text-amber-200 font-bold">
                 secure, efficient, and transparent
@@ -158,20 +156,20 @@ export default function Login() {
           </div>
 
           {/* features grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {FEATURES.map(({ icon: Icon, label, desc }) => (
               <div
                 key={label}
                 className="flex flex-col gap-2 group cursor-default p-2 hover:bg-white/[0.03] rounded-xl transition-all duration-300"
               >
-                <div className="w-9 h-9 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center group-hover:bg-amber-200/10 group-hover:border-amber-200/30 transition-all duration-300">
-                  <Icon className="w-4 h-4 text-amber-200 group-hover:scale-110 transition-transform" />
+                <div className="w-7 h-7 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center group-hover:bg-amber-200/10 group-hover:border-amber-200/30 transition-all duration-300">
+                  <Icon className="w-3.5 h-3.5 text-amber-200 group-hover:scale-110 transition-transform" />
                 </div>
                 <div>
-                  <p className="text-[10px] lg:text-xs font-bold text-white/90 group-hover:text-amber-200 transition-colors uppercase tracking-widest">
+                  <p className="text-[9px] font-bold text-white/90 group-hover:text-amber-200 transition-colors uppercase tracking-widest">
                     {label}
                   </p>
-                  <p className="text-[9px] text-slate-500 mt-0.5 leading-tight">
+                  <p className="text-[8px] text-slate-500 mt-0.5 leading-tight">
                     {desc}
                   </p>
                 </div>
@@ -187,13 +185,13 @@ export default function Login() {
             <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 rounded-[3rem] blur-3xl opacity-50" />
 
             {/* card */}
-            <div className="relative bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 p-8 sm:p-12 space-y-8 shadow-[0_30px_60px_rgba(0,0,0,0.6)]">
+            <div className="relative bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 p-6 sm:p-8 space-y-6 shadow-[0_30px_60px_rgba(0,0,0,0.6)]">
               {/* Decorative accent */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-amber-500/40 to-transparent rounded-full" />
 
               {/* header */}
               <div className="space-y-3">
-                <h2 className="text-4xl font-black text-white tracking-tight">
+                <h2 className="text-3xl font-black text-white tracking-tight">
                   Welcome back
                 </h2>
                 <div className="flex items-center gap-2">
@@ -227,7 +225,7 @@ export default function Login() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="w-full pl-16 pr-5 py-5 bg-white/5 border border-white/5 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 focus:bg-white/10 transition-all duration-300 text-white placeholder-slate-600 text-base font-semibold outline-none box-border"
+                      className="w-full pl-16 pr-5 py-4 bg-white/5 border border-white/5 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 focus:bg-white/10 transition-all duration-300 text-white placeholder-slate-600 text-base font-semibold outline-none box-border"
                       placeholder="you@example.com"
                     />
                   </div>
@@ -247,7 +245,7 @@ export default function Login() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="w-full pl-16 pr-14 py-5 bg-white/5 border border-white/5 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 focus:bg-white/10 transition-all duration-300 text-white placeholder-slate-600 text-base font-semibold outline-none box-border"
+                      className="w-full pl-16 pr-14 py-4 bg-white/5 border border-white/5 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 focus:bg-white/10 transition-all duration-300 text-white placeholder-slate-600 text-base font-semibold outline-none box-border"
                       placeholder="••••••••"
                     />
                     <button
@@ -289,7 +287,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group relative w-full bg-amber-200/80 hover:bg-amber-100 disabled:bg-slate-900 text-black py-5 rounded-2xl font-black text-xs transition-all duration-300 shadow-[0_12px_24px_-8px_rgba(251,191,36,0.1)] hover:shadow-[0_20px_40px_-12px_rgba(251,191,36,0.2)] disabled:cursor-not-allowed overflow-hidden active:scale-[0.98]"
+                  className="group relative w-full bg-amber-200/80 hover:bg-amber-100 disabled:bg-slate-900 text-black py-4 rounded-2xl font-black text-xs transition-all duration-300 shadow-[0_12px_24px_-8px_rgba(251,191,36,0.1)] hover:shadow-[0_20px_40px_-12px_rgba(251,191,36,0.2)] disabled:cursor-not-allowed overflow-hidden active:scale-[0.98]"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/40 to-white/0 -skew-x-12 -translate-x-full group-hover:group-enabled:translate-x-full transition-transform duration-1000" />
                   <span className="relative flex items-center justify-center gap-3">
