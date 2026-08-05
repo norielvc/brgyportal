@@ -126,7 +126,7 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
         />
 
         {/* Modal Content */}
-        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto overflow-hidden border border-white/20 animate-in zoom-in-95 duration-200">
+        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden no-scrollbar border border-white/20 animate-in zoom-in-95 duration-200">
           {/* Premium Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-blue-700 px-8 py-6 text-white relative">
             <div className="relative z-10 flex items-center justify-between">
@@ -327,6 +327,15 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
             </div>
           </form>
         </div>
+        <style jsx>{`
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}</style>
     </div>
   );
 }
