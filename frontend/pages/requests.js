@@ -5993,65 +5993,74 @@ function ClearancePreviewForRequests({
 
   // Determine Issued Date (Final Approval Date or Current Date)
   const CAPTAIN_ROLES = ["BRGY. CAPTAIN", "CHAIRMAN", "BARANGAY CHAIRMAN", "PUNONG BARANGAY", "CAPTAIN", "PUNONG"];
-  const captainApproval = !history ? null : history.find(h => {
-    const hasAction = h.action === 'approve' || h.action === 'forward' || h.action === 'create';
-    if (!hasAction || !h.signature_data) return false;
-    
-    // Check timing
-    if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-    
-    // Check Step Name
-    const sName = (h.step_name || '').toUpperCase();
-    if (sName.includes('CAPTAIN') || sName.includes('CHAIRMAN') || sName.includes('PUNONG')) return true;
-    
-    // Check official role / privilege role
-    const hRole = (h.officialRole || h.official_role || h.privilegeRole || h.privilege_role || '').toUpperCase();
-    if (CAPTAIN_ROLES.some(r => hRole.includes(r))) return true;
-    
-    // Check user role from joined users table
-    const uRole = (h.users?.role || '').toUpperCase();
-    if (CAPTAIN_ROLES.some(r => uRole.includes(r))) return true;
-    
-    // Check Status — if previous_status was captain_approval, this was a captain action
-    const prevStatus = (h.previous_status || '').toLowerCase();
-    if (prevStatus === 'captain_approval') return true;
-    
-    // Check name match with configured chairman
-    const pName = h.users ? `${h.users.first_name || ''} ${h.users.last_name || ''}`.trim().toUpperCase() : (h.performed_by_name || '').toUpperCase();
-    const cName = (officials?.chairman || 'RICARDO S. VILLANUEVA').toUpperCase();
-    if (pName && (pName.includes(cName) || cName.includes(pName))) return true;
-    
-    return false;
-  });
+  const captainApproval = !history ? null : [...history]
+    .filter(h => {
+      const hasAction = h.action === 'approve' || h.action === 'forward' || h.action === 'create';
+      if (!hasAction || !h.signature_data) return false;
+      
+      // Ignore anything explicitly marked as secretary
+      const sName = (h.step_name || '').toUpperCase();
+      const hRole = (h.officialRole || h.official_role || h.privilegeRole || h.privilege_role || '').toUpperCase();
+      const uRole = (h.users?.role || '').toUpperCase();
+      if (sName.includes('SECRETARY') || hRole.includes('SECRETARY') || uRole.includes('SECRETARY')) return false;
+      
+      // Check timing
+      if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+      
+      // Check Step Name
+      if (sName.includes('CAPTAIN') || sName.includes('CHAIRMAN') || sName.includes('PUNONG')) return true;
+      
+      // Check official role / privilege role
+      if (CAPTAIN_ROLES.some(r => hRole.includes(r))) return true;
+      
+      // Check user role from joined users table
+      if (CAPTAIN_ROLES.some(r => uRole.includes(r))) return true;
+      
+      // Check Status — if previous_status was captain_approval, this was a captain action
+      const prevStatus = (h.previous_status || '').toLowerCase();
+      if (prevStatus === 'captain_approval') return true;
+      
+      // Check name match with configured chairman
+      const pName = h.users ? `${h.users.first_name || ''} ${h.users.last_name || ''}`.trim().toUpperCase() : (h.performed_by_name || '').toUpperCase();
+      const cName = (officials?.chairman || '').toUpperCase();
+      if (pName && cName && (pName.includes(cName) || cName.includes(pName))) return true;
+      
+      return false;
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
 
-  const secretaryApproval = !history ? null : history.find(h => {
-    const hasAction = h.action === 'approve' || h.action === 'forward';
-    if (!hasAction || !h.signature_data) return false;
-    if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-    
-    // Check Step Name or official role
-    const sName = (h.step_name || '').toUpperCase();
-    const hRole = (h.officialRole || h.official_role || '').toUpperCase();
-    if (sName.includes('SECRETARY') || hRole.includes('SECRETARY')) return true;
-    
-    // Check user role
-    const uRole = (h.users?.role || '').toUpperCase();
-    if (uRole.includes('SECRETARY')) return true;
-    
-    // Check Status
-    const prevStatus = (h.previous_status || '').toLowerCase();
-    if (prevStatus === 'secretary_approval' || prevStatus === 'processing') return true;
-    
-    return false;
-  });
-
-  // Last resort: if no effectiveCaptain found but we have any signed approval history, use the latest one
   const fallbackCaptain = !history ? null : [...history]
     .filter(h => h.signature_data && (h.action === 'approve' || h.action === 'forward') &&
-      new Date(h.created_at).getTime() > lastReturnTime)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
+      new Date(h.created_at).getTime() > lastReturnTime &&
+      !((h.step_name || '').toUpperCase().includes('SECRETARY')) &&
+      !((h.officialRole || h.official_role || '').toUpperCase().includes('SECRETARY')) &&
+      !((h.users?.role || '').toUpperCase().includes('SECRETARY')))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
   
   const effectiveCaptain = captainApproval || fallbackCaptain;
+
+  const secretaryApproval = !history ? null : [...history]
+    .filter(h => {
+      const hasAction = h.action === 'approve' || h.action === 'forward';
+      if (!hasAction || !h.signature_data) return false;
+      if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+      
+      // Check Step Name or official role
+      const sName = (h.step_name || '').toUpperCase();
+      const hRole = (h.officialRole || h.official_role || '').toUpperCase();
+      if (sName.includes('SECRETARY') || hRole.includes('SECRETARY')) return true;
+      
+      // Check user role
+      const uRole = (h.users?.role || '').toUpperCase();
+      if (uRole.includes('SECRETARY')) return true;
+      
+      // Check Status
+      const prevStatus = (h.previous_status || '').toLowerCase();
+      if (prevStatus === 'secretary_approval' || prevStatus === 'processing') return true;
+      
+      return false;
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
 
   const currentUserFullName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : '';
   const isCurrentUserCaptain = currentUserFullName && officials?.chairman &&
@@ -6065,11 +6074,11 @@ function ClearancePreviewForRequests({
   // Determine the display name and role for the Captain/Chairman section
   const captainName = effectiveCaptain?.users
     ? `${effectiveCaptain.users.first_name || ''} ${effectiveCaptain.users.last_name || ''}`.trim()
-    : effectiveCaptain?.performed_by_name || officials?.chairman || 'RICARDO S. VILLANUEVA';
+    : effectiveCaptain?.performed_by_name || officials?.chairman || '';
     
   const secretaryName = secretaryApproval?.users 
     ? `${secretaryApproval.users.first_name || ''} ${secretaryApproval.users.last_name || ''}`.trim()
-    : secretaryApproval?.performed_by_name || officials?.secretary || 'JOEY MANIO';
+    : secretaryApproval?.performed_by_name || officials?.secretary || '';
     
   const detectedRole = effectiveCaptain 
     ? (effectiveCaptain.official_role || effectiveCaptain.officialRole || effectiveCaptain.privilege_role || effectiveCaptain.privilegeRole || 'Barangay Chairman').toUpperCase()
