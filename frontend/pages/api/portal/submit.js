@@ -534,10 +534,12 @@ export default async function handler(req, res) {
       throw new Error(error.message);
     }
   } catch (cloudError) {
-    console.error(
-      "⚠️ Submission cloud error:",
-      cloudError.message || cloudError,
-    );
+    console.error("⚠️ Submission cloud error (full):", {
+      message: cloudError?.message,
+      code: cloudError?.code,
+      details: cloudError?.details,
+      hint: cloudError?.hint,
+    });
   }
 
   /**
