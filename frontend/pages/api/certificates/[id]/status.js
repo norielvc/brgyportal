@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ success: false, message: "Tenant context required" });
 
   const { id } = req.query;
-  const { status, comments, current_step, action } = req.body;
+  const { status, comments, current_step, action, signatureData } = req.body;
 
   if (!status)
     return res.status(400).json({ success: false, message: "Status is required" });
@@ -60,6 +60,20 @@ export default async function handler(req, res) {
     .eq("tenant_id", tenantId)
     .eq("status", "pending");
 
+  // Fetch workflow config to get official role for this step
+  let officialRole = null;
+  try {
+    const { data: wfConfig } = await supabase
+      .from("workflow_configurations")
+      .select("workflow_config")
+      .eq("certificate_type", data.certificate_type)
+      .eq("tenant_id", tenantId)
+      .single();
+    const steps = wfConfig?.workflow_config?.steps || [];
+    const matchingStep = steps.find(s => s.status === currentCert?.status);
+    officialRole = matchingStep?.officialRole || null;
+  } catch (e) { /* ignore */ }
+
   // Log to workflow history
   await supabase.from("workflow_history").insert([{
     tenant_id: tenantId,
@@ -69,6 +83,9 @@ export default async function handler(req, res) {
     action: action || "approve",
     performed_by: user._id,
     comments: comments || "",
+    signature_data: signatureData || null,
+    official_role: officialRole,
+    previous_status: currentCert?.status || null,
     new_status: status,
   }]);
 

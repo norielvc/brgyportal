@@ -5998,6 +5998,10 @@ function ClearancePreviewForRequests({
     const hRole = (h.officialRole || h.official_role || h.privilegeRole || h.privilege_role || '').toUpperCase();
     if (CAPTAIN_ROLES.some(r => hRole.includes(r))) return true;
     
+    // Check Status — if previous_status was captain_approval, this was a captain action
+    const prevStatus = (h.previous_status || '').toLowerCase();
+    if (prevStatus === 'captain_approval') return true;
+    
     // Check Name Match
     const pName = h.users ? `${h.users.first_name || ''} ${h.users.last_name || ''}`.trim().toUpperCase() : (h.performed_by_name || '').toUpperCase();
     const cName = (officials.chairman || 'RICARDO S. VILLANUEVA').toUpperCase();
@@ -6015,6 +6019,10 @@ function ClearancePreviewForRequests({
     const sName = (h.step_name || '').toUpperCase();
     const hRole = (h.officialRole || h.official_role || '').toUpperCase();
     if (sName.includes('SECRETARY') || hRole.includes('SECRETARY')) return true;
+    
+    // Check Status — if previous_status was secretary_approval, this was a secretary action
+    const prevStatus = (h.previous_status || '').toLowerCase();
+    if (prevStatus === 'secretary_approval' || prevStatus === 'processing') return true;
     
     return false;
   });
