@@ -22,6 +22,7 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
 
   const [formData, setFormData] = useState({
     firstName: '',
+    middleName: '',
     lastName: '',
     email: '',
     position: '',
@@ -61,6 +62,7 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
     if (employee) {
       setFormData({
         firstName: employee.firstName || '',
+        middleName: employee.middleName || '',
         lastName: employee.lastName || '',
         email: employee.email || '',
         position: employee.position || '',
@@ -126,7 +128,7 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
         />
 
         {/* Modal Content */}
-        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden no-scrollbar border border-white/20 animate-in zoom-in-95 duration-200">
+        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden styled-scrollbar border border-white/20 animate-in zoom-in-95 duration-200">
           {/* Premium Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-blue-700 px-8 py-6 text-white relative">
             <div className="relative z-10 flex items-center justify-between">
@@ -167,7 +169,7 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
                   <User className="w-4 h-4 text-indigo-600" />
                   <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Modified Identification</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest px-1">First Name</label>
                     <input
@@ -179,6 +181,18 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
                       placeholder="LEGAL FIRST NAME"
                     />
                     {errors.firstName && <p className="text-rose-500 text-[9px] font-black uppercase px-1 italic">{errors.firstName}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest px-1">Middle Initial</label>
+                    <input
+                      type="text"
+                      name="middleName"
+                      value={formData.middleName}
+                      onChange={handleChange}
+                      className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold text-gray-900 uppercase text-xs tracking-tight"
+                      placeholder="M.I."
+                      maxLength={3}
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest px-1">Last Name</label>
@@ -328,12 +342,22 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
           </form>
         </div>
         <style jsx>{`
-          .no-scrollbar::-webkit-scrollbar {
-            display: none;
+          .styled-scrollbar::-webkit-scrollbar {
+            width: 6px;
           }
-          .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+          .styled-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .styled-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(99, 102, 241, 0.3);
+            border-radius: 9999px;
+          }
+          .styled-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(99, 102, 241, 0.5);
+          }
+          .styled-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
           }
         `}</style>
     </div>

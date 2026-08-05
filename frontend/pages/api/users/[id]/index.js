@@ -16,6 +16,7 @@ const transformUser = (u) => ({
   id: u.id,
   _id: u.id,
   firstName: u.first_name,
+  middleName: u.middle_name || "",
   lastName: u.last_name,
   email: u.email,
   role: u.role,
@@ -52,6 +53,7 @@ export default async function handler(req, res) {
     if (!user) return;
     const {
       firstName,
+      middleName,
       lastName,
       email,
       password,
@@ -84,6 +86,7 @@ export default async function handler(req, res) {
 
     const updateData = { updated_at: new Date().toISOString() };
     if (firstName) updateData.first_name = firstName;
+    if (middleName !== undefined) updateData.middle_name = middleName;
     if (lastName) updateData.last_name = lastName;
     if (email) updateData.email = email;
     if (role) updateData.role = role;

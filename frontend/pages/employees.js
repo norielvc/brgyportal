@@ -347,7 +347,7 @@ export default function Employees() {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="text-[14px] font-black text-gray-900 uppercase tracking-tight group-hover:text-blue-600 transition-colors">
-                              {emp.firstName} {emp.lastName}
+                              {emp.firstName} {emp.middleName && <span>{emp.middleName} </span>}{emp.lastName}
                             </p>
                             {emp.employeeCode && (
                               <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded text-[9px] font-black tracking-tighter">
@@ -560,7 +560,7 @@ export default function Employees() {
       {showDeleteModal && selectedEmployee && (
         <DeleteConfirmModal
           title="Revoke Personnel Access"
-          message={`Are you absolutely sure you want to purge the record for ${selectedEmployee.firstName} ${selectedEmployee.lastName}? This action will permanently revoke all biometric and system access.`}
+          message={`Are you absolutely sure you want to purge the record for ${selectedEmployee.firstName} ${selectedEmployee.middleName ? selectedEmployee.middleName + ' ' : ''}${selectedEmployee.lastName}? This action will permanently revoke all biometric and system access.`}
           onConfirm={handleDeleteEmployee}
           onCancel={() => {
             setShowDeleteModal(false);

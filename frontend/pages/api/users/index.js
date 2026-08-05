@@ -16,6 +16,7 @@ const transformUser = (user) => ({
   id: user.id,
   _id: user.id,
   firstName: user.first_name,
+  middleName: user.middle_name || "",
   lastName: user.last_name,
   email: user.email,
   role: user.role,
@@ -75,6 +76,7 @@ export default async function handler(req, res) {
 
     const {
       firstName,
+      middleName = "",
       lastName,
       email,
       password,
@@ -128,6 +130,7 @@ export default async function handler(req, res) {
           tenant_id: targetTenantId,
           email,
           first_name: firstName,
+          middle_name: middleName,
           last_name: lastName,
           password_hash: hashedPassword,
           role,
