@@ -348,16 +348,33 @@ export default function CertificateLayoutPage() {
         },
         body: JSON.stringify(officials),
       });
+
+      if (res.status === 413) {
+        throw new Error(
+          "Certificate layout is too large to save. Try uploading smaller logo images.",
+        );
+      }
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Save failed");
+      }
+
       const data = await res.json();
       if (data.success) {
         setHasChanges(false);
-        setNotification({ type: "success", message: "Layout settings saved!" });
+        setNotification({
+          type: "success",
+          message: "Layout settings saved!",
+        });
       } else {
         throw new Error(data.message);
       }
     } catch (error) {
       console.error("Failed to save", error);
-      setNotification({ type: "error", message: "Failed to save changes" });
+      setNotification({
+        type: "error",
+        message: error.message || "Failed to save changes",
+      });
     } finally {
       setIsSaving(false);
     }
