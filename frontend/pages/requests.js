@@ -47,6 +47,7 @@ import {
   FilterX,
 } from "lucide-react";
 import { getAuthToken, getUserData } from "@/lib/auth";
+import { mergeOfficialsConfig } from "@/lib/officialsConfig";
 import Modal from "@/components/UI/Modal";
 // API Configuration
 const API_URL = "/api";
@@ -5543,13 +5544,15 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
+            "x-tenant-id": request?.tenant_id || "ibaoeste",
           },
         });
         const data = await response.json();
 
         if (data.success && data.data) {
-          setOfficials(data.data);
-          localStorage.setItem("barangayOfficials", JSON.stringify(data.data));
+          const merged = mergeOfficialsConfig(defaultOfficials, data.data);
+          setOfficials(merged);
+          localStorage.setItem("barangayOfficials", JSON.stringify(merged));
         } else {
           loadFromLocalStorage();
         }
@@ -5564,7 +5567,7 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
       if (savedOfficials) {
         try {
           const parsed = JSON.parse(savedOfficials);
-          setOfficials(parsed);
+          setOfficials(mergeOfficialsConfig(defaultOfficials, parsed));
         } catch (e) {
           console.error("Error parsing saved officials", e);
           setOfficials(defaultOfficials); // last resort fallback

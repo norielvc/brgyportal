@@ -23,6 +23,10 @@ import {
 import ResidentSearchModal from "../Modals/ResidentSearchModal";
 import LanguageGate from "./LanguageGate";
 import { getStrings } from "../../lib/certLang";
+import { getAuthToken } from "@/lib/auth";
+import { mergeOfficialsConfig } from "@/lib/officialsConfig";
+
+const API_URL = "/api";
 
 const defaultOfficials = {
   chairman: "ALEXANDER C. MANIO",
@@ -460,12 +464,43 @@ export default function BarangayClearanceModal({
   }, [isOpen]);
 
   useEffect(() => {
-    const savedOfficials = localStorage.getItem("barangayOfficials");
-    if (savedOfficials) {
-      const parsed = JSON.parse(savedOfficials);
-      setOfficials({ ...defaultOfficials, ...parsed });
-    }
-  }, [isOpen]);
+    const loadOfficials = async () => {
+      try {
+        const token = getAuthToken();
+        const headers = {
+          "Content-Type": "application/json",
+          "x-tenant-id": tenantConfig?.tenant_id || "ibaoeste",
+        };
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const res = await fetch(`${API_URL}/officials/config`, { headers });
+        const data = await res.json();
+
+        if (data.success && data.data) {
+          const merged = mergeOfficialsConfig(defaultOfficials, data.data);
+          setOfficials(merged);
+          localStorage.setItem("barangayOfficials", JSON.stringify(merged));
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to load officials config", err);
+      }
+
+      const savedOfficials = localStorage.getItem("barangayOfficials");
+      if (savedOfficials) {
+        try {
+          const parsed = JSON.parse(savedOfficials);
+          setOfficials(mergeOfficialsConfig(defaultOfficials, parsed));
+        } catch {
+          setOfficials(defaultOfficials);
+        }
+      } else {
+        setOfficials(defaultOfficials);
+      }
+    };
+
+    loadOfficials();
+  }, [isOpen, tenantConfig?.tenant_id]);
 
   useEffect(() => {
     if (notification) {
