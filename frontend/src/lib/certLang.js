@@ -113,6 +113,8 @@ const STRINGS = {
     pickupPickupSub: "Claim your certificate in person at the barangay office.",
     pickupOnline: "Online Delivery (Email)",
     pickupOnlineSub: "Receive a digital copy of your certificate via email.",
+    pickupPrintAtHome: "Print at home",
+    pickupPrintAtHomeSub: "Download and print your certificate at home.",
     pickupEmailRequired: "Email address is required for online delivery.",
 
     // Buttons
@@ -289,6 +291,8 @@ const STRINGS = {
     pickupPickupSub: "Kunin ang iyong sertipiko nang personal sa tanggapan ng barangay.",
     pickupOnline: "Online Delivery (Email)",
     pickupOnlineSub: "Tumanggap ng digital na kopya ng sertipiko sa iyong email.",
+    pickupPrintAtHome: "Mag-print sa bahay",
+    pickupPrintAtHomeSub: "I-download at i-print ang iyong sertipiko sa bahay.",
     pickupEmailRequired: "Kinakailangan ang email address para sa online delivery.",
 
     // Buttons
