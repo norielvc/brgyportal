@@ -528,76 +528,91 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
 
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 flex items-center justify-between shrink-0">
+          <div className="bg-slate-900 border-b-4 border-amber-400 px-6 py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-xl border border-white/20">
-                <FileCheck className="w-6 h-6 text-white" />
+              <div className="bg-white/10 p-2 rounded-xl border border-white/20">
+                <FileCheck className="w-6 h-6 text-amber-400" />
               </div>
               <div>
-                <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none mb-1">Certificate Details</h2>
-                <p className="text-blue-100/80 font-mono text-[11px] font-bold tracking-widest">{certificate.reference_number}</p>
+                <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.25em] mb-0.5">Republic of the Philippines · {getTypeLabel(certificate.certificate_type)}</p>
+                <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none">Certificate Details</h2>
               </div>
             </div>
-            <button onClick={onClose} className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all">
+            <button onClick={onClose} className="text-white/70 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all">
               <X className="w-6 h-6" />
             </button>
           </div>
 
           <div className="p-6 overflow-y-auto max-h-[calc(95vh-200px)] space-y-6">
             {/* Status Information */}
-            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="flex items-center gap-4">
                 <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest border shadow-sm ${getStatusColor(certificate.status)}`}>
                   {certificate.status?.replace(/_/g, ' ').toUpperCase()}
                 </span>
-                <span className="text-[12px] text-gray-900 font-extrabold uppercase tracking-tight">{getTypeLabel(certificate.certificate_type)}</span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Certificate Type</span>
+                  <span className="text-[13px] text-slate-900 font-extrabold uppercase tracking-tight">{getTypeLabel(certificate.certificate_type)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-tighter bg-white px-2.5 py-1 rounded-lg border border-gray-100 shadow-sm">
-                <Clock className="w-3.5 h-3.5" />
-                <span>{formatDate(certificate.updated_at)}</span>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-0.5">Reference No.</p>
+                  <p className="text-[13px] font-mono font-black text-slate-900 tracking-tighter">{certificate.reference_number}</p>
+                </div>
+                <div className="text-right border-l border-slate-200 pl-4">
+                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-0.5">Date Updated</p>
+                  <p className="text-[13px] font-black text-slate-900 tracking-tight">{formatDate(certificate.updated_at)}</p>
+                </div>
               </div>
             </div>
 
             {/* Applicant Info */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-                <div className="border-l-4 border-blue-600 pl-3 mb-5">
-                  <h3 className="font-black text-gray-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
-                    <User className="w-4 h-4 text-blue-500" />
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                <div className="border-l-4 border-slate-700 pl-3 mb-5">
+                  <h3 className="font-black text-slate-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
+                    <User className="w-4 h-4 text-slate-600" />
                     Applicant Information
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="col-span-1 md:col-span-2">
-                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5">Full Name</p>
-                    <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight">{certificate.applicant_name || certificate.full_name || 'NOT RECORDED'}</p>
+                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1.5">Full Name</p>
+                    <p className="font-extrabold text-slate-900 uppercase text-[15px] tracking-tight">{certificate.applicant_name || certificate.full_name || 'NOT RECORDED'}</p>
                   </div>
                   <div className="col-span-1">
-                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5">Contact Number</p>
-                    <p className="font-black text-gray-900 text-[13px] font-mono tracking-tighter">{certificate.contact_number || 'NOT RECORDED'}</p>
+                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1.5">Contact Number</p>
+                    <p className="font-black text-slate-900 text-[13px] font-mono tracking-tighter">{certificate.contact_number || 'NOT RECORDED'}</p>
                   </div>
                   <div className="col-span-1">
-                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5">Age / Sex</p>
-                    <p className="font-black text-gray-900 text-[13px] uppercase">{certificate.age || '-'} / {certificate.sex || '-'}</p>
+                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1.5">Age / Sex</p>
+                    <p className="font-black text-slate-900 text-[13px] uppercase">{certificate.age || '-'} / {certificate.sex || '-'}</p>
                   </div>
+                  {(certificate.email || certificate.residents?.email) && (
+                    <div className="col-span-1 md:col-span-2">
+                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1.5">Email Address</p>
+                      <p className="font-bold text-slate-900 text-[13px] leading-relaxed">{certificate.email || certificate.residents?.email}</p>
+                    </div>
+                  )}
                   <div className="col-span-1 md:col-span-2">
-                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5">Residential Address</p>
-                    <p className="font-bold text-gray-800 text-[13px] uppercase leading-relaxed">{certificate.address || 'NOT RECORDED'}</p>
+                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1.5">Residential Address</p>
+                    <p className="font-bold text-slate-800 text-[13px] uppercase leading-relaxed">{certificate.address || 'NOT RECORDED'}</p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-6">
                 {/* Purpose */}
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm h-full flex flex-col">
-                  <div className="border-l-4 border-indigo-500 pl-3 mb-5">
-                    <h3 className="font-black text-gray-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
-                      <FileCheck className="w-4 h-4 text-indigo-500" />
+                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm h-full flex flex-col">
+                  <div className="border-l-4 border-slate-700 pl-3 mb-5">
+                    <h3 className="font-black text-slate-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
+                      <FileCheck className="w-4 h-4 text-slate-600" />
                       Request Purpose
                     </h3>
                   </div>
                   <div className="flex-1">
-                    <p className="text-[13px] text-gray-800 font-bold uppercase leading-loose border-l-2 border-gray-100 pl-4 py-2 italic bg-gray-50/50 rounded-r-lg">
+                    <p className="text-[13px] text-slate-800 font-bold uppercase leading-loose border-l-2 border-slate-200 pl-4 py-2 italic bg-slate-50/50 rounded-r-lg">
                       {certificate.purpose || 'NOT SPECIFIED'}
                     </p>
                   </div>
@@ -607,41 +622,41 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
 
             {/* Pickup Instructions */}
             {['ready', 'ready_for_pickup'].includes(certificate.status) && (
-              <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100 shadow-sm relative overflow-hidden">
+              <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 shadow-sm relative overflow-hidden">
                 <div className="relative z-10 flex items-start gap-4">
-                  <div className="bg-emerald-100 p-3 rounded-xl">
-                    <AlertTriangle className="w-5 h-5 text-emerald-600" />
+                  <div className="bg-amber-100 p-3 rounded-xl">
+                    <AlertTriangle className="w-5 h-5 text-amber-700" />
                   </div>
                   <div>
-                    <h3 className="font-black text-emerald-900 text-[11px] uppercase tracking-[0.2em] mb-2">
+                    <h3 className="font-black text-amber-900 text-[11px] uppercase tracking-[0.2em] mb-2">
                       Official Release Instructions
                     </h3>
-                    <ul className="text-[12px] text-emerald-800 space-y-2 font-bold uppercase tracking-tight">
-                      <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Ready for collection at the barangay office</li>
-                      <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Verify valid government-issued ID of receiver</li>
-                      <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Mark as "Confirmed" to close this transaction</li>
+                    <ul className="text-[12px] text-amber-900 space-y-2 font-bold uppercase tracking-tight">
+                      <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-amber-600 rounded-full"></span> Ready for collection at the barangay office</li>
+                      <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-amber-600 rounded-full"></span> Verify valid government-issued ID of receiver</li>
+                      <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-amber-600 rounded-full"></span> Mark as "Confirmed" to close this transaction</li>
                     </ul>
                   </div>
                 </div>
                 <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <CheckCircle className="w-20 h-20 text-emerald-600" />
+                  <CheckCircle className="w-20 h-20 text-amber-700" />
                 </div>
               </div>
             )}
           </div>
 
           {/* Footer Actions */}
-          <div className="border-t bg-gray-50 px-6 py-4 pb-6 flex gap-4 justify-end shrink-0">
+          <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 pb-6 flex gap-4 justify-end shrink-0">
             <button
               onClick={onClose}
-              className="px-6 py-3.5 bg-white border-2 border-gray-200 text-gray-500 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] hover:bg-gray-50 active:scale-95 transition-all"
+              className="px-6 py-3.5 bg-white border-2 border-slate-300 text-slate-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] hover:bg-slate-100 active:scale-95 transition-all"
             >
-              Close Window
+              Close
             </button>
             {['ready', 'ready_for_pickup'].includes(certificate.status) && (
               <button
                 onClick={openPickupVerification}
-                className="px-10 py-3.5 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-lg shadow-emerald-200 hover:bg-emerald-700 transform hover:-translate-y-0.5 active:scale-95"
+                className="px-10 py-3.5 bg-emerald-700 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all shadow-lg shadow-emerald-200 hover:bg-emerald-800 transform hover:-translate-y-0.5 active:scale-95"
               >
                 <CheckCircle className="w-4 h-4" />
                 Confirm & Release
