@@ -5,7 +5,7 @@ import Layout from '@/components/Layout/Layout';
 import {
   FileCheck, Search, Eye, Calendar, User, Phone, MapPin,
   Shield, Clock, CheckCircle, AlertTriangle, QrCode,
-  ExternalLink, RefreshCw, Package, History, XCircle, X, ChevronDown, ShieldCheck, Heart, FileText, Skull, Activity, Info
+  ExternalLink, RefreshCw, Package, History, XCircle, X, ChevronDown, ShieldCheck, Heart, FileText, Skull, Activity, Info, Mail
 } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth';
 
@@ -26,6 +26,9 @@ export default function PickupManagementPage() {
   const [confirmingPickup, setConfirmingPickup] = useState(false);
   const [pickupName, setPickupName] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [sendCertificate, setSendCertificate] = useState(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const handleManualRelease = async (certificateId, pickedUpBy) => {
     if (!pickedUpBy?.trim()) {
@@ -186,6 +189,45 @@ export default function PickupManagementPage() {
     setConfirmingCertificate(certificate);
     setPickupName(certificate.full_name || certificate.applicant_name || '');
     setIsConfirmModalOpen(true);
+  };
+
+  const openSendCertificate = (certificate) => {
+    setSendCertificate(certificate);
+    setIsSendModalOpen(true);
+  };
+
+  const handleSendCertificate = async (certificate) => {
+    const email = certificate.email || certificate.residents?.email;
+    if (!email?.trim()) {
+      toast.error('No email address found for this requestor.');
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/certificates/${certificate.id}/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message || 'Certificate sent successfully');
+        setIsSendModalOpen(false);
+        setSendCertificate(null);
+      } else {
+        toast.error(data.message || 'Failed to send certificate');
+      }
+    } catch (error) {
+      console.error('Send certificate error:', error);
+      toast.error('Failed to send certificate. Please try again.');
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   // Filter certificates
@@ -406,6 +448,17 @@ export default function PickupManagementPage() {
                           <Eye className="w-5 h-5" />
                         </button>
 
+                        {['ready', 'ready_for_pickup'].includes(certificate.status) && (certificate.email || certificate.residents?.email) && (
+                          <button
+                            onClick={() => openSendCertificate(certificate)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 flex items-center gap-2 text-sm shadow-sm transition-all active:scale-95"
+                            title="Send Certificate to Email"
+                          >
+                            <Mail className="w-4 h-4" />
+                            Send
+                          </button>
+                        )}
+
                         {['ready', 'ready_for_pickup'].includes(certificate.status) && (
                           <button
                             onClick={() => openPickupVerification(certificate)}
@@ -442,6 +495,16 @@ export default function PickupManagementPage() {
           formatDate={formatDate}
           openPickupVerification={() => openPickupVerification(selectedCertificate)}
           handleManualRelease={handleManualRelease}
+        />
+      )}
+
+      {/* Send Certificate Modal */}
+      {isSendModalOpen && sendCertificate && (
+        <SendCertificateModal
+          certificate={sendCertificate}
+          onClose={() => { setIsSendModalOpen(false); setSendCertificate(null); }}
+          onConfirm={handleSendCertificate}
+          sending={sendingEmail}
         />
       )}
 
@@ -693,6 +756,95 @@ function ConfirmPickupModal({ certificate, onClose, onConfirm, pickupName, setPi
             </div>
           </div>
         </div>
+    </div>
+  );
+}
+
+// Send Certificate Modal Component
+function SendCertificateModal({ certificate, onClose, onConfirm, sending }) {
+  const email = certificate.email || certificate.residents?.email;
+  const name = certificate.applicant_name || certificate.full_name || certificate.residents?.full_name || 'Applicant';
+  const type = certificate.certificate_type?.replace(/_/g, ' ').toUpperCase() || 'CERTIFICATE';
+  const ref = certificate.reference_number || certificate.id;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-2 rounded-xl">
+              <Mail className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-white uppercase tracking-tight leading-none">Send Certificate</h3>
+              <p className="text-blue-100/80 font-semibold text-[10px] uppercase tracking-wide">Email Preview</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-white/80 hover:text-white transition-all p-1.5 hover:bg-white/10 rounded-lg">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] text-blue-600 uppercase font-black tracking-widest mb-1">Ref No.</p>
+                <p className="text-lg font-mono font-black text-blue-900 tracking-tight truncate">{ref}</p>
+              </div>
+              <span className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-wide shrink-0">
+                {type.split(' ')[0]}
+              </span>
+            </div>
+
+            <div className="pt-3 border-t border-blue-200 space-y-2">
+              <div>
+                <p className="text-[9px] text-blue-600 uppercase font-black tracking-widest mb-1">Applicant</p>
+                <p className="text-base font-black text-blue-900 uppercase tracking-tight leading-tight">{name}</p>
+              </div>
+              <div>
+                <p className="text-[9px] text-blue-600 uppercase font-black tracking-widest mb-1">Recipient Email</p>
+                <p className="text-sm font-black text-blue-900 break-all">{email}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 px-1">
+            <Info className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">
+              This will send a "certificate ready" email to the address above. Make sure the email is correct.
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-3 bg-white border-2 border-gray-200 text-gray-600 rounded-xl text-xs font-black uppercase tracking-wide hover:bg-gray-50 active:scale-95 transition-all"
+              disabled={sending}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onConfirm(certificate)}
+              disabled={sending || !email?.trim()}
+              className="flex-[2] px-4 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-wide hover:bg-blue-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all"
+            >
+              {sending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4" />
+                  Send Certificate
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
