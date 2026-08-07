@@ -391,7 +391,6 @@ export default function PickupManagementPage() {
                   <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Applicant</th>
                   <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</th>
                   <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Verification</th>
                   <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Date Updated</th>
                   <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
                 </tr>
@@ -424,15 +423,6 @@ export default function PickupManagementPage() {
                         {certificate.status?.replace(/_/g, ' ').toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-[12px] text-gray-600 font-black uppercase tracking-tight flex items-center gap-1.5">
-                        {certificate.status === 'released' ? (
-                          <><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> CLOSED</>
-                        ) : (
-                          <><Clock className="w-3.5 h-3.5 text-blue-500" /> PENDING RELEASE</>
-                        )}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase font-mono">
                         {formatDate(certificate.updated_at)}
@@ -451,22 +441,22 @@ export default function PickupManagementPage() {
                         {['ready', 'ready_for_pickup'].includes(certificate.status) && (certificate.email || certificate.residents?.email) && (
                           <button
                             onClick={() => openSendCertificate(certificate)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 flex items-center gap-2 text-sm shadow-sm transition-all active:scale-95"
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 flex items-center gap-1.5 text-[11px] shadow-sm transition-all active:scale-95"
                             title="Send Certificate to Email"
                           >
-                            <Mail className="w-4 h-4" />
-                            Send
+                            <Mail className="w-3.5 h-3.5" />
+                            Email
                           </button>
                         )}
 
                         {['ready', 'ready_for_pickup'].includes(certificate.status) && (
                           <button
                             onClick={() => openPickupVerification(certificate)}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 flex items-center gap-2 text-sm shadow-sm transition-all active:scale-95"
+                            className="px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 flex items-center gap-1.5 text-[11px] shadow-sm transition-all active:scale-95"
                             title="Confirm Pickup"
                           >
-                            <CheckCircle className="w-4 h-4" />
-                            Confirm Pickup
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Release
                           </button>
                         )}
 
