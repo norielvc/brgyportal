@@ -32,6 +32,50 @@ export default function MobileQRScannerPage() {
   const [subscription, setSubscription] = useState(null);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
 
+  // ─── QR Data Parser ────────────────────────────────────────
+  const parseQRMobile = (qrData) => {
+    if (!qrData || typeof qrData !== 'string') return { id: 'N/A', name: 'N/A', address: 'N/A', remarks: 'N/A' };
+    if (qrData.startsWith('http')) return { id: 'URL', name: 'N/A', address: 'N/A', remarks: 'N/A' };
+
+    const idMatch = qrData.match(/^H[a-z0-9]+-(?:F)?[a-z0-9]+/i);
+    const id = idMatch ? idMatch[0] : 'N/A';
+    let remaining = qrData.replace(id, '').trim();
+
+    const addressMarkers = ['PUROK', 'PUROK ', 'PUROK', 'BARANGAY', 'BRGY', 'PHASE', 'BLOCK', 'LOT', 'ZONE', 'COMPOUND', 'SITIO', 'PUORK'];
+    let nameEndIdx = -1;
+    let foundMarker = '';
+    for (const marker of addressMarkers) {
+      const idx = remaining.toUpperCase().indexOf(marker);
+      if (idx !== -1 && (nameEndIdx === -1 || idx < nameEndIdx)) {
+        nameEndIdx = idx;
+        foundMarker = marker;
+      }
+    }
+
+    let name = 'N/A', address = 'N/A', remarks = 'N/A';
+    if (nameEndIdx !== -1) {
+      name = remaining.substring(0, nameEndIdx).trim() || 'N/A';
+      const afterName = remaining.substring(nameEndIdx).trim();
+      const remarkKeywords = ['GOODS RECD', 'GOODS RECEIVED', 'COMP', 'GEN NO', 'SIGN REQ', 'RECEIVED', 'PENDING'];
+      let remarkIdx = -1;
+      for (const kw of remarkKeywords) {
+        const idx = afterName.toUpperCase().indexOf(kw);
+        if (idx !== -1 && (remarkIdx === -1 || idx < remarkIdx)) remarkIdx = idx;
+      }
+      if (remarkIdx !== -1) {
+        address = afterName.substring(0, remarkIdx).trim() || 'N/A';
+        remarks = afterName.substring(remarkIdx).trim() || 'N/A';
+      } else {
+        address = afterName || 'N/A';
+      }
+    } else {
+      name = remaining || 'N/A';
+    }
+
+    return { id, name, address, remarks };
+  };
+  // ───────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (!isAuthenticated()) {
       router.push("/login");
@@ -547,7 +591,9 @@ export default function MobileQRScannerPage() {
 
               {/* Scanning Target */}
               <div className="space-y-6">
-                {duplicateInfo && awaitingAcknowledgment ? (
+                {duplicateInfo && awaitingAcknowledgment ? (() => {
+                  const dup = parseQRMobile(duplicateInfo.existingScan?.qr_data || '');
+                  return (
                   <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-2xl animate-in zoom-in duration-300">
                     <div className="text-center mb-5">
                       <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
@@ -557,15 +603,31 @@ export default function MobileQRScannerPage() {
                       <p className="text-sm text-amber-100 font-medium">Already verified in this event</p>
                     </div>
 
-                    <div className="bg-black/10 rounded-2xl p-4 mb-6 border border-white/10 space-y-4">
+                    <div className="bg-black/10 rounded-2xl p-4 mb-4 border border-white/10 space-y-3">
                       <div>
+                        <div className="text-[10px] font-bold text-amber-200 uppercase tracking-widest mb-1">Household ID</div>
+                        <div className="text-sm font-black font-mono text-white">{dup.id}</div>
+                      </div>
+                      <div className="pt-2 border-t border-white/10">
+                        <div className="text-[10px] font-bold text-amber-200 uppercase tracking-widest mb-1">Name</div>
+                        <div className="text-sm font-black text-white">{dup.name}</div>
+                      </div>
+                      <div className="pt-2 border-t border-white/10">
+                        <div className="text-[10px] font-bold text-amber-200 uppercase tracking-widest mb-1">Address</div>
+                        <div className="text-sm font-bold text-amber-100">{dup.address}</div>
+                      </div>
+                      <div className="pt-2 border-t border-white/10">
+                        <div className="text-[10px] font-bold text-amber-200 uppercase tracking-widest mb-1">Remarks</div>
+                        <div className="text-sm font-bold italic text-amber-100">{dup.remarks}</div>
+                      </div>
+                      <div className="pt-2 border-t border-white/10">
                         <div className="text-[10px] font-bold text-amber-200 uppercase tracking-widest mb-1.5">Staff In-Charge</div>
                         <div className="flex items-center gap-2 text-white font-black text-sm">
                           <User className="w-4 h-4 text-amber-200" />
                           {duplicateInfo.existingScan.scanned_by_name || "Unknown"}
                         </div>
                       </div>
-                      <div className="pt-3 border-t border-white/10">
+                      <div className="pt-2 border-t border-white/10">
                         <div className="text-[10px] font-bold text-amber-200 uppercase tracking-widest mb-1.5">Original Timestamp</div>
                         <div className="flex items-center gap-2 text-white font-black text-sm">
                           <Clock className="w-4 h-4 text-amber-200" />
@@ -578,20 +640,39 @@ export default function MobileQRScannerPage() {
                       onClick={acknowledgeDuplicate}
                       className="w-full bg-white text-orange-600 py-4 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all"
                     >
-                      Acknowledge & Dismiss
+                      Acknowledge &amp; Dismiss
                     </button>
                   </div>
-                ) : scanResult ? (
-                  <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-2xl animate-in zoom-in duration-300 text-center">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
-                      <CheckCircle className="w-10 h-10 text-white" />
+                  );
+                })() : scanResult ? (() => {
+                  const parsed = parseQRMobile(scanResult);
+                  return (
+                  <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-2xl animate-in zoom-in duration-300">
+                    <div className="text-center mb-5">
+                      <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
+                        <CheckCircle className="w-10 h-10 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-black mb-1">Verification Success</h3>
+                      <p className="text-emerald-50 text-sm">Record successfully added to event logs</p>
                     </div>
-                    <h3 className="text-2xl font-black mb-1">Verification Success</h3>
-                    <p className="text-emerald-50 text-sm mb-6">Record successfully added to event logs</p>
                     
-                    <div className="bg-black/10 rounded-2xl p-4 mb-6 text-left border border-white/10">
-                      <div className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest mb-1">Log ID</div>
-                      <div className="text-xs font-mono font-bold break-all opacity-80">{scanResult.substring(0, 40)}...</div>
+                    <div className="bg-black/10 rounded-2xl p-4 mb-5 text-left border border-white/10 space-y-3">
+                      <div>
+                        <div className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest mb-1">Household ID</div>
+                        <div className="text-sm font-mono font-black text-white">{parsed.id}</div>
+                      </div>
+                      <div className="pt-2 border-t border-white/10">
+                        <div className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest mb-1">Name</div>
+                        <div className="text-base font-black text-white">{parsed.name}</div>
+                      </div>
+                      <div className="pt-2 border-t border-white/10">
+                        <div className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest mb-1">Address</div>
+                        <div className="text-sm font-bold text-emerald-100">{parsed.address}</div>
+                      </div>
+                      <div className="pt-2 border-t border-white/10">
+                        <div className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest mb-1">Remarks</div>
+                        <div className="text-sm font-bold italic text-emerald-100">{parsed.remarks}</div>
+                      </div>
                     </div>
 
                     <button
@@ -602,7 +683,8 @@ export default function MobileQRScannerPage() {
                       Scan Next Individual
                     </button>
                   </div>
-                ) : (
+                  );
+                })() : (
                   <div className="space-y-6">
                     <div className="relative aspect-square w-full max-w-[280px] mx-auto group">
                       <div className="absolute inset-0 bg-blue-500/5 rounded-3xl border-4 border-dashed border-slate-200 group-hover:border-blue-400 transition-colors duration-500"></div>
