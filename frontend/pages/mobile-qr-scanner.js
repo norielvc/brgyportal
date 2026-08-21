@@ -321,7 +321,42 @@ export default function MobileQRScannerPage() {
             if (found) { console.log(`✅ jsQR binarized scale=${scale}`); resolve(found); return; }
           }
 
-          // ── PASS 3: Multi-crop (center + corners + horizontal strips) ──
+          // ── PASS 2b: Close-up fix — force fixed small pixel sizes ──
+          // jsQR sweet spot is ~300-800px. Close-up shots produce huge images
+          // where the QR fills the frame; we must aggressively downsample.
+          const fixedSizes = [800, 600, 400, 300, 200];
+          for (const targetPx of fixedSizes) {
+            const ratio = Math.min(targetPx / W, targetPx / H);
+            const fw = Math.max(1, Math.floor(W * ratio));
+            const fh = Math.max(1, Math.floor(H * ratio));
+
+            const canv = document.createElement("canvas");
+            canv.width = fw; canv.height = fh;
+            const ctx2 = canv.getContext("2d", { willReadFrequently: true });
+            // Use imageSmoothingQuality for better downscale
+            ctx2.imageSmoothingEnabled = true;
+            ctx2.imageSmoothingQuality = "high";
+            ctx2.drawImage(img, 0, 0, fw, fh);
+            const rawData = ctx2.getImageData(0, 0, fw, fh);
+
+            // raw
+            let found = tryJsQR(jsQR, rawData);
+            if (found) { console.log(`✅ jsQR fixed-size=${targetPx}px raw`); resolve(found); return; }
+
+            // enhanced
+            const enhData = ctx2.getImageData(0, 0, fw, fh);
+            enhanceImageData(enhData, 80);
+            found = tryJsQR(jsQR, enhData);
+            if (found) { console.log(`✅ jsQR fixed-size=${targetPx}px enhanced`); resolve(found); return; }
+
+            // binarized
+            const binData = ctx2.getImageData(0, 0, fw, fh);
+            enhanceImageData(binData, 130);
+            found = tryJsQR(jsQR, binData);
+            if (found) { console.log(`✅ jsQR fixed-size=${targetPx}px binarized`); resolve(found); return; }
+          }
+
+          // ── PASS 3: Multi-crop (center + corners) — also at small fixed sizes ──
           const crops = [
             // center 60%
             { sx: W * 0.2, sy: H * 0.2, sw: W * 0.6, sh: H * 0.6 },
@@ -342,8 +377,8 @@ export default function MobileQRScannerPage() {
           ];
 
           for (const crop of crops) {
-            for (const contrastLevel of [0, 70, 130]) {
-              const { imageData } = drawToCanvas(img, { ...crop, maxSize: 1500 });
+            for (const contrastLevel of [0, 80, 130]) {
+              const { imageData } = drawToCanvas(img, { ...crop, maxSize: 600 });
               if (contrastLevel > 0) enhanceImageData(imageData, contrastLevel);
               const found = tryJsQR(jsQR, imageData);
               if (found) {
