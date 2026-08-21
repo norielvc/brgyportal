@@ -433,7 +433,7 @@ export default function QRScanHistoryPage() {
             </div>
             <button 
                onClick={() => setIsEventModalOpen(true)}
-               className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-colors"
+               className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-colors"
             >
                <Plus className="w-5 h-5" />
                New Event
@@ -615,31 +615,31 @@ export default function QRScanHistoryPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Scan Time
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Household-Family ID
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Name
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Address
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Remarks
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Raw Data
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Scanner Type
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Scanned By
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -647,7 +647,7 @@ export default function QRScanHistoryPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {scans.map((scan) => (
                       <tr key={scan.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="flex items-center">
                             <Clock className="w-4 h-4 text-gray-400 mr-2" />
                             <div>
@@ -657,32 +657,32 @@ export default function QRScanHistoryPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-1.5 whitespace-nowrap">
                           <span className="text-sm font-mono font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
                             {parseQRData(scan.qr_data).id}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="text-sm font-bold text-gray-900">
                             {parseQRData(scan.qr_data).name}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="text-xs text-gray-600 max-w-[200px] truncate" title={parseQRData(scan.qr_data).address}>
                             {parseQRData(scan.qr_data).address}
                           </div>
                         </td>
-                        <td className="px-6 py-4 border-l border-gray-50">
+                        <td className="px-4 py-1.5 whitespace-nowrap border-l border-gray-50">
                           <div className="text-xs text-emerald-600 font-semibold italic">
                             {parseQRData(scan.qr_data).remarks}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-1.5">
                           <div className="text-[10px] text-gray-400 font-mono bg-gray-50 p-2 rounded truncate max-w-[150px]">
                             {scan.qr_data}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="flex items-center">
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${scan.scanner_type === 'mobile' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
                               }`}>
@@ -690,7 +690,7 @@ export default function QRScanHistoryPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="flex items-center">
                             <User className="w-3.5 h-3.5 text-gray-400 mr-2" />
                             <span className="text-sm text-gray-600">
@@ -698,7 +698,7 @@ export default function QRScanHistoryPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td className="px-4 py-1.5 whitespace-nowrap text-sm font-medium">
                           <button
                             onClick={() => {
                               setSelectedScan(scan);
@@ -736,16 +736,16 @@ export default function QRScanHistoryPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-red-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
                         Household ID & Name
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
                         Original Scan
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
                         Duplicate Attempt
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
                         Status
                       </th>
                     </tr>
@@ -753,25 +753,25 @@ export default function QRScanHistoryPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {duplicates.map((duplicate, index) => (
                       <tr key={index} className="hover:bg-red-50">
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-1.5">
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-red-700">{parseQRData(duplicate.qr_data).id}</span>
                             <span className="text-xs text-gray-900 font-medium">{parseQRData(duplicate.qr_data).name}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="text-xs text-gray-900">
                             <div className="font-semibold">{duplicate.original_scan.scanned_by}</div>
                             <div className="text-gray-500">{formatDate(duplicate.original_scan.scan_timestamp)}</div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="text-xs text-gray-900 border-l-2 border-red-200 pl-3">
                             <div className="font-semibold">{duplicate.duplicate_attempt.scanned_by}</div>
                             <div className="text-gray-500">{formatDate(duplicate.duplicate_attempt.scan_timestamp)}</div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="flex flex-col">
                             <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full uppercase text-center">Blocked</span>
                             <span className="text-[10px] text-gray-500 mt-1">
@@ -923,7 +923,7 @@ export default function QRScanHistoryPage() {
 
       {/* Scan History Table */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden" style={{ display: 'none' }}>
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-4 py-1.5 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Recent Scans</h2>
         </div>
 
@@ -947,19 +947,19 @@ export default function QRScanHistoryPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Scan Time
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     QR Code Data
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Scanner Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Scanned By
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -967,7 +967,7 @@ export default function QRScanHistoryPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {scans.map((scan) => (
                   <tr key={scan.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-1.5 whitespace-nowrap">
                       <div className="flex items-center">
                         <Clock className="w-4 h-4 text-gray-400 mr-2" />
                         <div>
@@ -977,7 +977,7 @@ export default function QRScanHistoryPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-1.5">
                       <div className="text-sm text-gray-900 font-mono bg-gray-50 p-2 rounded">
                         {formatQRData(scan.qr_data)}
                       </div>
@@ -990,7 +990,7 @@ export default function QRScanHistoryPage() {
                         </button>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-1.5 whitespace-nowrap">
                       <div className="flex items-center">
                         <Smartphone className="w-4 h-4 text-gray-400 mr-2" />
                         <span className="text-sm text-gray-900 capitalize">
@@ -998,7 +998,7 @@ export default function QRScanHistoryPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-1.5 whitespace-nowrap">
                       <div className="flex items-center">
                         <User className="w-4 h-4 text-gray-400 mr-2" />
                         <span className="text-sm text-gray-900">
@@ -1006,7 +1006,7 @@ export default function QRScanHistoryPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-4 py-1.5 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => {
                           const details = `
@@ -1032,7 +1032,7 @@ Device Info: ${JSON.stringify(scan.device_info, null, 2)}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <div className="px-4 py-1.5 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-700">
               Page {currentPage} of {totalPages}
             </div>
@@ -1285,7 +1285,7 @@ function ClearHistoryModal({ onClose, onConfirm, processing }) {
 
         {/* Modal content */}
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
-          <div className="bg-red-600 px-6 py-4 flex items-center justify-between">
+          <div className="bg-red-600 px-4 py-1.5 flex items-center justify-between">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <Trash2 className="w-5 h-5" />
               Delete Scan Records
