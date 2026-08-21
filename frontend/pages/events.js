@@ -620,12 +620,6 @@ export default function EventsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Carousel Events</h1>
-          <p className="text-gray-600 mt-1">
-            Manage events displayed on the homepage carousel
-          </p>
-        </div>
         <div className="flex gap-3">
           <button
             onClick={openAddModal}

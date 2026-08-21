@@ -149,12 +149,31 @@ export default function MobileQRScannerPage() {
         try {
           console.log("📱 Processing image for QR detection...");
 
+          // 1. Try Native BarcodeDetector API first (Fastest & Most Accurate)
+          if ("BarcodeDetector" in window) {
+            try {
+              console.log("⚡ Using Native BarcodeDetector...");
+              const barcodeDetector = new window.BarcodeDetector({
+                formats: ["qr_code"],
+              });
+              const barcodes = await barcodeDetector.detect(img);
+              if (barcodes && barcodes.length > 0) {
+                console.log("✅ QR Code detected (Native):", barcodes[0].rawValue);
+                resolve(barcodes[0].rawValue);
+                return;
+              }
+            } catch (nativeError) {
+              console.log("⚠️ Native detection failed, falling back...", nativeError);
+            }
+          }
+
+          // 2. Fallback to jsQR with higher resolution canvas
           // Create canvas
           const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-          // Optimize size for mobile
-          const maxSize = 600;
+          // INCREASED FROM 600 to 1500 for much better accuracy on small/far QR codes
+          const maxSize = 1500;
           let { width, height } = img;
 
           if (width > maxSize || height > maxSize) {
@@ -171,7 +190,7 @@ export default function MobileQRScannerPage() {
 
           // Try jsQR with simple import
           try {
-            console.log("🔍 Trying jsQR detection...");
+            console.log("🔍 Trying jsQR detection fallback...");
 
             // Use dynamic import with CDN fallback
             let jsQR;
@@ -186,9 +205,9 @@ export default function MobileQRScannerPage() {
                 "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
               document.head.appendChild(script);
 
-              await new Promise((resolve, reject) => {
-                script.onload = () => resolve();
-                script.onerror = () => reject(new Error("CDN load failed"));
+              await new Promise((resolveScript, rejectScript) => {
+                script.onload = () => resolveScript();
+                script.onerror = () => rejectScript(new Error("CDN load failed"));
               });
 
               jsQR = window.jsQR;
@@ -212,7 +231,7 @@ export default function MobileQRScannerPage() {
                 );
 
                 if (code && code.data) {
-                  console.log("✅ QR Code detected:", code.data);
+                  console.log("✅ QR Code detected (jsQR):", code.data);
                   resolve(code.data);
                   return;
                 }

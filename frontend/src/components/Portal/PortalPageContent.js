@@ -46,6 +46,8 @@ import {
   Navigation,
   MessageCircle,
   HeadphonesIcon,
+  HelpCircle,
+  AlertCircle,
   Image as ImageIcon,
 } from "lucide-react";
 import BarangayClearanceModal from "@/components/Forms/BarangayClearanceModal";
@@ -58,10 +60,13 @@ import GuardianshipCertificateModal from "@/components/Forms/GuardianshipCertifi
 import CohabitationCertificateModal from "@/components/Forms/CohabitationCertificateModal";
 import MedicoLegalModal from "@/components/Forms/MedicoLegalModal";
 import SamePersonCertificateModal from "@/components/Forms/SamePersonCertificateModal";
+import ESumbongModal from "@/components/Forms/ESumbongModal";
+import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
 
 export default function PortalPageContent({ initialTenantId }) {
   const router = useRouter();
   const [tenantId, setTenantId] = useState((initialTenantId || "ibaoeste").toLowerCase());
+  const [showESumbong, setShowESumbong] = useState(false);
 
   const [tenantConfig, setTenantConfig] = useState({
     name: "BARANGAY",
@@ -901,10 +906,26 @@ export default function PortalPageContent({ initialTenantId }) {
     e.preventDefault();
     if (!chatInput.trim()) return;
 
-    const userMessage = { id: Date.now(), text: chatInput.trim(), sender: "user", time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+    const messageText = chatInput.trim();
+    const userMessage = {
+      id: Date.now(),
+      text: messageText,
+      sender: "user",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
     setChatMessages((prev) => [...prev, userMessage]);
     setChatInput("");
     setChatSending(true);
+
+    try {
+      await kapchatAPI.send({
+        name: chatUserInfo.name,
+        contact: chatUserInfo.contact,
+        message: messageText,
+      });
+    } catch (error) {
+      console.error("Error sending KapChat message:", error);
+    }
 
     // Simulate captain auto-reply
     setTimeout(() => {
@@ -920,23 +941,40 @@ export default function PortalPageContent({ initialTenantId }) {
     }, 1500);
   };
 
-  // Brgy Assistance — Submit assistance request (same as Contact form)
+  // Brgy Assistance — Submit assistance request
   const handleAssistanceSubmit = async (e) => {
     e.preventDefault();
     setAssistanceSubmitting(true);
 
-    // Simulate submission (same behavior as Contact form)
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      await assistanceAPI.create({
+        firstName: assistanceFormData.firstName,
+        lastName: assistanceFormData.lastName,
+        email: assistanceFormData.email,
+        phone: assistanceFormData.phone,
+        message: assistanceFormData.message,
+      });
 
-    setAssistanceSuccess(true);
-    setAssistanceSubmitting(false);
-    setAssistanceFormData({ firstName: "", lastName: "", email: "", phone: "", message: "" });
+      setAssistanceSuccess(true);
+      setAssistanceFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        message: "",
+      });
 
-    setTimeout(() => {
-      setAssistanceSuccess(false);
-      setShowAssistance(false);
-      setAssistanceMode(null);
-    }, 2500);
+      setTimeout(() => {
+        setAssistanceSuccess(false);
+        setShowAssistance(false);
+        setAssistanceMode(null);
+      }, 2500);
+    } catch (error) {
+      console.error("Error submitting assistance inquiry:", error);
+      alert("Failed to submit inquiry. Please try again.");
+    } finally {
+      setAssistanceSubmitting(false);
+    }
   };
 
   // Open assistance widget in a specific mode
@@ -3484,6 +3522,24 @@ export default function PortalPageContent({ initialTenantId }) {
                   <p className="text-xs text-gray-500">Send an inquiry to the office</p>
                 </div>
               </button>
+
+              <button
+                onClick={() => {
+                  setShowAssistance(false);
+                  setShowESumbong(true);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-red-50 transition-colors text-left"
+              >
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-red-100"
+                >
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900">E-Sumbong</p>
+                  <p className="text-xs text-gray-500">Barangay blotter / complaint report</p>
+                </div>
+              </button>
             </div>
 
             {/* Emergency Hotlines Divider */}
@@ -4201,6 +4257,12 @@ export default function PortalPageContent({ initialTenantId }) {
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
       `}</style>
+
+      <ESumbongModal
+        isOpen={showESumbong}
+        onClose={() => setShowESumbong(false)}
+        publicMode={true}
+      />
     </div>
   );
 }

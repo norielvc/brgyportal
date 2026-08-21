@@ -32,8 +32,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Reports & Analytics</h1>
+      <div className="flex justify-end items-center">
         <button
           onClick={() => handleExport("pdf")}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"

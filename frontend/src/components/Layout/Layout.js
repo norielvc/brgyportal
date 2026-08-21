@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { Toaster } from "react-hot-toast";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import ESumbongModal from "../Forms/ESumbongModal";
 import { isAuthenticated } from "@/lib/auth";
 
 export default function Layout({
@@ -17,6 +18,7 @@ export default function Layout({
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [showESumbong, setShowESumbong] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -84,8 +86,13 @@ export default function Layout({
               onSearch={onSearch}
               searchTerm={searchTerm}
               onMenuClick={() => setIsMobileMenuOpen(true)}
+              onNeedHelp={() => setShowESumbong(true)}
             />
             <main className="p-6">{children}</main>
+            <ESumbongModal
+              isOpen={showESumbong}
+              onClose={() => setShowESumbong(false)}
+            />
           </div>
         </>
       ) : (

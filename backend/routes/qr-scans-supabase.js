@@ -147,8 +147,8 @@ router.post('/', authenticateToken, async (req, res) => {
       if (!data || typeof data !== 'string') return null;
       if (data.startsWith('http')) return null;
 
-      // Pattern: ID (HXXXXX-FXXXXX)
-      const idMatch = data.match(/^H\d{5}-F\d{5}/);
+      // Pattern: ID (HXXXXX-FXXXXX or HXXXXXX-XXXXX)
+      const idMatch = data.match(/^H\d+-(?:F)?\d+/i);
       const household_id = idMatch ? idMatch[0] : null;
 
       let remaining = data.replace(household_id || '', '').trim();
@@ -162,7 +162,7 @@ router.post('/', authenticateToken, async (req, res) => {
       }
 
       // Pattern: Address
-      const addressMarkers = ['SITIO', 'BLOCK', 'LOT', 'PUROK', 'PHASE', 'ST.', 'AVE.'];
+      const addressMarkers = ['SITIO', 'BLOCK', 'LOT', 'PUROK', 'PUORK', 'PHASE', 'ST.', 'AVE.', 'ZONE'];
       let addressStart = -1;
       const upperRemaining = remaining.toUpperCase();
 
@@ -209,11 +209,13 @@ router.post('/', authenticateToken, async (req, res) => {
        duplicateQuery = duplicateQuery.eq('event_id', event_id);
     }
 
-    const { data: existingScan, error: checkError } = await duplicateQuery.single();
+    const { data: existingScans, error: checkError } = await duplicateQuery.limit(1);
 
-    if (checkError && checkError.code !== 'PGRST116') {
+    if (checkError) {
       console.error('❌ Error checking for duplicate:', checkError);
     }
+    
+    const existingScan = existingScans && existingScans.length > 0 ? existingScans[0] : null;
 
     // If QR code already exists, return duplicate warning
     if (existingScan) {
@@ -355,33 +357,106 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/qr-scans/export - Get ALL scans for CSV export
+router.get('/export', authenticateToken, async (req, res) => {
+  try {
+    const { event_id } = req.query;
+    const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
+    
+    // Fetch all in chunks to bypass 1000 limit
+    let allScans = [];
+    let hasMore = true;
+    let offset = 0;
+    const limit = 1000;
+
+    while (hasMore) {
+      let chunkQuery = supabase
+        .from('qr_scans')
+        .select(`
+          *,
+          users:scanned_by(id, email, first_name, last_name)
+        `)
+        .eq('tenant_id', tenantId)
+        .order('scan_timestamp', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (event_id) {
+         chunkQuery = chunkQuery.eq('event_id', event_id);
+      }
+
+      const { data, error } = await chunkQuery;
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        allScans = allScans.concat(data);
+        offset += limit;
+        if (data.length < limit) hasMore = false;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: allScans,
+      total: allScans.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error in GET /qr-scans/export:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export scans'
+    });
+  }
+});
+
 // GET /api/qr-scans/duplicates - Get duplicate QR scan attempts
 router.get('/duplicates', authenticateToken, async (req, res) => {
   try {
     const { event_id } = req.query;
     const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
     
-    let scansQuery = supabase
-      .from('qr_scans')
-      .select(`
-        *,
-        users:scanned_by(id, email, first_name, last_name)
-      `)
-      .eq('tenant_id', tenantId) // MULTI-TENANT FILTER
-      .order('scan_timestamp', { ascending: false });
+    // Bypassing the 1000 row Supabase limit by fetching in chunks
+    let allScans = [];
+    let hasMore = true;
+    let offset = 0;
+    const limit = 1000;
 
-    if (event_id) {
-       scansQuery = scansQuery.eq('event_id', event_id);
-    }
+    while (hasMore) {
+      let chunkQuery = supabase
+        .from('qr_scans')
+        .select(`
+          *,
+          users:scanned_by(id, email, first_name, last_name)
+        `)
+        .eq('tenant_id', tenantId)
+        .order('scan_timestamp', { ascending: false })
+        .range(offset, offset + limit - 1);
 
-    // Get all scans for this tenant (and event) and find duplicates in JavaScript
-    const { data: allScans, error: allScansError } = await scansQuery;
+      if (event_id) {
+         chunkQuery = chunkQuery.eq('event_id', event_id);
+      }
 
-    if (allScansError) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to fetch duplicate data'
-      });
+      const { data, error } = await chunkQuery;
+
+      if (error) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch duplicate data'
+        });
+      }
+
+      if (data && data.length > 0) {
+        allScans = allScans.concat(data);
+        offset += limit;
+        if (data.length < limit) hasMore = false;
+      } else {
+        hasMore = false;
+      }
     }
 
     // Group by QR data and find duplicates

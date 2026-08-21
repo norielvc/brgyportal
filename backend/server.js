@@ -30,6 +30,7 @@ const programRoutes = require('./routes/programs-supabase');
 const tenantRoutes = require('./routes/tenants-supabase');
 const homepageRoutes = require('./routes/homepage-supabase');
 const emailRoutes = require('./routes/email');
+const blotterRoutes = require('./routes/blotter-supabase');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -171,8 +172,8 @@ app.use('/api/qr-scans', authenticateToken, qrScansRoutes);
 app.use('/api/scan-events', authenticateToken, scanEventsRoutes);
 app.use('/api/user/signatures', authenticateToken, signatureRoutes); 
 app.use('/api/physical-inspection', authenticateToken, physicalInspectionRoutes); 
-app.use('/api/email', emailRoutes); // Email notification routes 
-
+app.use('/api/email', emailRoutes); 
+app.use('/api/blotter', optionalAuthenticateToken, blotterRoutes); 
 
 // 404 handler
 app.use('*', (req, res) => {

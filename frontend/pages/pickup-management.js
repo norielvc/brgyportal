@@ -256,10 +256,6 @@ export default function PickupManagementPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Certificate Pickup Management</h1>
-          <p className="text-gray-500 mt-1">Manage certificate pickups and verification</p>
-        </div>
         <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
@@ -399,7 +395,7 @@ export default function PickupManagementPage() {
                 {filteredCertificates.map((certificate) => (
                   <tr key={certificate.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-mono font-black text-blue-600 scale-110 inline-block tracking-tighter">{certificate.reference_number}</span>
+                      <span className="font-sans font-black text-blue-600 scale-110 inline-block tracking-tighter">{certificate.reference_number}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -408,7 +404,7 @@ export default function PickupManagementPage() {
                         </div>
                         <div>
                           <p className="font-extrabold text-gray-900 uppercase text-[13px] tracking-tight">{certificate.applicant_name || certificate.full_name}</p>
-                          <p className="text-[11px] font-mono font-bold text-gray-400 tracking-tighter">{certificate.contact_number || 'NO CONTACT RECORDED'}</p>
+                          <p className="text-[11px] font-sans font-bold text-gray-400 tracking-tighter">{certificate.contact_number || 'NO CONTACT RECORDED'}</p>
                         </div>
                       </div>
                     </td>
@@ -424,7 +420,7 @@ export default function PickupManagementPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase font-mono">
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase font-sans">
                         {formatDate(certificate.updated_at)}
                       </div>
                     </td>
@@ -515,7 +511,7 @@ export default function PickupManagementPage() {
 }
 
 PickupManagementPage.getLayout = (page) => (
-  <Layout>
+  <Layout title="Certificate Pickup Management" subtitle="Manage certificate pickups and verification">
     {page}
   </Layout>
 );
@@ -558,7 +554,7 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-0.5">Reference No.</p>
-                  <p className="text-[13px] font-mono font-black text-slate-900 tracking-tighter">{certificate.reference_number}</p>
+                  <p className="text-[13px] font-sans font-black text-slate-900 tracking-tighter">{certificate.reference_number}</p>
                 </div>
                 <div className="text-right border-l border-slate-200 pl-4">
                   <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-0.5">Date Updated</p>
@@ -583,7 +579,7 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
                   </div>
                   <div className="col-span-1">
                     <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1.5">Contact Number</p>
-                    <p className="font-black text-slate-900 text-[13px] font-mono tracking-tighter">{certificate.contact_number || 'NOT RECORDED'}</p>
+                    <p className="font-black text-slate-900 text-[13px] font-sans tracking-tighter">{certificate.contact_number || 'NOT RECORDED'}</p>
                   </div>
                   <div className="col-span-1">
                     <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1.5">Age / Sex</p>
@@ -696,7 +692,7 @@ function ConfirmPickupModal({ certificate, onClose, onConfirm, pickupName, setPi
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-[9px] text-emerald-600 uppercase font-black tracking-widest mb-1">Ref No.</p>
-                  <p className="text-lg font-mono font-black text-emerald-900 tracking-tight truncate">{certificate.reference_number}</p>
+                  <p className="text-lg font-sans font-black text-emerald-900 tracking-tight truncate">{certificate.reference_number}</p>
                 </div>
                 <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-wide shrink-0">
                   {getTypeLabel(certificate.certificate_type).split(' ')[0]}
@@ -796,7 +792,7 @@ function SendCertificateModal({ certificate, onClose, onConfirm, sending }) {
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex-1 min-w-0">
                 <p className="text-[9px] text-blue-600 uppercase font-black tracking-widest mb-1">Ref No.</p>
-                <p className="text-lg font-mono font-black text-blue-900 tracking-tight truncate">{ref}</p>
+                <p className="text-lg font-sans font-black text-blue-900 tracking-tight truncate">{ref}</p>
               </div>
               <span className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-wide shrink-0">
                 {type.split(' ')[0]}

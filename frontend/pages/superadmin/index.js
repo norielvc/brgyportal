@@ -545,15 +545,7 @@ export default function SuperAdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Registered Barangays
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Manage all platforms and system limits across the municipality.
-            </p>
-          </div>
+        <div className="flex justify-end items-center mb-8">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowProtection(true)}

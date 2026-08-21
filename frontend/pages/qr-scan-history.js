@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
 import Layout from '@/components/Layout/Layout';
+
 import {
   History, Search, Calendar, User, Clock,
   Smartphone, RefreshCw, Eye, Trash2, Download, CheckCircle, AlertCircle, X,
@@ -20,8 +21,8 @@ const parseQRData = (qrData) => {
     return { id: 'URL', name: 'N/A', address: 'N/A', remarks: 'N/A' };
   }
 
-  // Pattern: ID (HXXXXX-FXXXXX)
-  const idMatch = qrData.match(/^H\d{5}-F\d{5}/);
+  // Pattern: ID (HXXXXX-FXXXXX or HXXXXXX-XXXXX)
+  const idMatch = qrData.match(/^H\d+-(?:F)?\d+/i);
   const id = idMatch ? idMatch[0] : 'N/A';
 
   let remaining = qrData.replace(id, '').trim();
@@ -35,7 +36,8 @@ const parseQRData = (qrData) => {
   }
 
   // Pattern: Address (Starts with SITIO, BLOCK, LOT, PUROK, PHASE, ST.)
-  const addressMarkers = ['SITIO', 'BLOCK', 'LOT', 'PUROK', 'PHASE', 'ST.', 'AVE.'];
+  // Added 'PUORK' to handle typos in QR generation
+  const addressMarkers = ['SITIO', 'BLOCK', 'LOT', 'PUROK', 'PUORK', 'PHASE', 'ST.', 'AVE.', 'ZONE'];
   let addressStart = -1;
   const upperRemaining = remaining.toUpperCase();
 
@@ -345,34 +347,59 @@ export default function QRScanHistoryPage() {
     }
   };
 
-  const exportToCSV = () => {
-    const headers = ['Date', 'Time', 'Household-Family ID', 'Name', 'Address', 'Remarks', 'Raw QR Data', 'Scanner Type', 'User'];
-    const csvData = scans.map(scan => {
-      const parsed = parseQRData(scan.qr_data);
-      return [
-        new Date(scan.scan_timestamp).toLocaleDateString(),
-        new Date(scan.scan_timestamp).toLocaleTimeString(),
-        parsed.id,
-        `"${parsed.name.replace(/"/g, '""')}"`,
-        `"${parsed.address.replace(/"/g, '""')}"`,
-        `"${parsed.remarks.replace(/"/g, '""')}"`,
-        `"${scan.qr_data.replace(/"/g, '""')}"`,
-        scan.scanner_type,
-        scan.users ? `${scan.users.first_name} ${scan.users.last_name}` : 'Unknown'
-      ];
-    });
+  const exportToCSV = async () => {
+    try {
+      if (!selectedEventId) {
+        toast.error("Please select an event to export.");
+        return;
+      }
 
-    const csvContent = [headers, ...csvData]
-      .map(row => row.join(','))
-      .join('\n');
+      const toastId = toast.loading("Preparing full CSV export...");
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/qr-scans/export?event_id=${selectedEventId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const responseData = await response.json();
+      
+      if (responseData.success && responseData.data) {
+        const allScans = responseData.data;
+        const headers = ['Date', 'Time', 'Household-Family ID', 'Name', 'Address', 'Remarks', 'Raw QR Data', 'Scanner Type', 'User'];
+        const csvData = allScans.map(scan => {
+          const parsed = parseQRData(scan.qr_data);
+          return [
+            new Date(scan.scan_timestamp).toLocaleDateString(),
+            new Date(scan.scan_timestamp).toLocaleTimeString(),
+            parsed.id,
+            `"${(parsed.name || '').replace(/"/g, '""')}"`,
+            `"${(parsed.address || '').replace(/"/g, '""')}"`,
+            `"${(parsed.remarks || '').replace(/"/g, '""')}"`,
+            `"${(scan.qr_data || '').replace(/"/g, '""')}"`,
+            scan.scanner_type,
+            scan.users ? `${scan.users.first_name} ${scan.users.last_name}` : 'Unknown'
+          ];
+        });
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `qr-scan-history-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+        const csvContent = [headers, ...csvData]
+          .map(row => row.join(','))
+          .join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `full-scan-history-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        toast.success(`Exported ${allScans.length} scans!`, { id: toastId });
+      } else {
+        toast.error("Failed to export data", { id: toastId });
+      }
+    } catch (err) {
+      console.error('Export error:', err);
+      toast.error('Export failed. Please try again.');
+    }
   };
 
   return (
@@ -382,10 +409,6 @@ export default function QRScanHistoryPage() {
         <div className="flex items-center space-x-4">
           <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-blue-100">
             <History className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Event Scans & Relief Operations</h1>
-            <p className="text-sm text-gray-500">Manage separate scan databases for each community event</p>
           </div>
         </div>
       </div>
@@ -1245,7 +1268,7 @@ Device Info: ${JSON.stringify(scan.device_info, null, 2)}
 }
 
 QRScanHistoryPage.getLayout = (page) => (
-  <Layout>
+  <Layout title="Event Scans & Relief Operations" subtitle="Manage separate scan databases for each community event">
     {page}
   </Layout>
 );

@@ -4,8 +4,15 @@ import toast from "react-hot-toast";
 
 // Create axios instance
 // MIGRATED: Now routes through internal Next.js /api layer instead of Express port 5005
+const rawBase = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
+const baseURL = rawBase
+  ? rawBase.endsWith("/api")
+    ? rawBase
+    : `${rawBase}/api`
+  : "/api";
+
 const api = axios.create({
-  baseURL: (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "") + "/api",
+  baseURL,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -53,6 +60,14 @@ api.interceptors.request.use(
           const tenantParam = urlParams.get("tenant");
           if (tenantParam) {
             tenantId = tenantParam;
+          } else {
+            // Public portal path: /{tenant}/...
+            const pathSegments = window.location.pathname
+              .split("/")
+              .filter(Boolean);
+            if (pathSegments.length > 0 && !["login", "pricing", "landing", "api", "admin", "dashboard", "help-desk"].includes(pathSegments[0].toLowerCase())) {
+              tenantId = pathSegments[0].toLowerCase();
+            }
           }
         }
       }
@@ -212,6 +227,65 @@ export const certificatesAPI = {
     const response = await api.get(
       `/workflow-assignments/history/${requestId}`,
     );
+    return response.data;
+  },
+};
+
+// Blotter / E-Sumbong API functions
+export const blotterAPI = {
+  createReport: async (data) => {
+    const response = await api.post("/blotter", data);
+    return response.data;
+  },
+
+  getReports: async (params = {}) => {
+    const response = await api.get("/blotter", { params });
+    return response.data;
+  },
+
+  getReport: async (id) => {
+    const response = await api.get(`/blotter/${id}`);
+    return response.data;
+  },
+
+  updateStatus: async (id, status) => {
+    const response = await api.put(`/blotter?id=${id}`, { status });
+    return response.data;
+  },
+};
+
+// Brgy Assistance / inquiry API functions
+export const assistanceAPI = {
+  create: async (data) => {
+    const response = await api.post("/assistance", data);
+    return response.data;
+  },
+
+  getInquiries: async (params = {}) => {
+    const response = await api.get("/assistance", { params });
+    return response.data;
+  },
+
+  updateStatus: async (id, status) => {
+    const response = await api.put(`/assistance?id=${id}`, { status });
+    return response.data;
+  },
+};
+
+// KapChat message API functions
+export const kapchatAPI = {
+  send: async (data) => {
+    const response = await api.post("/kapchat", data);
+    return response.data;
+  },
+
+  getMessages: async (params = {}) => {
+    const response = await api.get("/kapchat", { params });
+    return response.data;
+  },
+
+  updateStatus: async (id, status) => {
+    const response = await api.put(`/kapchat?id=${id}`, { status });
     return response.data;
   },
 };

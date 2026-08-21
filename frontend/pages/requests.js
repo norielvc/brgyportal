@@ -1237,14 +1237,6 @@ export default function RequestsPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Certificate Requests
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Manage and process certificate applications
-          </p>
-        </div>
         <div className="flex items-center gap-3">
           {pendingActionCount > 0 && (
             <span className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-medium flex items-center gap-2">
@@ -1510,7 +1502,7 @@ export default function RequestsPage() {
                               );
                             }
                           }}
-                          className="font-mono font-semibold text-blue-600 hover:underline relative z-10"
+                          className="font-sans font-semibold text-blue-600 hover:underline relative z-10"
                         >
                           {request.reference_number}
                         </Link>
@@ -1641,7 +1633,11 @@ export default function RequestsPage() {
   );
 }
 
-RequestsPage.getLayout = (page) => <Layout>{page}</Layout>;
+RequestsPage.getLayout = (page) => (
+  <Layout title="Certificate Requests" subtitle="Manage and process certificate applications">
+    {page}
+  </Layout>
+);
 
 // Add Comment Box Component
 function AddCommentBox({ requestId, onCommentAdded }) {
@@ -2385,7 +2381,7 @@ function RequestDetailsModal({
             </div>
             <div>
               <h2 className="text-sm font-semibold text-white">Request Details</h2>
-              <p className="text-blue-200/60 text-[11px] font-mono">{request.reference_number}</p>
+              <p className="text-blue-200/60 text-[11px] font-sans">{request.reference_number}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -2491,7 +2487,7 @@ function RequestDetailsModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Reference No.</p>
-                    <p className="font-mono text-sm font-bold text-gray-900">{request.reference_number || "—"}</p>
+                    <p className="font-sans text-sm font-bold text-gray-900">{request.reference_number || "—"}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Certificate Type</p>
@@ -2767,7 +2763,7 @@ function RequestDetailsModal({
                             className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
                           />
                         ) : (
-                          <p className="font-semibold text-gray-800 text-sm font-mono">
+                          <p className="font-semibold text-gray-800 text-sm font-sans">
                             {request.date_of_birth ||
                               (request.residents?.date_of_birth
                                 ? new Date(request.residents.date_of_birth)
@@ -2835,7 +2831,7 @@ function RequestDetailsModal({
                           Contact No.
                         </p>
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-800 text-sm font-mono tracking-tighter">
+                          <p className="font-semibold text-gray-800 text-sm font-sans tracking-tighter">
                             {request.contact_number || "NOT RECORDED"}
                           </p>
                         </div>
@@ -2906,7 +2902,7 @@ function RequestDetailsModal({
                           className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
                         />
                       ) : (
-                        <p className="font-semibold text-gray-800 text-sm font-mono tracking-tighter">
+                        <p className="font-semibold text-gray-800 text-sm font-sans tracking-tighter">
                           {request.email || "NOT RECORDED"}
                         </p>
                       )}
@@ -3112,7 +3108,7 @@ function RequestDetailsModal({
                           <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                             Date of Birth
                           </p>
-                          <p className="font-semibold text-gray-800 text-sm font-mono whitespace-nowrap">
+                          <p className="font-semibold text-gray-800 text-sm font-sans whitespace-nowrap">
                             {request.partner_date_of_birth || "N/A"}
                           </p>
                         </div>
@@ -3746,7 +3742,7 @@ function RequestDetailsModal({
                             <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                               Date of Death
                             </p>
-                            <p className="font-semibold text-gray-800 text-sm font-mono">
+                            <p className="font-semibold text-gray-800 text-sm font-sans">
                               {request.date_of_death || request.details?.date_of_death ||
                                 request.residents?.date_of_death
                                 ? new Date(
@@ -3770,7 +3766,7 @@ function RequestDetailsModal({
                               <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                                 Date of Exam
                               </p>
-                              <p className="font-semibold text-gray-800 text-sm font-mono whitespace-nowrap">
+                              <p className="font-semibold text-gray-800 text-sm font-sans whitespace-nowrap">
                                 {request.date_of_examination
                                   ? new Date(request.date_of_examination)
                                     .toLocaleDateString("en-US", {
@@ -3786,7 +3782,7 @@ function RequestDetailsModal({
                               <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                                 Usaping Brgy No.
                               </p>
-                              <p className="font-semibold text-gray-800 text-sm font-mono">
+                              <p className="font-semibold text-gray-800 text-sm font-sans">
                                 {request.usaping_barangay || "NOT RECORDED"}
                               </p>
                             </div>
@@ -3794,7 +3790,7 @@ function RequestDetailsModal({
                               <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
                                 Date of Hearing
                               </p>
-                              <p className="font-semibold text-gray-800 text-sm font-mono whitespace-nowrap">
+                              <p className="font-semibold text-gray-800 text-sm font-sans whitespace-nowrap">
                                 {request.date_of_hearing
                                   ? new Date(request.date_of_hearing)
                                     .toLocaleDateString("en-US", {
@@ -3885,7 +3881,7 @@ function RequestDetailsModal({
                               ? `${entry.users.first_name || ""} ${entry.users.last_name || ""}`.trim() || entry.users.email
                               : entry.performed_by_name || entry.performed_by_email || "System"}
                           </p>
-                          <span className="text-[10px] font-bold text-gray-400 font-mono tracking-tighter bg-white px-2 py-0.5 rounded border border-gray-100">
+                          <span className="text-[10px] font-bold text-gray-400 font-sans tracking-tighter bg-white px-2 py-0.5 rounded border border-gray-100">
                             {new Date(entry.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).toUpperCase()}
                           </span>
                         </div>
@@ -3998,7 +3994,7 @@ function RequestDetailsModal({
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                             Birth Information
                           </p>
-                          <p className="text-[14px] font-black text-gray-800 font-mono tracking-tighter">
+                          <p className="text-[14px] font-black text-gray-800 font-sans tracking-tighter">
                             {request.residents.date_of_birth || "NOT RECORDED"}
                           </p>
                         </div>
@@ -4053,7 +4049,7 @@ function RequestDetailsModal({
                             <p className="text-[10px] font-black text-gray-400 uppercase">
                               Primary Phone
                             </p>
-                            <p className="text-[14px] font-black text-gray-800 font-mono tracking-tighter">
+                            <p className="text-[14px] font-black text-gray-800 font-sans tracking-tighter">
                               {request.residents.contact_number || "NONE"}
                             </p>
                           </div>
@@ -5197,7 +5193,7 @@ function ActionModal({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Reference No</p>
-                    <p className="font-mono font-black text-blue-600 text-base tracking-tighter">{request.reference_number}</p>
+                    <p className="font-sans font-black text-blue-600 text-base tracking-tighter">{request.reference_number}</p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Applicant</p>
@@ -5214,7 +5210,7 @@ function ActionModal({
                   {request.contact_number && (
                     <div className="col-span-2">
                       <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Contact No.</p>
-                      <p className="font-black text-gray-900 text-sm font-mono">{request.contact_number}</p>
+                      <p className="font-black text-gray-900 text-sm font-sans">{request.contact_number}</p>
                     </div>
                   )}
                   {request.purpose && (
@@ -5931,7 +5927,7 @@ function ClearancePreviewForRequests({
       default: "",
       serif: "font-serif",
       sans: "font-sans",
-      mono: "font-mono",
+      mono: "font-sans",
     })[font] || "";
 
   // Map request data to formData format
@@ -6395,11 +6391,12 @@ function ClearancePreviewForRequests({
           >
             {/* Watermark */}
             {logos.leftLogo && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.05]">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.06]">
                 <img
                   src={logos.leftLogo}
                   className="w-3/4 object-contain"
                   alt="Watermark"
+                  style={{ filter: "grayscale(100%)" }}
                 />
               </div>
             )}
@@ -7426,6 +7423,9 @@ function ClearancePreviewForRequests({
                   Reference No:{" "}
                   <strong>{request.reference_number || request.id}</strong>
                 </p>
+                <p className="mt-1 italic text-gray-500 text-[10px]">
+                  This is a computerized generated document, dry seal is replaced with system-generated seal and is a valid document.
+                </p>
               </div>
 
               {/* Footer Divider and info */}
@@ -7437,7 +7437,7 @@ function ClearancePreviewForRequests({
                   <p>
                     <strong>Contact:</strong>{" "}
                     {officials.contactInfo?.contactPerson} Tel No.:{" "}
-                    {officials.contactInfo?.telephone} email:{" "}
+                    {officials.contactInfo?.telephone} email: {" "}
                     {officials.contactInfo?.email}
                   </p>
                 </div>
@@ -7500,7 +7500,7 @@ function ConfirmPickupModal({
                 <p className={`text-xs uppercase font-black tracking-wider mb-1 ${isOnlineDelivery ? "text-blue-600" : "text-green-600"}`}>
                   Reference No.
                 </p>
-                <p className={`text-lg font-mono font-bold ${isOnlineDelivery ? "text-blue-900" : "text-green-900"}`}>
+                <p className={`text-lg font-sans font-bold ${isOnlineDelivery ? "text-blue-900" : "text-green-900"}`}>
                   {certificate.reference_number}
                 </p>
               </div>
@@ -7525,7 +7525,7 @@ function ConfirmPickupModal({
                   <p className="text-xs text-blue-600 uppercase font-black tracking-wider mb-1">
                     Email Address
                   </p>
-                  <p className="text-sm font-bold text-blue-900 font-mono">
+                  <p className="text-sm font-bold text-blue-900 font-sans">
                     {certificate.email}
                   </p>
                 </div>
@@ -7594,7 +7594,7 @@ function ConfirmPickupModal({
                   <p className="text-xs text-blue-700 font-bold uppercase tracking-wide mb-1">
                     The certificate PDF will be sent to:
                   </p>
-                  <p className="text-sm font-bold text-blue-900 font-mono">
+                  <p className="text-sm font-bold text-blue-900 font-sans">
                     {certificate.email}
                   </p>
                 </div>

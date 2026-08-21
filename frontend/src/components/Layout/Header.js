@@ -1,4 +1,4 @@
-import { Bell, User, Settings, LogOut, Menu } from "lucide-react";
+import { Bell, User, Settings, LogOut, Menu, HelpCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getUserData, logout, getAuthToken } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
@@ -10,6 +10,7 @@ export default function Header({
   onSearch,
   searchTerm,
   onMenuClick,
+  onNeedHelp,
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -136,6 +137,15 @@ export default function Header({
 
         {/* Right section */}
         <div className="flex items-center space-x-4">
+          {/* Need Help / E-Sumbong */}
+          <button
+            onClick={onNeedHelp}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span>E-Sumbong</span>
+          </button>
+
           {/* Notifications */}
           <div className="relative">
             <button

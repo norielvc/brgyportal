@@ -68,6 +68,10 @@
     zoom: 0.75;
   }
 
+  html .font-mono {
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
   }

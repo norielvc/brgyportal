@@ -154,11 +154,7 @@ export default function ActivityLogs() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Activity Logs</h1>
-          <p className="text-gray-600 mt-1">System activity and user actions</p>
-        </div>
+      <div className="flex items-center justify-end">
         <button className="btn-primary flex items-center gap-2">
           <Download className="w-5 h-5" />
           Export

@@ -27,6 +27,7 @@ import {
   Lock,
   CheckCircle,
   MapPin,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout, getUserData } from "@/lib/auth";
@@ -49,6 +50,12 @@ const mainMenuItems = [
     href: "/requests",
     icon: ClipboardList,
     description: "Manage requests",
+  },
+  {
+    name: "Help Desk",
+    href: "/help-desk",
+    icon: AlertCircle,
+    description: "E-Sumbong, Assistance, KapChat",
   },
   {
     name: "Pickup Management",
