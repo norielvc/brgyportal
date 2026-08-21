@@ -147,8 +147,8 @@ router.post('/', authenticateToken, async (req, res) => {
       if (!data || typeof data !== 'string') return null;
       if (data.startsWith('http')) return null;
 
-      // Pattern: ID (HXXXXX-FXXXXX or HXXXXXX-XXXXX)
-      const idMatch = data.match(/^H\d+-(?:F)?\d+/i);
+      // Pattern: ID (HXXXXX-FXXXXX, HXXXXXX-XXXXX, or HXXXXXM-FXXXXX)
+      const idMatch = data.match(/^H[a-z0-9]+-(?:F)?[a-z0-9]+/i);
       const household_id = idMatch ? idMatch[0] : null;
 
       let remaining = data.replace(household_id || '', '').trim();

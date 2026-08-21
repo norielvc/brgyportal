@@ -21,8 +21,8 @@ const parseQRData = (qrData) => {
     return { id: 'URL', name: 'N/A', address: 'N/A', remarks: 'N/A' };
   }
 
-  // Pattern: ID (HXXXXX-FXXXXX or HXXXXXX-XXXXX)
-  const idMatch = qrData.match(/^H\d+-(?:F)?\d+/i);
+  // Pattern: ID (HXXXXX-FXXXXX, HXXXXXX-XXXXX, or HXXXXXM-FXXXXX)
+  const idMatch = qrData.match(/^H[a-z0-9]+-(?:F)?[a-z0-9]+/i);
   const id = idMatch ? idMatch[0] : 'N/A';
 
   let remaining = qrData.replace(id, '').trim();
