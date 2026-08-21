@@ -141,110 +141,176 @@ export default function MobileQRScannerPage() {
     event.target.value = "";
   };
 
+  // ─────────────────────────────────────────────────────────
+  //  Image pre-processing helpers
+  // ─────────────────────────────────────────────────────────
+
+  /** Draws an image onto a canvas at a given scale / crop, returns ImageData */
+  const drawToCanvas = (img, opts = {}) => {
+    const {
+      scale = 1,
+      sx = 0, sy = 0,
+      sw = img.naturalWidth, sh = img.naturalHeight,
+      maxSize = 2000,
+    } = opts;
+
+    let targetW = Math.floor(sw * scale);
+    let targetH = Math.floor(sh * scale);
+
+    // Clamp
+    if (targetW > maxSize || targetH > maxSize) {
+      const r = Math.min(maxSize / targetW, maxSize / targetH);
+      targetW = Math.floor(targetW * r);
+      targetH = Math.floor(targetH * r);
+    }
+    if (targetW < 1) targetW = 1;
+    if (targetH < 1) targetH = 1;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+    return { canvas, ctx, imageData: ctx.getImageData(0, 0, targetW, targetH) };
+  };
+
+  /** Boost contrast & convert to grayscale in-place, return modified ImageData */
+  const enhanceImageData = (imageData, contrast = 60) => {
+    const d = imageData.data;
+    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+    for (let i = 0; i < d.length; i += 4) {
+      // Grayscale (luminance)
+      const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      // Contrast stretch
+      const boosted = Math.min(255, Math.max(0, factor * (gray - 128) + 128));
+      d[i] = d[i + 1] = d[i + 2] = boosted;
+    }
+    return imageData;
+  };
+
+  /** Run jsQR with all inversion modes on a given ImageData */
+  const tryJsQR = (jsQR, imageData) => {
+    const modes = ["dontInvert", "onlyInvert", "attemptBoth", "invertFirst"];
+    for (const m of modes) {
+      // jsQR only supports 3 modes; invertFirst is not valid — skip it
+      if (m === "invertFirst") continue;
+      const result = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: m });
+      if (result && result.data) return result.data;
+    }
+    return null;
+  };
+
+  // ─────────────────────────────────────────────────────────
+  //  Main detection function
+  // ─────────────────────────────────────────────────────────
   const detectQRSimple = async (file) => {
     return new Promise((resolve) => {
       const img = new Image();
 
       img.onload = async () => {
         try {
-          console.log("📱 Processing image for QR detection...");
+          const W = img.naturalWidth;
+          const H = img.naturalHeight;
+          console.log(`📐 Image loaded: ${W}x${H}`);
 
-          // 1. Try Native BarcodeDetector API first (Fastest & Most Accurate)
+          // ── PASS 1: Native BarcodeDetector (fastest, best on modern Android) ──
           if ("BarcodeDetector" in window) {
             try {
-              console.log("⚡ Using Native BarcodeDetector...");
-              const barcodeDetector = new window.BarcodeDetector({
-                formats: ["qr_code"],
-              });
-              const barcodes = await barcodeDetector.detect(img);
-              if (barcodes && barcodes.length > 0) {
-                console.log("✅ QR Code detected (Native):", barcodes[0].rawValue);
-                resolve(barcodes[0].rawValue);
+              const bd = new window.BarcodeDetector({ formats: ["qr_code"] });
+              const codes = await bd.detect(img);
+              if (codes && codes.length > 0) {
+                console.log("✅ Native BarcodeDetector hit:", codes[0].rawValue);
+                resolve(codes[0].rawValue);
                 return;
               }
-            } catch (nativeError) {
-              console.log("⚠️ Native detection failed, falling back...", nativeError);
+              console.log("ℹ️ BarcodeDetector found nothing, continuing...");
+            } catch (e) {
+              console.warn("⚠️ BarcodeDetector error:", e.message);
             }
           }
 
-          // 2. Fallback to jsQR with higher resolution canvas
-          // Create canvas
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-          // INCREASED FROM 600 to 1500 for much better accuracy on small/far QR codes
-          const maxSize = 1500;
-          let { width, height } = img;
-
-          if (width > maxSize || height > maxSize) {
-            const ratio = Math.min(maxSize / width, maxSize / height);
-            width = Math.floor(width * ratio);
-            height = Math.floor(height * ratio);
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img, 0, 0, width, height);
-
-          const imageData = ctx.getImageData(0, 0, width, height);
-
-          // Try jsQR with simple import
+          // ── Load jsQR ──
+          let jsQR;
           try {
-            console.log("🔍 Trying jsQR detection fallback...");
-
-            // Use dynamic import with CDN fallback
-            let jsQR;
+            const m = await import("jsqr");
+            jsQR = m.default;
+          } catch {
             try {
-              const jsQRModule = await import("jsqr");
-              jsQR = jsQRModule.default;
-            } catch (importError) {
-              console.log("📦 Local import failed, trying CDN...");
-              // Fallback to CDN
-              const script = document.createElement("script");
-              script.src =
-                "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
-              document.head.appendChild(script);
-
-              await new Promise((resolveScript, rejectScript) => {
-                script.onload = () => resolveScript();
-                script.onerror = () => rejectScript(new Error("CDN load failed"));
+              await new Promise((res, rej) => {
+                const s = document.createElement("script");
+                s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+                s.onload = res; s.onerror = rej;
+                document.head.appendChild(s);
               });
-
               jsQR = window.jsQR;
+            } catch (cdnErr) {
+              console.error("❌ Cannot load jsQR:", cdnErr);
+              resolve(null);
+              return;
             }
-
-            if (typeof jsQR === "function") {
-              // Try multiple detection settings
-              const detectionOptions = [
-                { inversionAttempts: "dontInvert" },
-                { inversionAttempts: "onlyInvert" },
-                { inversionAttempts: "attemptBoth" },
-              ];
-
-              for (const options of detectionOptions) {
-                console.log("🔍 Trying detection with options:", options);
-                const code = jsQR(
-                  imageData.data,
-                  imageData.width,
-                  imageData.height,
-                  options,
-                );
-
-                if (code && code.data) {
-                  console.log("✅ QR Code detected (jsQR):", code.data);
-                  resolve(code.data);
-                  return;
-                }
-              }
-
-              console.log("❌ No QR code found with jsQR");
-            } else {
-              console.log("❌ jsQR not available");
-            }
-          } catch (jsqrError) {
-            console.log("❌ jsQR error:", jsqrError.message);
           }
 
+          if (typeof jsQR !== "function") {
+            console.error("❌ jsQR is not a function");
+            resolve(null);
+            return;
+          }
+
+          // ── PASS 2: Full image at multiple scales with preprocessing ──
+          const scales = [1, 1.5, 0.75, 0.5, 2];
+          for (const scale of scales) {
+            // raw
+            const { imageData: raw } = drawToCanvas(img, { scale });
+            let found = tryJsQR(jsQR, raw);
+            if (found) { console.log(`✅ jsQR raw scale=${scale}`); resolve(found); return; }
+
+            // enhanced
+            const { imageData: enhanced } = drawToCanvas(img, { scale });
+            enhanceImageData(enhanced, 70);
+            found = tryJsQR(jsQR, enhanced);
+            if (found) { console.log(`✅ jsQR enhanced scale=${scale}`); resolve(found); return; }
+
+            // high-contrast (binarize)
+            const { imageData: bin } = drawToCanvas(img, { scale });
+            enhanceImageData(bin, 120);
+            found = tryJsQR(jsQR, bin);
+            if (found) { console.log(`✅ jsQR binarized scale=${scale}`); resolve(found); return; }
+          }
+
+          // ── PASS 3: Multi-crop (center + corners + horizontal strips) ──
+          const crops = [
+            // center 60%
+            { sx: W * 0.2, sy: H * 0.2, sw: W * 0.6, sh: H * 0.6 },
+            // center 40%
+            { sx: W * 0.3, sy: H * 0.3, sw: W * 0.4, sh: H * 0.4 },
+            // top half
+            { sx: 0, sy: 0, sw: W, sh: H * 0.5 },
+            // bottom half
+            { sx: 0, sy: H * 0.5, sw: W, sh: H * 0.5 },
+            // top-left quadrant
+            { sx: 0, sy: 0, sw: W * 0.5, sh: H * 0.5 },
+            // top-right quadrant
+            { sx: W * 0.5, sy: 0, sw: W * 0.5, sh: H * 0.5 },
+            // bottom-left quadrant
+            { sx: 0, sy: H * 0.5, sw: W * 0.5, sh: H * 0.5 },
+            // bottom-right quadrant
+            { sx: W * 0.5, sy: H * 0.5, sw: W * 0.5, sh: H * 0.5 },
+          ];
+
+          for (const crop of crops) {
+            for (const contrastLevel of [0, 70, 130]) {
+              const { imageData } = drawToCanvas(img, { ...crop, maxSize: 1500 });
+              if (contrastLevel > 0) enhanceImageData(imageData, contrastLevel);
+              const found = tryJsQR(jsQR, imageData);
+              if (found) {
+                console.log(`✅ jsQR crop hit contrast=${contrastLevel}`, crop);
+                resolve(found);
+                return;
+              }
+            }
+          }
+
+          console.log("❌ All detection strategies exhausted.");
           resolve(null);
         } catch (err) {
           console.error("❌ Detection error:", err);
@@ -260,6 +326,7 @@ export default function MobileQRScannerPage() {
       img.src = URL.createObjectURL(file);
     });
   };
+
 
   const handleScanSuccess = async (qrData) => {
     const timestamp = new Date();
