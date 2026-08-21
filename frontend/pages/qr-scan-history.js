@@ -646,7 +646,14 @@ export default function QRScanHistoryPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {scans.map((scan) => (
-                      <tr key={scan.id} className="hover:bg-gray-50">
+                      <tr 
+                        key={scan.id} 
+                        className="hover:bg-gray-100 cursor-pointer transition-colors"
+                        onClick={() => {
+                          setSelectedScan(scan);
+                          setIsViewModalOpen(true);
+                        }}
+                      >
                         <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="flex items-center">
                             <Clock className="w-4 h-4 text-gray-400 mr-2" />
@@ -700,7 +707,8 @@ export default function QRScanHistoryPage() {
                         </td>
                         <td className="px-4 py-1.5 whitespace-nowrap text-sm font-medium">
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedScan(scan);
                               setIsViewModalOpen(true);
                             }}
