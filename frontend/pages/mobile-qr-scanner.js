@@ -168,7 +168,8 @@ export default function MobileQRScannerPage() {
   }, [cameraFacing]);
 
   const onQRSuccess = useCallback(async (decodedText) => {
-    if (processing || awaitingAcknowledgment || lastScanRef.current === decodedText) return;
+    // Ignore new frames if we are saving, showing a duplicate card, showing a success card, or within the debounce window
+    if (processing || awaitingAcknowledgment || scanResult || lastScanRef.current === decodedText) return;
 
     lastScanRef.current = decodedText;
     // Clear debounce after 3 seconds so they can scan the same ID again later if needed
@@ -194,11 +195,11 @@ export default function MobileQRScannerPage() {
       if (data.success) {
         setScanResult(decodedText);
         setStats((prev) => ({ ...prev, today: prev.today + 1, total: prev.total + 1 }));
-        await stopCamera();
+        // DO NOT stop camera hardware on iPhone, let it run in background
       } else if (data.isDuplicate) {
         setDuplicateInfo(data);
         setAwaitingAcknowledgment(true);
-        await stopCamera();
+        // DO NOT stop camera hardware
       } else {
         setError(data.error || "Failed to save scan");
       }
@@ -207,13 +208,13 @@ export default function MobileQRScannerPage() {
     } finally { 
       setProcessing(false); 
     }
-  }, [processing, awaitingAcknowledgment, selectedEventId, stopCamera]);
+  }, [processing, awaitingAcknowledgment, scanResult, selectedEventId]);
 
   const acknowledgeDuplicate = async () => {
     setDuplicateInfo(null);
     setAwaitingAcknowledgment(false);
     lastScanRef.current = null;
-    await startCamera();
+    // Camera is already running
   };
 
   const resetScanner = async () => {
@@ -222,7 +223,7 @@ export default function MobileQRScannerPage() {
     setDuplicateInfo(null);
     setAwaitingAcknowledgment(false);
     lastScanRef.current = null;
-    await startCamera();
+    // Camera is already running
   };
 
   if (isCheckingSubscription) {
@@ -279,62 +280,68 @@ export default function MobileQRScannerPage() {
           )}
         </div>
 
+        {/* ── Error Banner ── */}
         {error && (
-          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex gap-3 animate-in fade-in duration-200">
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex gap-3 animate-in fade-in duration-200 mb-4">
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
             <p className="text-sm text-red-700 font-semibold flex-1">{error}</p>
             <button onClick={() => setError(null)}><X className="w-4 h-4 text-red-400" /></button>
           </div>
         )}
 
-        {showResult ? (
-          <>
-            {duplicateInfo && awaitingAcknowledgment ? (() => {
-              const dup = parseQRMobile(duplicateInfo.existingScan?.qr_data || "");
-              return (
-                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-2xl animate-in zoom-in duration-300">
-                  <div className="text-center mb-4">
-                    <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3"><AlertCircle className="w-8 h-8 text-white" /></div>
-                    <h3 className="text-xl font-black">Duplicate Scan</h3>
-                    <p className="text-sm text-amber-100 font-medium">Already verified in this event</p>
+        {/* ── Main Scan Area (Always mounted) ── */}
+        <div className="relative">
+          {/* Result Cards Overlay */}
+          {showResult && (
+            <div className="absolute inset-0 z-20 bg-slate-50">
+              {duplicateInfo && awaitingAcknowledgment ? (() => {
+                const dup = parseQRMobile(duplicateInfo.existingScan?.qr_data || "");
+                return (
+                  <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-2xl animate-in zoom-in duration-300">
+                    <div className="text-center mb-4">
+                      <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3"><AlertCircle className="w-8 h-8 text-white" /></div>
+                      <h3 className="text-xl font-black">Duplicate Scan</h3>
+                      <p className="text-sm text-amber-100 font-medium">Already verified in this event</p>
+                    </div>
+                    <div className="bg-black/10 rounded-2xl p-4 mb-4 border border-white/10 space-y-2.5">
+                      {[["Household ID", dup.id, "font-mono"], ["Name", dup.name, ""], ["Address", dup.address, ""], ["Remarks", dup.remarks, "italic"], ["Staff", duplicateInfo.existingScan?.scanned_by_name || "Unknown", ""], ["Original Time", new Date(duplicateInfo.existingScan?.scan_timestamp).toLocaleString(), ""]].map(([label, val, extra]) => (
+                        <div key={label} className="pt-2 first:pt-0 border-t first:border-0 border-white/10">
+                          <div className="text-[10px] font-bold text-amber-200 uppercase tracking-widest mb-0.5">{label}</div>
+                          <div className={`text-sm font-bold text-white ${extra}`}>{val}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={acknowledgeDuplicate} className="w-full bg-white text-orange-600 py-4 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all">Acknowledge &amp; Continue Scanning</button>
                   </div>
-                  <div className="bg-black/10 rounded-2xl p-4 mb-4 border border-white/10 space-y-2.5">
-                    {[["Household ID", dup.id, "font-mono"], ["Name", dup.name, ""], ["Address", dup.address, ""], ["Remarks", dup.remarks, "italic"], ["Staff", duplicateInfo.existingScan?.scanned_by_name || "Unknown", ""], ["Original Time", new Date(duplicateInfo.existingScan?.scan_timestamp).toLocaleString(), ""]].map(([label, val, extra]) => (
-                      <div key={label} className="pt-2 first:pt-0 border-t first:border-0 border-white/10">
-                        <div className="text-[10px] font-bold text-amber-200 uppercase tracking-widest mb-0.5">{label}</div>
-                        <div className={`text-sm font-bold text-white ${extra}`}>{val}</div>
-                      </div>
-                    ))}
+                );
+              })() : (() => {
+                const parsed = parseQRMobile(scanResult);
+                return (
+                  <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-2xl animate-in zoom-in duration-300">
+                    <div className="text-center mb-4">
+                      <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle className="w-10 h-10 text-white" /></div>
+                      <h3 className="text-2xl font-black mb-1">Verification Success</h3>
+                      <p className="text-emerald-50 text-sm">Record added to event logs</p>
+                    </div>
+                    <div className="bg-black/10 rounded-2xl p-4 mb-5 border border-white/10 space-y-2.5">
+                      {[["Household ID", parsed.id, "font-mono"], ["Name", parsed.name, "text-base"], ["Address", parsed.address, ""], ["Remarks", parsed.remarks, "italic"]].map(([label, val, extra]) => (
+                        <div key={label} className="pt-2 first:pt-0 border-t first:border-0 border-white/10">
+                          <div className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest mb-0.5">{label}</div>
+                          <div className={`text-sm font-bold text-white ${extra}`}>{val}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={resetScanner} className="w-full bg-white text-emerald-600 py-4 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2">
+                      <Camera className="w-5 h-5" />Scan Next Individual
+                    </button>
                   </div>
-                  <button onClick={acknowledgeDuplicate} className="w-full bg-white text-orange-600 py-4 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all">Acknowledge &amp; Continue Scanning</button>
-                </div>
-              );
-            })() : (() => {
-              const parsed = parseQRMobile(scanResult);
-              return (
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-2xl animate-in zoom-in duration-300">
-                  <div className="text-center mb-4">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle className="w-10 h-10 text-white" /></div>
-                    <h3 className="text-2xl font-black mb-1">Verification Success</h3>
-                    <p className="text-emerald-50 text-sm">Record added to event logs</p>
-                  </div>
-                  <div className="bg-black/10 rounded-2xl p-4 mb-5 border border-white/10 space-y-2.5">
-                    {[["Household ID", parsed.id, "font-mono"], ["Name", parsed.name, "text-base"], ["Address", parsed.address, ""], ["Remarks", parsed.remarks, "italic"]].map(([label, val, extra]) => (
-                      <div key={label} className="pt-2 first:pt-0 border-t first:border-0 border-white/10">
-                        <div className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest mb-0.5">{label}</div>
-                        <div className={`text-sm font-bold text-white ${extra}`}>{val}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={resetScanner} className="w-full bg-white text-emerald-600 py-4 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2">
-                    <Camera className="w-5 h-5" />Scan Next Individual
-                  </button>
-                </div>
-              );
-            })()}
-          </>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Live Camera View (Hidden visually when results show, but always mounted) */}
+          <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative ${showResult ? 'opacity-0 pointer-events-none' : ''}`}>
             <div id="qr-reader" className="w-full" style={{ minHeight: cameraActive ? 320 : 0 }} />
             {processing && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
