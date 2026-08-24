@@ -376,7 +376,7 @@ export default function MobileQRScannerPage() {
               </div>
             )}
           </div>
-        )}
+        </div>
 
         {!showResult && (
           <button
