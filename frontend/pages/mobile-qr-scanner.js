@@ -168,11 +168,12 @@ export default function MobileQRScannerPage() {
   }, [cameraFacing]);
 
   const onQRSuccess = useCallback(async (decodedText) => {
-    if (lastScanRef.current === decodedText) return;
+    if (processing || awaitingAcknowledgment || lastScanRef.current === decodedText) return;
+
     lastScanRef.current = decodedText;
-    setTimeout(() => { lastScanRef.current = null; }, 2000);
-    if (processing || awaitingAcknowledgment) return;
-    if (scannerRef.current) { try { await scannerRef.current.pause(true); } catch (_) {} }
+    // Clear debounce after 3 seconds so they can scan the same ID again later if needed
+    setTimeout(() => { lastScanRef.current = null; }, 3000);
+
     setProcessing(true);
     setError(null);
     try {
@@ -200,11 +201,12 @@ export default function MobileQRScannerPage() {
         await stopCamera();
       } else {
         setError(data.error || "Failed to save scan");
-        if (scannerRef.current) { try { await scannerRef.current.resume(); } catch (_) {} }
       }
     } catch (err) {
       setError(`Network error: ${err.message}`);
-    } finally { setProcessing(false); }
+    } finally { 
+      setProcessing(false); 
+    }
   }, [processing, awaitingAcknowledgment, selectedEventId, stopCamera]);
 
   const acknowledgeDuplicate = async () => {
