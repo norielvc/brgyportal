@@ -123,16 +123,12 @@ router.get('/recent', authenticateToken, async (req, res) => {
 // POST /api/qr-scans - Save a new QR scan
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { qr_data, scan_timestamp, scanner_type, device_info, event_id } = req.body;
+    const { scan_timestamp, scanner_type, device_info, event_id } = req.body;
+    // ── Normalise qr_data: strip leading/trailing whitespace and CRLF ──
+    const qr_data = typeof req.body.qr_data === 'string' ? req.body.qr_data.trim() : req.body.qr_data;
     const user_id = req.user._id;
 
-    console.log('📱 Saving QR scan:', {
-      qr_data,
-      event_id,
-      scan_timestamp,
-      scanner_type,
-      user_id
-    });
+    console.log('📱 Saving QR scan:', { qr_data, event_id, scan_timestamp, scanner_type, user_id });
 
     // Validate required fields
     if (!qr_data || !scan_timestamp) {
@@ -193,7 +189,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const parsedData = parseQRData(qr_data);
 
-    // Check if this QR code has already been scanned
+    // Check if this QR code has already been scanned (use normalised qr_data)
     const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
     let duplicateQuery = supabase
       .from('qr_scans')
@@ -201,7 +197,7 @@ router.post('/', authenticateToken, async (req, res) => {
         *,
         users:scanned_by(id, email, first_name, last_name)
       `)
-      .eq('qr_data', qr_data)
+      .eq('qr_data', qr_data)  // qr_data is already trimmed above
       .eq('tenant_id', tenantId);
 
     // If an event is selected, check specifically within that event.

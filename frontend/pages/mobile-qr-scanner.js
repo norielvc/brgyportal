@@ -167,63 +167,82 @@ export default function MobileQRScannerPage() {
     if (cameraActive) { stopCamera().then(() => startCamera()); }
   }, [cameraFacing]);
 
-  const onQRSuccess = useCallback(async (decodedText) => {
-    // Ignore new frames if we are saving, showing a duplicate card, showing a success card, or within the debounce window
-    if (processing || awaitingAcknowledgment || scanResult || lastScanRef.current === decodedText) return;
+  // ── Refs for scanner callback guards (never stale, unlike React state) ──
+  const processingRef = useRef(false);       // true while API call is in-flight
+  const showingResultRef = useRef(false);    // true while result/duplicate card is visible
+  const selectedEventIdRef = useRef("");     // always current event ID
 
-    lastScanRef.current = decodedText;
-    // Clear debounce after 3 seconds so they can scan the same ID again later if needed
-    setTimeout(() => { lastScanRef.current = null; }, 3000);
+  // Keep selectedEventIdRef in sync
+  useEffect(() => { selectedEventIdRef.current = selectedEventId; }, [selectedEventId]);
+
+  // ── onQRSuccess — called by html5-qrcode at 15fps ──────────
+  // MUST use only refs (not React state) for guards — React state is stale inside this callback
+  const onQRSuccess = useCallback(async (decodedText) => {
+    const normalised = decodedText.trim(); // strip \r\n that QR codes sometimes add
+
+    // Gate 1: already processing, or showing a result card, or same code within debounce window
+    if (processingRef.current || showingResultRef.current || lastScanRef.current === normalised) return;
+
+    // Lock immediately — any frames arriving before this async fn finishes will be dropped
+    processingRef.current = true;
+    lastScanRef.current = normalised;
 
     setProcessing(true);
     setError(null);
     try {
       const timestamp = new Date();
       const token = getAuthToken();
+      const eventId = selectedEventIdRef.current;
       const res = await fetch(`${API_URL}/qr-scans`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          qr_data: decodedText,
+          qr_data: normalised,
           scan_timestamp: timestamp.toISOString(),
           scanner_type: "mobile-qr",
-          event_id: selectedEventId || null,
+          event_id: eventId || null,
           device_info: { userAgent: navigator.userAgent, platform: navigator.platform },
         }),
       });
       const data = await res.json();
       if (data.success) {
-        setScanResult(decodedText);
+        showingResultRef.current = true;
+        setScanResult(normalised);
         setStats((prev) => ({ ...prev, today: prev.today + 1, total: prev.total + 1 }));
-        // DO NOT stop camera hardware on iPhone, let it run in background
       } else if (data.isDuplicate) {
+        showingResultRef.current = true;
         setDuplicateInfo(data);
         setAwaitingAcknowledgment(true);
-        // DO NOT stop camera hardware
       } else {
+        // On error, clear the debounce so they can retry immediately
+        lastScanRef.current = null;
         setError(data.error || "Failed to save scan");
       }
     } catch (err) {
+      lastScanRef.current = null;
       setError(`Network error: ${err.message}`);
-    } finally { 
-      setProcessing(false); 
+    } finally {
+      processingRef.current = false;
+      setProcessing(false);
     }
-  }, [processing, awaitingAcknowledgment, scanResult, selectedEventId]);
+  }, []); // No deps — uses only refs, which are always current
 
   const acknowledgeDuplicate = async () => {
+    showingResultRef.current = false;
+    lastScanRef.current = null;
     setDuplicateInfo(null);
     setAwaitingAcknowledgment(false);
-    lastScanRef.current = null;
-    // Camera is already running
+    // Camera is already running — no restart needed
   };
 
   const resetScanner = async () => {
+    showingResultRef.current = false;
+    lastScanRef.current = null;
     setScanResult(null);
     setError(null);
     setDuplicateInfo(null);
     setAwaitingAcknowledgment(false);
-    lastScanRef.current = null;
-    // Camera is already running
+    // Camera is already running — no restart needed
   };
 
   if (isCheckingSubscription) {
