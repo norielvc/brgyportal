@@ -272,7 +272,7 @@ export default function MobileQRScannerPage() {
               className="w-full p-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Select an event —</option>
-              {events.map((e) => (<option key={e.id} value={e.id}>{e.event_name}</option>))}
+              {events.map((e) => (<option key={e.id} value={e.id}>{e.name || 'Unnamed Event'}</option>))}
             </select>
           )}
         </div>
