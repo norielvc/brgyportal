@@ -43,7 +43,7 @@ const TYPE_LABELS = {
 const STATUS_CONFIG = {
   pending: {
     label: "Pending Review",
-    badgeClass: "text-amber-700 bg-amber-50 border border-amber-200/80",
+    badgeClass: "text-gray-700 bg-gray-100 border border-gray-200",
     dotClass: "bg-amber-500",
   },
   approved: {
@@ -53,8 +53,8 @@ const STATUS_CONFIG = {
   },
   released: {
     label: "Claimed / Released",
-    badgeClass: "text-blue-700 bg-blue-50 border border-blue-200/80",
-    dotClass: "bg-blue-500",
+    badgeClass: "text-gray-700 bg-gray-100 border border-gray-200",
+    dotClass: "bg-blue-600",
   },
   rejected: {
     label: "Disapproved / Rejected",
@@ -63,8 +63,8 @@ const STATUS_CONFIG = {
   },
   returned: {
     label: "Returned for Rectification",
-    badgeClass: "text-orange-700 bg-orange-50 border border-orange-200/80",
-    dotClass: "bg-orange-500",
+    badgeClass: "text-amber-700 bg-amber-50 border border-amber-200/80",
+    dotClass: "bg-amber-500",
   },
   cancelled: {
     label: "Cancelled",
@@ -73,8 +73,8 @@ const STATUS_CONFIG = {
   },
   forwarded: {
     label: "Forwarded to Office",
-    badgeClass: "text-purple-700 bg-purple-50 border border-purple-200/80",
-    dotClass: "bg-purple-500",
+    badgeClass: "text-gray-700 bg-gray-100 border border-gray-200",
+    dotClass: "bg-[#03254c]",
   },
 };
 
@@ -248,54 +248,48 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 pb-12 font-sans text-gray-900">
       {/* 1. OFFICIAL LGU EXECUTIVE COMMAND HEADER & LIVE PST CLOCK */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#032042] via-[#052d5b] to-[#0a3f78] p-6 text-white shadow-lg border border-[#0d4f96]">
-        {/* Subtle Decorative Background Pattern */}
-        <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute top-0 right-1/4 w-32 h-32 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      <div className="rounded-2xl bg-[#03254c] p-6 text-white shadow-sm border border-[#063b78]">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           {/* LGU Title & Identity */}
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-md flex-shrink-0 flex items-center justify-center">
-              <div className="w-full h-full bg-[#032042] rounded-[14px] flex items-center justify-center">
-                <Landmark className="w-7 h-7 text-amber-400" />
-              </div>
+            <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/15 flex-shrink-0 flex items-center justify-center">
+              <Landmark className="w-6 h-6 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-300 bg-amber-400/15 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                <span className="text-[10px] font-black uppercase tracking-wider text-gray-200 bg-white/10 px-2 py-0.5 rounded border border-white/15">
                   Republic of the Philippines
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-200 flex items-center gap-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3 text-emerald-400" />
                   ARTA & DILG e-Governance Portal
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1 drop-shadow-sm">
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
                 Barangay Executive Command Center
               </h1>
-              <p className="text-xs text-blue-100/80 font-medium">
-                Real-Time Civil Registry, Clearance Processing & SLA Performance Tracking
+              <p className="text-xs text-gray-300 font-medium">
+                Civil Registry, Clearance Processing & SLA Performance Tracking
               </p>
             </div>
           </div>
 
-          {/* Live Philippine Standard Time (PST) & Operational Badge */}
-          <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end justify-between gap-3 w-full lg:w-auto bg-black/25 backdrop-blur-md px-5 py-3.5 rounded-xl border border-white/10">
+          {/* Live Philippine Standard Time (PST) */}
+          <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end justify-between gap-2 w-full lg:w-auto bg-black/20 px-4 py-3 rounded-xl border border-white/10">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span className="text-[10px] font-extrabold tracking-wider uppercase text-emerald-300">
-                Live LGU Operations • Online
+              <span className="text-[10px] font-bold tracking-wider uppercase text-emerald-300">
+                Live Operations • Online
               </span>
             </div>
             <div className="text-left lg:text-right">
-              <p className="text-lg font-black tracking-tight text-white tabular-nums">
+              <p className="text-base font-black tracking-tight text-white tabular-nums">
                 {pstTime || "—"}
               </p>
-              <p className="text-[11px] text-blue-200/90 font-semibold tracking-wide">
+              <p className="text-[10px] text-gray-300 font-medium">
                 {pstDate || "Philippine Standard Time (PST, GMT+8)"}
               </p>
             </div>
@@ -303,46 +297,46 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 2. EXECUTIVE QUICK ACTION COMMAND BAR */}
+      {/* 2. EXECUTIVE QUICK ACTION COMMAND BAR (Clean Neutral Design) */}
       <div className="bg-white rounded-2xl p-3 border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => router.push("/requests")}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#03254c] text-white rounded-xl text-xs font-bold hover:bg-[#053870] active:scale-[0.98] transition-all shadow-sm"
           >
-            <FilePlus2 className="w-4 h-4 text-amber-400" />
+            <FilePlus2 className="w-3.5 h-3.5 text-gray-200" />
             <span>Issue Certificate / Request</span>
           </button>
 
           <button
             onClick={() => router.push("/mobile-qr-scanner")}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
           >
-            <QrCode className="w-4 h-4 text-emerald-600" />
+            <QrCode className="w-3.5 h-3.5 text-gray-600" />
             <span>Scan Citizen QR</span>
           </button>
 
           <button
             onClick={() => router.push("/residents")}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
           >
-            <Users className="w-4 h-4 text-gray-500" />
+            <Users className="w-3.5 h-3.5 text-gray-600" />
             <span>Resident Census</span>
           </button>
 
           <button
             onClick={() => router.push("/pickup-management")}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
           >
-            <PackageCheck className="w-4 h-4 text-blue-600" />
+            <PackageCheck className="w-3.5 h-3.5 text-gray-600" />
             <span>Pickup Counter</span>
           </button>
 
           <button
             onClick={() => router.push("/help-desk")}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200/80 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
           >
-            <HelpCircle className="w-4 h-4 text-red-500" />
+            <HelpCircle className="w-3.5 h-3.5 text-gray-600" />
             <span>E-Sumbong Blotter</span>
           </button>
         </div>
@@ -353,8 +347,8 @@ export default function Dashboard() {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
               activeFilterCount > 0 || showFilters
-                ? "bg-blue-50 text-[#03254c] border-blue-200"
-                : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                ? "bg-gray-100 text-[#03254c] border-gray-300"
+                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
             }`}
           >
             <Filter className="w-3.5 h-3.5" />
@@ -369,11 +363,11 @@ export default function Dashboard() {
           <button
             onClick={() => fetchData(true)}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 active:scale-[0.98] transition-all disabled:opacity-50"
             title="Refresh analytics data"
           >
             <RefreshCw
-              className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-blue-600" : "text-gray-500"}`}
+              className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-gray-600" : "text-gray-500"}`}
             />
             <span className="hidden sm:inline">
               {refreshing ? "Syncing..." : "Refresh"}
@@ -384,10 +378,10 @@ export default function Dashboard() {
 
       {/* EXPANDABLE FILTER DRAWER */}
       {showFilters && (
-        <div className="bg-white rounded-2xl p-5 border border-blue-100 shadow-sm space-y-4">
+        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-black uppercase tracking-wider text-gray-800 flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5 text-blue-600" />
+              <Filter className="w-3.5 h-3.5 text-gray-600" />
               Filter Analytics Data
             </h4>
             {activeFilterCount > 0 && (
@@ -408,7 +402,7 @@ export default function Dashboard() {
                 type="date"
                 value={filters.dateFrom}
                 onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#03254c] focus:outline-none"
               />
             </div>
             <div>
@@ -419,7 +413,7 @@ export default function Dashboard() {
                 type="date"
                 value={filters.dateTo}
                 onChange={(e) => handleFilterChange("dateTo", e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#03254c] focus:outline-none"
               />
             </div>
             <div>
@@ -431,7 +425,7 @@ export default function Dashboard() {
                 onChange={(e) =>
                   handleFilterChange("certificateType", e.target.value)
                 }
-                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#03254c] focus:outline-none bg-white"
               >
                 <option value="">All Certificate Types</option>
                 {Object.entries(TYPE_LABELS).map(([k, label]) => (
@@ -448,7 +442,7 @@ export default function Dashboard() {
               <select
                 value={filters.status}
                 onChange={(e) => handleFilterChange("status", e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#03254c] focus:outline-none bg-white"
               >
                 <option value="">All Statuses</option>
                 <option value="pending">Pending Review</option>
@@ -462,28 +456,27 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* 3. STRUCTURED GOVERNANCE KPI COMMAND GRID (3 DOMAINS) */}
+      {/* 3. STRUCTURED GOVERNANCE KPI COMMAND GRID (Clean Refined Neutral Theme) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* DOMAIN A: CIVIL REGISTRY & INTAKE STREAM */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#03254c] to-blue-600" />
+        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-blue-50 text-[#03254c]">
+                <div className="p-2 rounded-xl bg-gray-100 text-gray-700">
                   <FileText className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-gray-900">
                     Civil Registry & Intake
                   </h3>
-                  <p className="text-[10px] text-gray-400 font-semibold">
+                  <p className="text-[10px] text-gray-400 font-medium">
                     Applications filed & logged
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                Live Inflow
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                Inflow
               </span>
             </div>
 
@@ -491,7 +484,7 @@ export default function Dashboard() {
               {/* Total Inflow */}
               <div
                 onClick={() => router.push("/requests")}
-                className="p-3 bg-gray-50/80 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
+                className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
               >
                 <p className="text-[10px] font-bold text-gray-500 uppercase">
                   All Time
@@ -500,22 +493,22 @@ export default function Dashboard() {
                   {ov.totalRequests ?? 0}
                 </p>
                 <p className="text-[10px] text-gray-400 mt-1 font-medium truncate">
-                  Cumulative records
+                  Cumulative
                 </p>
               </div>
 
               {/* Today's Intake */}
               <div
                 onClick={() => router.push("/requests")}
-                className="p-3 bg-indigo-50/70 hover:bg-indigo-100/80 rounded-xl border border-indigo-100/80 cursor-pointer transition-all"
+                className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
               >
-                <p className="text-[10px] font-bold text-indigo-700 uppercase">
+                <p className="text-[10px] font-bold text-gray-700 uppercase">
                   Today
                 </p>
-                <p className="text-2xl font-black text-indigo-900 tabular-nums mt-0.5">
+                <p className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">
                   {ov.todayCount ?? 0}
                 </p>
-                <p className="text-[10px] text-indigo-600/80 mt-1 font-semibold truncate">
+                <p className="text-[10px] text-gray-500 mt-1 font-medium truncate">
                   {ov.yesterdayCount ?? 0} yesterday
                 </p>
               </div>
@@ -523,17 +516,17 @@ export default function Dashboard() {
               {/* In Progress */}
               <div
                 onClick={() => router.push("/requests?status=pending")}
-                className="p-3 bg-amber-50/70 hover:bg-amber-100/80 rounded-xl border border-amber-100/80 cursor-pointer transition-all"
+                className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
               >
-                <p className="text-[10px] font-bold text-amber-700 uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <p className="text-[10px] font-bold text-gray-700 uppercase flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                   Active
                 </p>
-                <p className="text-2xl font-black text-amber-900 tabular-nums mt-0.5">
+                <p className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">
                   {ov.pending ?? 0}
                 </p>
-                <p className="text-[10px] text-amber-700/80 mt-1 font-medium truncate">
-                  Under processing
+                <p className="text-[10px] text-gray-500 mt-1 font-medium truncate">
+                  Under review
                 </p>
               </div>
             </div>
@@ -544,13 +537,7 @@ export default function Dashboard() {
             <span className="font-bold text-gray-900 flex items-center gap-1">
               {ov.thisMonth ?? 0} filed this month
               {growthBadge && (
-                <span
-                  className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
-                    ov.monthGrowth >= 0
-                      ? "text-emerald-700 bg-emerald-50"
-                      : "text-red-700 bg-red-50"
-                  }`}
-                >
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-gray-100 text-gray-700 border border-gray-200">
                   {growthBadge}
                 </span>
               )}
@@ -559,24 +546,23 @@ export default function Dashboard() {
         </div>
 
         {/* DOMAIN B: PUBLIC SERVICE DELIVERY & SLA COMPLIANCE */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-600" />
+        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+                <div className="p-2 rounded-xl bg-gray-100 text-gray-700">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-gray-900">
                     Service Delivery & SLA
                   </h3>
-                  <p className="text-[10px] text-gray-400 font-semibold">
+                  <p className="text-[10px] text-gray-400 font-medium">
                     ARTA compliance & releases
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
                 SLA Track
               </span>
             </div>
@@ -585,15 +571,15 @@ export default function Dashboard() {
               {/* Approved */}
               <div
                 onClick={() => router.push("/requests?status=approved")}
-                className="p-3 bg-emerald-50/70 hover:bg-emerald-100/80 rounded-xl border border-emerald-100/80 cursor-pointer transition-all"
+                className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
               >
-                <p className="text-[10px] font-bold text-emerald-700 uppercase">
+                <p className="text-[10px] font-bold text-gray-700 uppercase">
                   Approved
                 </p>
-                <p className="text-2xl font-black text-emerald-900 tabular-nums mt-0.5">
+                <p className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">
                   {ov.approved ?? 0}
                 </p>
-                <p className="text-[10px] text-emerald-600 mt-1 font-semibold truncate">
+                <p className="text-[10px] text-gray-500 mt-1 font-medium truncate">
                   Finalized seals
                 </p>
               </div>
@@ -601,28 +587,28 @@ export default function Dashboard() {
               {/* Released */}
               <div
                 onClick={() => router.push("/requests?status=released")}
-                className="p-3 bg-blue-50/70 hover:bg-blue-100/80 rounded-xl border border-blue-100/80 cursor-pointer transition-all"
+                className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
               >
-                <p className="text-[10px] font-bold text-blue-700 uppercase">
+                <p className="text-[10px] font-bold text-gray-700 uppercase">
                   Released
                 </p>
-                <p className="text-2xl font-black text-blue-900 tabular-nums mt-0.5">
+                <p className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">
                   {ov.released ?? 0}
                 </p>
-                <p className="text-[10px] text-blue-600 mt-1 font-semibold truncate">
+                <p className="text-[10px] text-gray-500 mt-1 font-medium truncate">
                   Handed to citizen
                 </p>
               </div>
 
               {/* Avg Turnaround */}
-              <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-100/80">
-                <p className="text-[10px] font-bold text-teal-700 uppercase">
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <p className="text-[10px] font-bold text-gray-700 uppercase">
                   Avg Duration
                 </p>
-                <p className="text-2xl font-black text-teal-900 tabular-nums mt-0.5">
+                <p className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">
                   {ov.avgProcessingDays != null ? `${ov.avgProcessingDays}d` : "0d"}
                 </p>
-                <p className="text-[10px] text-teal-600 mt-1 font-semibold truncate">
+                <p className="text-[10px] text-gray-500 mt-1 font-medium truncate">
                   ARTA Benchmark
                 </p>
               </div>
@@ -631,27 +617,26 @@ export default function Dashboard() {
 
           <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px]">
             <span className="text-gray-500 font-medium">Completion Rate:</span>
-            <span className="font-bold text-emerald-700 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="font-bold text-gray-900 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               {ov.completionRate ?? 0}% Citizen Satisfaction
             </span>
           </div>
         </div>
 
         {/* DOMAIN C: GOVERNANCE BACKLOG & ATTENTION ITEMS */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 to-rose-600" />
+        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-rose-50 text-rose-700">
+                <div className="p-2 rounded-xl bg-gray-100 text-gray-700">
                   <AlertTriangle className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-gray-900">
                     Governance Attention
                   </h3>
-                  <p className="text-[10px] text-gray-400 font-semibold">
+                  <p className="text-[10px] text-gray-400 font-medium">
                     Overdue backlog & rectifications
                   </p>
                 </div>
@@ -659,8 +644,8 @@ export default function Dashboard() {
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   (ov.overdueCount || 0) > 0
-                    ? "bg-rose-100 text-rose-700 border border-rose-200 animate-pulse"
-                    : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                    ? "bg-rose-50 text-rose-700 border border-rose-200"
+                    : "bg-gray-100 text-gray-700 border border-gray-200"
                 }`}
               >
                 {(ov.overdueCount || 0) > 0 ? "Action Required" : "Compliant"}
@@ -673,17 +658,21 @@ export default function Dashboard() {
                 onClick={() => router.push("/requests?overdue=true")}
                 className={`p-3 rounded-xl border cursor-pointer transition-all ${
                   (ov.overdueCount || 0) > 0
-                    ? "bg-rose-50/90 border-rose-200 hover:bg-rose-100"
-                    : "bg-gray-50/80 border-gray-100"
+                    ? "bg-rose-50/60 border-rose-200 hover:bg-rose-50"
+                    : "bg-gray-50 hover:bg-gray-100 border-gray-100"
                 }`}
               >
-                <p className="text-[10px] font-bold text-rose-700 uppercase">
+                <p className="text-[10px] font-bold text-gray-700 uppercase">
                   Overdue
                 </p>
-                <p className="text-2xl font-black text-rose-900 tabular-nums mt-0.5">
+                <p
+                  className={`text-2xl font-black tabular-nums mt-0.5 ${
+                    (ov.overdueCount || 0) > 0 ? "text-rose-700" : "text-gray-900"
+                  }`}
+                >
                   {ov.overdueCount ?? 0}
                 </p>
-                <p className="text-[10px] text-rose-600 mt-1 font-semibold truncate">
+                <p className="text-[10px] text-gray-500 mt-1 font-medium truncate">
                   &gt;7 days pending
                 </p>
               </div>
@@ -691,15 +680,15 @@ export default function Dashboard() {
               {/* Returned */}
               <div
                 onClick={() => router.push("/requests?status=returned")}
-                className="p-3 bg-orange-50/70 hover:bg-orange-100/80 rounded-xl border border-orange-100/80 cursor-pointer transition-all"
+                className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
               >
-                <p className="text-[10px] font-bold text-orange-700 uppercase">
+                <p className="text-[10px] font-bold text-gray-700 uppercase">
                   Returned
                 </p>
-                <p className="text-2xl font-black text-orange-900 tabular-nums mt-0.5">
+                <p className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">
                   {ov.returned ?? 0}
                 </p>
-                <p className="text-[10px] text-orange-600 mt-1 font-semibold truncate">
+                <p className="text-[10px] text-gray-500 mt-1 font-medium truncate">
                   Citizen req missing
                 </p>
               </div>
@@ -707,9 +696,9 @@ export default function Dashboard() {
               {/* Rejected */}
               <div
                 onClick={() => router.push("/requests?status=rejected")}
-                className="p-3 bg-gray-50/80 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
+                className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
               >
-                <p className="text-[10px] font-bold text-gray-600 uppercase">
+                <p className="text-[10px] font-bold text-gray-700 uppercase">
                   Disapproved
                 </p>
                 <p className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">
@@ -724,8 +713,8 @@ export default function Dashboard() {
 
           <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px]">
             <span className="text-gray-500 font-medium">Return Rate:</span>
-            <span className="font-bold text-orange-700">
-              {ov.returnRate ?? 0}% Requires Citizen Follow-up
+            <span className="font-bold text-gray-800">
+              {ov.returnRate ?? 0}% Follow-up rate
             </span>
           </div>
         </div>
@@ -740,7 +729,7 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
               <div>
                 <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-blue-600" />
+                  <Activity className="w-4 h-4 text-gray-700" />
                   7-Day Public Service Intake & Output
                 </h3>
                 <p className="text-xs text-gray-400 font-medium">
@@ -749,11 +738,11 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-4 text-xs font-semibold text-gray-500">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-md bg-blue-600" />
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#03254c]" />
                   Total Intake
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-md bg-emerald-500" />
+                  <span className="w-2.5 h-2.5 rounded-sm bg-gray-300" />
                   Certified / Approved
                 </span>
               </div>
@@ -773,7 +762,7 @@ export default function Dashboard() {
                   >
                     {/* Hover Tooltip */}
                     <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg whitespace-nowrap z-20 pointer-events-none shadow-xl">
-                      <p className="font-extrabold text-amber-300">{d.date}</p>
+                      <p className="font-extrabold text-gray-200">{d.date}</p>
                       <p>{d.count} requests filed</p>
                       <p>{d.approved || 0} approved</p>
                     </div>
@@ -782,18 +771,14 @@ export default function Dashboard() {
                     <div className="w-full flex items-end justify-center gap-1 h-36">
                       {/* Total Inflow Bar */}
                       <div
-                        className={`w-1/2 rounded-t-md transition-all duration-300 ${
-                          isToday
-                            ? "bg-blue-600 group-hover:bg-blue-700"
-                            : "bg-blue-400/70 group-hover:bg-blue-600"
-                        }`}
+                        className="w-1/2 rounded-t-sm bg-[#03254c] group-hover:bg-[#053870] transition-all duration-300"
                         style={{
                           height: `${Math.max(totalPct, 6)}%`,
                         }}
                       />
                       {/* Approved Bar */}
                       <div
-                        className="w-1/2 rounded-t-md bg-emerald-500/80 group-hover:bg-emerald-600 transition-all duration-300"
+                        className="w-1/2 rounded-t-sm bg-gray-300 group-hover:bg-gray-400 transition-all duration-300"
                         style={{
                           height: `${Math.max(approvedPct, 6)}%`,
                         }}
@@ -802,7 +787,7 @@ export default function Dashboard() {
 
                     <span
                       className={`text-[10px] font-bold mt-2 uppercase ${
-                        isToday ? "text-blue-700 font-black" : "text-gray-400"
+                        isToday ? "text-[#03254c] font-black" : "text-gray-400"
                       }`}
                     >
                       {isToday ? "Today" : d.date.split(" ")[0]}
@@ -831,7 +816,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-indigo-600" />
+                  <Layers className="w-4 h-4 text-gray-700" />
                   Civil Registry & Certificate Issuance Mix
                 </h3>
                 <p className="text-xs text-gray-400 font-medium">
@@ -868,9 +853,9 @@ export default function Dashboard() {
                         </span>
                       </div>
                     </div>
-                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-700"
+                        className="h-full rounded-full bg-[#03254c] transition-all duration-700"
                         style={{ width: `${Math.max(pct, 4)}%` }}
                       />
                     </div>
@@ -892,31 +877,31 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 flex items-center gap-2">
-                <Clock3 className="w-4 h-4 text-amber-500" />
+                <Clock3 className="w-4 h-4 text-gray-700" />
                 ARTA Workflow Stages
               </h3>
-              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+              <span className="text-[10px] font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
                 {ov.pending || 0} In Progress
               </span>
             </div>
             <p className="text-xs text-gray-400 font-medium mb-5">
-              Active bottlenecks across administrative processing steps
+              Active processing steps across the administrative pipeline
             </p>
 
             <div className="space-y-4">
               {(data?.byStep || []).slice(0, 6).map((s, i) => {
                 const pct = Math.round((s.count / (ov.pending || 1)) * 100);
                 return (
-                  <div key={i} className="p-2.5 rounded-xl bg-gray-50/70 border border-gray-100">
+                  <div key={i} className="p-2.5 rounded-xl bg-gray-50 border border-gray-100">
                     <div className="flex justify-between text-xs font-bold text-gray-700 mb-1.5">
                       <span className="truncate pr-2">{s.step}</span>
-                      <span className="text-amber-700 font-black tabular-nums">
+                      <span className="text-gray-900 font-black tabular-nums">
                         {s.count}
                       </span>
                     </div>
-                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-amber-500 transition-all duration-700"
+                        className="h-full rounded-full bg-[#03254c] transition-all duration-700"
                         style={{ width: `${Math.max(pct, 5)}%` }}
                       />
                     </div>
@@ -925,8 +910,8 @@ export default function Dashboard() {
               })}
               {(data?.byStep || []).length === 0 && (
                 <div className="text-center py-6">
-                  <CheckCircle className="w-7 h-7 text-emerald-400 mx-auto mb-1.5" />
-                  <p className="text-xs text-gray-500 font-semibold">
+                  <CheckCircle className="w-7 h-7 text-gray-400 mx-auto mb-1.5" />
+                  <p className="text-xs text-gray-600 font-semibold">
                     Workflow Clear
                   </p>
                   <p className="text-[11px] text-gray-400">
@@ -941,13 +926,13 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-rose-500" />
+                <AlertTriangle className="w-4 h-4 text-gray-700" />
                 Urgent Action Queue
               </h3>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   (ov.overdueCount || 0) > 0
-                    ? "bg-rose-100 text-rose-700 font-black"
+                    ? "bg-rose-50 text-rose-700 border border-rose-200 font-black"
                     : "bg-gray-100 text-gray-600"
                 }`}
               >
@@ -960,7 +945,7 @@ export default function Dashboard() {
                 <div
                   key={i}
                   onClick={() => router.push("/requests")}
-                  className="p-3 rounded-xl border border-rose-100 bg-rose-50/40 hover:bg-rose-50/90 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                  className="p-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-all cursor-pointer flex items-center justify-between gap-3 group"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-black text-gray-900 truncate">
@@ -971,10 +956,10 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <span className="text-[10px] font-extrabold text-rose-600 bg-rose-100/80 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-extrabold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
                       +{r.daysOverdue}d Late
                     </span>
-                    <p className="text-[9px] text-gray-400 font-bold uppercase mt-1 group-hover:text-rose-600 flex items-center justify-end gap-0.5">
+                    <p className="text-[9px] text-gray-400 font-bold uppercase mt-1 group-hover:text-gray-700 flex items-center justify-end gap-0.5">
                       Expedite <ChevronRight className="w-2.5 h-2.5" />
                     </p>
                   </div>
@@ -983,7 +968,7 @@ export default function Dashboard() {
 
               {(data?.overdueRequests || []).length === 0 && (
                 <div className="text-center py-6">
-                  <ShieldCheck className="w-7 h-7 text-emerald-400 mx-auto mb-1.5" />
+                  <ShieldCheck className="w-7 h-7 text-gray-400 mx-auto mb-1.5" />
                   <p className="text-xs text-gray-600 font-bold">
                     Zero SLA Breaches
                   </p>
@@ -999,7 +984,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 flex items-center gap-2">
-                <Award className="w-4 h-4 text-amber-500" />
+                <Award className="w-4 h-4 text-gray-700" />
                 Duty Staff Output
               </h3>
               <span className="text-[10px] font-bold text-gray-400 uppercase">
@@ -1010,15 +995,7 @@ export default function Dashboard() {
             <div className="space-y-3">
               {(data?.topStaff || []).slice(0, 4).map((s, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div
-                    className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center flex-shrink-0 ${
-                      i === 0
-                        ? "bg-amber-100 text-amber-800"
-                        : i === 1
-                        ? "bg-gray-200 text-gray-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
+                  <div className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center flex-shrink-0 bg-gray-100 text-gray-700 border border-gray-200">
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -1028,7 +1005,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2 mt-0.5">
                       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-blue-600"
+                          className="h-full rounded-full bg-[#03254c]"
                           style={{
                             width: `${
                               (s.completed /
@@ -1110,9 +1087,9 @@ export default function Dashboard() {
                   <tr
                     key={i}
                     onClick={() => router.push("/requests")}
-                    className="hover:bg-blue-50/40 transition-colors cursor-pointer group"
+                    className="hover:bg-gray-50 transition-colors cursor-pointer group"
                   >
-                    <td className="py-3.5 pr-4 font-mono font-bold text-[#03254c] group-hover:text-blue-700">
+                    <td className="py-3.5 pr-4 font-mono font-bold text-[#03254c] group-hover:underline">
                       {r.referenceNumber}
                     </td>
                     <td className="py-3.5 px-4 font-bold text-gray-900">
@@ -1155,13 +1132,13 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 6. LGU CLOUD INFRASTRUCTURE & MUNICIPAL CAPACITY (Relocated & Restyled) */}
+      {/* 6. LGU CLOUD INFRASTRUCTURE & MUNICIPAL CAPACITY (Clean Neutral Card) */}
       {subData && (
         <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4 w-full lg:w-auto">
-              <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
-                <Zap className="w-5 h-5 text-[#03254c]" />
+              <div className="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                <Zap className="w-4 h-4 text-gray-700" />
               </div>
               <div>
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -1181,14 +1158,14 @@ export default function Dashboard() {
               <div>
                 <div className="flex justify-between items-center text-xs font-bold text-gray-600 mb-1.5">
                   <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-gray-500">
-                    <Activity className="w-3 h-3 text-blue-600" /> Monthly Transaction Limit
+                    <Activity className="w-3 h-3 text-gray-500" /> Monthly Limit
                   </span>
                   <span className="text-gray-900 font-black tabular-nums">
                     {subData.requests?.used ?? 0} /{" "}
                     {subData.requests?.isUnlimited ? "∞" : subData.requests?.total}
                   </span>
                 </div>
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#03254c] rounded-full transition-all duration-500"
                     style={{
@@ -1210,16 +1187,16 @@ export default function Dashboard() {
               <div>
                 <div className="flex justify-between items-center text-xs font-bold text-gray-600 mb-1.5">
                   <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-gray-500">
-                    <Users className="w-3 h-3 text-indigo-600" /> Authorized Staff Seats
+                    <Users className="w-3 h-3 text-gray-500" /> Staff Slots
                   </span>
                   <span className="text-gray-900 font-black tabular-nums">
                     {subData.staff?.used ?? 0} /{" "}
                     {subData.staff?.isUnlimited ? "∞" : subData.staff?.total}
                   </span>
                 </div>
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+                    className="h-full bg-gray-700 rounded-full transition-all duration-500"
                     style={{
                       width: `${
                         subData.staff?.isUnlimited
