@@ -207,3 +207,79 @@
     text-wrap: balance;
   }
 }
+
+/* QR Scanner System Styles (Ported & Enhanced) */
+.camera-focus-reticle {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border: 2.5px solid #38bdf8;
+  border-radius: 12px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: focusReticle 0.6s ease-out forwards;
+  z-index: 30;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6), inset 0 0 8px rgba(56, 189, 248, 0.3);
+}
+
+@keyframes focusReticle {
+  0% {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes pulse-live {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.live-indicator-pulse {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: #10b981;
+  border-radius: 50%;
+  animation: pulse-live 1.6s infinite;
+}
+
+#dist-scanner-camera {
+  position: relative;
+  width: 100% !important;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+#dist-scanner-camera video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 1rem;
+}
+
+#dist-scanner-camera img[alt="Info icon"] {
+  display: none !important;
+}
+
+#dist-scanner-camera div[style*="text-align"] {
+  display: none !important;
+}
+
