@@ -204,6 +204,8 @@ export default function Sidebar({
   className,
   isMobileMenuOpen,
   setIsMobileMenuOpen,
+  onOpenInstall,
+  isInstalled,
 }) {
   const router = useRouter();
   // Persist expanded state across re-mounts (page navigations)
@@ -538,6 +540,23 @@ export default function Sidebar({
             </p>
           </div>
         </div>
+
+        {onOpenInstall && !isInstalled && (
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              onOpenInstall();
+            }}
+            className="flex items-center w-full px-4 py-2.5 mb-2 text-xs font-black text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-xl transition-all duration-300 group"
+          >
+            <Smartphone className="w-4 h-4 mr-2.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+            <div className="flex-1 text-left">
+              <span className="block">Install Mobile App</span>
+              <span className="text-[9px] text-blue-200/60 font-semibold block">iOS / Android PWA</span>
+            </div>
+          </button>
+        )}
 
         {role && ["superadmin", "super_admin"].includes(role) && (
           <button

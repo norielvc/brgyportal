@@ -66,6 +66,9 @@ import CohabitationCertificateModal from "@/components/Forms/CohabitationCertifi
 import MedicoLegalModal from "@/components/Forms/MedicoLegalModal";
 import SamePersonCertificateModal from "@/components/Forms/SamePersonCertificateModal";
 import ESumbongModal from "@/components/Forms/ESumbongModal";
+import ResidentMobileActionBar from "@/components/Portal/ResidentMobileActionBar";
+import InstallAppModal from "@/components/UI/InstallAppModal";
+import usePwa from "@/lib/usePwa";
 import useScrollLock from "@/lib/useScrollLock";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
 
@@ -73,6 +76,16 @@ export default function PortalPageContent({ initialTenantId }) {
   const router = useRouter();
   const [tenantId, setTenantId] = useState((initialTenantId || "ibaoeste").toLowerCase());
   const [showESumbong, setShowESumbong] = useState(false);
+
+  const {
+    isInstallable,
+    isInstalled,
+    isIOS,
+    isAndroid,
+    showInstallModal,
+    setShowInstallModal,
+    promptInstall,
+  } = usePwa();
 
   const [tenantConfig, setTenantConfig] = useState({
     name: "BARANGAY",
@@ -1354,6 +1367,24 @@ export default function PortalPageContent({ initialTenantId }) {
                 <Search className="w-3.5 h-3.5" />
                 Track Request
               </a>
+
+              {/* PWA Install Button (Desktop/Tablet) */}
+              {!isInstalled && (
+                <button
+                  onClick={promptInstall}
+                  title="Install BrgyDesk App on your device"
+                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-bold transition-all shadow-sm hover:shadow"
+                  style={{
+                    backgroundColor: `${tenantConfig.primaryColor}15`,
+                    color: tenantConfig.primaryColor,
+                    border: `1px solid ${tenantConfig.primaryColor}30`,
+                  }}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Install App</span>
+                </button>
+              )}
+
               <button
                 onClick={() => router.push("/login")}
                 className="px-5 py-1.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 ml-1"
@@ -1409,6 +1440,20 @@ export default function PortalPageContent({ initialTenantId }) {
               <Search className="w-5 h-5" />
               Track My Request
             </a>
+
+            {!isInstalled && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  promptInstall();
+                }}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-blue-700 bg-blue-50 border border-blue-200 shadow-sm transition-all"
+              >
+                <Smartphone className="w-4 h-4 text-blue-600" />
+                Install Mobile App (PWA)
+              </button>
+            )}
+
             <button
               onClick={() => router.push("/login")}
               className="w-full text-white px-6 py-3 rounded-lg font-semibold text-sm mt-4"
@@ -4505,6 +4550,31 @@ export default function PortalPageContent({ initialTenantId }) {
         isOpen={showESumbong}
         onClose={() => setShowESumbong(false)}
         publicMode={true}
+      />
+
+      {/* Resident Mobile Bottom Action Bar */}
+      <ResidentMobileActionBar
+        onRequestDocs={() => {
+          const formsSection = document.getElementById("forms");
+          if (formsSection) formsSection.scrollIntoView({ behavior: "smooth" });
+        }}
+        onTrackStatus={() => {
+          const trackSection = document.getElementById("track");
+          if (trackSection) trackSection.scrollIntoView({ behavior: "smooth" });
+        }}
+        onESumbong={() => setShowESumbong(true)}
+        onInstallApp={promptInstall}
+        isInstalled={isInstalled}
+      />
+
+      {/* Global PWA Install Modal for Residents */}
+      <InstallAppModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+        isIOS={isIOS}
+        isAndroid={isAndroid}
+        isInstallable={isInstallable}
+        onInstallClick={promptInstall}
       />
     </div>
   );

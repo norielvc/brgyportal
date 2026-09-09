@@ -1,4 +1,4 @@
-import { Bell, User, Settings, LogOut, Menu, HelpCircle } from "lucide-react";
+import { Bell, User, Settings, LogOut, Menu, HelpCircle, Smartphone, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getUserData, logout, getAuthToken } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
@@ -11,6 +11,8 @@ export default function Header({
   searchTerm,
   onMenuClick,
   onNeedHelp,
+  onOpenInstall,
+  isInstalled,
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -139,6 +141,19 @@ export default function Header({
 
         {/* Right section */}
         <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Install PWA App Button */}
+          {onOpenInstall && !isInstalled && (
+            <button
+              onClick={onOpenInstall}
+              title="Install BrgyDesk Progressive Web App"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-[#03254c] bg-blue-50 hover:bg-blue-100/80 border border-blue-200/60 rounded-xl shadow-sm hover:shadow transition-all group"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline">Install App</span>
+              <span className="sm:hidden">App</span>
+            </button>
+          )}
+
           {/* Need Help / E-Sumbong */}
           <button
             onClick={onNeedHelp}

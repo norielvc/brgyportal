@@ -3,8 +3,11 @@ import { useRouter } from "next/router";
 import { Toaster } from "react-hot-toast";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import MobileBottomNav from "./MobileBottomNav";
+import InstallAppModal from "../UI/InstallAppModal";
 import ESumbongModal from "../Forms/ESumbongModal";
 import { isAuthenticated } from "@/lib/auth";
+import usePwa from "@/lib/usePwa";
 
 export default function Layout({
   children,
@@ -19,6 +22,16 @@ export default function Layout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [showESumbong, setShowESumbong] = useState(false);
+
+  const {
+    isInstallable,
+    isInstalled,
+    isIOS,
+    isAndroid,
+    showInstallModal,
+    setShowInstallModal,
+    promptInstall,
+  } = usePwa();
 
   useEffect(() => {
     setIsMounted(true);
@@ -87,6 +100,8 @@ export default function Layout({
           <Sidebar
             isMobileMenuOpen={isMobileMenuOpen}
             setIsMobileMenuOpen={setIsMobileMenuOpen}
+            onOpenInstall={() => setShowInstallModal(true)}
+            isInstalled={isInstalled}
           />
           <div className="lg:pl-64">
             <Header
@@ -96,17 +111,35 @@ export default function Layout({
               searchTerm={searchTerm}
               onMenuClick={() => setIsMobileMenuOpen(true)}
               onNeedHelp={() => setShowESumbong(true)}
+              onOpenInstall={() => setShowInstallModal(true)}
+              isInstalled={isInstalled}
             />
-            <main className="p-3 sm:p-6">{children}</main>
+            <main className="p-3 sm:p-6 pb-24 lg:pb-6">{children}</main>
             <ESumbongModal
               isOpen={showESumbong}
               onClose={() => setShowESumbong(false)}
+            />
+            {/* Field Staff / Admin Mobile Bottom Navigation */}
+            <MobileBottomNav
+              onOpenMenu={() => setIsMobileMenuOpen(true)}
+              onOpenInstall={() => setShowInstallModal(true)}
             />
           </div>
         </>
       ) : (
         <main className="min-h-screen">{children}</main>
       )}
+
+      {/* Global PWA Install Modal */}
+      <InstallAppModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+        isIOS={isIOS}
+        isAndroid={isAndroid}
+        isInstallable={isInstallable}
+        onInstallClick={promptInstall}
+      />
     </div>
   );
 }
+

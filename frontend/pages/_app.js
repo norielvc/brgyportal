@@ -1,8 +1,25 @@
 import "../src/styles/globals.css";
 import { useEffect } from "react";
+import Head from "next/head";
+import OfflineBanner from "@/components/UI/OfflineBanner";
+import PushNotificationPrompt from "@/components/UI/PushNotificationPrompt";
 
 export default function App({ Component, pageProps }) {
   useEffect(() => {
+    // 0. Register Service Worker for PWA Offline & Native Experience
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            console.log("🚀 [PWA] Service Worker registered with scope:", registration.scope);
+          })
+          .catch((error) => {
+            console.warn("⚠️ [PWA] Service Worker registration failed:", error);
+          });
+      });
+    }
+
     // 1. Determine the Tenant ID Fallback (Improved Logic)
     const getFallbackTenantId = () => {
       if (typeof window === "undefined") return "ibaoeste";
@@ -86,5 +103,19 @@ export default function App({ Component, pageProps }) {
   // Use the layout defined at the page level, if available
   const getLayout = Component.getLayout || ((page) => page);
 
-  return getLayout(<Component {...pageProps} />);
+  return (
+    <>
+      <Head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover"
+        />
+      </Head>
+      <OfflineBanner />
+      <PushNotificationPrompt />
+      {getLayout(<Component {...pageProps} />)}
+    </>
+  );
 }
+
+
