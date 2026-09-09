@@ -111,7 +111,7 @@ function parseQRData(qrData) {
 }
 
 // ── Sound & Haptic Feedback ────────────────────────────────
-const playSuccessSound = () => {
+function playSuccessSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -129,9 +129,9 @@ const playSuccessSound = () => {
   try {
     if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
   } catch (_) {}
-};
+}
 
-const playWarningSound = () => {
+function playWarningSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -149,7 +149,7 @@ const playWarningSound = () => {
   try {
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
   } catch (_) {}
-};
+}
 
 export default function MobileQRScannerPage() {
   const router = useRouter();
@@ -196,26 +196,14 @@ export default function MobileQRScannerPage() {
   const lastScanRef = useRef(null);
   const selectedEventIdRef = useRef("");
   const isStartingRef = useRef(false);
+  const onQRSuccessRef = useRef(null);
 
   useEffect(() => {
     selectedEventIdRef.current = selectedEventId;
   }, [selectedEventId]);
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push("/login");
-      return;
-    }
-    checkSubscription();
-    loadStats();
-    loadEvents();
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
-  // ── Access & Subscription Guard ────────────────────────────
-  const checkSubscription = async () => {
+  // ── Helper API Functions ──────────────────────────────────
+  const checkSubscription = useCallback(async () => {
     try {
       const token = getAuthToken();
       const res = await fetch("/api/subscription/usage", {
@@ -231,9 +219,9 @@ export default function MobileQRScannerPage() {
     } finally {
       setIsCheckingSubscription(false);
     }
-  };
+  }, [router]);
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const token = getAuthToken();
       const res = await fetch(`${API_URL}/scan-events`, {
@@ -243,34 +231,35 @@ export default function MobileQRScannerPage() {
       if (data.success && data.data) {
         const activeEvents = data.data.filter((e) => e.status === "ACTIVE" || e.is_active !== false);
         setEvents(activeEvents);
-        if (activeEvents.length > 0 && !selectedEventId) {
+        if (activeEvents.length > 0 && !selectedEventIdRef.current) {
           setSelectedEventId(activeEvents[0].id);
         }
       }
     } catch (err) {
       console.error("Error loading events:", err);
     }
-  };
+  }, []);
 
-  const loadStats = async (eventId = selectedEventId) => {
+  const loadStats = useCallback(async (eventId) => {
     try {
       const token = getAuthToken();
+      const targetId = eventId || selectedEventIdRef.current;
       let url = `${API_URL}/qr-scans/stats`;
-      if (eventId) url += `?event_id=${eventId}`;
+      if (targetId) url += `?event_id=${targetId}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.success && data.stats) setStats(data.stats);
     } catch (err) {
       console.error("Error loading stats:", err);
     }
-  };
+  }, []);
 
-  const fetchTrafficRecords = async () => {
+  const fetchTrafficRecords = useCallback(async () => {
     setTrafficLoading(true);
     try {
       const token = getAuthToken();
       let url = `${API_URL}/qr-scans?limit=50`;
-      if (selectedEventId) url += `&event_id=${selectedEventId}`;
+      if (selectedEventIdRef.current) url += `&event_id=${selectedEventIdRef.current}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const json = await res.json();
       if (json.success) {
@@ -281,9 +270,9 @@ export default function MobileQRScannerPage() {
     } finally {
       setTrafficLoading(false);
     }
-  };
+  }, []);
 
-  // ── Camera Management ─────────────────────────────────────
+  // ── Camera Control Functions ──────────────────────────────
   const stopCamera = useCallback(async () => {
     const instance = scannerRef.current;
     if (instance) {
@@ -315,101 +304,6 @@ export default function MobileQRScannerPage() {
 
     setCameraActive(false);
   }, []);
-
-  const startCamera = useCallback(async () => {
-    if (isStartingRef.current) return;
-    if (!selectedEventId && events.length > 0) {
-      setError("Please select an active event first.");
-      return;
-    }
-
-    isStartingRef.current = true;
-    setError(null);
-
-    await stopCamera();
-
-    // Allow DOM to finish rendering camera container
-    await new Promise((r) => setTimeout(r, 80));
-
-    const container = document.getElementById(readerDivId);
-    if (!container) {
-      isStartingRef.current = false;
-      return;
-    }
-
-    try {
-      const { Html5Qrcode } = await import("html5-qrcode");
-      const scanner = new Html5Qrcode(readerDivId, { verbose: false });
-      scannerRef.current = scanner;
-
-      await scanner.start(
-        { facingMode: cameraFacing },
-        {
-          fps: 30,
-          qrbox: { width: 280, height: 280 },
-          aspectRatio: 1.0,
-          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-          rememberLastUsedCamera: true,
-        },
-        onQRSuccess,
-        () => {}
-      );
-
-      setCameraActive(true);
-    } catch (err) {
-      console.error("Camera start error:", err);
-      if (err.message?.includes("ermission")) {
-        setError("Camera permission denied. Please allow camera access in your browser settings.");
-      } else {
-        setError(`Could not start camera: ${err.message}`);
-      }
-      setCameraActive(false);
-    } finally {
-      isStartingRef.current = false;
-    }
-  }, [selectedEventId, cameraFacing, events.length, onQRSuccess, stopCamera]);
-
-  const flipCamera = useCallback(async () => {
-    await stopCamera();
-    setCameraFacing((f) => (f === "environment" ? "user" : "environment"));
-  }, [stopCamera]);
-
-  useEffect(() => {
-    if (cameraActive) {
-      stopCamera().then(() => startCamera());
-    }
-  }, [cameraFacing]);
-
-  // Tap-to-Focus Handler (Single-shot hardware constraint + reticle)
-  const handleTapFocus = async (e) => {
-    if (!cameraActive) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setFocusPoint({ x, y });
-
-    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      try {
-        await stopCamera();
-        await new Promise((r) => setTimeout(r, 120));
-        await startCamera();
-      } catch (_) {}
-    } else {
-      try {
-        const video = document.querySelector(`#${readerDivId} video`);
-        if (video && video.srcObject) {
-          const track = video.srcObject.getVideoTracks()[0];
-          const caps = track.getCapabilities && track.getCapabilities();
-          if (caps && caps.focusMode && caps.focusMode.includes("single-shot")) {
-            await track.applyConstraints({ advanced: [{ focusMode: "single-shot" }] });
-          }
-        }
-      } catch (_) {}
-    }
-
-    setTimeout(() => setFocusPoint(null), 1000);
-  };
 
   // ── Core Scan Submission & Verification ───────────────────
   const handleScan = useCallback(async (scannedToken, photoUrl = null) => {
@@ -511,9 +405,104 @@ export default function MobileQRScannerPage() {
     lastScanRef.current = normalised;
 
     await stopCamera();
-
     await handleScan(normalised);
   }, [handleScan, stopCamera]);
+
+  // Keep callback ref updated
+  useEffect(() => {
+    onQRSuccessRef.current = onQRSuccess;
+  }, [onQRSuccess]);
+
+  const startCamera = useCallback(async () => {
+    if (isStartingRef.current) return;
+    if (!selectedEventIdRef.current && events.length > 0) {
+      setError("Please select an active event first.");
+      return;
+    }
+
+    isStartingRef.current = true;
+    setError(null);
+
+    await stopCamera();
+
+    // Allow DOM to finish rendering camera container
+    await new Promise((r) => setTimeout(r, 80));
+
+    const container = document.getElementById(readerDivId);
+    if (!container) {
+      isStartingRef.current = false;
+      return;
+    }
+
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode(readerDivId, { verbose: false });
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: cameraFacing },
+        {
+          fps: 30,
+          qrbox: { width: 280, height: 280 },
+          aspectRatio: 1.0,
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+          rememberLastUsedCamera: true,
+        },
+        (text) => {
+          if (onQRSuccessRef.current) onQRSuccessRef.current(text);
+        },
+        () => {}
+      );
+
+      setCameraActive(true);
+    } catch (err) {
+      console.error("Camera start error:", err);
+      if (err.message?.includes("ermission")) {
+        setError("Camera permission denied. Please allow camera access in your browser settings.");
+      } else {
+        setError(`Could not start camera: ${err.message}`);
+      }
+      setCameraActive(false);
+    } finally {
+      isStartingRef.current = false;
+    }
+  }, [cameraFacing, events.length, stopCamera]);
+
+  const flipCamera = useCallback(async () => {
+    await stopCamera();
+    setCameraFacing((f) => (f === "environment" ? "user" : "environment"));
+  }, [stopCamera]);
+
+  // Tap-to-Focus Handler (Single-shot hardware constraint + reticle)
+  const handleTapFocus = async (e) => {
+    if (!cameraActive) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setFocusPoint({ x, y });
+
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      try {
+        await stopCamera();
+        await new Promise((r) => setTimeout(r, 120));
+        await startCamera();
+      } catch (_) {}
+    } else {
+      try {
+        const video = document.querySelector(`#${readerDivId} video`);
+        if (video && video.srcObject) {
+          const track = video.srcObject.getVideoTracks()[0];
+          const caps = track.getCapabilities && track.getCapabilities();
+          if (caps && caps.focusMode && caps.focusMode.includes("single-shot")) {
+            await track.applyConstraints({ advanced: [{ focusMode: "single-shot" }] });
+          }
+        }
+      } catch (_) {}
+    }
+
+    setTimeout(() => setFocusPoint(null), 1000);
+  };
 
   // ── Dual-Tier QR Photo Decoder (Tier 1 jsQR + Tier 2 Sharp/ZXing) ──
   const detectQRSimple = async (file) => {
@@ -681,6 +670,27 @@ export default function MobileQRScannerPage() {
     XLSX.utils.book_append_sheet(wb, ws, "Scanned_Records");
     XLSX.writeFile(wb, `BrgyDesk_QR_Scans_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
+
+  // ── Lifecycle Hooks ───────────────────────────────────────
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push("/login");
+      return;
+    }
+    checkSubscription();
+    loadStats();
+    loadEvents();
+    return () => {
+      stopCamera();
+    };
+  }, [checkSubscription, loadEvents, loadStats, router, stopCamera]);
+
+  useEffect(() => {
+    if (cameraActive) {
+      stopCamera().then(() => startCamera());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraFacing]);
 
   // ── Subscription Loading Screen ────────────────────────────
   if (isCheckingSubscription) {
