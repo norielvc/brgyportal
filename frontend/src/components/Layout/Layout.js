@@ -22,32 +22,41 @@ export default function Layout({
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (requireAuth && !isAuthenticated()) {
-      router.push("/login");
+    if (requireAuth) {
+      if (!isAuthenticated()) {
+        router.replace("/login");
+      } else {
+        setIsLoading(false);
+      }
     } else {
       setIsLoading(false);
     }
   }, [requireAuth, router]);
 
-  if (requireAuth && (isLoading || !isMounted)) {
+  if (requireAuth && (!isMounted || isLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-[#03254c]"></div>
+        <p className="mt-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+          Loading Barangay Portal...
+        </p>
       </div>
     );
   }
 
   if (requireAuth && !isAuthenticated()) {
-    return null;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-[#03254c]"></div>
+        <p className="mt-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+          Redirecting to Login...
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div
-      className={`min-h-screen bg-gray-50 overflow-x-hidden transition-opacity duration-150 ${isMounted ? "opacity-100" : "opacity-0"}`}
-    >
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <Toaster
         position="bottom-right"
         toastOptions={{
