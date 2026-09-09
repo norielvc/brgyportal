@@ -317,7 +317,7 @@ export default function MobileQRScannerPage() {
   }, []);
 
   const startCamera = useCallback(async () => {
-    if (isStartingRef.current || cameraActive) return;
+    if (isStartingRef.current) return;
     if (!selectedEventId && events.length > 0) {
       setError("Please select an active event first.");
       return;
@@ -327,6 +327,15 @@ export default function MobileQRScannerPage() {
     setError(null);
 
     await stopCamera();
+
+    // Allow DOM to finish rendering camera container
+    await new Promise((r) => setTimeout(r, 80));
+
+    const container = document.getElementById(readerDivId);
+    if (!container) {
+      isStartingRef.current = false;
+      return;
+    }
 
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
@@ -358,7 +367,7 @@ export default function MobileQRScannerPage() {
     } finally {
       isStartingRef.current = false;
     }
-  }, [selectedEventId, cameraFacing, cameraActive, events.length]);
+  }, [selectedEventId, cameraFacing, events.length, onQRSuccess, stopCamera]);
 
   const flipCamera = useCallback(async () => {
     await stopCamera();
@@ -501,8 +510,10 @@ export default function MobileQRScannerPage() {
     processingRef.current = true;
     lastScanRef.current = normalised;
 
+    await stopCamera();
+
     await handleScan(normalised);
-  }, [handleScan]);
+  }, [handleScan, stopCamera]);
 
   // ── Dual-Tier QR Photo Decoder (Tier 1 jsQR + Tier 2 Sharp/ZXing) ──
   const detectQRSimple = async (file) => {
@@ -542,8 +553,8 @@ export default function MobileQRScannerPage() {
           if (!code && w > 100 && h > 100) {
             const cw = Math.round(w * 0.7);
             const ch = Math.round(h * 0.7);
-            const ox = Math.round((w - cw) / 2);
-            const oy = Math.round((h - ch) / 2);
+            const ox = Math.round((width - cw) / 2);
+            const oy = Math.round((height - ch) / 2);
             const cropData = ctx.getImageData(ox, oy, cw, ch);
             code = jsQR(cropData.data, cw, ch, { inversionAttempts: "attemptBoth" });
           }
@@ -612,12 +623,21 @@ export default function MobileQRScannerPage() {
   const resetScannerState = () => {
     showingResultRef.current = false;
     lastScanRef.current = null;
+    processingRef.current = false;
     setScanResult(null);
     setError(null);
     setCapturedStatus("idle");
     setManualToken("EM-");
+
+    if (activeMode === "camera") {
+      setTimeout(() => {
+        startCamera();
+      }, 100);
+    }
     if (activeMode === "manual" && manualInputRef.current) {
-      manualInputRef.current.focus();
+      setTimeout(() => {
+        manualInputRef.current?.focus();
+      }, 50);
     }
   };
 
