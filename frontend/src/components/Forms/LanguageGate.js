@@ -11,7 +11,7 @@ export default function LanguageGate({ accentColor, onSelect, lang }) {
   const t = getStrings(lang || "en");
 
   return (
-    <div className="px-6 sm:px-8 py-8">
+    <div className="px-4 sm:px-8 py-5 sm:py-8">
       <div className="flex flex-col items-center text-center mb-7">
         <div
           className="w-12 h-12 rounded-full flex items-center justify-center mb-4"

@@ -97,7 +97,7 @@ export default function Layout({
               onMenuClick={() => setIsMobileMenuOpen(true)}
               onNeedHelp={() => setShowESumbong(true)}
             />
-            <main className="p-6">{children}</main>
+            <main className="p-3 sm:p-6">{children}</main>
             <ESumbongModal
               isOpen={showESumbong}
               onClose={() => setShowESumbong(false)}

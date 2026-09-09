@@ -67,22 +67,22 @@ export default function ResetPasswordModal({ employee, onClose, onSubmit, isLoad
                 />
 
                 {/* Modal Content */}
-                <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-white/20 animate-in zoom-in-95 duration-200">
+                <div className="relative bg-white rounded-2xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-md max-h-[96dvh] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden border border-white/20 animate-in zoom-in-95 duration-200">
                     {/* Premium Header */}
-                    <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-10 py-10 text-white relative">
+                    <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-5 sm:px-10 py-5 sm:py-10 text-white relative">
                         <div className="relative z-10 flex items-center justify-between">
-                            <div className="flex items-center gap-5">
-                                <div className="bg-white/20 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-lg">
-                                    <KeyRound className="w-8 h-8 text-white" />
+                            <div className="flex items-center gap-3 sm:gap-5">
+                                <div className="bg-white/20 backdrop-blur-md p-2.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-white/20 shadow-lg">
+                                    <KeyRound className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">Secure Reset</h2>
-                                    <p className="text-amber-100 text-[10px] font-bold uppercase tracking-[0.2em]">{employee.firstName} {employee.lastName}</p>
+                                    <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight leading-none mb-1">Secure Reset</h2>
+                                    <p className="text-amber-100 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em]">{employee.firstName} {employee.lastName}</p>
                                 </div>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl border border-white/10 transition-all group"
+                                className="p-2 sm:p-3 bg-white/10 hover:bg-white/20 rounded-xl sm:rounded-2xl border border-white/10 transition-all group"
                             >
                                 <X className="w-5 h-5 text-white group-hover:rotate-90 transition-transform" />
                             </button>
@@ -93,7 +93,7 @@ export default function ResetPasswordModal({ employee, onClose, onSubmit, isLoad
                     </div>
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="p-10 space-y-6">
+                    <form onSubmit={handleSubmit} className="p-4 sm:p-10 space-y-4 sm:space-y-6">
 
                         {/* User Context */}
                         <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100 flex items-center gap-4">

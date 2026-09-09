@@ -119,32 +119,32 @@ export default function ESumbongModal({ isOpen, onClose, publicMode = false }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4">
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
         onClick={handleClose}
       />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[96dvh] sm:max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-between shrink-0">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <HelpCircle className="w-6 h-6 text-white" />
+            <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             <div>
-              <h3 className="text-xl font-bold text-white">E-Sumbong</h3>
-              <p className="text-xs text-red-100">Barangay Blotter</p>
+              <h3 className="text-lg sm:text-xl font-bold text-white">E-Sumbong</h3>
+              <p className="text-[11px] sm:text-xs text-red-100">Barangay Blotter</p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="text-white/80 hover:text-white transition-colors"
+            className="text-white/80 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto">
           {/* Complainant */}
           <div className="relative">
             <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
@@ -244,7 +244,7 @@ export default function ESumbongModal({ isOpen, onClose, publicMode = false }) {
           </div>
 
           {/* Date and Time */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
                 <Calendar className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />
@@ -277,7 +277,7 @@ export default function ESumbongModal({ isOpen, onClose, publicMode = false }) {
           </div>
 
           {/* Contact Number and Email */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
                 <Phone className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />
@@ -312,19 +312,19 @@ export default function ESumbongModal({ isOpen, onClose, publicMode = false }) {
           </div>
 
           {/* Footer Actions */}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:gap-3 pt-2">
             <button
               type="button"
               onClick={handleClose}
               disabled={submitting}
-              className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors text-center"
             >
               Kanselahin
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2.5 rounded-xl font-bold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 transition-all flex items-center gap-2 disabled:opacity-60"
+              className="w-full sm:w-auto justify-center px-6 py-2.5 rounded-xl font-bold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 transition-all flex items-center gap-2 disabled:opacity-60"
             >
               {submitting ? (
                 <>

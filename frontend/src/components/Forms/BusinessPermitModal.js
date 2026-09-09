@@ -168,18 +168,18 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
     ].filter(f => f.value);
 
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300" style={{ maxHeight: '92vh' }}>
-          <div className="px-6 sm:px-8 py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md">
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
+          <div className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
             <div>
               <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">{t.reviewEyebrow}</p>
-              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">{t.reviewTitle}</h2>
+              <h2 className="text-base sm:text-xl font-bold text-white leading-tight">{t.reviewTitle}</h2>
             </div>
             <button onClick={() => setShowConfirmation(false)} aria-label={t.close} className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0">
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="px-6 sm:px-8 py-6 bg-gray-50 overflow-y-auto">
+          <div className="px-4 sm:px-8 py-4 sm:py-6 bg-gray-50 overflow-y-auto">
             <p className="text-sm text-gray-600 mb-4">{t.reviewHelp}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {fields.map(({ key, label, value, wide }) => (
@@ -256,9 +256,9 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               </label>
             </div>
           </div>
-          <div className="border-t border-gray-200 bg-white px-6 sm:px-8 py-4 flex justify-between items-center gap-4 shrink-0">
-            <button onClick={() => setShowConfirmation(false)} className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">{t.backToEdit}</button>
-            <button onClick={handleSubmit} disabled={isSubmitting || !consentChecked} className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed" style={{ backgroundColor: accentColor }}>
+          <div className="border-t border-gray-200 bg-white px-4 sm:px-8 py-3.5 sm:py-4 flex flex-col-reverse sm:flex-row sm:justify-between items-stretch sm:items-center gap-2.5 sm:gap-4 shrink-0">
+            <button onClick={() => setShowConfirmation(false)} className="w-full sm:w-auto justify-center px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors text-center">{t.backToEdit}</button>
+            <button onClick={handleSubmit} disabled={isSubmitting || !consentChecked} className="w-full sm:w-auto justify-center px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed" style={{ backgroundColor: accentColor }}>
               {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
               {isSubmitting ? t.submitting : t.submitRequest}
             </button>
@@ -272,30 +272,30 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300" style={{ maxHeight: '92vh' }}>
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
 
           {/* Header */}
-          <div className="px-6 sm:px-8 py-5 flex items-start justify-between shrink-0" style={{ backgroundColor: accentColor }}>
-            <div className="flex items-center gap-3.5">
-              <div className="bg-white/15 p-2.5 rounded-xl border border-white/25 shrink-0">
-                <Building2 className="w-5 h-5 text-white" />
+          <div className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between shrink-0" style={{ backgroundColor: accentColor }}>
+            <div className="flex items-center gap-3 sm:gap-3.5">
+              <div className="bg-white/15 p-2 sm:p-2.5 rounded-xl border border-white/25 shrink-0">
+                <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">{tenantConfig.shortName || 'Barangay'} &middot; {t.officialForm}</p>
-                <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Business Permit</h2>
+                <p className="text-white/60 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] mb-0.5 sm:mb-1">{tenantConfig.shortName || 'Barangay'} &middot; {t.officialForm}</p>
+                <h2 className="text-base sm:text-xl font-bold text-white leading-tight">Business Permit</h2>
               </div>
             </div>
-            <button onClick={onClose} aria-label="Close" className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0">
+            <button onClick={onClose} aria-label="Close" className="text-white/70 hover:text-white p-1.5 sm:p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0">
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Notification */}
           {notification && (
-            <div className="px-6 sm:px-8 pt-4 shrink-0">
-              <div className={`flex items-start gap-3 p-4 rounded-xl border ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+            <div className="px-4 sm:px-8 pt-3 sm:pt-4 shrink-0">
+              <div className={`flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
                 {notification.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
                 <div className="flex-1">
                   <p className={`font-semibold text-sm ${notification.type === 'success' ? 'text-emerald-800' : 'text-red-800'}`}>{notification.title}</p>
@@ -313,8 +313,8 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
 
           {/* Progress */}
           {lang && (
-          <div className="px-6 sm:px-8 py-5 bg-gray-50 border-b border-gray-200 shrink-0">
-            <div className="flex items-start">
+          <div className="px-4 sm:px-8 py-3.5 sm:py-5 bg-gray-50 border-b border-gray-200 shrink-0 overflow-x-auto">
+            <div className="flex items-start min-w-max sm:min-w-0 justify-between">
               {[1, 2, 3].map((s) => (
                 <React.Fragment key={s}>
                   <div className="flex flex-col items-center gap-2 w-[88px] shrink-0">
@@ -532,17 +532,17 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
 
           {/* Footer */}
           {lang && (
-          <div className="border-t border-gray-200 bg-gray-50 px-6 sm:px-8 py-4 flex items-center justify-between gap-4 shrink-0">
+          <div className="border-t border-gray-200 bg-gray-50 px-4 sm:px-8 py-3.5 sm:py-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
             {currentStep > 1 ? (
-              <button onClick={() => setCurrentStep(p => p - 1)} className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">
+              <button onClick={() => setCurrentStep(p => p - 1)} className="w-full sm:w-auto justify-center px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">
                 {t.back}
               </button>
             ) : (
-              <div className="flex items-center gap-3">
-                <button onClick={() => setLang(null)} className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">
+              <div className="flex items-center justify-between sm:justify-start gap-3">
+                <button onClick={() => setLang(null)} className="w-full sm:w-auto justify-center px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">
                   {t.back}
                 </button>
-                <p className="text-xs text-gray-500"><span className="text-red-600">*</span> {t.requiredFields}</p>
+                <p className="text-xs text-gray-500 whitespace-nowrap"><span className="text-red-600">*</span> {t.requiredFields}</p>
               </div>
             )}
 
@@ -560,12 +560,12 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                   if (Object.keys(e).length) { setErrors(e); return; }
                 }
                 setCurrentStep(p => p + 1);
-              }} className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2" style={{ backgroundColor: accentColor }}>
+              }} className="w-full sm:w-auto justify-center px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2" style={{ backgroundColor: accentColor }}>
                 {t.continue} <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
               <button onClick={() => setShowConfirmation(true)}
-                className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+                className="w-full sm:w-auto justify-center px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
                 style={{ backgroundColor: accentColor }}>
                 <Send className="w-4 h-4" /> {t.reviewSubmit}
               </button>

@@ -48,7 +48,7 @@ export default function ViewEmployeeModal({ employee, onClose }) {
   const roleInfo = roleMap[employee.role] || { color: 'text-gray-500 bg-gray-50 border-gray-100', label: 'UNKNOWN' };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
@@ -56,23 +56,23 @@ export default function ViewEmployeeModal({ employee, onClose }) {
         />
 
         {/* Modal Content */}
-        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-white/20 animate-in zoom-in-95 duration-200">
+        <div className="relative bg-white rounded-2xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-xl max-h-[96dvh] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden border border-white/20 animate-in zoom-in-95 duration-200">
           {/* Premium Header */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 px-10 py-12 text-white relative">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 px-5 sm:px-10 py-6 sm:py-12 text-white relative">
             <div className="relative z-10 flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <div className="bg-white/10 backdrop-blur-md p-0.5 rounded-full border border-white/20 shadow-2xl">
-                  <div className="bg-gradient-to-br from-blue-500 to-indigo-600 w-24 h-24 rounded-full flex items-center justify-center text-4xl font-black border-4 border-white/10 shadow-inner">
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="bg-white/10 backdrop-blur-md p-0.5 rounded-full border border-white/20 shadow-2xl shrink-0">
+                  <div className="bg-gradient-to-br from-blue-500 to-indigo-600 w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-2xl sm:text-4xl font-black border-4 border-white/10 shadow-inner">
                     {employee.firstName?.[0]}{employee.lastName?.[0]}
                   </div>
                 </div>
-                <div>
-                  <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2 px-1">Identity Profile</p>
-                  <h2 className="text-4xl font-black uppercase tracking-tight leading-none mb-3">
+                <div className="min-w-0">
+                  <p className="text-blue-400 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] mb-1 sm:mb-2 px-1">Identity Profile</p>
+                  <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tight leading-none mb-2 sm:mb-3 truncate">
                     {employee.firstName} {employee.lastName}
                   </h2>
                   <div className="flex gap-2">
-                    <span className={`px-3 py-1.5 rounded-xl border font-black text-[9px] uppercase tracking-wider ${statusInfo.color}`}>
+                    <span className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border font-black text-[8px] sm:text-[9px] uppercase tracking-wider ${statusInfo.color}`}>
                       {statusInfo.label}
                     </span>
                   </div>

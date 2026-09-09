@@ -1234,13 +1234,13 @@ export default function RequestsPage() {
   }, [requests, viewMode, currentUser]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
           {pendingActionCount > 0 && (
-            <span className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-medium flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" />
+            <span className="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-orange-100 text-orange-700 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
               {pendingActionCount} Pending Your Action
             </span>
           )}
@@ -1250,15 +1250,15 @@ export default function RequestsPage() {
       {/* Tabs and Filters Navigation */}
       <div className="space-y-4">
         {/* Top Tabs */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar flex-nowrap">
           <button
             onClick={() => setViewMode("assigned")}
-            className={`px-6 py-4 text-sm font-semibold transition-all border-b-2 flex items-center gap-2 ${viewMode === "assigned"
+            className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${viewMode === "assigned"
                 ? "border-blue-600 text-blue-600 bg-blue-50/30"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
               }`}
           >
-            <FileCheck className="w-4 h-4" />
+            <FileCheck className="w-4 h-4 shrink-0" />
             My Assignments
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] ${viewMode === "assigned" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}
@@ -1268,12 +1268,12 @@ export default function RequestsPage() {
           </button>
           <button
             onClick={() => setViewMode("all")}
-            className={`px-6 py-4 text-sm font-semibold transition-all border-b-2 flex items-center gap-2 ${viewMode === "all"
+            className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${viewMode === "all"
                 ? "border-blue-600 text-blue-600 bg-blue-50/30"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
               }`}
           >
-            <History className="w-4 h-4" />
+            <History className="w-4 h-4 shrink-0" />
             Certificate Request History
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] ${viewMode === "all" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}
@@ -1284,11 +1284,11 @@ export default function RequestsPage() {
         </div>
 
         {/* Filter Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <div className="flex flex-wrap gap-3 items-center w-full">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-start md:items-center justify-between">
+            <div className="flex flex-wrap gap-2.5 sm:gap-3 items-center w-full">
               {/* Search */}
-              <div className="relative flex-1 min-w-[300px] md:max-w-md">
+              <div className="relative flex-1 w-full min-w-0 md:max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
@@ -2363,25 +2363,24 @@ function RequestDetailsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden"
-        style={{ maxHeight: "90vh" }}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[90vh]"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="bg-white/10 p-2 rounded-xl border border-white/10">
-              <FileText className="w-5 h-5 text-white" />
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="bg-white/10 p-1.5 sm:p-2 rounded-xl border border-white/10">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">Request Details</h2>
-              <p className="text-blue-200/60 text-[11px] font-sans">{request.reference_number}</p>
+              <h2 className="text-xs sm:text-sm font-semibold text-white">Request Details</h2>
+              <p className="text-blue-200/60 text-[10px] sm:text-[11px] font-sans">{request.reference_number}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

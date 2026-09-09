@@ -116,7 +116,7 @@ export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externa
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
@@ -124,24 +124,24 @@ export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externa
         />
 
         {/* Modal Content */}
-        <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden styled-scrollbar border border-white/20 animate-in zoom-in-95 duration-200">
+        <div className="relative bg-white rounded-2xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[96dvh] sm:max-h-[85vh] overflow-y-auto overflow-x-hidden styled-scrollbar border border-white/20 animate-in zoom-in-95 duration-200">
           {/* Premium Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6 text-white relative">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 sm:px-8 py-4 sm:py-6 text-white relative">
             <div className="relative z-10 flex items-center justify-between">
-              <div className="flex items-center gap-5">
-                <div className="bg-white/20 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-lg">
-                  <UserCircle className="w-10 h-10 text-white" />
+              <div className="flex items-center gap-3 sm:gap-5">
+                <div className="bg-white/20 backdrop-blur-md p-2.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-white/20 shadow-lg">
+                  <UserCircle className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-black uppercase tracking-tight leading-none mb-1">Access Protocol</h2>
-                  <p className="text-blue-100 text-[11px] font-bold uppercase tracking-[0.2em]">Personnel Identity Registration</p>
+                  <h2 className="text-xl sm:text-3xl font-black uppercase tracking-tight leading-none mb-1">Access Protocol</h2>
+                  <p className="text-blue-100 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em]">Personnel Identity Registration</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl border border-white/10 transition-all group"
+                className="p-2 sm:p-3 bg-white/10 hover:bg-white/20 rounded-xl sm:rounded-2xl border border-white/10 transition-all group"
               >
-                <X className="w-6 h-6 text-white group-hover:rotate-90 transition-transform" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:rotate-90 transition-transform" />
               </button>
             </div>
             {/* Decorative Elements */}

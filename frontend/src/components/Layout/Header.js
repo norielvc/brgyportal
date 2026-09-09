@@ -113,34 +113,35 @@ export default function Header({
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100/80 px-6 py-4 sticky top-0 z-30 shadow-sm transition-all duration-300">
-      <div className="flex items-center justify-between gap-4">
+    <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100/80 px-3 sm:px-6 py-3 sm:py-4 sticky top-0 z-30 shadow-sm transition-all duration-300">
+      <div className="flex items-center justify-between gap-3 sm:gap-4">
         {/* Mobile Menu Toggle */}
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 -ml-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors"
+          aria-label="Open Navigation Menu"
+          className="lg:hidden p-2 -ml-1 rounded-xl text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors shrink-0"
         >
-          <Menu className="w-6 h-6" />
+          <Menu className="w-5 h-5" />
         </button>
 
         {/* Title section */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-black tracking-tight text-gray-900 drop-shadow-sm truncate">
+          <h1 className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 drop-shadow-sm truncate">
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-0.5 text-[11px] font-bold uppercase tracking-widest text-gray-400">
+            <p className="mt-0.5 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-widest text-gray-400 truncate">
               {subtitle}
             </p>
           )}
         </div>
 
         {/* Right section */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Need Help / E-Sumbong */}
           <button
             onClick={onNeedHelp}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
           >
             <HelpCircle className="w-4 h-4" />
             <span>E-Sumbong</span>
@@ -150,7 +151,7 @@ export default function Header({
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all duration-300"
+              className="relative p-2 sm:p-2.5 text-gray-500 hover:text-[#03254c] hover:bg-gray-100 focus:outline-none rounded-xl transition-all"
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
@@ -160,7 +161,7 @@ export default function Header({
 
             {/* Notifications dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden transform origin-top-right transition-all">
+              <div className="fixed sm:absolute top-14 sm:top-auto right-3 sm:right-0 mt-2 sm:mt-3 w-[calc(100vw-1.5rem)] sm:w-80 max-w-sm bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden transform origin-top-right transition-all">
                 <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
                   <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">
                     Notifications
@@ -168,7 +169,7 @@ export default function Header({
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllAsRead}
-                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-xs text-[#03254c] hover:underline font-bold"
                     >
                       Mark all read
                     </button>

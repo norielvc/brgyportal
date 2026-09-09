@@ -632,29 +632,28 @@ export default function BarangayClearanceModal({
       <div className="brgy-modal-wrap">
         {!showConfirmationPopup && !showSuccessModal && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
+            <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
               <div
                 className="fixed inset-0 bg-black/60 backdrop-blur-[2px]"
                 onClick={onClose}
               />
               <div
-                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-fade-in"
+                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-fade-in"
                 style={{
-                  maxHeight: "92vh",
                   fontFamily: "'Open Sans', sans-serif",
                 }}
               >
                 {/* Header */}
-                <div className="px-6 sm:px-8 py-5 flex items-start justify-between shrink-0" style={{ backgroundColor: accentColor }}>
-                  <div className="flex items-center gap-3.5">
-                    <div className="bg-white/15 p-2.5 rounded-xl border border-white/25 shrink-0">
-                      <FileText className="w-5 h-5 text-white" />
+                <div className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between shrink-0" style={{ backgroundColor: accentColor }}>
+                  <div className="flex items-center gap-3 sm:gap-3.5">
+                    <div className="bg-white/15 p-2 sm:p-2.5 rounded-xl border border-white/25 shrink-0">
+                      <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">
+                      <p className="text-white/60 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] mb-0.5 sm:mb-1">
                         {tenantConfig.shortName || "Barangay"} &middot; {t.officialForm}
                       </p>
-                      <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
+                      <h2 className="text-base sm:text-xl font-bold text-white leading-tight">
                         Barangay Clearance
                       </h2>
                     </div>
@@ -662,7 +661,7 @@ export default function BarangayClearanceModal({
                   <button
                     onClick={onClose}
                     aria-label="Close"
-                    className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0"
+                    className="text-white/70 hover:text-white p-1.5 sm:p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1000,19 +999,19 @@ export default function BarangayClearanceModal({
 
         {showConfirmationPopup && (
           <div className="fixed inset-0 z-[60] overflow-hidden">
-            <div className="flex items-center justify-center w-full h-full p-4">
+            <div className="flex items-center justify-center w-full h-full p-2 sm:p-4">
               <div
                 className="fixed inset-0 bg-black/80 backdrop-blur-md"
                 onClick={() => setShowConfirmationPopup(false)}
               />
-              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300" style={{ maxHeight: "92vh" }}>
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
                 {/* Header */}
-                <div className="px-6 sm:px-8 py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
+                <div className="px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
                   <div>
                     <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">
                       {t.reviewEyebrow}
                     </p>
-                    <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
+                    <h2 className="text-base sm:text-xl font-bold text-white leading-tight">
                       {t.reviewTitle}
                     </h2>
                   </div>
@@ -1026,7 +1025,7 @@ export default function BarangayClearanceModal({
                 </div>
 
                 {/* Cards */}
-                <div className="px-6 sm:px-8 py-6 bg-gray-50 overflow-y-auto">
+                <div className="px-4 sm:px-8 py-4 sm:py-6 bg-gray-50 overflow-y-auto">
                   <p className="text-sm text-gray-600 mb-4">
                     {t.reviewHelp}
                   </p>
@@ -1165,18 +1164,18 @@ export default function BarangayClearanceModal({
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="border-t border-gray-200 bg-white px-6 sm:px-8 py-4 flex justify-between items-center gap-4 shrink-0">
+                {/* Actions */}
+                <div className="border-t border-gray-200 bg-white px-4 sm:px-8 py-3.5 sm:py-4 flex flex-col-reverse sm:flex-row sm:justify-between items-stretch sm:items-center gap-2.5 sm:gap-4 shrink-0">
                   <button
                     onClick={() => setShowConfirmationPopup(false)}
-                    className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
+                    className="w-full sm:w-auto justify-center px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors text-center"
                   >
                     {t.backToEdit}
                   </button>
                   <button
                     onClick={handleProceedSubmission}
                     disabled={isSubmitting || !consentChecked}
-                    className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto justify-center px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ backgroundColor: accentColor }}
                   >
                     {isSubmitting ? (

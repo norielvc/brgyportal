@@ -433,10 +433,10 @@ export default function Residents() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-4">
+    <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 items-stretch sm:items-center justify-between">
+        <div className="relative flex-1 w-full max-w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -445,29 +445,29 @@ export default function Residents() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors border ${showFilters || activeFilterCount > 0 ? "bg-[#03254c] text-white border-[#03254c]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
+            className={`flex-1 sm:flex-initial justify-center px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors border ${showFilters || activeFilterCount > 0 ? "bg-[#03254c] text-white border-[#03254c]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-4 h-4 shrink-0" />
             Filters
             {activeFilterCount > 0 && (
               <span className="bg-white text-[#03254c] text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
-            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+            <ChevronDown className={`w-4 h-4 transition-transform shrink-0 ${showFilters ? "rotate-180" : ""}`} />
           </button>
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200">
-            <UsersIcon className="w-4 h-4 text-gray-400" />
-            <span className="text-sm font-bold text-gray-700">{totalItems || 0}</span>
+          <div className="flex items-center gap-2 px-3 py-2 sm:py-2.5 bg-gray-50 rounded-lg border border-gray-200 shrink-0">
+            <UsersIcon className="w-4 h-4 text-gray-400 shrink-0" />
+            <span className="text-xs sm:text-sm font-bold text-gray-700">{totalItems || 0}</span>
           </div>
           <button
             onClick={handleOpenAddModal}
-            className="px-4 py-2.5 bg-[#03254c] text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+            className="flex-1 sm:flex-initial justify-center px-3.5 sm:px-4 py-2 sm:py-2.5 bg-[#03254c] text-white rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 shrink-0" />
             Register
           </button>
         </div>

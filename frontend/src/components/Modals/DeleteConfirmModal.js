@@ -15,7 +15,7 @@ export default function DeleteConfirmModal({ title, message, onConfirm, onCancel
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
@@ -23,15 +23,15 @@ export default function DeleteConfirmModal({ title, message, onConfirm, onCancel
         />
 
         {/* Modal Content */}
-        <div className="relative bg-white rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] w-full max-w-sm overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
+        <div className="relative bg-white rounded-2xl sm:rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] w-full max-w-sm overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
           {/* Destructive Header */}
-          <div className="bg-gradient-to-br from-rose-500 to-rose-700 px-8 py-10 text-white relative text-center">
+          <div className="bg-gradient-to-br from-rose-500 to-rose-700 px-5 sm:px-8 py-6 sm:py-10 text-white relative text-center">
             <div className="relative z-10 flex flex-col items-center">
-              <div className="bg-white/20 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-xl mb-4 group ring-8 ring-white/10">
-                <Trash2 className="w-10 h-10 text-white animate-bounce" />
+              <div className="bg-white/20 backdrop-blur-md p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-white/20 shadow-xl mb-3 sm:mb-4 group ring-4 sm:ring-8 ring-white/10">
+                <Trash2 className="w-8 h-8 sm:w-10 sm:h-10 text-white animate-bounce" />
               </div>
-              <h2 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">{title}</h2>
-              <p className="text-rose-100 text-[10px] font-bold uppercase tracking-[0.2em]">Destructive Termination Event</p>
+              <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight leading-none mb-1">{title}</h2>
+              <p className="text-rose-100 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em]">Destructive Termination Event</p>
             </div>
 
             {/* Decorative background icon */}
@@ -39,8 +39,8 @@ export default function DeleteConfirmModal({ title, message, onConfirm, onCancel
           </div>
 
           {/* Content */}
-          <div className="px-8 pt-8 pb-10 text-center">
-            <p className="text-gray-500 font-bold text-sm leading-relaxed mb-8">
+          <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-6 sm:pb-10 text-center">
+            <p className="text-gray-500 font-bold text-sm leading-relaxed mb-6 sm:mb-8">
               {message}
             </p>
 
@@ -48,7 +48,7 @@ export default function DeleteConfirmModal({ title, message, onConfirm, onCancel
               <button
                 onClick={onConfirm}
                 disabled={isLoading}
-                className="w-full px-8 py-5 bg-rose-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-rose-200 hover:bg-rose-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full px-6 sm:px-8 py-3.5 sm:py-5 bg-rose-600 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-rose-200 hover:bg-rose-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 {isLoading ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -59,7 +59,7 @@ export default function DeleteConfirmModal({ title, message, onConfirm, onCancel
               <button
                 onClick={onCancel}
                 disabled={isLoading}
-                className="w-full px-8 py-5 bg-gray-50 text-gray-400 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-gray-100 hover:text-gray-600 transition-all active:scale-95"
+                className="w-full px-6 sm:px-8 py-3.5 sm:py-5 bg-gray-50 text-gray-400 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] hover:bg-gray-100 hover:text-gray-600 transition-all active:scale-95"
               >
                 Abort Deletion
               </button>

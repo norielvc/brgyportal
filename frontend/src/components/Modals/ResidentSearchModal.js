@@ -158,27 +158,27 @@ export default function ResidentSearchModal({
   const accentColor = tenantConfig.primaryColor || (isDemo ? "#111111" : "#059669");
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
       <div
         className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 fade-in duration-300">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[96dvh] sm:max-h-[92vh] animate-in zoom-in-95 fade-in duration-300">
         {/* Header */}
         <div
-          className="px-6 sm:px-8 py-5 flex items-start justify-between shrink-0"
+          className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between shrink-0"
           style={{ backgroundColor: accentColor }}
         >
-          <div className="flex items-center gap-3.5">
-            <div className="bg-white/15 p-2.5 rounded-xl border border-white/25 shrink-0">
-              <Users className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-3 sm:gap-3.5">
+            <div className="bg-white/15 p-2 sm:p-2.5 rounded-xl border border-white/25 shrink-0">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div>
-              <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">
+              <p className="text-white/60 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] mb-0.5 sm:mb-1">
                 {tenantConfig.shortName || "Barangay"} &middot; {t.dirSubtitle}
               </p>
-              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
+              <h2 className="text-base sm:text-xl font-bold text-white leading-tight">
                 {t.dirTitle}
               </h2>
             </div>
@@ -186,14 +186,14 @@ export default function ResidentSearchModal({
           <button
             onClick={onClose}
             aria-label={t.close}
-            className="text-white/70 hover:text-white p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0"
+            className="text-white/70 hover:text-white p-1.5 sm:p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search Field */}
-        <div className="px-6 sm:px-8 py-5 border-b border-gray-200 bg-gray-50 shrink-0">
+        <div className="px-4 sm:px-8 py-3.5 sm:py-5 border-b border-gray-200 bg-gray-50 shrink-0">
           <label htmlFor="resident-search" className="block text-sm font-semibold text-gray-800 mb-1.5">
             {t.dirTitle}
           </label>
@@ -204,7 +204,7 @@ export default function ResidentSearchModal({
               type="text"
               autoFocus
               placeholder={t.dirPlaceholder}
-              className="w-full pl-10 pr-11 py-3 bg-white border border-gray-300 rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+              className="w-full pl-10 pr-11 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg text-sm sm:text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -221,7 +221,7 @@ export default function ResidentSearchModal({
         </div>
 
         {/* Results Area */}
-        <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 bg-white">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6 bg-white">
           {error ? (
             <div className="py-8 flex flex-col items-center justify-center text-center max-w-sm mx-auto">
               <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4 border border-amber-200">
@@ -255,7 +255,7 @@ export default function ResidentSearchModal({
                   <button
                     key={resident.id}
                     onClick={() => handleResidentClick(resident)}
-                    className="w-full flex items-center gap-3.5 p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-left group"
+                    className="w-full flex items-center gap-3.5 p-3.5 sm:p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-left group"
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = accentColor; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = ''; }}
                   >
@@ -267,7 +267,7 @@ export default function ResidentSearchModal({
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-[15px] font-bold text-gray-900 leading-snug truncate">
+                      <p className="text-[14px] sm:text-[15px] font-bold text-gray-900 leading-snug truncate">
                         {resident.full_name}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
@@ -325,13 +325,13 @@ export default function ResidentSearchModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 sm:px-8 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-4 shrink-0">
-          <span className="text-xs text-gray-500">
+        <div className="px-4 sm:px-8 py-3 sm:py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-4 shrink-0">
+          <span className="text-xs text-gray-500 truncate">
             {tenantConfig.shortName || "Barangay"} official records
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
+            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors shrink-0"
           >
             {t.close}
           </button>
@@ -340,14 +340,14 @@ export default function ResidentSearchModal({
 
       {/* Pending Case Modal */}
       {showPendingCaseModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-8 animate-in zoom-in-95 duration-300">
             <div className="flex flex-col items-center text-center">
               <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4 border border-amber-200">
                 <ShieldAlert className="w-7 h-7 text-amber-600" />
               </div>
 
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">
                 {t.dirVisitTitle}
               </h3>
 
@@ -355,14 +355,14 @@ export default function ResidentSearchModal({
                 {t.dirVisitBody}
               </p>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-5 w-full text-left">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 sm:p-4 mb-5 w-full text-left">
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.14em] mb-1.5 flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5" /> {t.dirVisitAt}
                 </p>
                 <p className="text-sm font-semibold text-gray-900">
                   {tenantConfig.shortName || 'Barangay'} Office
                 </p>
-                <p className="text-sm text-gray-600 mt-0.5">
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
                   {t.dirOfficeHours}
                 </p>
               </div>

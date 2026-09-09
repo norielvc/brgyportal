@@ -65,7 +65,7 @@ export default function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       {/* Background overlay */}
       <div
         className="fixed inset-0 transition-opacity bg-gray-500/75"
@@ -75,21 +75,20 @@ export default function Modal({
       {/* Modal panel */}
       <div
         className={cn(
-          "relative w-full overflow-hidden text-left bg-white shadow-xl rounded-xl flex flex-col",
+          "relative w-full overflow-hidden text-left bg-white shadow-2xl rounded-2xl flex flex-col max-h-[96dvh] sm:max-h-[90vh]",
           sizeClasses[size],
         )}
-        style={{ maxHeight: "90vh" }}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 pb-4 shrink-0">
+          <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 shrink-0 border-b border-gray-100">
             {title && (
-              <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate pr-2">{title}</h3>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded"
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#03254c] rounded-lg transition-colors ml-auto shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -98,7 +97,7 @@ export default function Modal({
         )}
 
         {/* Content */}
-        <div className="overflow-y-auto px-6 pb-6">{children}</div>
+        <div className="overflow-y-auto p-4 sm:p-6 flex-1">{children}</div>
       </div>
     </div>
   );
@@ -119,11 +118,11 @@ export function ConfirmModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="mb-6">
-        <p className="text-gray-600">{message}</p>
+        <p className="text-sm text-gray-600 leading-relaxed">{message}</p>
       </div>
 
-      <div className="flex justify-end space-x-3">
-        <button onClick={onClose} className="btn-secondary">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+        <button onClick={onClose} className="btn-secondary w-full sm:w-auto">
           {cancelText}
         </button>
         <button
@@ -131,7 +130,7 @@ export function ConfirmModal({
             onConfirm();
             onClose();
           }}
-          className={buttonClass}
+          className={`${buttonClass} w-full sm:w-auto`}
         >
           {confirmText}
         </button>

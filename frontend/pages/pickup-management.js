@@ -253,14 +253,14 @@ export default function PickupManagementPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
@@ -269,34 +269,34 @@ export default function PickupManagementPage() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-6 text-white shadow-lg shadow-emerald-200 border border-emerald-500/20 relative overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
+        <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-4 sm:p-6 text-white shadow-lg shadow-emerald-200 border border-emerald-500/20 relative overflow-hidden">
           <div className="relative z-10">
             <p className="text-emerald-100 text-[10px] uppercase font-black tracking-[0.2em] mb-1">Ready for Pickup</p>
-            <p className="text-4xl font-black tracking-tighter">{stats.readyForPickup}</p>
-            <div className="mt-4 flex items-center gap-2">
+            <p className="text-3xl sm:text-4xl font-black tracking-tighter">{stats.readyForPickup}</p>
+            <div className="mt-3 sm:mt-4 flex items-center gap-2">
               <span className="bg-white/20 px-2 py-0.5 rounded text-[9px] font-black uppercase">Active Priority</span>
             </div>
           </div>
           <Package className="absolute -bottom-4 -right-4 w-24 h-24 text-white/10 -rotate-12" />
         </div>
 
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-2xl p-6 text-white shadow-lg shadow-blue-200 border border-blue-500/20 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-2xl p-4 sm:p-6 text-white shadow-lg shadow-blue-200 border border-blue-500/20 relative overflow-hidden">
           <div className="relative z-10">
             <p className="text-blue-100 text-[10px] uppercase font-black tracking-[0.2em] mb-1">Total Released</p>
-            <p className="text-4xl font-black tracking-tighter">{stats.released}</p>
-            <div className="mt-4 flex items-center gap-2">
+            <p className="text-3xl sm:text-4xl font-black tracking-tighter">{stats.released}</p>
+            <div className="mt-3 sm:mt-4 flex items-center gap-2">
               <span className="bg-white/20 px-2 py-0.5 rounded text-[9px] font-black uppercase">Completed Tasks</span>
             </div>
           </div>
           <CheckCircle className="absolute -bottom-4 -right-4 w-24 h-24 text-white/10 -rotate-12" />
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 text-white shadow-lg shadow-gray-200 border border-gray-700/20 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-4 sm:p-6 text-white shadow-lg shadow-gray-200 border border-gray-700/20 relative overflow-hidden">
           <div className="relative z-10">
             <p className="text-gray-400 text-[10px] uppercase font-black tracking-[0.2em] mb-1">Success Rate</p>
-            <p className="text-4xl font-black tracking-tighter">{stats.totalProcessed > 0 ? Math.round((stats.released / stats.totalProcessed) * 100) : 0}%</p>
-            <div className="mt-4 flex items-center gap-2">
+            <p className="text-3xl sm:text-4xl font-black tracking-tighter">{stats.totalProcessed > 0 ? Math.round((stats.released / stats.totalProcessed) * 100) : 0}%</p>
+            <div className="mt-3 sm:mt-4 flex items-center gap-2">
               <span className="bg-white/10 px-2 py-0.5 rounded text-[9px] font-black uppercase">Efficiency Index</span>
             </div>
           </div>
@@ -305,50 +305,50 @@ export default function PickupManagementPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
+        <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-start md:items-center justify-between">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
             <button
               onClick={() => setStatusFilter('ready')}
-              className={`px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${statusFilter === 'ready'
+              className={`flex-1 sm:flex-initial justify-center px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${statusFilter === 'ready'
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
                 : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
                 }`}
             >
-              <Package className="w-4 h-4" />
+              <Package className="w-4 h-4 shrink-0" />
               Ready ({stats.readyForPickup})
             </button>
             <button
               onClick={() => setStatusFilter('released')}
-              className={`px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${statusFilter === 'released'
+              className={`flex-1 sm:flex-initial justify-center px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${statusFilter === 'released'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
                 : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
                 }`}
             >
-              <CheckCircle className="w-4 h-4" />
+              <CheckCircle className="w-4 h-4 shrink-0" />
               Released ({stats.released})
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2.5 sm:gap-3 w-full md:w-auto">
             {/* Search */}
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-initial w-full sm:w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-48 text-sm"
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-full sm:w-48 text-sm"
               />
             </div>
 
             {/* Type Filter */}
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-initial">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                className="w-full appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm"
               >
                 <option value="all">All Types</option>
                 <option value="barangay_clearance">Clearance</option>
@@ -519,27 +519,27 @@ PickupManagementPage.getLayout = (page) => (
 // Certificate Details Modal Component
 function CertificateDetailsModal({ certificate, onClose, getStatusColor, getTypeLabel, formatDate, openPickupVerification, handleManualRelease }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden">
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[96dvh] sm:max-h-[95vh] overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="bg-slate-900 border-b-4 border-amber-400 px-6 py-4 flex items-center justify-between shrink-0">
+          <div className="bg-slate-900 border-b-4 border-amber-400 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="bg-white/10 p-2 rounded-xl border border-white/20">
-                <FileCheck className="w-6 h-6 text-amber-400" />
+                <FileCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.25em] mb-0.5">Republic of the Philippines · {getTypeLabel(certificate.certificate_type)}</p>
-                <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none">Certificate Details</h2>
+                <p className="text-[9px] sm:text-[10px] font-black text-amber-400 uppercase tracking-[0.25em] mb-0.5">Republic of the Philippines · {getTypeLabel(certificate.certificate_type)}</p>
+                <h2 className="text-base sm:text-xl font-black text-white uppercase tracking-tight leading-none">Certificate Details</h2>
               </div>
             </div>
-            <button onClick={onClose} className="text-white/70 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all">
-              <X className="w-6 h-6" />
+            <button onClick={onClose} className="text-white/70 hover:text-white p-1.5 sm:p-2 hover:bg-white/10 rounded-xl transition-all">
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
-          <div className="p-6 overflow-y-auto max-h-[calc(95vh-200px)] space-y-6">
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6">
             {/* Status Information */}
             <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="flex items-center gap-4">
@@ -769,9 +769,9 @@ function SendCertificateModal({ certificate, onClose, onConfirm, sending }) {
   const ref = certificate.reference_number || certificate.id;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[96dvh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-xl">
