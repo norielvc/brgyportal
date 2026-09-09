@@ -1,0 +1,115 @@
+export const colors = {
+  // Brand Emerald
+  emerald: {
+    50: '#ecfdf5',
+    100: '#d1fae5',
+    200: '#a7f3d0',
+    300: '#6ee7b7',
+    400: '#34d399',
+    500: '#10b981',
+    600: '#059669',
+    700: '#047857',
+    800: '#065f46',
+    900: '#064e3b',
+    950: '#022c22',
+  },
+  // Slate Neutral
+  slate: {
+    50: '#f8fafc',
+    100: '#f1f5f9',
+    200: '#e2e8f0',
+    300: '#cbd5e1',
+    400: '#94a3b8',
+    500: '#64748b',
+    600: '#475569',
+    700: '#334155',
+    800: '#1e293b',
+    900: '#0f172a',
+    950: '#020617',
+  },
+  // Amber / Warning / In Progress
+  amber: {
+    50: '#fffbeb',
+    100: '#fef3c7',
+    400: '#fbbf24',
+    500: '#f59e0b',
+    600: '#d97706',
+    700: '#b45309',
+  },
+  // Rose / Error / Urgent
+  rose: {
+    50: '#fff1f2',
+    100: '#ffe4e6',
+    400: '#fb7185',
+    500: '#f43f5e',
+    600: '#e11d48',
+    700: '#be123c',
+  },
+  // Blue / Info
+  blue: {
+    50: '#eff6ff',
+    100: '#dbeafe',
+    400: '#60a5fa',
+    500: '#3b82f6',
+    600: '#2563eb',
+    700: '#1d4ed8',
+  },
+  // Purple / Assistance
+  purple: {
+    50: '#faf5ff',
+    100: '#f3e8ff',
+    400: '#c084fc',
+    500: '#a855f7',
+    600: '#9333ea',
+    700: '#7e22ce',
+  },
+  white: '#ffffff',
+  black: '#000000',
+  transparent: 'transparent',
+};
+
+export const darkTheme = {
+  background: colors.slate[950],
+  card: colors.slate[900],
+  cardBorder: colors.slate[800],
+  text: colors.slate[50],
+  textSecondary: colors.slate[400],
+  textMuted: colors.slate[500],
+  primary: colors.emerald[500],
+  primaryDark: colors.emerald[600],
+  primaryText: colors.white,
+  surface: colors.slate[800],
+  surfaceSubtle: '#0f172a99',
+  border: colors.slate[800],
+  divider: colors.slate[800],
+  status: {
+    approved: { bg: 'rgba(16, 185, 129, 0.15)', text: colors.emerald[400], border: 'rgba(16, 185, 129, 0.3)' },
+    pending: { bg: 'rgba(245, 158, 11, 0.15)', text: colors.amber[500], border: 'rgba(245, 158, 11, 0.3)' },
+    rejected: { bg: 'rgba(244, 63, 94, 0.15)', text: colors.rose[500], border: 'rgba(244, 63, 94, 0.3)' },
+    review: { bg: 'rgba(59, 130, 246, 0.15)', text: colors.blue[500], border: 'rgba(59, 130, 246, 0.3)' },
+    released: { bg: 'rgba(168, 85, 247, 0.15)', text: colors.purple[500], border: 'rgba(168, 85, 247, 0.3)' },
+  },
+};
+
+export const lightTheme = {
+  background: colors.slate[50],
+  card: colors.white,
+  cardBorder: colors.slate[200],
+  text: colors.slate[900],
+  textSecondary: colors.slate[600],
+  textMuted: colors.slate[400],
+  primary: colors.emerald[600],
+  primaryDark: colors.emerald[700],
+  primaryText: colors.white,
+  surface: colors.slate[100],
+  surfaceSubtle: '#ffffff99',
+  border: colors.slate[200],
+  divider: colors.slate[200],
+  status: {
+    approved: { bg: colors.emerald[50], text: colors.emerald[700], border: colors.emerald[200] },
+    pending: { bg: colors.amber[50], text: colors.amber[700], border: colors.amber[100] },
+    rejected: { bg: colors.rose[50], text: colors.rose[700], border: colors.rose[100] },
+    review: { bg: colors.blue[50], text: colors.blue[700], border: colors.blue[100] },
+    released: { bg: colors.purple[50], text: colors.purple[700], border: colors.purple[100] },
+  },
+};

@@ -2,21 +2,12 @@ import { useState, useEffect } from 'react';
 import { X, AlertCircle, User, Mail, Shield, UserCircle, Briefcase, Lock, CheckCircle2, Building2 } from 'lucide-react';
 import PasswordStrengthIndicator from '@/components/UI/PasswordStrengthIndicator';
 import { getUserData, getAuthToken } from '@/lib/auth';
+import useScrollLock from '@/lib/useScrollLock';
 
 const API_URL = '/api';
 
 export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externalIsLoading }) {
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        document.body.style.overflow = '';
-      }
-    };
-  }, []);
+  useScrollLock(true);
 
   const currentUser = getUserData();
   const isSuperAdmin = currentUser?.role === 'superadmin';
@@ -121,6 +112,7 @@ export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externa
         <div
           className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
           onClick={onClose}
+          onTouchMove={(e) => e.preventDefault()}
         />
 
         {/* Modal Content */}

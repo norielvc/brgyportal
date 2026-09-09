@@ -11,6 +11,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { getStrings } from "../../lib/certLang";
+import useScrollLock from "@/lib/useScrollLock";
 
 export default function ResidentSearchModal({
   isOpen,
@@ -22,57 +23,7 @@ export default function ResidentSearchModal({
   lang = "en",
 }) {
   const t = getStrings(lang);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (isOpen) {
-        // Save current scroll position
-        const scrollY = window.scrollY;
-        
-        // Calculate scrollbar width to prevent layout shift
-        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-        
-        // Lock scroll and maintain position
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${scrollY}px`;
-        document.body.style.width = '100%';
-        document.body.style.overflow = 'hidden';
-        document.body.style.paddingRight = `${scrollbarWidth}px`;
-      } else {
-        // Get the scroll position before unlocking
-        const scrollY = document.body.style.top;
-        
-        // Restore scroll
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
-        
-        // Restore scroll position
-        if (scrollY) {
-          window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        }
-      }
-    }
-    return () => {
-      if (typeof window !== "undefined") {
-        // Get the scroll position before unlocking
-        const scrollY = document.body.style.top;
-        
-        // Restore scroll
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
-        
-        // Restore scroll position
-        if (scrollY) {
-          window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        }
-      }
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
@@ -162,6 +113,7 @@ export default function ResidentSearchModal({
       <div
         className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
 
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[96dvh] sm:max-h-[92vh] animate-in zoom-in-95 fade-in duration-300">

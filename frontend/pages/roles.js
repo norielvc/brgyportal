@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Shield, Plus, Edit2, Trash2, Check, X } from "lucide-react";
 import Layout from "@/components/Layout/Layout";
 import { useRouter } from "next/router";
+import useScrollLock from "@/lib/useScrollLock";
 
 export default function RolesPermissions() {
   const router = useRouter();
@@ -59,6 +60,8 @@ export default function RolesPermissions() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
 
+  useScrollLock(showCreateModal || showEditModal || showDeleteModal);
+
   const handleCreateRole = () => {
     setShowCreateModal(true);
   };
@@ -94,30 +97,33 @@ export default function RolesPermissions() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">
+          Configure security roles & access privileges
+        </p>
         <button
           onClick={handleCreateRole}
-          className="btn-primary flex items-center gap-2"
+          className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200 active:scale-95 transition-all shrink-0"
         >
-          <Plus className="w-5 h-5" />
-          Create Role
+          <Plus className="w-4 h-4" />
+          <span>Create Role</span>
         </button>
       </div>
 
       {/* Roles Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6">
         {roles.map((role) => (
-          <div key={role.id} className="card overflow-hidden">
+          <div key={role.id} className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:border-blue-200 transition-all">
             {/* Role Header */}
-            <div className={`p-4 ${role.color}`}>
+            <div className={`p-3.5 sm:p-4 ${role.color}`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shield className="w-6 h-6" />
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <Shield className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
                   <div>
-                    <h3 className="font-bold text-lg">{role.name}</h3>
-                    <p className="text-sm opacity-75">{role.description}</p>
+                    <h3 className="font-bold text-base sm:text-lg">{role.name}</h3>
+                    <p className="text-xs sm:text-sm opacity-75">{role.description}</p>
                   </div>
                 </div>
               </div>
@@ -275,7 +281,7 @@ export default function RolesPermissions() {
 
       {/* Create Role Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full flex flex-col max-h-[90vh]">
             <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 flex items-center justify-between text-white shrink-0">
               <h2 className="text-lg font-bold">Create New Role</h2>
@@ -324,7 +330,7 @@ export default function RolesPermissions() {
 
       {/* Edit Role Modal */}
       {showEditModal && selectedRole && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full flex flex-col max-h-[90vh]">
             <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 flex items-center justify-between text-white shrink-0">
               <h2 className="text-lg font-bold">
@@ -375,7 +381,7 @@ export default function RolesPermissions() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedRole && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full flex flex-col max-h-[90vh]">
             <div className="bg-red-50 border-b border-red-200 px-6 py-4 flex items-center justify-between shrink-0">
               <h2 className="text-lg font-bold text-gray-900">Delete Role</h2>

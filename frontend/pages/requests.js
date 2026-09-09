@@ -45,10 +45,14 @@ import {
   Store,
   Check,
   FilterX,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from "lucide-react";
 import { getAuthToken, getUserData } from "@/lib/auth";
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
 import Modal from "@/components/UI/Modal";
+import useScrollLock from "@/lib/useScrollLock";
 // API Configuration
 const API_URL = "/api";
 
@@ -227,7 +231,7 @@ const MultiSelectDropdown = ({
     </button>
 
     {isOpen && (
-      <div className="absolute z-[100] mt-2 min-w-[240px] bg-white border border-gray-200 rounded-xl shadow-xl p-2 animate-in fade-in zoom-in duration-200 origin-top">
+      <div className="absolute z-[100] mt-2 left-0 sm:left-auto right-0 sm:right-auto min-w-[240px] max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-xl p-2 animate-in fade-in zoom-in duration-200 origin-top">
         <div className="flex items-center justify-between p-2 pb-1 border-b border-gray-100 mb-2">
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
             {label} Filters
@@ -323,6 +327,7 @@ export default function RequestsPage() {
   const [actionType, setActionType] = useState("");
   const [actionComment, setActionComment] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Pickup Verification State
   const [showPickupModal, setShowPickupModal] = useState(false);
@@ -1233,335 +1238,532 @@ export default function RequestsPage() {
     setPendingActionCount(pending);
   }, [requests, viewMode, currentUser]);
 
+  const activeFilterCount =
+    (statusFilter.length > 0 ? 1 : 0) +
+    (typeFilter.length > 0 ? 1 : 0) +
+    (stepFilter.length > 0 ? 1 : 0) +
+    (historyGroup !== "all" ? 1 : 0) +
+    (timeRange !== "all" ? 1 : 0);
+
+  const QUICK_STATUS_OPTIONS = [
+    { value: "", label: "All Status" },
+    { value: "staff_review", label: "Staff Review" },
+    { value: "under_review", label: "Under Review" },
+    { value: "ready", label: "For Pickup" },
+    { value: "approved", label: "Approved" },
+    { value: "released", label: "Released" },
+    { value: "rejected", label: "Rejected" },
+  ];
+
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          {pendingActionCount > 0 && (
-            <span className="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-orange-100 text-orange-700 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              {pendingActionCount} Pending Your Action
-            </span>
+    <div className="space-y-3.5 sm:space-y-6 max-w-7xl mx-auto">
+      {/* Pending Action Banner on Mobile & Desktop */}
+      {pendingActionCount > 0 && (
+        <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-xl text-amber-900 shadow-sm">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 text-amber-700">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-bold text-amber-950 truncate">
+                {pendingActionCount} Request{pendingActionCount > 1 ? "s" : ""} Awaiting Your Review
+              </p>
+              <p className="text-[11px] text-amber-800/80 hidden sm:block">
+                Assigned workflow items ready for processing and signature approval
+              </p>
+            </div>
+          </div>
+          {viewMode !== "assigned" && (
+            <button
+              onClick={() => setViewMode("assigned")}
+              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shrink-0 transition-colors shadow-sm"
+            >
+              View My Tasks
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Segmented Control Tabs */}
+      <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200/80 gap-1">
+        <button
+          onClick={() => setViewMode("assigned")}
+          className={`py-2 sm:py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 ${
+            viewMode === "assigned"
+              ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+          }`}
+        >
+          <FileCheck className="w-4 h-4 shrink-0" />
+          <span className="truncate">My Assignments</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+              viewMode === "assigned" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700"
+            }`}
+          >
+            {assignedCount}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setViewMode("all")}
+          className={`py-2 sm:py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 ${
+            viewMode === "all"
+              ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+          }`}
+        >
+          <History className="w-4 h-4 shrink-0" />
+          <span className="truncate">Request History</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+              viewMode === "all" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700"
+            }`}
+          >
+            {totalCount}
+          </span>
+        </button>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 space-y-3">
+        {/* Top Search & Filter Toggle Row */}
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search reference or name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm bg-gray-50/50 focus:bg-white transition-colors"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Toggle Button (Mobile) */}
+          <button
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className={`md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-all shrink-0 ${
+              showMobileFilters || activeFilterCount > 0
+                ? "bg-blue-50 border-blue-300 text-blue-700"
+                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span>Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
+          {/* Refresh Button */}
+          <button
+            onClick={() => fetchRequests(workflows, currentUser)}
+            disabled={loading}
+            className="p-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 shadow-sm"
+            title="Refresh requests"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
+
+        {/* Quick Status Chips (Horizontal Scrollable on mobile) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pt-0.5">
+          {QUICK_STATUS_OPTIONS.map((opt) => {
+            const isSelected =
+              opt.value === ""
+                ? statusFilter.length === 0
+                : statusFilter.includes(opt.value);
+
+            return (
+              <button
+                key={opt.value || "all"}
+                onClick={() => {
+                  if (opt.value === "") {
+                    setStatusFilter([]);
+                  } else {
+                    setStatusFilter(isSelected ? [] : [opt.value]);
+                  }
+                }}
+                className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 border ${
+                  isSelected
+                    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearFilters}
+              className="px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-full transition-colors flex items-center gap-1 shrink-0 ml-auto"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+          )}
+        </div>
+
+        {/* Expandable Advanced Filters Grid */}
+        <div
+          className={`${
+            showMobileFilters ? "grid" : "hidden md:grid"
+          } grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-2 border-t border-gray-100 animate-in fade-in duration-150`}
+        >
+          {/* Status MultiSelect */}
+          <div className="w-full">
+            <MultiSelectDropdown
+              label="Status"
+              options={STATUS_OPTIONS}
+              selected={statusFilter}
+              onChange={setStatusFilter}
+              placeholder="All Status"
+              icon={Filter}
+              dropdownRef={statusDropdownRef}
+              isOpen={showStatusDropdown}
+              setIsOpen={setShowStatusDropdown}
+            />
+          </div>
+
+          {/* Type MultiSelect */}
+          <div className="w-full">
+            <MultiSelectDropdown
+              label="Type"
+              options={TYPE_OPTIONS}
+              selected={typeFilter}
+              onChange={setTypeFilter}
+              placeholder="All Types"
+              icon={Database}
+              dropdownRef={typeDropdownRef}
+              isOpen={showTypeDropdown}
+              setIsOpen={setShowTypeDropdown}
+            />
+          </div>
+
+          {/* Step MultiSelect */}
+          <div className="w-full">
+            <MultiSelectDropdown
+              label="Step"
+              options={STEP_OPTIONS}
+              selected={stepFilter}
+              onChange={setStepFilter}
+              placeholder="All Steps"
+              icon={ClipboardList}
+              dropdownRef={stepDropdownRef}
+              isOpen={showStepDropdown}
+              setIsOpen={setShowStepDropdown}
+            />
+          </div>
+
+          {/* History Group */}
+          <div className="relative w-full">
+            <select
+              value={historyGroup}
+              onChange={(e) => setHistoryGroup(e.target.value)}
+              className="w-full appearance-none pl-3 pr-8 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-blue-50/50 text-xs sm:text-sm font-semibold text-blue-700"
+            >
+              <option value="all">All Records</option>
+              <option value="active">Active Requests</option>
+              <option value="closed">Closed / Archive</option>
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 pointer-events-none" />
+          </div>
+
+          {/* Time Range */}
+          <div className="relative w-full">
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="w-full appearance-none pl-8 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-xs sm:text-sm text-gray-700"
+            >
+              <option value="all">Any Time</option>
+              <option value="daily">Today</option>
+              <option value="weekly">This Week</option>
+              <option value="monthly">This Month</option>
+              <option value="yearly">This Year</option>
+              <option value="custom">Custom Date</option>
+            </select>
+            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+
+          {timeRange === "custom" && (
+            <div className="col-span-full flex flex-wrap items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
+              <span className="text-xs font-semibold text-gray-500">From:</span>
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                className="px-2 py-1 border border-gray-300 rounded bg-white text-xs"
+              />
+              <span className="text-xs font-semibold text-gray-500">To:</span>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                className="px-2 py-1 border border-gray-300 rounded bg-white text-xs"
+              />
+            </div>
           )}
         </div>
       </div>
 
-      {/* Tabs and Filters Navigation */}
-      <div className="space-y-4">
-        {/* Top Tabs */}
-        <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar flex-nowrap">
-          <button
-            onClick={() => setViewMode("assigned")}
-            className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${viewMode === "assigned"
-                ? "border-blue-600 text-blue-600 bg-blue-50/30"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-              }`}
-          >
-            <FileCheck className="w-4 h-4 shrink-0" />
-            My Assignments
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] ${viewMode === "assigned" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}
-            >
-              {assignedCount}
-            </span>
-          </button>
-          <button
-            onClick={() => setViewMode("all")}
-            className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${viewMode === "all"
-                ? "border-blue-600 text-blue-600 bg-blue-50/30"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-              }`}
-          >
-            <History className="w-4 h-4 shrink-0" />
-            Certificate Request History
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] ${viewMode === "all" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}
-            >
-              {totalCount}
-            </span>
-          </button>
-        </div>
-
-        {/* Filter Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
-          <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-start md:items-center justify-between">
-            <div className="flex flex-wrap gap-2.5 sm:gap-3 items-center w-full">
-              {/* Search */}
-              <div className="relative flex-1 w-full min-w-0 md:max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by Reference, Applicant Name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <MultiSelectDropdown
-                label="Status"
-                options={STATUS_OPTIONS}
-                selected={statusFilter}
-                onChange={setStatusFilter}
-                placeholder="All Status"
-                icon={Filter}
-                dropdownRef={statusDropdownRef}
-                isOpen={showStatusDropdown}
-                setIsOpen={setShowStatusDropdown}
-              />
-
-              {/* Type Filter */}
-              <MultiSelectDropdown
-                label="Type"
-                options={TYPE_OPTIONS}
-                selected={typeFilter}
-                onChange={setTypeFilter}
-                placeholder="All Types"
-                icon={Database}
-                dropdownRef={typeDropdownRef}
-                isOpen={showTypeDropdown}
-                setIsOpen={setShowTypeDropdown}
-              />
-
-              {/* Step Filter */}
-              <MultiSelectDropdown
-                label="Step"
-                options={STEP_OPTIONS}
-                selected={stepFilter}
-                onChange={setStepFilter}
-                placeholder="All Steps"
-                icon={ClipboardList}
-                dropdownRef={stepDropdownRef}
-                isOpen={showStepDropdown}
-                setIsOpen={setShowStepDropdown}
-              />
-
-              {/* History Group */}
-              <div className="relative">
-                <select
-                  value={historyGroup}
-                  onChange={(e) => setHistoryGroup(e.target.value)}
-                  className="appearance-none pl-3 pr-8 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-blue-50/50 text-sm font-medium text-blue-700"
-                >
-                  <option value="all">All Records</option>
-                  <option value="active">Active Requests</option>
-                  <option value="closed">Closed / Archive</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400 pointer-events-none" />
-              </div>
-
-              {/* Time Range */}
-              <div className="relative">
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <select
-                      value={timeRange}
-                      onChange={(e) => setTimeRange(e.target.value)}
-                      className="appearance-none pl-9 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm"
-                    >
-                      <option value="all">Any Time</option>
-                      <option value="daily">Today</option>
-                      <option value="weekly">This Week</option>
-                      <option value="monthly">This Month</option>
-                      <option value="yearly">This Year</option>
-                      <option value="custom">Custom Date</option>
-                    </select>
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  </div>
-
-                  {timeRange === "custom" && (
-                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300 bg-gray-50 p-1 rounded-lg border border-gray-200">
-                      <input
-                        type="date"
-                        value={dateRange.start}
-                        onChange={(e) =>
-                          setDateRange({ ...dateRange, start: e.target.value })
-                        }
-                        className="px-2 py-1 border-none bg-transparent text-xs focus:ring-0"
-                      />
-                      <span className="text-gray-400 text-[10px] font-bold uppercase">
-                        to
-                      </span>
-                      <input
-                        type="date"
-                        value={dateRange.end}
-                        onChange={(e) =>
-                          setDateRange({ ...dateRange, end: e.target.value })
-                        }
-                        className="px-2 py-1 border-none bg-transparent text-xs focus:ring-0"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Clear Filter Button */}
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all ml-auto"
-                title="Clear all filters"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Reset</span>
-              </button>
-              {/* Refresh Button */}
-              <button
-                onClick={() => fetchRequests(workflows, currentUser)}
-                disabled={loading}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all disabled:opacity-50"
-                title="Refresh requests"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Requests Table */}
+      {/* Requests Container */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading requests...</p>
+            <p className="text-gray-500 text-sm font-medium">Loading requests...</p>
           </div>
         ) : filteredRequests.length === 0 ? (
           <div className="p-12 text-center">
-            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 font-medium">
+            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-700 font-semibold text-sm sm:text-base">
               {viewMode === "assigned"
                 ? "No requests assigned to you"
                 : "No requests found"}
             </p>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-gray-400 text-xs sm:text-sm mt-1">
               {viewMode === "assigned"
-                ? "Requests will appear here when you are assigned as an approver"
-                : "Try adjusting your filters"}
+                ? "Requests will appear here when you are assigned as a reviewer or approver"
+                : "Try clearing or adjusting your search filters"}
             </p>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="mt-4 px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Clear All Filters
+              </button>
+            )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Reference
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Applicant
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Current Step
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Last Activity
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredRequests.map((request, index) => {
-                  const currentStep = getCurrentWorkflowStep(request);
-                  const canAct = canUserTakeAction(request);
+          <>
+            {/* MOBILE VIEW: Dedicated Touch-Friendly Cards (block md:hidden) */}
+            <div className="block md:hidden divide-y divide-gray-100">
+              {filteredRequests.map((request, index) => {
+                const currentStep = getCurrentWorkflowStep(request);
+                const canAct = canUserTakeAction(request);
 
-                  return (
-                    <tr
-                      key={`${request.id}-${index}`} // Use index to ensure uniqueness
-                      onClick={() => setSelectedRequest(request)}
-                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${canAct ? "bg-blue-50/30" : ""}`}
-                    >
-                      <td className="px-6 py-4">
-                        <Link
-                          href={`/requests?id=${request.id}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (
-                              !e.ctrlKey &&
-                              !e.metaKey &&
-                              !e.shiftKey &&
-                              !e.altKey
-                            ) {
-                              e.preventDefault();
-                              setSelectedRequest(request);
-                              router.push(
-                                {
-                                  pathname: router.pathname,
-                                  query: { ...router.query, id: request.id },
-                                },
-                                undefined,
-                                { shallow: true },
-                              );
-                            }
-                          }}
-                          className="font-sans font-semibold text-blue-600 hover:underline relative z-10"
-                        >
+                return (
+                  <div
+                    key={`${request.id}-${index}`}
+                    onClick={() => setSelectedRequest(request)}
+                    className={`p-3.5 bg-white transition-all active:bg-blue-50/50 cursor-pointer ${
+                      canAct ? "bg-blue-50/20 border-l-4 border-l-blue-600" : ""
+                    }`}
+                  >
+                    {/* Header Row: Ref Number + Action Badge + Status Pill */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono text-xs font-bold text-blue-600 truncate">
                           {request.reference_number}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-gray-500" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {request.applicant_name ||
-                                request.full_name ||
-                                "N/A"}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {request.contact_number || "No contact"}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-2 h-2 rounded-full ${getTypeColor(request.certificate_type)}`}
-                          ></div>
-                          <span className="text-sm font-medium text-gray-700">
-                            {getTypeLabel(request.certificate_type)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(request.status)}`}
-                        >
-                          {request.status?.replace(/_/g, " ").toUpperCase()}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {currentStep ? (
-                          <span className="text-sm text-gray-600">
+                        {canAct && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-900 uppercase tracking-wide shrink-0">
+                            Action
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${getStatusColor(
+                          request.status
+                        )}`}
+                      >
+                        {request.status?.replace(/_/g, " ").toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Middle Row: Applicant Profile */}
+                    <div className="flex items-start gap-2.5 mb-2.5">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center shrink-0 mt-0.5">
+                        <User className="w-4 h-4 text-slate-600" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">
+                          {request.applicant_name || request.full_name || "N/A"}
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-0.5 truncate flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-gray-400 shrink-0" />
+                          {request.contact_number || "No contact number"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Footer Row: Certificate Type, Current Step & Timestamp */}
+                    <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-1.5 text-xs text-gray-500">
+                      <div className="flex items-center gap-1.5 min-w-0 max-w-[55%]">
+                        <div
+                          className={`w-2 h-2 rounded-full shrink-0 ${getTypeColor(
+                            request.certificate_type
+                          )}`}
+                        ></div>
+                        <span className="font-semibold text-gray-700 truncate text-[11px]">
+                          {getTypeLabel(request.certificate_type)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-[11px] text-gray-400 shrink-0 ml-auto">
+                        {currentStep && (
+                          <span className="bg-slate-100 text-slate-700 font-medium px-1.5 py-0.5 rounded text-[10px] max-w-[110px] truncate">
                             {currentStep.name}
                           </span>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
                         )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <Calendar className="w-4 h-4" />
+                        <span className="flex items-center gap-0.5 text-[10px]">
+                          <Clock className="w-3 h-3 text-gray-400 shrink-0" />
                           {formatDate(request.updated_at || request.created_at)}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* DESKTOP VIEW: Traditional High-Density Table (hidden md:block) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Reference
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Applicant
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Current Step
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Last Activity
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredRequests.map((request, index) => {
+                    const currentStep = getCurrentWorkflowStep(request);
+                    const canAct = canUserTakeAction(request);
+
+                    return (
+                      <tr
+                        key={`${request.id}-${index}`}
+                        onClick={() => setSelectedRequest(request)}
+                        className={`hover:bg-gray-50 transition-colors cursor-pointer ${
+                          canAct ? "bg-blue-50/30" : ""
+                        }`}
+                      >
+                        <td className="px-6 py-4">
+                          <Link
+                            href={`/requests?id=${request.id}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (
+                                !e.ctrlKey &&
+                                !e.metaKey &&
+                                !e.shiftKey &&
+                                !e.altKey
+                              ) {
+                                e.preventDefault();
+                                setSelectedRequest(request);
+                                router.push(
+                                  {
+                                    pathname: router.pathname,
+                                    query: { ...router.query, id: request.id },
+                                  },
+                                  undefined,
+                                  { shallow: true },
+                                );
+                              }
+                            }}
+                            className="font-mono font-bold text-blue-600 hover:underline relative z-10"
+                          >
+                            {request.reference_number}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center">
+                              <User className="w-5 h-5 text-gray-500" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 text-sm">
+                                {request.applicant_name ||
+                                  request.full_name ||
+                                  "N/A"}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {request.contact_number || "No contact"}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-2 h-2 rounded-full ${getTypeColor(
+                                request.certificate_type
+                              )}`}
+                            ></div>
+                            <span className="text-sm font-medium text-gray-700">
+                              {getTypeLabel(request.certificate_type)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
+                              request.status
+                            )}`}
+                          >
+                            {request.status?.replace(/_/g, " ").toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {currentStep ? (
+                            <span className="text-sm text-gray-600">
+                              {currentStep.name}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Calendar className="w-4 h-4" />
+                            {formatDate(
+                              request.updated_at || request.created_at
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -1709,6 +1911,7 @@ function RequestDetailsModal({
   currentUser,
   userSignature,
 }) {
+  useScrollLock(true);
   const currentStep = getCurrentWorkflowStep(request);
   const canAct = canUserTakeAction(request);
   const isGuardianship =
@@ -2367,65 +2570,95 @@ function RequestDetailsModal({
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
 
       <div
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[90vh]"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="bg-white/10 p-1.5 sm:p-2 rounded-xl border border-white/10">
-              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        <div className="bg-slate-900 border-b border-slate-800 px-3.5 sm:px-5 py-2.5 sm:py-3.5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            <div className="bg-white/10 p-2 rounded-xl border border-white/10 shrink-0">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
             </div>
-            <div>
-              <h2 className="text-xs sm:text-sm font-semibold text-white">Request Details</h2>
-              <p className="text-blue-200/60 text-[10px] sm:text-[11px] font-sans">{request.reference_number}</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs sm:text-sm font-bold text-white tracking-tight leading-none truncate">Request Details</h2>
+                <span className="hidden xs:inline-block px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold">
+                  {request.reference_number}
+                </span>
+              </div>
+              <p className="text-slate-400 text-[10px] sm:text-[11px] font-mono font-bold truncate xs:hidden mt-0.5">{request.reference_number}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {!isEditing && canAct && !["oic_review", "ready", "ready_for_pickup"].includes(request.status) && (
-              <button onClick={() => setIsEditing(true)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 flex items-center gap-2 transition-colors border border-white/10">
-                <Edit className="w-3.5 h-3.5" /><span>Edit</span>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-2.5 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
+                title="Edit Request"
+              >
+                <Edit className="w-3.5 h-3.5 text-blue-400" />
+                <span className="hidden sm:inline">Edit</span>
               </button>
             )}
             {isEditing && (
               <>
-                <button onClick={handleSave} disabled={isSaving} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 flex items-center gap-2 transition-colors disabled:opacity-50">
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-2.5 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
                   {isSaving ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin rounded-full" /> : <Save className="w-3.5 h-3.5" />}
-                  <span>{isSaving ? "Saving..." : "Save"}</span>
+                  <span>Save</span>
                 </button>
-                <button onClick={() => { setIsEditing(false); setEditFormData({ first_name: request.first_name || "", middle_name: request.middle_name || "", last_name: request.last_name || "", suffix: request.suffix || "", full_name: request.full_name || request.applicant_name || "", contact_number: request.contact_number || "", email: request.email || "", age: request.age || "", sex: request.sex || "", civil_status: request.civil_status || "", date_of_birth: request.date_of_birth || "", place_of_birth: request.place_of_birth || "", address: request.address || "", purpose: request.purpose || "", date_of_death: request.date_of_death || "", cause_of_death: request.cause_of_death || "", covid_related: request.covid_related || false, requestor_name: request.requestor_name || "", guardian_name: request.guardian_name || "", guardian_relationship: request.guardian_relationship || "", partner_full_name: request.partner_full_name || "", partner_age: request.partner_age || "", partner_sex: request.partner_sex || "", partner_date_of_birth: request.partner_date_of_birth || "", no_of_children: request.no_of_children || "", living_together_years: request.living_together_years || "", living_together_months: request.living_together_months || "", date_of_examination: request.date_of_examination || "", usaping_barangay: request.usaping_barangay || "", date_of_hearing: request.date_of_hearing || "" }); }} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 transition-colors border border-white/10">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="px-2.5 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors border border-slate-700"
+                >
                   Cancel
                 </button>
               </>
             )}
-            <button onClick={() => setShowPdfPreview(true)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-semibold hover:bg-white/20 flex items-center gap-2 transition-colors border border-white/10">
-              <Eye className="w-3.5 h-3.5" /><span>Preview PDF</span>
+            <button
+              onClick={() => setShowPdfPreview(true)}
+              className="px-2.5 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
+              title="Preview Certificate PDF"
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-400" />
+              <span className="hidden sm:inline">Preview PDF</span>
+              <span className="sm:hidden">PDF</span>
             </button>
-            <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-colors ml-1">
-              <XCircle className="w-5 h-5" />
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg transition-colors ml-0.5"
+              aria-label="Close modal"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-blue-100 bg-blue-50/30 px-4 shrink-0">
+        <div className="flex border-b border-slate-200 bg-slate-100/75 px-3 sm:px-5 shrink-0">
           <button
             onClick={() => setActiveTab("details")}
-            className={`pb-3 pt-3 px-4 text-sm font-semibold border-b-2 transition-colors ${activeTab === "details"
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-colors ${
+              activeTab === "details"
                 ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-400 hover:text-gray-600"
-              }`}
+                : "border-transparent text-slate-500 hover:text-slate-700"
+            }`}
           >
             Request Details
           </button>
           <button
             onClick={() => setActiveTab("history")}
-            className={`pb-3 pt-3 px-4 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === "history"
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === "history"
                 ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-400 hover:text-gray-600"
-              }`}
+                : "border-transparent text-slate-500 hover:text-slate-700"
+            }`}
           >
             <span>History & Comments</span>
             {hasComments && (
@@ -2434,14 +2667,14 @@ function RequestDetailsModal({
           </button>
         </div>
 
-        <div className="p-4 overflow-y-auto overflow-x-hidden flex-1 space-y-4 custom-scrollbar bg-slate-50/50">
+        <div className="p-3 sm:p-5 overflow-y-auto overflow-x-hidden flex-1 space-y-3 sm:space-y-4 custom-scrollbar bg-slate-50/50">
           {activeTab === "details" && (
             <>
               {/* Ready / Released Guidance Banner */}
               {["ready", "ready_for_pickup"].includes(
                 request.status,
               ) && (
-                  <div className="bg-green-600 p-2.5 rounded-xl shadow-sm border border-green-400 text-white">
+                  <div className="bg-emerald-600 p-2.5 rounded-xl shadow-sm border border-emerald-400 text-white">
                     <div className="flex items-center gap-3">
                       <div className="bg-white/20 p-1.5 rounded-lg">
                         <Printer className="w-4 h-4 text-white" />
@@ -2482,45 +2715,45 @@ function RequestDetailsModal({
                 <ORPreviewSection request={request} />
               )}
               {/* Request Summary Card */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Reference No.</p>
-                    <p className="font-sans text-sm font-bold text-gray-900">{request.reference_number || "—"}</p>
+              <div className="bg-white rounded-xl border border-slate-200/90 shadow-sm p-3 sm:p-4 mb-2 sm:mb-3">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reference No.</p>
+                    <p className="font-mono text-xs sm:text-sm font-bold text-blue-600 truncate">{request.reference_number || "—"}</p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Certificate Type</p>
-                    <p className="text-sm font-bold text-gray-900">{getTypeLabel(request.certificate_type)}</p>
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Certificate Type</p>
+                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{getTypeLabel(request.certificate_type)}</p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current Step</p>
-                    <p className="text-sm font-bold text-blue-700">{currentStep?.name?.toUpperCase() || request.status?.replace(/_/g, " ").toUpperCase()}</p>
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Current Step</p>
+                    <p className="text-xs sm:text-sm font-bold text-slate-800 truncate">{currentStep?.name?.toUpperCase() || request.status?.replace(/_/g, " ").toUpperCase()}</p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date Submitted</p>
-                    <p className="text-sm font-semibold text-gray-700">{formatDate(request.created_at)}</p>
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Submitted</p>
+                    <p className="text-xs sm:text-sm font-semibold text-slate-700 truncate">{formatDate(request.created_at)}</p>
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-3 flex-wrap">
+                <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <span
-                    className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black tracking-[0.1em] border shadow-sm ${getStatusColor(request.status)}`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider border shadow-sm ${getStatusColor(request.status)}`}
                   >
                     {request.status?.replace(/_/g, " ").toUpperCase()}
                   </span>
                   {request.residents?.pending_case && (
-                    <span className="bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 shadow-sm uppercase tracking-widest">
+                    <span className="bg-red-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm uppercase tracking-wider">
                       <ShieldAlert className="w-3 h-3" />
                       Legal Hold
                     </span>
                   )}
                   {request.pickup_method === "online" && (
-                    <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 shadow-sm uppercase tracking-widest">
+                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm uppercase tracking-wider">
                       <Mail className="w-3 h-3" />
                       Online Delivery
                     </span>
                   )}
                   {request.pickup_method === "pickup" && (
-                    <span className="bg-gray-600 text-white px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 shadow-sm uppercase tracking-widest">
+                    <span className="bg-slate-700 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm uppercase tracking-wider">
                       <MapPin className="w-3 h-3" />
                       Barangay Pickup
                     </span>
@@ -2564,10 +2797,10 @@ function RequestDetailsModal({
               )}
 
               {/* Compact Applicant Info Grid */}
-              <div className="bg-white rounded-xl p-4 border border-blue-50 shadow-sm">
-                <div className="flex justify-between items-center mb-3 border-l-4 border-blue-500 pl-3">
-                  <h3 className="font-semibold text-blue-700 flex items-center gap-2 text-xs uppercase tracking-widest">
-                    <User className="w-4 h-4 text-blue-500" />
+              <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/90 shadow-sm">
+                <div className="flex justify-between items-center mb-3 border-l-4 border-blue-600 pl-3">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2 text-xs uppercase tracking-wider">
+                    <User className="w-4 h-4 text-blue-600" />
                     Applicant Information
                   </h3>
                   {isEditing && (
@@ -2615,7 +2848,7 @@ function RequestDetailsModal({
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5">
                   {/* LEFT COLUMN */}
                   <div className="space-y-3">
                     {isEditing ? (
@@ -2671,8 +2904,8 @@ function RequestDetailsModal({
                       </div>
                     ) : (
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
                             Full Name
                           </p>
                           {request.residents && !isEditing && (
@@ -2706,7 +2939,7 @@ function RequestDetailsModal({
                             </button>
                           )}
                         </div>
-                        <p className="font-extrabold text-gray-900 text-[22px] leading-tight tracking-tight uppercase">
+                        <p className="font-bold text-slate-900 text-base sm:text-lg lg:text-xl leading-snug tracking-tight uppercase">
                           {request.applicant_name ||
                             request.full_name ||
                             "NOT RECORDED"}
@@ -2748,9 +2981,9 @@ function RequestDetailsModal({
                     )}
 
                     {/* Key fields row */}
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 pt-2.5 border-t border-slate-100">
                       <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                           Date of Birth
                         </p>
                         {isEditing ? (
@@ -2762,7 +2995,7 @@ function RequestDetailsModal({
                             className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
                           />
                         ) : (
-                          <p className="font-semibold text-gray-800 text-sm font-sans">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans">
                             {request.date_of_birth ||
                               (request.residents?.date_of_birth
                                 ? new Date(request.residents.date_of_birth)
@@ -2773,7 +3006,7 @@ function RequestDetailsModal({
                         )}
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                           Civil Status
                         </p>
                         {isEditing ? (
@@ -2789,13 +3022,13 @@ function RequestDetailsModal({
                             <option value="SEPARATED">SEPARATED</option>
                           </select>
                         ) : (
-                          <p className="font-semibold text-gray-800 text-sm uppercase">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
                             {request.civil_status || "NOT RECORDED"}
                           </p>
                         )}
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                           Age / Sex
                         </p>
                         {isEditing ? (
@@ -2820,24 +3053,24 @@ function RequestDetailsModal({
                             </select>
                           </div>
                         ) : (
-                          <p className="font-semibold text-gray-800 text-sm uppercase">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
                             {displayAge || "-"} / {request.sex || "-"}
                           </p>
                         )}
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                           Contact No.
                         </p>
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-800 text-sm font-sans tracking-tighter">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans tracking-tight">
                             {request.contact_number || "NOT RECORDED"}
                           </p>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                         Place of Birth
                       </p>
                       {isEditing ? (
@@ -2849,7 +3082,7 @@ function RequestDetailsModal({
                           className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
                         />
                       ) : (
-                        <p className="font-semibold text-gray-800 text-sm uppercase">
+                        <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
                           {request.place_of_birth || "NOT RECORDED"}
                         </p>
                       )}
@@ -2859,7 +3092,7 @@ function RequestDetailsModal({
                   {/* RIGHT COLUMN */}
                   <div className="space-y-3">
                     <div>
-                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                         Residential Address
                       </p>
                       {isEditing ? (
@@ -2871,7 +3104,7 @@ function RequestDetailsModal({
                           rows="3"
                         />
                       ) : (
-                        <p className="font-medium text-gray-700 text-sm leading-relaxed">
+                        <p className="font-medium text-slate-800 text-xs sm:text-sm leading-relaxed">
                           {request.address || (() => {
                             const r = request.residents;
                             if (!r) return "NOT RECORDED";
@@ -2889,7 +3122,7 @@ function RequestDetailsModal({
                     </div>
 
                     <div>
-                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                         Email Address
                       </p>
                       {isEditing ? (
@@ -2901,7 +3134,7 @@ function RequestDetailsModal({
                           className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
                         />
                       ) : (
-                        <p className="font-semibold text-gray-800 text-sm font-sans tracking-tighter">
+                        <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans tracking-tight">
                           {request.email || "NOT RECORDED"}
                         </p>
                       )}
@@ -2913,7 +3146,7 @@ function RequestDetailsModal({
                       "barangay_residency",
                     ].includes(request.certificate_type) && (
                         <div>
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Purpose of Request
                           </p>
                           {isEditing ? (
@@ -2922,11 +3155,11 @@ function RequestDetailsModal({
                                 name="purpose"
                                 value={editFormData.purpose}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 font-black text-gray-900 uppercase text-sm mb-3 transition-all resize-none"
+                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm mb-2 transition-all resize-none"
                                 rows="3"
                                 placeholder="ENTER PURPOSE HERE..."
                               />
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <select
                                   onChange={handlePurposeSelect}
                                   className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
@@ -2976,20 +3209,20 @@ function RequestDetailsModal({
               </div>
 
               {request.certificate_type === "barangay_cohabitation" && (
-                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mt-4">
+                <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/90 shadow-sm mt-3 sm:mt-4">
                   <div className="flex justify-between items-center mb-3 border-l-4 border-rose-500 pl-3">
-                    <h3 className="font-black text-gray-900 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em]">
+                    <h3 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
                       <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
                       Partner Information
                     </h3>
                   </div>
                   <div
-                    className={`grid gap-4 ${["oic_review", "ready", "ready_for_pickup"].includes(request.status) ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4"
                   >
                     {isEditing ? (
                       <>
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                        <div className="col-span-1 sm:col-span-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                             Partner Full Name
                           </p>
                           <input
@@ -2997,11 +3230,11 @@ function RequestDetailsModal({
                             name="partner_full_name"
                             value={editFormData.partner_full_name}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm"
                           />
                         </div>
                         <div className="col-span-1">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                             Date of Birth
                           </p>
                           <input
@@ -3015,26 +3248,26 @@ function RequestDetailsModal({
                                 : ""
                             }
                             onChange={handleInputChange}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 text-xs sm:text-sm"
                           />
                         </div>
                         <div className="col-span-1">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                             Sex
                           </p>
                           <select
                             name="partner_sex"
                             value={editFormData.partner_sex}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm"
                           >
                             <option value="">SELECT...</option>
                             <option value="MALE">MALE</option>
                             <option value="FEMALE">FEMALE</option>
                           </select>
                         </div>
-                        <div className="col-span-2">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                        <div className="col-span-1 sm:col-span-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                             Shared Address
                           </p>
                           <input
@@ -3042,11 +3275,11 @@ function RequestDetailsModal({
                             name="address"
                             value={editFormData.address}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm"
                           />
                         </div>
-                        <div className="col-span-2 md:col-span-1">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                        <div className="col-span-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                             Years Living Together
                           </p>
                           <input
@@ -3054,11 +3287,11 @@ function RequestDetailsModal({
                             name="living_together_years"
                             value={editFormData.living_together_years}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-extrabold text-gray-900"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-gray-900 text-xs sm:text-sm"
                           />
                         </div>
-                        <div className="col-span-2 md:col-span-1">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                        <div className="col-span-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                             Months
                           </p>
                           <input
@@ -3066,11 +3299,11 @@ function RequestDetailsModal({
                             name="living_together_months"
                             value={editFormData.living_together_months}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-extrabold text-gray-900"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-gray-900 text-xs sm:text-sm"
                           />
                         </div>
-                        <div className="col-span-2 md:col-span-2">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                        <div className="col-span-1 sm:col-span-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                             No. of Children
                           </p>
                           <input
@@ -3078,44 +3311,34 @@ function RequestDetailsModal({
                             name="no_of_children"
                             value={editFormData.no_of_children}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-extrabold text-gray-900"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-gray-900 text-xs sm:text-sm"
                           />
                         </div>
                       </>
                     ) : (
                       <>
                         {/* Partner Basic Info Row */}
-                        <div
-                          className={
-                            [
-                              "oic_review",
-                              "ready",
-                              "ready_for_pickup",
-                            ].includes(request.status)
-                              ? "col-span-2"
-                              : "col-span-2"
-                          }
-                        >
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                        <div className="col-span-1 sm:col-span-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Partner Name
                           </p>
-                          <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight">
+                          <p className="font-bold text-slate-900 uppercase text-sm sm:text-base tracking-tight">
                             {request.partner_full_name || "N/A"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Date of Birth
                           </p>
-                          <p className="font-semibold text-gray-800 text-sm font-sans whitespace-nowrap">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans whitespace-nowrap">
                             {request.partner_date_of_birth || "N/A"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Age / Sex
                           </p>
-                          <p className="font-semibold text-gray-800 text-sm uppercase">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
                             {(calculateAge(request.partner_date_of_birth) ||
                               request.partner_age ||
                               "-") +
@@ -3123,57 +3346,57 @@ function RequestDetailsModal({
                               (request.partner_sex || "-")}
                           </p>
                         </div>
-                        <div className="col-span-2">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                        <div className="col-span-1 sm:col-span-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Partner Place of Birth
                           </p>
-                          <p className="font-semibold text-gray-800 text-sm uppercase">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
                             {request.partner_place_of_birth || request.details?.partnerPlaceOfBirth || "NOT RECORDED"}
                           </p>
                         </div>
 
                         {/* Relationship Info - Compact Row */}
                         <div>
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Partnership Length
                           </p>
-                          <p className="font-black text-gray-900 text-sm">
+                          <p className="font-bold text-slate-900 text-xs sm:text-sm">
                             {request.living_together_years || "0"} YRS, {request.living_together_months || "0"} MOS
                           </p>
                         </div>
                         <div>
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             No. of Children
                           </p>
-                          <p className="font-black text-gray-900 text-sm">
+                          <p className="font-bold text-slate-900 text-xs sm:text-sm">
                             {request.no_of_children || 0}
                           </p>
                         </div>
 
                         {/* Address Verification Block — Optimized 3-column layout */}
-                        <div className="col-span-2 md:col-span-4 bg-amber-50 border border-amber-200 rounded-xl p-4 mt-2">
-                          <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <div className="col-span-1 sm:col-span-2 md:col-span-4 bg-amber-50/75 border border-amber-200 rounded-xl p-3 sm:p-4 mt-1">
+                          <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                             <span className="text-amber-600">⚠</span> Address Verification — Staff Review Required
                           </p>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="bg-white rounded-lg p-3 border border-amber-100">
-                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-wide mb-1.5">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+                            <div className="bg-white rounded-lg p-2.5 sm:p-3 border border-amber-100">
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                 Requestor Address on File
                               </p>
-                              <p className="font-bold text-gray-800 text-xs uppercase leading-relaxed">
+                              <p className="font-semibold text-slate-800 text-xs uppercase leading-relaxed">
                                 {request.residents?.residential_address || "NOT RECORDED"}
                               </p>
                             </div>
-                            <div className="bg-white rounded-lg p-3 border border-amber-100">
-                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-wide mb-1.5">
+                            <div className="bg-white rounded-lg p-2.5 sm:p-3 border border-amber-100">
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                 Partner Address on File
                               </p>
-                              <p className="font-bold text-gray-800 text-xs uppercase leading-relaxed">
+                              <p className="font-semibold text-slate-800 text-xs uppercase leading-relaxed">
                                 {request.partner_residential_address || request.details?.partnerResidentialAddress || request.partner_residential_address_injected || "NOT RECORDED"}
                               </p>
                             </div>
-                            <div className="bg-white rounded-lg p-3 border-2 border-blue-300 ring-2 ring-blue-100">
-                              <p className="text-[10px] font-black text-blue-600 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                            <div className="bg-white rounded-lg p-2.5 sm:p-3 border-2 border-blue-300 ring-2 ring-blue-100">
+                              <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
                                 <span className="text-blue-500">★</span> New Address Submitted
                               </p>
                               <p className="font-bold text-blue-800 text-xs uppercase leading-relaxed">
@@ -3189,65 +3412,55 @@ function RequestDetailsModal({
               )}
 
               {isBusinessPermit && (
-                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mt-4">
-                  <div className="flex justify-between items-center mb-3 border-l-4 border-emerald-500 pl-3">
-                    <h3 className="font-black text-gray-900 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em]">
-                      <Store className="w-4 h-4 text-emerald-500" />
+                <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/90 shadow-sm mt-3 sm:mt-4">
+                  <div className="flex justify-between items-center mb-3 border-l-4 border-emerald-600 pl-3">
+                    <h3 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                      <Store className="w-4 h-4 text-emerald-600" />
                       Business Details
                     </h3>
                   </div>
                   <div
-                    className={`grid gap-4 ${["oic_review", "ready", "ready_for_pickup"].includes(request.status) ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4"
                   >
                     {!isEditing && (
                       <>
-                        <div
-                          className={
-                            [
-                              "oic_review",
-                              "ready",
-                              "ready_for_pickup",
-                            ].includes(request.status)
-                              ? "col-span-1"
-                              : "col-span-2"
-                          }
-                        >
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                        <div className="col-span-1 sm:col-span-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Business Name
                           </p>
-                          <p className="font-extrabold text-gray-900 uppercase text-[15px] tracking-tight truncate">
+                          <p className="font-bold text-slate-900 uppercase text-sm sm:text-base tracking-tight truncate">
                             {additionalDetails?.businessName || "N/A"}
                           </p>
                         </div>
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                        <div className="col-span-1 sm:col-span-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Nature of Business
                           </p>
-                          <p className="font-semibold text-gray-800 text-sm uppercase">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
                             {additionalDetails?.natureOfBusiness || "N/A"}
                           </p>
                         </div>
-                        <div className="col-span-2 md:col-span-4">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                        <div className="col-span-1 sm:col-span-2 md:col-span-4">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Business Address
                           </p>
-                          <p className="font-extrabold text-gray-900 text-[13px] uppercase leading-relaxed">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase leading-relaxed">
                             {additionalDetails?.businessAddress || "N/A"}
                           </p>
                         </div>
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                        <div className="col-span-1 sm:col-span-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Contact Person
                           </p>
-                          <p className="font-semibold text-gray-800 text-sm uppercase">
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
                             {additionalDetails?.contactPerson || "N/A"}
                           </p>
                         </div>
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1">
+                        <div className="col-span-1 sm:col-span-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
                             Clearance Type
                           </p>
-                          <span className="font-black text-emerald-700 bg-emerald-50 inline-block px-2 py-0.5 rounded border border-emerald-200 text-[11px] uppercase tracking-widest mt-1">
+                          <span className="font-bold text-emerald-700 bg-emerald-50 inline-block px-2 py-0.5 rounded border border-emerald-200 text-[10px] uppercase tracking-wider mt-1">
                             {additionalDetails?.clearanceType === "renewal"
                               ? "RENEWAL OF CLEARANCE"
                               : "NEW CLEARANCE"}
@@ -4735,12 +4948,12 @@ function RequestDetailsModal({
               )}
 
               {currentStep?.status === "staff_review" ? (
-                <div className="flex gap-2 justify-end pt-3 mt-2 border-t border-blue-50">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center sm:justify-end pt-3 mt-3 border-t border-gray-100">
                   {request.status === "physical_inspection" ? (
                     <button
                       onClick={() => handleSaveInspectionResults(true)}
                       disabled={isUpdatingInspection}
-                      className={`px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                      className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
                     >
                       <CheckCircle className="w-4 h-4" />
                       Submit Inspection Result & Forward
@@ -4750,7 +4963,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "reject")}
                         disabled={isEditing}
-                        className={`px-4 py-2 bg-white border border-red-200 text-red-500 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
+                        className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300"}`}
                       >
                         <XCircle className="w-4 h-4" />
                         Mark as Ineligible
@@ -4758,7 +4971,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "approve")}
                         disabled={isEditing}
-                        className={`px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                        className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
                       >
                         <CheckCircle className="w-4 h-4" />
                         Verify & Forward
@@ -4769,7 +4982,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "reject")}
                         disabled={isEditing}
-                        className={`px-4 py-2 bg-white border border-red-200 text-red-500 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 transform active:scale-95"}`}
+                        className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300"}`}
                       >
                         <XCircle className="w-4 h-4" />
                         Reject Application
@@ -4779,7 +4992,7 @@ function RequestDetailsModal({
                           <button
                             onClick={() => setShowInspectionStartModal(true)}
                             disabled={isEditing}
-                            className={`px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-700 transform hover:-translate-y-0.5 active:scale-95"}`}
+                            className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-amber-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-700"}`}
                           >
                             <ClipboardCheck className="w-4 h-4" />
                             Proceed to Physical Inspection
@@ -4790,11 +5003,11 @@ function RequestDetailsModal({
                 </div>
               ) : currentStep?.status === "physical_inspection" ||
                 request.status === "physical_inspection" ? (
-                <div className="flex gap-2 justify-end pt-3 mt-2 border-t border-blue-50">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center sm:justify-end pt-3 mt-3 border-t border-gray-100">
                   <button
                     onClick={() => handleSaveInspectionResults(false)}
                     disabled={isUpdatingInspection}
-                    className={`px-4 py-2 bg-white border border-amber-200 text-amber-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
+                    className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-amber-200 text-amber-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300"}`}
                   >
                     <Database className="w-4 h-4" />
                     Save Draft
@@ -4802,7 +5015,7 @@ function RequestDetailsModal({
                   <button
                     onClick={() => onAction(request, "reject")}
                     disabled={isEditing}
-                    className={`px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
+                    className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300"}`}
                   >
                     <XCircle className="w-4 h-4" />
                     Reject Application
@@ -4810,7 +5023,7 @@ function RequestDetailsModal({
                   <button
                     onClick={() => onAction(request, "return")}
                     disabled={isEditing}
-                    className={`px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-orange-50 hover:border-orange-300 active:scale-95"}`}
+                    className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-orange-200 text-orange-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-orange-50 hover:border-orange-300"}`}
                   >
                     <RotateCcw className="w-4 h-4" />
                     Send Back
@@ -4818,7 +5031,7 @@ function RequestDetailsModal({
                   <button
                     onClick={() => handleSaveInspectionResults(true)}
                     disabled={isUpdatingInspection}
-                    className={`px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                    className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
                   >
                     <CheckCircle className="w-4 h-4" />
                     Submit & Forward to Captain
@@ -4826,11 +5039,11 @@ function RequestDetailsModal({
                 </div>
               ) : currentStep?.status === "Treasury" ||
                 request.status === "Treasury" ? (
-                <div className="flex gap-2 justify-end pt-3 mt-2 border-t border-blue-50">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center sm:justify-end pt-3 mt-3 border-t border-gray-100">
                   <button
                     onClick={() => onAction(request, "return")}
                     disabled={isEditing}
-                    className={`px-4 py-2 bg-white border border-amber-200 text-amber-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
+                    className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-amber-200 text-amber-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300"}`}
                   >
                     <RotateCcw className="w-4 h-4" />
                     Send Back
@@ -4838,19 +5051,19 @@ function RequestDetailsModal({
                   <button
                     onClick={() => setShowORModal(true)}
                     disabled={isEditing}
-                    className={`px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-green-700 hover:shadow-green-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                    className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-green-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-green-700 hover:shadow-green-300"}`}
                   >
                     <CheckCircle className="w-4 h-4" />
                     Mark as Paid & Generate OR
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-2 justify-end pt-3 mt-2 border-t border-blue-50">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center sm:justify-end pt-3 mt-3 border-t border-gray-100">
                   {["ready", "ready_for_pickup"].includes(request.status) ? (
                     <button
                       onClick={() => onAction(request, "approve")}
                       disabled={isEditing}
-                      className={`px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-emerald-700 hover:shadow-emerald-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                      className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-emerald-700 hover:shadow-emerald-300"}`}
                     >
                       <CheckCircle className="w-4 h-4" />
                       Confirm Official Release
@@ -4872,7 +5085,7 @@ function RequestDetailsModal({
                                   )
                                 }
                                 disabled={isEditing}
-                                className={`px-4 py-2 bg-white border border-amber-200 text-amber-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300 active:scale-95"}`}
+                                className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-amber-200 text-amber-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-amber-50 hover:border-amber-300"}`}
                               >
                                 <RotateCcw className="w-4 h-4" />
                                 Send Back
@@ -4881,7 +5094,7 @@ function RequestDetailsModal({
                             <button
                               onClick={() => onAction(request, "reject")}
                               disabled={isEditing}
-                              className={`px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300 active:scale-95"}`}
+                              className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:bg-red-50 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300"}`}
                             >
                               <XCircle className="w-4 h-4" />
                               Reject
@@ -4891,7 +5104,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "approve")}
                         disabled={isEditing}
-                        className={`px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300 transform hover:-translate-y-0.5 active:scale-95"}`}
+                        className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
                       >
                         <CheckCircle className="w-4 h-4" />
                         {request.status === "Treasury"
@@ -5159,83 +5372,94 @@ function ActionModal({
 
   const cfg = config[actionType];
   const Icon = cfg.icon;
+  useScrollLock(true);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-hidden">
       <div
         className="fixed inset-0 bg-gray-900/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
 
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden" style={{ height: '88vh' }}>
+      <div className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden max-h-[96dvh] sm:max-h-[88vh] h-auto md:h-[88vh]">
         {/* Header */}
-        <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-4 bg-white shrink-0">
-          <div className={`w-12 h-12 ${cfg.iconBg} rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
-            <Icon className={`w-6 h-6 ${cfg.iconColor}`} />
+        <div className="px-4 sm:px-8 py-3.5 sm:py-5 border-b border-gray-100 flex items-center justify-between gap-3 bg-white shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 ${cfg.iconBg} rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
+              <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${cfg.iconColor}`} />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-xl font-black text-gray-900 tracking-tight leading-none mb-1 truncate">{cfg.title}</h2>
+              <p className="text-xs sm:text-sm font-medium text-gray-500 leading-none truncate">{cfg.description}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none mb-1">{cfg.title}</h2>
-            <p className="text-sm font-medium text-gray-500 leading-none">{cfg.description}</p>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Body - Split Grid */}
-        <div className="flex-1 overflow-hidden p-6 bg-slate-50/50">
-          <div className="grid grid-cols-12 gap-6 h-full">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50">
+          <div className="flex flex-col md:grid md:grid-cols-12 gap-4 sm:gap-6">
             {/* LEFT COLUMN: Context (Span 4) */}
-            <div className="col-span-4 flex flex-col gap-4 overflow-y-auto">
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2 pb-3 border-b border-gray-100 mb-4">
+            <div className="w-full md:col-span-4 flex flex-col gap-3 sm:gap-4">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-2 pb-2.5 sm:pb-3 border-b border-gray-100 mb-3 sm:mb-4">
                   <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Request Context</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Request Context</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                   <div className="col-span-2">
-                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Reference No</p>
-                    <p className="font-sans font-black text-blue-600 text-base tracking-tighter">{request.reference_number}</p>
+                    <p className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Reference No</p>
+                    <p className="font-mono font-bold text-blue-600 text-sm sm:text-base tracking-tight">{request.reference_number}</p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Applicant</p>
-                    <p className="font-extrabold text-gray-900 uppercase text-sm tracking-tight">{request.applicant_name || request.full_name}</p>
+                    <p className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Applicant</p>
+                    <p className="font-bold text-gray-900 uppercase text-xs sm:text-sm tracking-tight">{request.applicant_name || request.full_name}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Stage</p>
+                    <p className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Stage</p>
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 border border-gray-200 text-[10px] font-bold text-gray-600 uppercase">{request.status.replace(/_/g, " ")}</span>
                   </div>
                   <div>
-                    <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Type</p>
-                    <p className="font-bold text-gray-700 text-xs uppercase">{request.certificate_type?.replace(/_/g, " ")}</p>
+                    <p className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Type</p>
+                    <p className="font-bold text-gray-700 text-xs uppercase truncate">{request.certificate_type?.replace(/_/g, " ")}</p>
                   </div>
                   {request.contact_number && (
                     <div className="col-span-2">
-                      <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Contact No.</p>
-                      <p className="font-black text-gray-900 text-sm font-sans">{request.contact_number}</p>
+                      <p className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Contact No.</p>
+                      <p className="font-bold text-gray-900 text-xs sm:text-sm font-sans">{request.contact_number}</p>
                     </div>
                   )}
                   {request.purpose && (
                     <div className="col-span-2">
-                      <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Purpose</p>
-                      <p className="font-bold text-gray-700 text-xs uppercase leading-relaxed">{request.purpose}</p>
+                      <p className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Purpose</p>
+                      <p className="font-medium text-gray-700 text-xs uppercase leading-relaxed">{request.purpose}</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
-                <p className="text-[10px] font-bold text-blue-800 uppercase leading-relaxed opacity-80">
+              <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-blue-50 border border-blue-100">
+                <p className="text-[10px] font-semibold text-blue-800 uppercase leading-relaxed opacity-85">
                   This action will be logged in the official audit trail and cannot be undone.
                 </p>
               </div>
             </div>
 
             {/* RIGHT COLUMN: Actions (Span 8) */}
-            <div className="col-span-8 flex flex-col gap-4 h-full">
+            <div className="w-full md:col-span-8 flex flex-col gap-3 sm:gap-4">
               {/* Comments Section */}
-              <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-1 transition-all focus-within:ring-4 focus-within:ring-blue-50 focus-within:border-blue-300 min-h-0">
+              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-sm p-1 transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 min-h-[120px] md:min-h-[160px] flex-1">
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  className="w-full h-full p-5 bg-transparent border-none focus:ring-0 text-sm font-semibold text-gray-700 placeholder:text-gray-300 resize-none rounded-xl"
+                  className="w-full h-full min-h-[110px] p-3.5 sm:p-5 bg-transparent border-none focus:ring-0 text-xs sm:text-sm font-medium text-gray-700 placeholder:text-gray-400 resize-none rounded-xl"
                   placeholder={actionType === "approve"
                     ? "Add optional notes, remarks, or specific instructions for the next step..."
                     : "REQUIRED: Please provide a detailed justification for this decision..."}
@@ -5244,27 +5468,27 @@ function ActionModal({
 
               {/* Signature Preview (Conditional) */}
               {canUseEsign && (
-                <div className="border-t-2 border-dashed border-gray-200 pt-4 shrink-0">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="border-t-2 border-dashed border-gray-200 pt-3 sm:pt-4 shrink-0">
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600"><Shield className="w-4 h-4" /></div>
-                      <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Digital Authorization</p>
+                      <p className="text-[10px] font-bold text-gray-900 uppercase tracking-wider">Digital Authorization</p>
                     </div>
                     <p className="text-[9px] font-bold text-gray-400 uppercase">{isEsignRole ? currentStep.officialRole : "Official Sign"}</p>
                   </div>
                   {userSignature ? (
                     <div className="bg-white rounded-xl border border-blue-200 p-1 shadow-sm">
-                      <div className="relative h-28 flex items-center justify-center rounded-2xl bg-emerald-50/30 border-2 border-dashed border-emerald-500/20 overflow-hidden">
+                      <div className="relative h-24 sm:h-28 flex items-center justify-center rounded-xl bg-emerald-50/30 border-2 border-dashed border-emerald-500/20 overflow-hidden">
                         <img
                           src={userSignature}
-                          className="h-full object-contain p-4 mix-blend-multiply"
+                          className="h-full object-contain p-3 mix-blend-multiply"
                           alt="Signature Preview"
                         />
                       </div>
                     </div>
                   ) : (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3">
-                      <div className="p-1.5 bg-amber-100 rounded-lg text-amber-600">
+                      <div className="p-1.5 bg-amber-100 rounded-lg text-amber-600 shrink-0">
                         <AlertTriangle className="w-4 h-4" />
                       </div>
                       <p className="text-[11px] font-bold text-amber-800 uppercase leading-relaxed">
@@ -5279,27 +5503,27 @@ function ActionModal({
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-4 bg-white border-t border-gray-100 flex items-center justify-between shrink-0">
+        <div className="px-4 sm:px-8 py-3 sm:py-4 bg-white border-t border-gray-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           <button
             onClick={onClose}
             disabled={processing}
-            className="px-6 py-3 rounded-xl text-[11px] font-black text-gray-400 uppercase tracking-widest hover:bg-gray-50 hover:text-gray-600 transition-colors"
+            className="w-full sm:w-auto px-5 py-2.5 sm:py-3 rounded-xl text-xs font-bold text-gray-500 uppercase tracking-wider hover:bg-gray-100 transition-colors text-center"
           >
             Cancel
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             {actionType === "approve" && canUseEsign ? (
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => onSubmit(null, null, null, comment)}
                   disabled={processing}
-                  className="px-8 py-4 rounded-2xl border-2 border-gray-100 text-[12px] font-black text-gray-500 uppercase tracking-widest hover:border-emerald-200 hover:text-emerald-600 hover:bg-emerald-50/50 transition-all disabled:opacity-50"
+                  className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50/50 transition-all disabled:opacity-50 text-center"
                 >
                   {cfg.buttonText} Without Signature
                 </button>
 
-                <div className="relative group">
+                <div className="relative group w-full sm:w-auto">
                   <button
                     onClick={() => {
                       if (!userSignature) {
@@ -5309,20 +5533,20 @@ function ActionModal({
                       onSubmit(userSignature, null, null, comment);
                     }}
                     disabled={processing || !userSignature}
-                    className={`px-10 py-4 bg-emerald-600 text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-3 ${
+                    className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2 ${
                       !userSignature ? "opacity-30 cursor-not-allowed grayscale" : ""
                     }`}
                   >
                     {processing ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                      <PenTool className="w-5 h-5" />
+                      <PenTool className="w-4 h-4" />
                     )}
-                    {cfg.buttonText} With Signature
+                    <span>{cfg.buttonText} With Signature</span>
                   </button>
 
                   {isEsignRole && !userSignature && (
-                    <p className="absolute -top-10 right-0 text-[10px] font-bold text-rose-500 uppercase animate-pulse whitespace-nowrap bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-rose-100 shadow-sm pointer-events-none">
+                    <p className="absolute -top-9 right-0 text-[10px] font-bold text-rose-500 uppercase animate-pulse whitespace-nowrap bg-white/95 px-2.5 py-1 rounded-lg border border-rose-100 shadow-sm pointer-events-none">
                       ⚠️ Upload signature in Settings
                     </p>
                   )}
@@ -5335,14 +5559,14 @@ function ActionModal({
                   processing ||
                   (["reject", "return"].includes(actionType) && !comment.trim())
                 }
-                className={`px-10 py-4 ${cfg.buttonBg} text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 ${cfg.buttonBg} text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {processing ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  <cfg.icon className="w-5 h-5" />
+                  <cfg.icon className="w-4 h-4" />
                 )}
-                {cfg.buttonText}
+                <span>{cfg.buttonText}</span>
               </button>
             )}
           </div>
@@ -5454,13 +5678,75 @@ const defaultOfficials = {
 
 // Certificate Preview Modal Component
 function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, currentUser, userSignature }) {
+  useScrollLock(true);
   const certificateRef = useRef(null);
+  const containerRef = useRef(null);
   const [officials, setOfficials] = useState(null); // null = loading, prevents flash of wrong data
   const [isDownloading, setIsDownloading] = useState(false);
   const [history, setHistory] = useState([]);
   const [currentDate, setCurrentDate] = useState("");
   const [inspectionData, setInspectionData] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState("old"); // 'new' or 'old'
+
+  // Responsive Zoom & Mobile Fit Controls
+  const [zoom, setZoom] = useState("auto"); // "auto" | number (e.g. 0.5, 0.75, 1, 1.25)
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [docHeight, setDocHeight] = useState(1123);
+
+  const A4_WIDTH_PX = 794;
+  const A4_HEIGHT_PX = 1123;
+
+  // Measure container width on resize / orientation change
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(containerRef.current);
+    window.addEventListener("resize", updateWidth);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateWidth);
+    };
+  }, []);
+
+  // Measure document height dynamically when content changes
+  useEffect(() => {
+    if (!certificateRef.current) return;
+    const updateDocHeight = () => {
+      if (certificateRef.current) {
+        const h = certificateRef.current.offsetHeight || certificateRef.current.scrollHeight || A4_HEIGHT_PX;
+        setDocHeight(h);
+      }
+    };
+    updateDocHeight();
+    const observer = new ResizeObserver(updateDocHeight);
+    observer.observe(certificateRef.current);
+    return () => observer.disconnect();
+  }, [officials, selectedTemplate, request]);
+
+  // Compute scale factor
+  const isMobileView = containerWidth > 0 && containerWidth < 840;
+  const padding = isMobileView ? 16 : 32;
+  const availableWidth = containerWidth > 0 ? Math.max(280, containerWidth - padding) : A4_WIDTH_PX;
+  const fitScale = Math.min(1, Math.max(0.35, availableWidth / A4_WIDTH_PX));
+  const currentScale = zoom === "auto" ? fitScale : zoom;
+
+  const handleZoomIn = () => {
+    const steps = [0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 1.0, 1.15, 1.3, 1.5];
+    const next = steps.find((s) => s > currentScale + 0.04) || 1.5;
+    setZoom(parseFloat(next.toFixed(2)));
+  };
+
+  const handleZoomOut = () => {
+    const steps = [1.5, 1.3, 1.15, 1.0, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35];
+    const prev = steps.find((s) => s < currentScale - 0.04) || 0.35;
+    setZoom(parseFloat(prev.toFixed(2)));
+  };
 
   const fetchHistory = async () => {
     try {
@@ -5474,6 +5760,7 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
           },
         },
       );
+      if (!response.ok) return;
       const data = await response.json();
       if (data.success) {
         setHistory(data.history || []);
@@ -5498,6 +5785,7 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
           },
         },
       );
+      if (!response.ok) return;
       const data = await response.json();
       if (data.success) {
         setInspectionData(data.data);
@@ -5521,6 +5809,7 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
           },
         },
       );
+      if (!response.ok) return;
       const data = await response.json();
       if (data.success) {
         setOrData(data.data);
@@ -5542,6 +5831,10 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
             "x-tenant-id": request?.tenant_id || "ibaoeste",
           },
         });
+        if (!response.ok) {
+          loadFromLocalStorage();
+          return;
+        }
         const data = await response.json();
 
         if (data.success && data.data) {
@@ -5791,56 +6084,59 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-gray-900/80">
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden" style={{ height: '96vh' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-gray-900/80" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[96vh] h-[96dvh] sm:h-[96vh]">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-700 px-6 py-3 flex items-center justify-between shrink-0 z-10">
-          <div className="flex items-center gap-3">
+        <div className="bg-slate-900 border-b border-slate-800 px-3.5 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between shrink-0 z-10">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <button
               onClick={onBack}
-              className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg mr-2"
+              className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg shrink-0 transition-colors"
+              title="Back"
             >
-              <RotateCcw className="w-5 h-5" />
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-            <div className="bg-white/20 p-2 rounded-lg">
-              <FileText className="w-6 h-6 text-white" />
+            <div className="bg-white/10 p-1.5 sm:p-2 rounded-xl border border-white/10 shrink-0">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">
+            <div className="min-w-0">
+              <h2 className="text-xs sm:text-base font-bold text-white tracking-tight leading-none truncate">
                 Certificate Preview
               </h2>
-              <p className="text-purple-200 text-sm">
+              <p className="text-slate-400 font-mono text-[10px] sm:text-xs font-bold truncate mt-0.5">
                 {request.reference_number}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Print button — opens print window (perfect fidelity) */}
             <button
               onClick={handlePrintPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium text-sm"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-slate-800 text-slate-200 hover:text-white rounded-lg hover:bg-slate-700 transition-all font-semibold text-xs border border-slate-700"
             >
-              <Printer className="w-4 h-4" />
-              Print
+              <Printer className="w-3.5 h-3.5 text-blue-400" />
+              <span className="hidden sm:inline">Print</span>
             </button>
             {/* Download button — saves PDF directly */}
             <button
               onClick={handleDownloadPDF}
               disabled={isDownloading}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-purple-700 rounded-lg hover:bg-purple-50 transition-all font-medium text-sm disabled:opacity-50"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
             >
               {isDownloading ? (
-                <div className="w-4 h-4 border-2 border-purple-300 border-t-purple-700 rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
               ) : (
-                <Download className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5" />
               )}
-              Download PDF
+              <span className="hidden sm:inline">Download PDF</span>
+              <span className="sm:hidden">PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg ml-2"
+              className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg transition-colors ml-0.5"
+              aria-label="Close"
             >
-              <X className="w-6 h-6" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
@@ -5868,28 +6164,94 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
           </div>
         )}
 
-        {/* Certificate Preview */}
-        <div className="flex-1 overflow-y-auto bg-gray-100 p-4">
+        {/* Certificate Preview with Auto-Fit & Zoom */}
+        <div 
+          ref={containerRef}
+          className="flex-1 overflow-auto bg-slate-900/5 p-2 sm:p-4 flex flex-col items-center relative"
+        >
+          {/* Zoom & Fit Control Toolbar */}
+          <div className="sticky top-0 z-30 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-1.5 bg-slate-900/90 hover:bg-slate-900 backdrop-blur-md text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-lg border border-slate-700/60 text-[11px] sm:text-xs transition-all">
+            <button
+              onClick={handleZoomOut}
+              disabled={currentScale <= 0.35}
+              className="p-1 hover:bg-white/20 rounded-full transition-colors disabled:opacity-30"
+              title="Zoom Out"
+              aria-label="Zoom Out"
+            >
+              <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+            <span className="font-mono font-bold px-1 min-w-[38px] text-center text-[10px] sm:text-xs text-blue-300">
+              {Math.round(currentScale * 100)}%
+            </span>
+            <button
+              onClick={handleZoomIn}
+              disabled={currentScale >= 1.5}
+              className="p-1 hover:bg-white/20 rounded-full transition-colors disabled:opacity-30"
+              title="Zoom In"
+              aria-label="Zoom In"
+            >
+              <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+            <div className="w-px h-3.5 bg-slate-700 mx-0.5" />
+            <button
+              onClick={() => setZoom("auto")}
+              className={`px-2 py-0.5 rounded-full font-semibold text-[10px] sm:text-[11px] transition-colors ${
+                zoom === "auto" ? "bg-blue-600 text-white shadow-sm" : "hover:bg-white/10 text-slate-300"
+              }`}
+            >
+              Fit
+            </button>
+            <button
+              onClick={() => setZoom(1)}
+              className={`px-2 py-0.5 rounded-full font-semibold text-[10px] sm:text-[11px] transition-colors ${
+                zoom === 1 ? "bg-blue-600 text-white shadow-sm" : "hover:bg-white/10 text-slate-300"
+              }`}
+            >
+              100%
+            </button>
+          </div>
+
           {!officials ? (
             <div className="flex items-center justify-center h-64">
               <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
                 <p className="text-sm font-medium text-gray-500">Loading certificate template...</p>
               </div>
             </div>
           ) : (
-            <ClearancePreviewForRequests
-              request={request}
-              currentDate={currentDate}
-              officials={officials}
-              certificateRef={certificateRef}
-              history={history}
-              inspectionData={inspectionData}
-              selectedTemplate={selectedTemplate}
-              orData={orData}
-              currentUser={currentUser}
-              userSignature={userSignature}
-            />
+            <div
+              className="flex justify-center transition-all duration-150 ease-out"
+              style={{
+                width: `${A4_WIDTH_PX * currentScale}px`,
+                height: `${docHeight * currentScale}px`,
+                position: "relative",
+                flexShrink: 0,
+              }}
+            >
+              <div
+                style={{
+                  transform: `scale(${currentScale})`,
+                  transformOrigin: "top left",
+                  width: "210mm",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                }}
+              >
+                <ClearancePreviewForRequests
+                  request={request}
+                  currentDate={currentDate}
+                  officials={officials}
+                  certificateRef={certificateRef}
+                  history={history}
+                  inspectionData={inspectionData}
+                  selectedTemplate={selectedTemplate}
+                  orData={orData}
+                  currentUser={currentUser}
+                  userSignature={userSignature}
+                />
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -6202,7 +6564,7 @@ function ClearancePreviewForRequests({
     });
 
   return (
-    <div className="p-1 flex justify-center print:p-0">
+    <div className="flex justify-center print:p-0">
       {/* A4 Size Container - 210mm x 297mm */}
       <div
         ref={certificateRef}
@@ -7459,6 +7821,7 @@ function ConfirmPickupModal({
   confirming,
   getTypeLabel,
 }) {
+  useScrollLock(true);
   const isOnlineDelivery = certificate.pickup_method === "online";
   const [deliveryMode, setDeliveryMode] = useState(isOnlineDelivery ? "email" : "pickup");
 
@@ -7476,6 +7839,7 @@ function ConfirmPickupModal({
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
 
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">

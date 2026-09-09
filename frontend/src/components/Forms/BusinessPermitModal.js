@@ -3,6 +3,7 @@ import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, Aler
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 import LanguageGate from './LanguageGate';
 import { getStrings } from '../../lib/certLang';
+import useScrollLock from '@/lib/useScrollLock';
 
 const BUSINESS_TYPES = [
   'SARI-SARI STORE', 'CARINDERIA / EATERY', 'BAKERY', 'SALON / BARBERSHOP',
@@ -41,12 +42,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   });
   const [pickupError, setPickupError] = useState('');
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      document.body.style.overflow = isOpen ? 'hidden' : '';
-    }
-    return () => { if (typeof window !== 'undefined') document.body.style.overflow = ''; };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) {
@@ -135,7 +131,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   // Success
   if (showSuccess) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onTouchMove={(e) => e.preventDefault()}>
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-in zoom-in-95 duration-300">
           <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: `${accentColor}18` }}>
             <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
@@ -168,7 +164,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
     ].filter(f => f.value);
 
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md" onTouchMove={(e) => e.preventDefault()}>
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
           <div className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
             <div>
@@ -273,7 +269,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} onTouchMove={(e) => e.preventDefault()} />
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
 
           {/* Header */}

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { getAuthToken, getUserData } from "@/lib/auth";
 import { deleteStorageImage } from "@/lib/deleteStorageImage";
+import useScrollLock from "@/lib/useScrollLock";
 
 const API_URL = "/api";
 
@@ -56,6 +57,8 @@ export default function FacilitiesPage() {
   const [previewSlide, setPreviewSlide] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  useScrollLock(showAddModal);
   const fileInputRefs = useRef({});
   const [subscription, setSubscription] = useState(null);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
@@ -410,35 +413,40 @@ export default function FacilitiesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex gap-3">
+      <div className="flex items-center justify-between gap-2.5 sm:gap-4 w-full">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={resetToDefault}
             disabled={saving}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl text-gray-700 bg-white hover:bg-gray-50 text-xs sm:text-sm font-bold disabled:opacity-50 transition-all shadow-2xs"
           >
             Reset
           </button>
           <button
             onClick={openAddModal}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 shadow-md shadow-emerald-200 active:scale-95 transition-all"
           >
-            <Plus className="w-5 h-5" />
-            Add Facility
+            <Plus className="w-4 h-4" />
+            <span>Add Facility</span>
           </button>
           <button
             onClick={saveAllChanges}
             disabled={!hasChanges || saving}
-            className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${hasChanges && !saving ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all ${hasChanges && !saving ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 active:scale-95" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
           >
             {saving ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Saving...</span>
+              </>
             ) : (
-              <Save className="w-5 h-5" />
+              <>
+                <Save className="w-4 h-4" />
+                <span>Save All</span>
+              </>
             )}
-            {saving ? "Saving..." : "Save All"}
           </button>
         </div>
       </div>
@@ -857,7 +865,7 @@ export default function FacilitiesPage() {
 
       {/* Add Facility Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">

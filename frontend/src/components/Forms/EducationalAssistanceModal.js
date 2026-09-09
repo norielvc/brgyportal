@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import SignatureInput from "../UI/SignatureInput";
 import ResidentSearchModal from "../Modals/ResidentSearchModal";
+import useScrollLock from "@/lib/useScrollLock";
 
 export default function EducationalAssistanceModal({
   isOpen,
@@ -25,20 +26,7 @@ export default function EducationalAssistanceModal({
   isDemo = false,
   tenantConfig = {},
 }) {
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (isOpen) {
-        document.body.style.overflow = "hidden";
-      } else {
-        document.body.style.overflow = "";
-      }
-    }
-    return () => {
-      if (typeof window !== "undefined") {
-        document.body.style.overflow = "";
-      }
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -314,7 +302,7 @@ export default function EducationalAssistanceModal({
     <>
       {demoTheme}
       <div className="brgy-modal-wrap">
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 overflow-hidden" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
           <div
             className="relative bg-white md:rounded-2xl shadow-2xl w-full max-w-2xl h-full md:h-auto md:max-h-[90vh] flex flex-col overflow-hidden animate-fade-in no-scrollbar"
             style={{ fontFamily: "'Open Sans', sans-serif" }}

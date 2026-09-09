@@ -1,18 +1,8 @@
-import { useEffect } from 'react';
 import { AlertTriangle, X, Trash2, ShieldAlert } from 'lucide-react';
+import useScrollLock from '@/lib/useScrollLock';
 
 export default function DeleteConfirmModal({ title, message, onConfirm, onCancel, isLoading }) {
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        document.body.style.overflow = '';
-      }
-    };
-  }, []);
+  useScrollLock(true);
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4">
@@ -20,6 +10,7 @@ export default function DeleteConfirmModal({ title, message, onConfirm, onCancel
         <div
           className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
           onClick={onCancel}
+          onTouchMove={(e) => e.preventDefault()}
         />
 
         {/* Modal Content */}

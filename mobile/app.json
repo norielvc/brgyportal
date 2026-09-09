@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "BrgyDesk Admin",
+    "slug": "brgydesk-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#022c22"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.brgydesk.admin",
+      "infoPlist": {
+        "NSCameraUsageDescription": "BrgyDesk Admin needs camera access to scan QR codes on resident IDs and certificate claim slips.",
+        "NSFaceIDUsageDescription": "BrgyDesk Admin uses Face ID for fast and secure officer authentication.",
+        "NSPhotoLibraryUsageDescription": "BrgyDesk Admin requires photo access to attach evidence photos to incident blotters."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#022c22"
+      },
+      "package": "com.brgydesk.admin",
+      "permissions": [
+        "CAMERA",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "VIBRATE",
+        "INTERNET"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow BrgyDesk Admin to access your camera to scan QR certificates and resident IDs."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow BrgyDesk Admin to use Face ID for fast biometric login."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "brgydesk-admin-mobile"
+      }
+    }
+  }
+}

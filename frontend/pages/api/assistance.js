@@ -109,6 +109,21 @@ export default async function handler(req, res) {
       });
     }
 
+    if (req.method === "DELETE") {
+      const { id } = req.query;
+      if (!id) {
+        return res.status(400).json({ success: false, message: "id is required" });
+      }
+      const { error } = await supabase
+        .from("assistance_inquiries")
+        .delete()
+        .eq("id", id)
+        .eq("tenant_id", tenantId);
+
+      if (error) throw error;
+      return res.json({ success: true, message: "Assistance inquiry deleted successfully" });
+    }
+
     return res.status(405).json({ success: false, message: "Method not allowed" });
   } catch (error) {
     console.error("Error handling assistance inquiry:", error);

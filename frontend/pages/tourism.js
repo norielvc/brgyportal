@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import { deleteStorageImage } from "@/lib/deleteStorageImage";
+import useScrollLock from "@/lib/useScrollLock";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -24,6 +25,7 @@ export default function TourismPage() {
   const [destinations, setDestinations] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  useScrollLock(showAddModal);
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -214,52 +216,49 @@ export default function TourismPage() {
 
   return (
     <Layout title="Tourism & Lifestyle" subtitle="Manage tourism destinations shown on the public portal">
-      <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
         {notification && (
           <div
-            className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${
+            className={`p-3.5 sm:p-4 rounded-xl flex items-center gap-2.5 sm:gap-3 text-xs sm:text-sm ${
               notification.type === "success"
                 ? "bg-green-50 text-green-700 border border-green-200"
                 : "bg-red-50 text-red-700 border border-red-200"
             }`}
           >
             {notification.type === "success" ? (
-              <CheckCircle className="w-5 h-5 shrink-0" />
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
             ) : (
-              <AlertCircle className="w-5 h-5 shrink-0" />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
             )}
-            <span className="text-sm font-medium">{notification.message}</span>
+            <span className="font-medium">{notification.message}</span>
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tourism & Lifestyle</h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Add destinations that appear on the public portal with directions links.
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">
+            Destinations shown on public portal
+          </p>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-gray-900 text-white px-5 py-3 rounded-xl font-semibold hover:bg-black transition-colors text-sm"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 bg-gray-900 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold hover:bg-black transition-all text-xs sm:text-sm shrink-0 shadow-sm active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            Add Destination
+            <span>Add Destination</span>
           </button>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
         ) : destinations.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-100">
-            <MapPin className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 font-medium">No tourism destinations yet</p>
-            <p className="text-gray-400 text-sm mt-1">Click &quot;Add Destination&quot; to get started.</p>
+          <div className="text-center py-14 sm:py-20 bg-gray-50 rounded-2xl border border-gray-100 p-4">
+            <MapPin className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-gray-300 mb-3" />
+            <p className="text-gray-500 font-bold text-xs sm:text-sm">No tourism destinations yet</p>
+            <p className="text-gray-400 text-[11px] sm:text-xs mt-1">Click &quot;Add Destination&quot; to get started.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6">
             {destinations.map((dest) => (
               <div
                 key={dest.id}
@@ -435,7 +434,7 @@ export default function TourismPage() {
 
       {/* Add Destination Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Add Destination</h2>

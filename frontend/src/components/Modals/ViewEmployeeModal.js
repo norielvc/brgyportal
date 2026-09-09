@@ -1,18 +1,8 @@
-import { useEffect } from 'react';
 import { X, Mail, Calendar, Clock, Shield, AlertCircle, UserCircle, Briefcase, Activity, Fingerprint } from 'lucide-react';
+import useScrollLock from '@/lib/useScrollLock';
 
 export default function ViewEmployeeModal({ employee, onClose }) {
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        document.body.style.overflow = '';
-      }
-    };
-  }, []);
+  useScrollLock(Boolean(employee));
 
   if (!employee) return null;
 
@@ -53,6 +43,7 @@ export default function ViewEmployeeModal({ employee, onClose }) {
         <div
           className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
           onClick={onClose}
+          onTouchMove={(e) => e.preventDefault()}
         />
 
         {/* Modal Content */}

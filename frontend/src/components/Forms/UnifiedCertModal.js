@@ -10,6 +10,7 @@ import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, Aler
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 import LanguageGate from './LanguageGate';
 import { getStrings } from '../../lib/certLang';
+import useScrollLock from '@/lib/useScrollLock';
 
 const PURPOSE_LIST_1 = [
   "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (CITY OF MALOLOS, BULACAN)",
@@ -119,40 +120,7 @@ export default function UnifiedCertModal({
   });
   const [pickupError, setPickupError] = useState('');
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && isOpen) {
-      // Save current scroll position
-      const scrollY = window.scrollY;
-      
-      // Calculate scrollbar width to prevent layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      
-      // Lock scroll and maintain position
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    }
-    return () => { 
-      if (typeof window !== 'undefined') {
-        // Get the scroll position before unlocking
-        const scrollY = document.body.style.top;
-        
-        // Restore scroll
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
-        
-        // Restore scroll position
-        if (scrollY) {
-          window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        }
-      }
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) {
@@ -251,7 +219,7 @@ export default function UnifiedCertModal({
   // Success Modal
   if (showSuccess) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onTouchMove={(e) => e.preventDefault()}>
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-in zoom-in-95 duration-300">
           <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: `${accentColor}18` }}>
             <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
@@ -323,7 +291,7 @@ export default function UnifiedCertModal({
     const allData = { ...formData, ...extraFormData };
 
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md" onTouchMove={(e) => e.preventDefault()}>
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
           <div className="px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
             <div>
@@ -449,7 +417,7 @@ export default function UnifiedCertModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} onTouchMove={(e) => e.preventDefault()} />
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
 
           {/* Header */}

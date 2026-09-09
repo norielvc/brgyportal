@@ -152,36 +152,39 @@ export default function ActivityLogs() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-end">
-        <button className="btn-primary flex items-center gap-2">
-          <Download className="w-5 h-5" />
-          Export
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">
+          Audit trail of system events & actions
+        </p>
+        <button className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200 active:scale-95 transition-all shrink-0">
+          <Download className="w-4 h-4" />
+          <span>Export Logs</span>
         </button>
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by user, email, or action..."
+            placeholder="Search by user, email, action..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="input pl-10 w-full"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
           />
         </div>
 
         {/* Filter */}
         <div className="relative">
-          <Filter className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+          <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="input pl-10 w-full"
+            className="w-full pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs appearance-none"
           >
             <option value="all">All Activities</option>
             {activityTypes.map((type) => (
@@ -194,52 +197,49 @@ export default function ActivityLogs() {
       </div>
 
       {/* Activity List */}
-      <div className="card overflow-hidden">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-            <p className="text-gray-600 mt-2">Loading activity logs...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="text-gray-500 text-xs sm:text-sm mt-2">Loading activity logs...</p>
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="p-8 text-center">
-            <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">No activity logs found</p>
+            <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium text-xs sm:text-sm">No activity logs found</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-100">
             {filteredLogs.map((log) => {
               const IconComponent = getActivityIcon(log.type);
               return (
-                <div key={log.id} className="p-4 hover:bg-gray-50 transition">
-                  <div className="flex items-start gap-4">
+                <div key={log.id} className="p-3.5 sm:p-4 hover:bg-gray-50/80 transition-colors">
+                  <div className="flex items-start gap-3 sm:gap-4">
                     {/* Icon */}
                     <div
-                      className={`p-2 rounded-lg bg-gray-100 flex-shrink-0 ${getActivityColor(log.type)}`}
+                      className={`p-2 rounded-xl bg-gray-50 border border-gray-100 flex-shrink-0 ${getActivityColor(log.type)}`}
                     >
-                      <IconComponent className="w-5 h-5" />
+                      <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="font-medium text-gray-900">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-bold text-xs sm:text-sm text-gray-900 truncate">
                             {log.description}
                           </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            By <span className="font-medium">{log.user}</span> (
-                            {log.email})
+                          <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate">
+                            By <span className="font-semibold text-gray-700">{log.user}</span> ({log.email})
                           </p>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <span className="inline-block px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-700">
-                            {getActivityLabel(log.type)}
-                          </span>
-                        </div>
+                        <span className="inline-block px-2 py-0.5 bg-gray-100 rounded-md text-[9px] sm:text-[10px] font-bold text-gray-600 shrink-0 uppercase tracking-wider">
+                          {getActivityLabel(log.type)}
+                        </span>
                       </div>
 
                       {/* Meta */}
-                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-3 sm:gap-4 mt-2 text-[10px] sm:text-xs text-gray-400">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formatTime(log.timestamp)}
@@ -255,27 +255,27 @@ export default function ActivityLogs() {
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="card p-4">
-          <p className="text-gray-600 text-sm">Total Activities</p>
-          <p className="text-2xl font-bold text-gray-900">{logs.length}</p>
+      {/* Stats (2x2 on Mobile, 4-col on Desktop) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Total</p>
+          <p className="text-lg sm:text-2xl font-black text-gray-900 mt-0.5">{logs.length}</p>
         </div>
-        <div className="card p-4">
-          <p className="text-gray-600 text-sm">Logins</p>
-          <p className="text-2xl font-bold text-green-600">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Logins</p>
+          <p className="text-lg sm:text-2xl font-black text-green-600 mt-0.5">
             {logs.filter((l) => l.type === "login").length}
           </p>
         </div>
-        <div className="card p-4">
-          <p className="text-gray-600 text-sm">Users Created</p>
-          <p className="text-2xl font-bold text-purple-600">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Created</p>
+          <p className="text-lg sm:text-2xl font-black text-purple-600 mt-0.5">
             {logs.filter((l) => l.type === "user_created").length}
           </p>
         </div>
-        <div className="card p-4">
-          <p className="text-gray-600 text-sm">Changes</p>
-          <p className="text-2xl font-bold text-orange-600">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Changes</p>
+          <p className="text-lg sm:text-2xl font-black text-orange-600 mt-0.5">
             {
               logs.filter(
                 (l) => l.type.includes("updated") || l.type.includes("changed"),

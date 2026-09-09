@@ -207,3 +207,12 @@
     background: #cbd5e1;
   }
 }
+
+/* Prevent background scrolling when any modal is open on desktop and mobile */
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+  touch-action: none !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+

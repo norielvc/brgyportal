@@ -1,18 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, KeyRound, AlertCircle, ShieldCheck, RefreshCw } from 'lucide-react';
+import useScrollLock from '@/lib/useScrollLock';
 
 export default function ResetPasswordModal({ employee, onClose, onSubmit, isLoading: externalIsLoading }) {
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        document.body.style.overflow = '';
-      }
-    };
-  }, []);
+    useScrollLock(Boolean(employee));
 
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -64,6 +55,7 @@ export default function ResetPasswordModal({ employee, onClose, onSubmit, isLoad
                 <div
                     className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
                     onClick={onClose}
+                    onTouchMove={(e) => e.preventDefault()}
                 />
 
                 {/* Modal Content */}

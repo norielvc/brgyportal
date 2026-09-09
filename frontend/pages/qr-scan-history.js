@@ -9,6 +9,7 @@ import {
   MapPin, Activity, HardDrive, Info, Plus, FolderSync
 } from 'lucide-react';
 import { isAuthenticated, getAuthToken } from '@/lib/auth';
+import useScrollLock from '@/lib/useScrollLock';
 
 const API_URL = '/api';
 
@@ -96,6 +97,8 @@ export default function QRScanHistoryPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+
+  useScrollLock(isEventModalOpen || isClearModalOpen || isViewModalOpen || isDeleteConfirmOpen);
 
   // Check subscription on mount
   useEffect(() => {
@@ -804,6 +807,7 @@ export default function QRScanHistoryPage() {
             <div
               className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
               onClick={() => setIsEventModalOpen(false)}
+              onTouchMove={(e) => e.preventDefault()}
             />
 
             {/* Modal Content */}
@@ -1284,12 +1288,14 @@ QRScanHistoryPage.getLayout = (page) => (
 
 // Clear History Confirmation Modal Component
 function ClearHistoryModal({ onClose, onConfirm, processing }) {
+  useScrollLock(true);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
           onClick={onClose}
+          onTouchMove={(e) => e.preventDefault()}
         />
 
         {/* Modal content */}

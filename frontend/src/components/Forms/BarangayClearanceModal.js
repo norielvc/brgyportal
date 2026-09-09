@@ -25,6 +25,7 @@ import LanguageGate from "./LanguageGate";
 import { getStrings } from "../../lib/certLang";
 import { getAuthToken } from "@/lib/auth";
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
+import useScrollLock from "@/lib/useScrollLock";
 
 const API_URL = "/api";
 
@@ -362,20 +363,7 @@ export default function BarangayClearanceModal({
   isDemo = false,
   tenantConfig = {},
 }) {
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (isOpen) {
-        document.body.style.overflow = "hidden";
-      } else {
-        document.body.style.overflow = "";
-      }
-    }
-    return () => {
-      if (typeof window !== "undefined") {
-        document.body.style.overflow = "";
-      }
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 3;
@@ -636,6 +624,7 @@ export default function BarangayClearanceModal({
               <div
                 className="fixed inset-0 bg-black/60 backdrop-blur-[2px]"
                 onClick={onClose}
+                onTouchMove={(e) => e.preventDefault()}
               />
               <div
                 className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-fade-in"
@@ -1003,6 +992,7 @@ export default function BarangayClearanceModal({
               <div
                 className="fixed inset-0 bg-black/80 backdrop-blur-md"
                 onClick={() => setShowConfirmationPopup(false)}
+                onTouchMove={(e) => e.preventDefault()}
               />
               <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
                 {/* Header */}

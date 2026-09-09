@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { X, HelpCircle, Loader2, Search, AlertCircle, Phone, Mail, User, FileText, Calendar, Clock } from "lucide-react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
+import useScrollLock from "@/lib/useScrollLock";
 
 export default function ESumbongModal({ isOpen, onClose, publicMode = false }) {
+  useScrollLock(isOpen);
   const [form, setForm] = useState({
     complainant_resident_id: "",
     complainant_name: "",
@@ -123,6 +125,7 @@ export default function ESumbongModal({ isOpen, onClose, publicMode = false }) {
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
         onClick={handleClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
 
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[96dvh] sm:max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col">

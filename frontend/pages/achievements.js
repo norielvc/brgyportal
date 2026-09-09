@@ -23,6 +23,7 @@ import {
   Medal,
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
+import useScrollLock from "@/lib/useScrollLock";
 
 const API_URL = "/api";
 
@@ -47,6 +48,8 @@ export default function AchievementsPage() {
   const [hasChanges, setHasChanges] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  useScrollLock(Boolean(editingAchievement || showAddModal));
   const fileInputRef = useRef(null);
   const [subscription, setSubscription] = useState(null);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
@@ -281,28 +284,33 @@ export default function AchievementsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex gap-3">
+      <div className="flex items-center justify-between gap-2.5 sm:gap-4 w-full">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={openAddModal}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 shadow-md shadow-emerald-200 active:scale-95 transition-all"
           >
-            <Plus className="w-5 h-5" />
-            Add Award
+            <Plus className="w-4 h-4" />
+            <span>Add Award</span>
           </button>
           <button
             onClick={saveAllChanges}
             disabled={!hasChanges || saving}
-            className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${hasChanges && !saving ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all ${hasChanges && !saving ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 active:scale-95" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
           >
             {saving ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Saving...</span>
+              </>
             ) : (
-              <Save className="w-5 h-5" />
+              <>
+                <Save className="w-4 h-4" />
+                <span>Save All</span>
+              </>
             )}
-            {saving ? "Saving..." : "Save All"}
           </button>
         </div>
       </div>
@@ -310,12 +318,12 @@ export default function AchievementsPage() {
       {/* Notifications */}
       {notification && (
         <div
-          className={`flex items-center gap-3 p-4 rounded-xl border ${notification.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}
+          className={`flex items-center gap-2.5 sm:gap-3 p-3.5 sm:p-4 rounded-xl border text-xs sm:text-sm ${notification.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}
         >
           {notification.type === "success" ? (
-            <CheckCircle className="w-5 h-5" />
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5" />
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
           )}
           <span className="font-medium">{notification.message}</span>
         </div>
@@ -480,7 +488,7 @@ export default function AchievementsPage() {
 
       {/* Edit Modal */}
       {editingAchievement && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
               <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -649,7 +657,7 @@ export default function AchievementsPage() {
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
               <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">

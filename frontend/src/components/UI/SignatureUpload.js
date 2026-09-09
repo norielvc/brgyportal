@@ -114,7 +114,7 @@ export default function SignatureUpload({
 
       {!preview ? (
         <div
-          className={`relative border-2 border-dashed rounded-3xl p-10 text-center cursor-pointer transition-all duration-300 group overflow-hidden ${
+          className={`relative border-2 border-dashed rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-center cursor-pointer transition-all duration-300 group overflow-hidden ${
             isDragging
               ? "border-emerald-500 bg-emerald-100/50 shadow-emerald-900/10"
               : "border-emerald-900/10 hover:border-emerald-500/40 bg-emerald-50/20 hover:bg-emerald-50/50"
@@ -129,42 +129,42 @@ export default function SignatureUpload({
             className={`absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl transition-transform duration-700 ${isDragging ? "scale-150" : "group-hover:scale-110"}`}
           ></div>
 
-          <div className="flex flex-col items-center gap-5 relative z-10">
+          <div className="flex flex-col items-center gap-3 sm:gap-4 relative z-10">
             <div
-              className={`w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-emerald-900/5 transition-all duration-500 ${isDragging ? "rotate-12 scale-110" : "group-hover:-translate-y-1 group-hover:shadow-md"}`}
+              className={`w-11 h-11 sm:w-14 sm:h-14 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm border border-emerald-900/5 transition-all duration-500 ${isDragging ? "rotate-12 scale-110" : "group-hover:-translate-y-0.5 group-hover:shadow-md"}`}
             >
               <Upload
-                className={`w-7 h-7 ${isDragging ? "text-emerald-600" : "text-emerald-900/30 group-hover:text-emerald-600"}`}
+                className={`w-5 h-5 sm:w-6 sm:h-6 ${isDragging ? "text-emerald-600" : "text-emerald-900/40 group-hover:text-emerald-600"}`}
               />
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-black text-emerald-950 uppercase tracking-widest leading-none">
+            <div className="space-y-0.5">
+              <p className="text-xs sm:text-sm font-black text-emerald-950 uppercase tracking-wider leading-tight">
                 {isDragging ? "RELEASE TO STORE" : "ATTACH SIGNATURE ASSET"}
               </p>
-              <p className="text-[10px] text-emerald-800/40 font-bold uppercase tracking-widest mt-2 transform transition-all duration-300 group-hover:scale-105">
+              <p className="text-[9px] sm:text-[10px] text-emerald-800/50 font-bold uppercase tracking-wider mt-1">
                 PNG, JPG or JPEG • MAX {Math.round(maxSize / 1024 / 1024)}MB
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="border-2 border-emerald-500/20 rounded-3xl p-6 bg-emerald-50/30 animate-scale-in relative group overflow-hidden">
+        <div className="border-2 border-emerald-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 bg-emerald-50/30 animate-scale-in relative group overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
 
-          <div className="flex items-center gap-6 relative z-10">
-            <div className="relative group/preview">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative z-10">
+            <div className="relative group/preview shrink-0">
               <img
                 src={preview}
                 alt="Signature preview"
-                className="w-32 h-20 object-contain border border-emerald-900/5 rounded-xl bg-white shadow-sm p-2 transition-transform duration-500 group-hover/preview:scale-105"
+                className="w-28 h-16 sm:w-32 sm:h-20 object-contain border border-emerald-900/5 rounded-xl bg-white shadow-sm p-2 transition-transform duration-500 group-hover/preview:scale-105"
               />
               <div className="absolute -top-2 -right-2 bg-emerald-500 text-white rounded-full p-1 shadow-lg border-2 border-white">
                 <Check className="w-3 h-3" />
               </div>
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex-1 min-w-0 text-center sm:text-left">
+              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1.5">
                 <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 leading-none">
                   ASSET VERIFIED
                 </span>
@@ -181,9 +181,10 @@ export default function SignatureUpload({
             <button
               type="button"
               onClick={removeSignature}
-              className="w-12 h-12 flex items-center justify-center bg-white border-2 border-rose-100 text-rose-300 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 rounded-2xl transition-all duration-300 shadow-sm active:scale-90"
+              className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white border-2 border-rose-100 text-rose-300 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 rounded-xl sm:rounded-2xl transition-all duration-300 shadow-sm active:scale-90 shrink-0"
+              title="Remove signature"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
         </div>

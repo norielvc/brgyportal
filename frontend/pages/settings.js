@@ -431,44 +431,41 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div></div>
-
+    <div className="space-y-4 sm:space-y-6">
       {/* Messages */}
       {successMessage && (
-        <div className="flex items-center p-4 bg-green-50 border border-green-200 rounded-lg">
-          <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
-          <p className="text-green-700">{successMessage}</p>
+        <div className="flex items-center p-3.5 sm:p-4 bg-green-50 border border-green-200 rounded-xl text-xs sm:text-sm">
+          <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 mr-2.5 shrink-0" />
+          <p className="text-green-700 font-medium">{successMessage}</p>
         </div>
       )}
 
       {errorMessage && (
-        <div className="flex items-center p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-red-600 mr-3" />
-          <p className="text-red-700">{errorMessage}</p>
+        <div className="flex items-center p-3.5 sm:p-4 bg-red-50 border border-red-200 rounded-xl text-xs sm:text-sm">
+          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 mr-2.5 shrink-0" />
+          <p className="text-red-700 font-medium">{errorMessage}</p>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="card">
-        <div className="border-b border-gray-200">
-          <div className="flex gap-8 px-6">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="border-b border-gray-100">
+          <div className="flex overflow-x-auto no-scrollbar gap-2 sm:gap-6 px-3 sm:px-6">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
+                  className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-bold text-xs sm:text-sm transition-all whitespace-nowrap shrink-0 ${
                     activeTab === tab.id
-                      ? "border-[#03254c] text-[#03254c]"
-                      : "border-transparent text-gray-600 hover:text-gray-900"
+                      ? "border-blue-600 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-900"
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>{tab.label}</span>
                   </div>
                 </button>
               );
@@ -477,7 +474,7 @@ export default function Settings() {
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-3.5 sm:p-6">
           {/* General Settings */}
           {activeTab === "general" && (
             <div className="space-y-6 max-w-2xl">

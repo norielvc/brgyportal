@@ -140,18 +140,22 @@ export default function Residents() {
   const fetchTenantAddressDefaults = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/settings`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const tenantId = currentUser?.tenant_id || "ibaoeste";
+      const headers = {
+        "x-tenant-id": tenantId,
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${API_URL}/settings`, { headers });
+      if (!response.ok) return;
       const data = await response.json();
       
       if (data.success && data.settings) {
-        const headerInfo = data.settings.certificate_settings?.headerInfo || {};
+        const headerInfo = data.settings.certificate_settings?.headerInfo || data.settings.headerInfo || {};
         setTenantAddressDefaults({
-          barangay: headerInfo.barangayName || '',
-          municipality: headerInfo.municipality || '',
+          barangay: headerInfo.barangayName || "BARANGAY IBA O' ESTE",
+          municipality: headerInfo.municipality || 'Calumpit',
           province: headerInfo.province || 'Province of Bulacan',
         });
 
@@ -171,7 +175,7 @@ export default function Residents() {
         }
       }
     } catch (error) {
-      console.error('Error fetching tenant address defaults:', error);
+      console.warn('Tenant address defaults fallback:', error.message);
     }
   };
 
@@ -392,26 +396,44 @@ export default function Residents() {
       if (filters.pending_case) params.set("pending_case", filters.pending_case);
       if (filters.sort) params.set("sort", filters.sort);
 
+      const token = getAuthToken();
+      const tenantId = currentUser?.tenant_id || "ibaoeste";
+      const headers = {
+        "x-tenant-id": tenantId,
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
         `${API_URL}/residents/search?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${getAuthToken()}`,
-          },
-        },
+        { headers },
       );
+
+      if (!response.ok) {
+        console.warn("Resident search returned status:", response.status);
+        setResidents([]);
+        setTotalItems(0);
+        setTotalPages(1);
+        return;
+      }
+
       const data = await response.json();
 
-      if (data.success) {
-        setResidents(data.residents);
-        setTotalItems(data.totalItems);
-        setTotalPages(data.totalPages);
+      if (data && data.success) {
+        setResidents(data.residents || []);
+        setTotalItems(data.totalItems || 0);
+        setTotalPages(data.totalPages || 1);
       } else {
-        toast.error(data.message || "Failed to fetch residents");
+        setResidents([]);
+        if (data && data.message) {
+          toast.error(data.message);
+        }
       }
     } catch (error) {
       console.error("Error fetching residents:", error);
-      toast.error("API Connection Error: " + error.message);
+      toast.error("Error connecting to resident records: " + error.message);
+      setResidents([]);
     } finally {
       setIsLoading(false);
     }

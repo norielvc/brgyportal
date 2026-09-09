@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import { deleteStorageImage } from "@/lib/deleteStorageImage";
+import useScrollLock from "@/lib/useScrollLock";
 
 const API_URL = "/api";
 
@@ -558,6 +559,7 @@ export default function OfficialsPage() {
     outputFormat = "image/png",
     quality,
   }) => {
+    useScrollLock(true);
     const canvasRef = useRef(null);
     const [zoom, setZoom] = useState(1.2);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -617,7 +619,7 @@ export default function OfficialsPage() {
     const handleMouseUp = () => setIsDragging(false);
 
     return (
-      <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
         <div className="bg-white rounded-3xl w-full max-w-2xl flex flex-col max-h-[90vh] shadow-2xl animate-in fade-in zoom-in duration-300">
           <div className="p-6 border-b flex justify-between items-center bg-gray-50 shrink-0">
             <div>
@@ -1085,20 +1087,20 @@ export default function OfficialsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex gap-3">
+      <div className="flex items-center justify-between gap-2.5 sm:gap-4 w-full">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={resetToDefault}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-mediumTransition-all hover:scale-105"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl text-gray-700 bg-white hover:bg-gray-50 text-xs sm:text-sm font-bold transition-all shadow-2xs"
           >
             Reset Values
           </button>
           <button
             onClick={saveAllChanges}
             disabled={!hasChanges || isSaving}
-            className={`px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
               !hasChanges
                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                 : isSaving
@@ -1108,13 +1110,13 @@ export default function OfficialsPage() {
           >
             {isSaving ? (
               <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Saving...
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Saving...</span>
               </>
             ) : (
               <>
-                <Save className="w-5 h-5" />
-                Save All
+                <Save className="w-4 h-4" />
+                <span>Save All</span>
               </>
             )}
           </button>
@@ -1123,38 +1125,38 @@ export default function OfficialsPage() {
 
       {notification && (
         <div
-          className={`flex items-center gap-3 p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 ${notification.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}
+          className={`flex items-center gap-2.5 sm:gap-3 p-3.5 sm:p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 text-xs sm:text-sm ${notification.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}
         >
           {notification.type === "success" ? (
-            <CheckCircle className="w-5 h-5" />
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5" />
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
           )}
           <span className="font-medium">{notification.message}</span>
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm w-fit">
+      {/* Tab Navigation (Horizontal Scrollable on Mobile) */}
+      <div className="flex overflow-x-auto no-scrollbar gap-1 max-w-full p-1 rounded-xl sm:rounded-2xl bg-white border border-gray-100 shadow-sm">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider whitespace-nowrap transition-all shrink-0 ${
               activeTab === tab.id
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                ? "bg-blue-600 text-white shadow-md sm:shadow-lg shadow-blue-200"
                 : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
             }`}
           >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
+            <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
 
       {hasChanges && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 animate-pulse">
-          <AlertCircle className="w-5 h-5 text-amber-600" />
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 animate-pulse text-xs sm:text-sm">
+          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0" />
           <span className="text-amber-800 font-medium">
             Unsaved changes detected. Remember to click "Save All" before
             leaving.
@@ -1164,8 +1166,8 @@ export default function OfficialsPage() {
 
       {/* Tab Content: Officials & Vision */}
       {activeTab === "officials" && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-emerald-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
+        <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-emerald-900 rounded-2xl sm:rounded-3xl p-4 sm:p-8 text-white shadow-xl sm:shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-6">

@@ -252,6 +252,11 @@ export const blotterAPI = {
     const response = await api.put(`/blotter?id=${id}`, { status });
     return response.data;
   },
+
+  deleteReport: async (id) => {
+    const response = await api.delete(`/blotter?id=${id}`);
+    return response.data;
+  },
 };
 
 // Brgy Assistance / inquiry API functions
@@ -270,6 +275,11 @@ export const assistanceAPI = {
     const response = await api.put(`/assistance?id=${id}`, { status });
     return response.data;
   },
+
+  deleteInquiry: async (id) => {
+    const response = await api.delete(`/assistance?id=${id}`);
+    return response.data;
+  },
 };
 
 // KapChat message API functions
@@ -286,6 +296,21 @@ export const kapchatAPI = {
 
   updateStatus: async (id, status) => {
     const response = await api.put(`/kapchat?id=${id}`, { status });
+    return response.data;
+  },
+
+  updateThreadStatus: async (contact, status) => {
+    const response = await api.put(`/kapchat?contact=${encodeURIComponent(contact)}`, { status });
+    return response.data;
+  },
+
+  deleteMessage: async (id) => {
+    const response = await api.delete(`/kapchat?id=${id}`);
+    return response.data;
+  },
+
+  deleteThread: async (contact) => {
+    const response = await api.delete(`/kapchat?contact=${encodeURIComponent(contact)}`);
     return response.data;
   },
 };

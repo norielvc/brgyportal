@@ -36,14 +36,15 @@ export default function Header({
       const response = await fetch('/api/notifications?limit=10', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!response.ok) return;
       const data = await response.json();
       
-      if (data.success) {
+      if (data && data.success) {
         setNotifications(data.data || []);
         setUnreadCount(data.unreadCount || 0);
       }
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.warn('Failed to fetch notifications:', error.message);
     }
   };
 

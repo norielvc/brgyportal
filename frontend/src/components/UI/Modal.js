@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import useScrollLock from "@/lib/useScrollLock";
 
 export default function Modal({
   isOpen,
@@ -18,6 +19,8 @@ export default function Modal({
     full: "max-w-screen-2xl",
   };
 
+  useScrollLock(isOpen);
+
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape") {
@@ -27,38 +30,10 @@ export default function Modal({
 
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
-      
-      // Save current scroll position
-      const scrollY = window.scrollY;
-      
-      // Calculate scrollbar width to prevent layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      
-      // Lock scroll and maintain position
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      
-      // Get the scroll position before unlocking
-      const scrollY = document.body.style.top;
-      
-      // Restore scroll
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-      
-      // Restore scroll position
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
     };
   }, [isOpen, onClose]);
 
@@ -70,6 +45,7 @@ export default function Modal({
       <div
         className="fixed inset-0 transition-opacity bg-gray-500/75"
         onClick={onClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
 
       {/* Modal panel */}

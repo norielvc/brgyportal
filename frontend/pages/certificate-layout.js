@@ -503,50 +503,45 @@ export default function CertificateLayoutPage() {
 
   return (
     <Layout title="Certificate Layout" subtitle="Customize PDF appearance">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Certificate Layout
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Customize the design and structure of printed certificates
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-2.5 sm:gap-4 w-full">
+          <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">
+            Customize PDF appearance & structure
+          </p>
           <button
             onClick={saveAllChanges}
             disabled={!hasChanges}
-            className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${hasChanges ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
+            className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 sm:gap-2 shrink-0 transition-all ${hasChanges ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200 active:scale-95" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
           >
-            <Save className="w-5 h-5" />
-            Save Changes
+            <Save className="w-4 h-4" />
+            <span>Save Changes</span>
           </button>
         </div>
 
         {notification && (
           <div
-            className={`flex items-center gap-3 p-4 rounded-xl border ${notification.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}
+            className={`flex items-center gap-2.5 sm:gap-3 p-3.5 sm:p-4 rounded-xl border text-xs sm:text-sm ${notification.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}
           >
             {notification.type === "success" ? (
-              <CheckCircle className="w-5 h-5" />
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
             ) : (
-              <AlertCircle className="w-5 h-5" />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
             )}
             <span className="font-medium">{notification.message}</span>
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-2">
+        {/* Tabs (Horizontal Scrollable on Mobile) */}
+        <div className="flex overflow-x-auto no-scrollbar gap-1 max-w-full p-1 rounded-xl sm:rounded-2xl bg-white border border-gray-100 shadow-sm">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all ${activeTab === tab.id ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+              className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all shrink-0 ${activeTab === tab.id ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}`}
             >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>

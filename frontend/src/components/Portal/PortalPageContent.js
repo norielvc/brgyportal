@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import {
@@ -49,6 +49,11 @@ import {
   HelpCircle,
   AlertCircle,
   Image as ImageIcon,
+  RotateCcw,
+  CheckCheck,
+  Sparkles,
+  RefreshCw,
+  Bot,
 } from "lucide-react";
 import BarangayClearanceModal from "@/components/Forms/BarangayClearanceModal";
 import IndigencyCertificateModal from "@/components/Forms/IndigencyCertificateModal";
@@ -61,6 +66,7 @@ import CohabitationCertificateModal from "@/components/Forms/CohabitationCertifi
 import MedicoLegalModal from "@/components/Forms/MedicoLegalModal";
 import SamePersonCertificateModal from "@/components/Forms/SamePersonCertificateModal";
 import ESumbongModal from "@/components/Forms/ESumbongModal";
+import useScrollLock from "@/lib/useScrollLock";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
 
 export default function PortalPageContent({ initialTenantId }) {
@@ -192,6 +198,8 @@ export default function PortalPageContent({ initialTenantId }) {
   const [chatSending, setChatSending] = useState(false);
   const [chatUserInfo, setChatUserInfo] = useState({ name: "", contact: "" });
   const [chatStarted, setChatStarted] = useState(false);
+  const [isChatSyncing, setIsChatSyncing] = useState(false);
+  const chatMessagesEndRef = useRef(null);
   const [assistanceFormData, setAssistanceFormData] = useState({
     firstName: "",
     lastName: "",
@@ -239,6 +247,16 @@ export default function PortalPageContent({ initialTenantId }) {
   const [subscription, setSubscription] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [lockedFeature, setLockedFeature] = useState(null);
+
+  const isAnyPortalModalOpen = Boolean(
+    selectedAchievement ||
+    selectedNewsItem ||
+    selectedProgram ||
+    selectedFacility ||
+    showComingSoonModal ||
+    showUpgradeModal
+  );
+  useScrollLock(isAnyPortalModalOpen);
 
   // Fetch subscription info for this tenant to handle feature gating
   useEffect(() => {
@@ -901,44 +919,142 @@ export default function PortalPageContent({ initialTenantId }) {
   // Get the Barangay Captain from officials data
   const captain = officials.find((o) => o.position_type === "captain");
 
-  // KapChat — Send message to Barangay Captain
-  const handleChatSend = async (e) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
+  // Load saved KapChat identity from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem("brgy_kapchat_user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed?.name && parsed?.contact) {
+          setChatUserInfo(parsed);
+          setChatStarted(true);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load saved KapChat user:", e);
+    }
+  }, []);
 
-    const messageText = chatInput.trim();
-    const userMessage = {
-      id: Date.now(),
+  // Auto-scroll to bottom of chat when new messages arrive
+  useEffect(() => {
+    if (chatMessagesEndRef.current && showAssistance && assistanceMode === "kapchat") {
+      chatMessagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, showAssistance, assistanceMode]);
+
+  // Fetch live chat messages for active contact
+  const fetchLiveKapChatMessages = async (contactNum, isSilent = false) => {
+    const contactToQuery = contactNum || chatUserInfo.contact;
+    if (!contactToQuery) return;
+
+    if (!isSilent) setIsChatSyncing(true);
+    try {
+      const res = await kapchatAPI.getMessages({ contact: contactToQuery });
+      if (res?.messages) {
+        const mapped = res.messages.map((m) => ({
+          id: m.id,
+          text: m.message,
+          sender: m.is_admin ? "captain" : "user",
+          sender_name: m.sender_name,
+          time: new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          created_at: m.created_at,
+          status: m.status,
+          is_admin: m.is_admin,
+        }));
+        setChatMessages(mapped);
+      }
+    } catch (err) {
+      console.error("Error fetching live KapChat messages:", err);
+    } finally {
+      if (!isSilent) setIsChatSyncing(false);
+    }
+  };
+
+  // Live polling for KapChat (every 3 seconds when open)
+  useEffect(() => {
+    if (!showAssistance || assistanceMode !== "kapchat" || !chatStarted || !chatUserInfo.contact) {
+      return;
+    }
+
+    fetchLiveKapChatMessages(chatUserInfo.contact, false);
+
+    const interval = setInterval(() => {
+      fetchLiveKapChatMessages(chatUserInfo.contact, true);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [showAssistance, assistanceMode, chatStarted, chatUserInfo.contact]);
+
+  // KapChat — Quick Inquiry Prompt Suggestions
+  const KAPCHAT_QUICK_PROMPTS = [
+    { label: "📄 Barangay Clearance Requirements", text: "Good day Kap! May I ask what the requirements and process are for Barangay Clearance?" },
+    { label: "🕒 Barangay Hall Office Hours", text: "Good day Kap! What are the official office hours and working days of the Barangay Hall?" },
+    { label: "🚨 Emergency Barangay Assistance", text: "Good day Kap! Where can I call for emergency barangay assistance and patrol tanod?" },
+    { label: "📑 Track Document Request", text: "Good day Kap! I would like to follow up on the status of my submitted barangay document request." },
+  ];
+
+  // KapChat — Start chat session handler
+  const handleStartChat = (e) => {
+    e.preventDefault();
+    if (chatUserInfo.name.trim() && chatUserInfo.contact.trim()) {
+      const cleanInfo = { name: chatUserInfo.name.trim(), contact: chatUserInfo.contact.trim() };
+      setChatUserInfo(cleanInfo);
+      setChatStarted(true);
+      try {
+        localStorage.setItem("brgy_kapchat_user", JSON.stringify(cleanInfo));
+      } catch (err) {}
+      fetchLiveKapChatMessages(cleanInfo.contact, false);
+    }
+  };
+
+  // KapChat — Reset chat session handler
+  const handleResetChatSession = () => {
+    if (window.confirm("Switch user or start a fresh session?")) {
+      try {
+        localStorage.removeItem("brgy_kapchat_user");
+      } catch (err) {}
+      setChatUserInfo({ name: "", contact: "" });
+      setChatMessages([]);
+      setChatStarted(false);
+    }
+  };
+
+  // KapChat — Send message (from input or quick prompt)
+  const handleChatSend = async (e, customText = null) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const messageText = (customText || chatInput).trim();
+    if (!messageText) return;
+
+    if (!customText) {
+      setChatInput("");
+    }
+    setChatSending(true);
+
+    const optimisticMsg = {
+      id: "temp-" + Date.now(),
       text: messageText,
       sender: "user",
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      sender_name: chatUserInfo.name,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      status: "sending",
+      created_at: new Date().toISOString(),
     };
-    setChatMessages((prev) => [...prev, userMessage]);
-    setChatInput("");
-    setChatSending(true);
+    setChatMessages((prev) => [...prev, optimisticMsg]);
 
     try {
       await kapchatAPI.send({
         name: chatUserInfo.name,
         contact: chatUserInfo.contact,
         message: messageText,
+        is_admin: false,
       });
+      // Re-fetch to sync DB timestamp & state
+      await fetchLiveKapChatMessages(chatUserInfo.contact, true);
     } catch (error) {
       console.error("Error sending KapChat message:", error);
-    }
-
-    // Simulate captain auto-reply
-    setTimeout(() => {
-      const captainName = captain?.full_name || "the Barangay Captain";
-      const reply = {
-        id: Date.now() + 1,
-        text: `Thank you for your message. ${captainName} will review your concern and get back to you. For urgent matters, please call our office during business hours.`,
-        sender: "captain",
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setChatMessages((prev) => [...prev, reply]);
+    } finally {
       setChatSending(false);
-    }, 1500);
+    }
   };
 
   // Brgy Assistance — Submit assistance request
@@ -2233,6 +2349,7 @@ export default function PortalPageContent({ initialTenantId }) {
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
           onClick={() => setSelectedAchievement(null)}
+          onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}
         >
           <div
             className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden relative transform transition-all"
@@ -2313,6 +2430,7 @@ export default function PortalPageContent({ initialTenantId }) {
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
           onClick={() => setSelectedProgram(null)}
+          onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}
         >
           <div
             className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden relative transform transition-all flex flex-col md:flex-row h-full max-h-[90vh] md:max-h-[80vh]"
@@ -3572,152 +3690,277 @@ export default function PortalPageContent({ initialTenantId }) {
           </div>
         )}
 
-        {/* KapChat Panel — Chat with Barangay Captain */}
+        {/* KapChat Panel — Modern Live Two-Way Chat Messenger */}
         {showAssistance && assistanceMode === "kapchat" && (
-          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-80 overflow-hidden animate-fade-in flex flex-col" style={{ maxHeight: '520px' }}>
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[calc(100vw-32px)] sm:w-96 max-w-[420px] overflow-hidden animate-fade-in flex flex-col transition-all" style={{ height: "540px", maxHeight: "88vh" }}>
             {/* Chat Header */}
             <div
-              className="px-4 py-3 border-b border-gray-100 flex items-center justify-between"
-              style={{ backgroundColor: `${tenantConfig.primaryColor}08` }}
+              className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between text-white"
+              style={{ background: tenantConfig.colorStyle?.background || tenantConfig.primaryColor }}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: `${tenantConfig.primaryColor}20` }}
-                >
-                  <Shield className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-white/20 ring-2 ring-white/30 flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
+                    <Shield className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full animate-pulse" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">
-                    {captain?.full_name || "Barangay Captain"}
-                  </p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: tenantConfig.primaryColor }}>
-                    KapChat · Online
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-black text-white truncate leading-tight">
+                      {captain?.full_name || "Barangay Captain"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-white/80 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                    <span>Official KapChat · Live Desk</span>
+                    {isChatSyncing && (
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin text-white/70" />
+                    )}
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={() => closeAssistance()}
-                className="w-7 h-7 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-lg flex items-center justify-center transition-colors shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
+
+              <div className="flex items-center gap-1">
+                {chatStarted && (
+                  <button
+                    onClick={handleResetChatSession}
+                    title="Switch user identity or reset chat"
+                    className="w-7 h-7 bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center transition-colors shrink-0"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => closeAssistance()}
+                  className="w-7 h-7 bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center transition-colors shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Pre-chat: Name & Contact Form */}
-            {!chatStarted && (
-              <div className="p-4">
-                <div className="text-center mb-4">
-                  <MessageCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    You are about to chat with {captain?.full_name || "the Barangay Captain"}. Please provide your name and contact so we can get back to you.
+            {!chatStarted ? (
+              <div className="p-5 flex-1 flex flex-col justify-between overflow-y-auto bg-slate-50/50">
+                <div className="space-y-4">
+                  <div className="text-center pt-2">
+                    <div
+                      className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center shadow-sm"
+                      style={{ backgroundColor: `${tenantConfig.primaryColor}18`, color: tenantConfig.primaryColor }}
+                    >
+                      <MessageCircle className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-sm font-bold text-gray-900 mb-1">
+                      Welcome to KapChat
+                    </h4>
+                    <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
+                      Directly connect with <strong>{captain?.full_name || "the Barangay Captain"}</strong> and desk officers for immediate inquiries & assistance.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleStartChat} className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1">
+                        Your Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={chatUserInfo.name}
+                        onChange={(e) => setChatUserInfo({ ...chatUserInfo, name: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all"
+                        style={{ "--tw-ring-color": tenantConfig.primaryColor }}
+                        placeholder="e.g. Juan Dela Cruz"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1">
+                        Mobile Number <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={chatUserInfo.contact}
+                        onChange={(e) => setChatUserInfo({ ...chatUserInfo, contact: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-900 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all"
+                        style={{ "--tw-ring-color": tenantConfig.primaryColor }}
+                        placeholder="09XX XXX XXXX"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full text-white py-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-2 text-xs shadow-md active:scale-[0.99] mt-2"
+                      style={{ backgroundColor: tenantConfig.primaryColor }}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Start Conversation</span>
+                    </button>
+                  </form>
+                </div>
+
+                <div className="pt-3 text-center border-t border-gray-200/60 mt-4">
+                  <p className="text-[10px] text-gray-400 font-medium flex items-center justify-center gap-1">
+                    <Shield className="w-3 h-3 text-gray-400" />
+                    Official & Confidential Barangay Messaging
                   </p>
                 </div>
+              </div>
+            ) : (
+              /* Two-way Chat Messages & Input Stream */
+              <div className="flex-1 flex flex-col min-h-0 bg-slate-50">
+                {/* User Session Bar */}
+                <div className="px-3.5 py-1.5 bg-gray-100/80 border-b border-gray-200 flex items-center justify-between text-[11px] text-gray-600">
+                  <span className="font-semibold truncate">
+                    Chatting as: <strong className="text-gray-900">{chatUserInfo.name}</strong> ({chatUserInfo.contact})
+                  </span>
+                  <button
+                    onClick={handleResetChatSession}
+                    className="text-[10px] font-bold text-blue-600 hover:underline shrink-0 ml-2"
+                  >
+                    Change
+                  </button>
+                </div>
+
+                {/* Messages Feed */}
+                <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+                  {/* Default Warm Welcome Bubble */}
+                  <div className="flex items-start gap-2">
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 shadow-sm mt-0.5"
+                      style={{ backgroundColor: `${tenantConfig.primaryColor}20`, color: tenantConfig.primaryColor }}
+                    >
+                      <Shield className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="max-w-[85%] bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 border border-gray-200/90 shadow-sm">
+                      <p className="text-[10px] font-bold text-gray-500 mb-0.5">
+                        {captain?.full_name || "Barangay Captain"}
+                      </p>
+                      <p className="text-xs text-gray-800 leading-relaxed font-normal">
+                        Mabuhay <strong>{chatUserInfo.name.split(" ")[0]}</strong>! Ako si Kapitan {captain?.full_name || ""}. Paano po kami makakatulong sa inyong concern ngayong araw?
+                      </p>
+                      <span className="text-[9px] text-gray-400 font-medium block mt-1">
+                        Official Assistant
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quick Suggested Inquiries if user hasn't sent many messages */}
+                  {chatMessages.length === 0 && (
+                    <div className="pt-2 pb-1 space-y-1.5">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-500" />
+                        Quick Inquiries
+                      </p>
+                      <div className="grid grid-cols-1 gap-1.5">
+                        {KAPCHAT_QUICK_PROMPTS.map((prompt, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleChatSend(null, prompt.text)}
+                            className="text-left px-3 py-2 bg-white hover:bg-emerald-50/80 border border-gray-200 hover:border-emerald-300 rounded-xl text-xs font-semibold text-gray-700 hover:text-emerald-900 transition-all shadow-2xs active:scale-[0.99] flex items-center justify-between group"
+                          >
+                            <span>{prompt.label}</span>
+                            <Send className="w-3 h-3 text-gray-300 group-hover:text-emerald-600 transition-colors shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Conversation History Stream */}
+                  {chatMessages.map((msg) => {
+                    const isUser = msg.sender === "user" || !msg.is_admin;
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex items-end gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}
+                      >
+                        {!isUser && (
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 shadow-2xs mb-0.5"
+                            style={{ backgroundColor: `${tenantConfig.primaryColor}20`, color: tenantConfig.primaryColor }}
+                          >
+                            <Shield className="w-3 h-3" />
+                          </div>
+                        )}
+                        <div
+                          className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-2xs ${
+                            isUser
+                              ? "rounded-br-xs text-white"
+                              : "rounded-bl-xs bg-white border border-gray-200 text-gray-800"
+                          }`}
+                          style={isUser ? { backgroundColor: tenantConfig.primaryColor } : {}}
+                        >
+                          {!isUser && (
+                            <p className="text-[10px] font-bold text-emerald-700 mb-0.5">
+                              {msg.sender_name || captain?.full_name || "Barangay Official"}
+                            </p>
+                          )}
+                          <p className="text-xs leading-relaxed font-normal whitespace-pre-wrap">
+                            {msg.text}
+                          </p>
+                          <div
+                            className={`flex items-center justify-end gap-1 text-[9px] mt-1 ${
+                              isUser ? "text-white/70" : "text-gray-400"
+                            }`}
+                          >
+                            <span>{msg.time}</span>
+                            {isUser && (
+                              <CheckCheck className="w-3 h-3 text-white/90" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Sending indicator */}
+                  {chatSending && (
+                    <div className="flex justify-end">
+                      <div
+                        className="rounded-2xl rounded-br-xs px-3 py-2 text-white/90 text-xs shadow-2xs flex items-center gap-1.5"
+                        style={{ backgroundColor: `${tenantConfig.primaryColor}cc` }}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={chatMessagesEndRef} />
+                </div>
+
+                {/* Chat Input Bar */}
                 <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (chatUserInfo.name.trim() && chatUserInfo.contact.trim()) {
-                      setChatStarted(true);
-                    }
-                  }}
-                  className="space-y-3"
+                  onSubmit={handleChatSend}
+                  className="p-3 border-t border-gray-200 bg-white flex items-center gap-2"
                 >
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Your Name</label>
-                    <input
-                      type="text"
-                      value={chatUserInfo.name}
-                      onChange={(e) => setChatUserInfo({ ...chatUserInfo, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
-                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
-                      placeholder="Juan Dela Cruz"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Contact Number</label>
-                    <input
-                      type="tel"
-                      value={chatUserInfo.contact}
-                      onChange={(e) => setChatUserInfo({ ...chatUserInfo, contact: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
-                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
-                      placeholder="09XX XXX XXXX"
-                      required
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleChatSend(e);
+                      }
+                    }}
+                    placeholder="Type your message to Kap..."
+                    className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all"
+                    style={{ "--tw-ring-color": tenantConfig.primaryColor }}
+                  />
                   <button
                     type="submit"
-                    className="w-full text-white py-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-2 text-sm"
+                    disabled={!chatInput.trim() || chatSending}
+                    className="w-10 h-10 text-white rounded-xl font-bold transition-all shrink-0 disabled:opacity-40 flex items-center justify-center shadow-md active:scale-95"
                     style={{ backgroundColor: tenantConfig.primaryColor }}
                   >
-                    <MessageCircle className="w-4 h-4" />
-                    Start Chat
+                    <Send className="w-4 h-4" />
                   </button>
                 </form>
               </div>
-            )}
-
-            {/* Chat Messages */}
-            {chatStarted && (
-              <>
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50" style={{ minHeight: '180px' }}>
-                  {chatMessages.length === 0 && (
-                    <div className="text-center py-6">
-                      <MessageCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-xs text-gray-400 leading-relaxed">
-                        Hi {chatUserInfo.name.split(" ")[0]}, send a message to {captain?.full_name || "the Barangay Captain"}. Your concern will be reviewed and addressed.
-                      </p>
-                    </div>
-                  )}
-                  {chatMessages.map((msg) => (
-                    <div key={msg.id} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-                      <div
-                        className={`max-w-[80%] rounded-lg px-3 py-2 ${msg.sender === "user" ? "text-white" : "bg-white border border-gray-200 text-gray-700"}`}
-                        style={msg.sender === "user" ? { backgroundColor: tenantConfig.primaryColor } : {}}
-                      >
-                        <p className="text-xs leading-relaxed">{msg.text}</p>
-                        <p className={`text-[9px] mt-1 ${msg.sender === "user" ? "text-white/60" : "text-gray-400"}`}>
-                          {msg.time}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  {chatSending && (
-                    <div className="flex justify-start">
-                      <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                        <div className="flex gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Chat Input */}
-                <form onSubmit={handleChatSend} className="p-3 border-t border-gray-100 bg-white">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Type your message..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
-                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={!chatInput.trim() || chatSending}
-                      className="px-3 py-2 text-white rounded-lg font-bold transition-all shrink-0 disabled:opacity-50"
-                      style={{ backgroundColor: tenantConfig.primaryColor }}
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
-                </form>
-              </>
             )}
           </div>
         )}
@@ -4433,12 +4676,14 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
 
 
 function UpgradeNeededModal({ isOpen, onClose, featureName, tenantConfig }) {
+  useScrollLock(isOpen);
   if (!isOpen) return null;
 
   return (
     <div
       className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md"
       onClick={onClose}
+      onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}
     >
       <div
         className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden relative transform transition-all p-8 md:p-12 text-center"

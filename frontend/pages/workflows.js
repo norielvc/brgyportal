@@ -25,6 +25,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import { isAuthenticated, getUserData, getAuthToken } from "@/lib/auth";
+import useScrollLock from "@/lib/useScrollLock";
 // API Configuration
 const API_URL = "/api";
 const MASTER_WORKFLOW_ID = "master_certificate_flow";
@@ -715,32 +716,32 @@ export default function WorkflowsPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-2.5 sm:gap-4 w-full">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={syncWorkflowAssignments}
             disabled={syncing}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold shadow-md shadow-emerald-200 active:scale-95 transition-all"
           >
             {syncing ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Syncing...
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Syncing...</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                Save & Sync Assignments
+                <span>Save & Sync</span>
               </>
             )}
           </button>
           <button
             onClick={handleResetToDefault}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-2xs transition-all"
           >
-            Reset to Default
+            Reset
           </button>
         </div>
       </div>
@@ -748,7 +749,7 @@ export default function WorkflowsPage() {
       {/* Notification */}
       {notification && (
         <div
-          className={`p-4 rounded-lg flex items-center gap-2 ${
+          className={`p-3.5 sm:p-4 rounded-xl flex items-center gap-2.5 text-xs sm:text-sm ${
             notification.type === "success"
               ? "bg-green-50 text-green-800 border border-green-200"
               : notification.type === "warning"
@@ -757,31 +758,29 @@ export default function WorkflowsPage() {
           }`}
         >
           {notification.type === "success" ? (
-            <CheckCircle className="w-5 h-5" />
-          ) : notification.type === "warning" ? (
-            <AlertCircle className="w-5 h-5" />
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5" />
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
           )}
-          {notification.message}
+          <span>{notification.message}</span>
         </div>
       )}
 
       {/* Workflow Tabs */}
-      <div className="flex p-1 bg-gray-100 rounded-xl w-full sm:w-fit mb-6">
+      <div className="flex p-1 bg-gray-100 rounded-xl w-full sm:w-fit gap-1">
         <button
           onClick={() => setSelectedCertificate(MASTER_WORKFLOW_ID)}
-          className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${
+          className={`flex-1 sm:flex-none px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-lg font-bold text-xs sm:text-sm transition-all ${
             selectedCertificate === MASTER_WORKFLOW_ID
               ? "bg-blue-600 text-white shadow-md"
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
-          Unified (Clearance/Death/Etc.)
+          Unified Flow
         </button>
         <button
           onClick={() => setSelectedCertificate("business_permit")}
-          className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${
+          className={`flex-1 sm:flex-none px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-lg font-bold text-xs sm:text-sm transition-all ${
             selectedCertificate === "business_permit"
               ? "bg-purple-600 text-white shadow-md"
               : "text-gray-500 hover:text-gray-700"
@@ -793,23 +792,23 @@ export default function WorkflowsPage() {
 
       {/* Unified Workflow Header */}
       {selectedCertificate === MASTER_WORKFLOW_ID ? (
-        <div className="bg-blue-600 rounded-xl shadow-md border border-blue-700 p-6 text-white text-center">
-          <h2 className="text-xl font-bold flex items-center justify-center gap-2">
-            <Settings className="w-6 h-6" />
+        <div className="bg-blue-600 rounded-xl sm:rounded-2xl shadow-md border border-blue-700 p-4 sm:p-6 text-white text-center">
+          <h2 className="text-base sm:text-xl font-bold flex items-center justify-center gap-2">
+            <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
             Unified Certificate Workflow
           </h2>
-          <p className="text-blue-100 mt-2 text-sm italic">
+          <p className="text-blue-100 mt-1 sm:mt-2 text-xs sm:text-sm italic">
             Changes made here are applied to <b>Guardianship</b>,{" "}
             <b>Clearance</b>, <b>Death</b>, and other general certificates.
           </p>
         </div>
       ) : (
-        <div className="bg-purple-600 rounded-xl shadow-md border border-purple-700 p-6 text-white text-center">
-          <h2 className="text-xl font-bold flex items-center justify-center gap-2">
-            <Briefcase className="w-6 h-6" />
+        <div className="bg-purple-600 rounded-xl sm:rounded-2xl shadow-md border border-purple-700 p-4 sm:p-6 text-white text-center">
+          <h2 className="text-base sm:text-xl font-bold flex items-center justify-center gap-2">
+            <Briefcase className="w-5 h-5 sm:w-6 sm:h-6" />
             Business Permit Workflow
           </h2>
-          <p className="text-purple-100 mt-2 text-sm italic">
+          <p className="text-purple-100 mt-1 sm:mt-2 text-xs sm:text-sm italic">
             This configuration is <b>exclusive</b> to Business Permits and does
             not affect other certificates.
           </p>
@@ -863,7 +862,7 @@ export default function WorkflowsPage() {
             requests.
           </p>
         </div>
-        <div className="p-6">
+        <div className="p-3.5 sm:p-6">
           {(() => {
             const allSteps = getCurrentSteps();
             const reviewStep = allSteps.find(
@@ -871,22 +870,22 @@ export default function WorkflowsPage() {
             );
 
             return (
-              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <div>
-                  <h4 className="font-bold text-gray-900">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 bg-gray-50 p-3.5 sm:p-4 rounded-xl border border-gray-200">
+                <div className="min-w-0">
+                  <h4 className="font-bold text-xs sm:text-sm text-gray-900">
                     Assigned Review Officers
                   </h4>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-[11px] sm:text-xs text-gray-500">
                     These users are the first to receive and review submitted
                     requests.
                   </p>
                 </div>
 
-                <div className="flex-1 flex justify-center px-4">
+                <div className="w-full sm:w-auto flex-1 flex justify-start sm:justify-center py-1 sm:py-0 sm:px-4">
                   {reviewStep &&
                   reviewStep.assignedUsers &&
                   reviewStep.assignedUsers.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {reviewStep.assignedUsers.map((userId) => {
                         const user = users.find(
                           (u) => u._id === userId || u.id === userId,
@@ -894,18 +893,18 @@ export default function WorkflowsPage() {
                         return user ? (
                           <span
                             key={userId}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs border border-green-200 font-bold"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-[11px] sm:text-xs border border-green-200 font-bold"
                           >
-                            <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center text-white text-[10px]">
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 bg-green-600 rounded-full flex items-center justify-center text-white text-[9px] sm:text-[10px]">
                               {user.firstName?.charAt(0)}
                             </div>
-                            {user.firstName} {user.lastName}
+                            <span>{user.firstName} {user.lastName}</span>
                           </span>
                         ) : null;
                       })}
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400 italic bg-gray-100 px-4 py-1 rounded-lg border border-dashed border-gray-300">
+                    <span className="text-xs text-gray-400 italic bg-gray-100 px-3 py-1 rounded-lg border border-dashed border-gray-300">
                       No members assigned yet
                     </span>
                   )}
@@ -919,10 +918,10 @@ export default function WorkflowsPage() {
                       type: "review",
                     })
                   }
-                  className={`px-6 py-2 text-white rounded-xl font-bold shadow-lg transition-all active:scale-95 ${
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 text-center ${
                     selectedCertificate === MASTER_WORKFLOW_ID
-                      ? "bg-green-600 hover:bg-green-700"
-                      : "bg-purple-600 hover:bg-purple-700"
+                      ? "bg-green-600 hover:bg-green-700 shadow-green-200"
+                      : "bg-purple-600 hover:bg-purple-700 shadow-purple-200"
                   }`}
                 >
                   Assign Team Members
@@ -1159,7 +1158,7 @@ export default function WorkflowsPage() {
             requests.
           </p>
         </div>
-        <div className="p-6">
+        <div className="p-3.5 sm:p-6">
           {(() => {
             const masterSteps = getCurrentSteps();
             const captainIndex = masterSteps.findIndex(
@@ -1176,21 +1175,21 @@ export default function WorkflowsPage() {
                 : null);
 
             return (
-              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <div>
-                  <h4 className="font-bold text-gray-900">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 bg-gray-50 p-3.5 sm:p-4 rounded-xl border border-gray-200">
+                <div className="min-w-0">
+                  <h4 className="font-bold text-xs sm:text-sm text-gray-900">
                     Assigned Releasing Officers
                   </h4>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-[11px] sm:text-xs text-gray-500">
                     Only these users can print and release certificates.
                   </p>
                 </div>
 
-                <div className="flex-1 flex justify-center px-4">
+                <div className="w-full sm:w-auto flex-1 flex justify-start sm:justify-center py-1 sm:py-0 sm:px-4">
                   {releasingStep &&
                   releasingStep.assignedUsers &&
                   releasingStep.assignedUsers.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {releasingStep.assignedUsers.map((userId) => {
                         const user = users.find(
                           (u) => u._id === userId || u.id === userId,
@@ -1198,18 +1197,18 @@ export default function WorkflowsPage() {
                         return user ? (
                           <span
                             key={userId}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs border border-blue-200 font-bold"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-[11px] sm:text-xs border border-blue-200 font-bold"
                           >
-                            <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-[10px]">
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-[9px] sm:text-[10px]">
                               {user.firstName?.charAt(0)}
                             </div>
-                            {user.firstName} {user.lastName}
+                            <span>{user.firstName} {user.lastName}</span>
                           </span>
                         ) : null;
                       })}
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400 italic bg-gray-100 px-4 py-1 rounded-lg border border-dashed border-gray-300">
+                    <span className="text-xs text-gray-400 italic bg-gray-100 px-3 py-1 rounded-lg border border-dashed border-gray-300">
                       No members assigned yet
                     </span>
                   )}
@@ -1222,10 +1221,10 @@ export default function WorkflowsPage() {
                       stepId: releasingStep?.id || "new_releasing",
                     })
                   }
-                  className={`px-6 py-2 text-white rounded-xl font-bold shadow-lg transition-all active:scale-95 ${
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 text-center ${
                     selectedCertificate === MASTER_WORKFLOW_ID
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "bg-purple-600 hover:bg-purple-700"
+                      ? "bg-blue-600 hover:bg-blue-700 shadow-blue-200"
+                      : "bg-purple-600 hover:bg-purple-700 shadow-purple-200"
                   }`}
                 >
                   Assign Team Members
@@ -1461,9 +1460,10 @@ function EditStepForm({ step, onSave, onCancel }) {
 
 // Add Step Modal Component
 function AddStepModal({ newStep, setNewStep, onAdd, onClose }) {
+  useScrollLock(true);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} onTouchMove={(e) => e.preventDefault()}></div>
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
@@ -1674,9 +1674,11 @@ function AssignUsersModal({ step, users, onSave, onClose }) {
     return isActive && matchesSearch;
   });
 
+  useScrollLock(true);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} onTouchMove={(e) => e.preventDefault()}></div>
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[80vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <div>

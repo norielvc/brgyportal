@@ -19,10 +19,12 @@ import {
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
+import useScrollLock from "@/lib/useScrollLock";
 
 const API_URL = "/api";
 
 function OnboardModal({ onClose, onSuccess }) {
+  useScrollLock(true);
   const [form, setForm] = useState({
     name: "",
     id: "",
@@ -98,7 +100,7 @@ function OnboardModal({ onClose, onSuccess }) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
       <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -270,12 +272,13 @@ function OnboardModal({ onClose, onSuccess }) {
 }
 
 function SuccessModal({ data, onClose }) {
+  useScrollLock(Boolean(data));
   if (!data) return null;
   const tenantName = data?.tenant?.name || data?.name || "New Barangay";
   const adminUser = data?.adminUser;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-8 text-center">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-8 h-8 text-green-600" />
@@ -314,6 +317,7 @@ function SuccessModal({ data, onClose }) {
 }
 
 function ProtectionSettingsModal({ onClose }) {
+  useScrollLock(true);
   const [config, setConfig] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -358,7 +362,7 @@ function ProtectionSettingsModal({ onClose }) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="bg-blue-900 px-6 py-5 flex items-center justify-between">
