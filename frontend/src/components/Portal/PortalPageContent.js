@@ -248,6 +248,7 @@ export default function PortalPageContent({ initialTenantId }) {
   const [selectedAchievement, setSelectedAchievement] = useState(null);
   const [selectedNewsItem, setSelectedNewsItem] = useState(null);
   const [selectedProgram, setSelectedProgram] = useState(null);
+  const [activeProgramIdx, setActiveProgramIdx] = useState(0);
   const [programCategoryFilter, setProgramCategoryFilter] = useState("all");
   const [currentFormSlide, setCurrentFormSlide] = useState(0);
   const [formData, setFormData] = useState({
@@ -1975,7 +1976,7 @@ export default function PortalPageContent({ initialTenantId }) {
         </div>
       </section>
 
-      {/* Programs Section — Government Ready Architecture */}
+      {/* Programs Section — Featured Spotlight & Interactive Catalog */}
       {!isFeatureLocked('programs') && (
         <section id="programs" className="py-16 md:py-24 bg-gradient-to-b from-white via-slate-50/70 to-gray-100/80 w-full border-t border-gray-200/80 relative overflow-hidden">
           {/* Subtle Government Geometric Watermark */}
@@ -1989,8 +1990,8 @@ export default function PortalPageContent({ initialTenantId }) {
 
           <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 relative z-10">
             {/* Section Header — Official Republic Style */}
-            <div className="mb-10 pb-6 border-b border-gray-200/90">
-              <div className="space-y-3">
+            <div className="mb-10 pb-6 border-b border-gray-200/90 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div className="space-y-3 max-w-3xl">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-50/90 text-[#03254c] border border-blue-200/80 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-2xs">
                   <Shield className="w-3.5 h-3.5 text-blue-700" />
                   <span>Republic of the Philippines • Sangguniang Barangay Initiatives</span>
@@ -2000,120 +2001,217 @@ export default function PortalPageContent({ initialTenantId }) {
                   <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-950 tracking-tight uppercase">
                     Community Programs &amp; Development Initiatives
                   </h2>
-                  <p className="text-gray-600 text-xs sm:text-sm md:text-base max-w-3xl mt-2 leading-relaxed font-medium">
+                  <p className="text-gray-600 text-xs sm:text-sm md:text-base mt-2 leading-relaxed font-medium">
                     Authorized public services, health missions, educational grants, and sustainable infrastructure programs implemented by the Barangay Council for the welfare and empowerment of all constituents.
                   </p>
                 </div>
               </div>
-            </div>
 
-            {/* Programs Grid — Government Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
-              {!portalDataLoaded && (
-                <>
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-xs">
-                      <div className="skeleton w-full aspect-[16/10]" />
-                      <div className="p-6 space-y-4">
-                        <div className="skeleton h-5 w-3/4 rounded-lg" />
-                        <div className="skeleton h-3.5 w-full rounded" />
-                        <div className="skeleton h-3.5 w-2/3 rounded" />
-                        <div className="skeleton h-10 w-full rounded-xl mt-4" />
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-
-              {portalDataLoaded && programs.length === 0 && (
-                <div className="col-span-full text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-gray-300">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#03254c] flex items-center justify-center mx-auto mb-4 border border-blue-100">
-                    <Target className="w-8 h-8 text-[#03254c]" />
-                  </div>
-                  <h4 className="text-lg font-black text-gray-900 uppercase">
-                    No Programs Published Yet
-                  </h4>
-                  <p className="text-gray-500 text-xs sm:text-sm mt-1 max-w-md mx-auto leading-relaxed">
-                    Official community initiatives are currently being updated by the Barangay Secretariat and Council.
-                  </p>
+              {/* Navigation Arrows for Featured Item */}
+              {portalDataLoaded && programs.length > 1 && (
+                <div className="flex items-center gap-2 self-start md:self-end">
+                  <span className="text-xs font-mono font-bold text-gray-400 mr-2">
+                    {String(activeProgramIdx + 1).padStart(2, "0")} / {String(programs.length).padStart(2, "0")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveProgramIdx((prev) => (prev > 0 ? prev - 1 : programs.length - 1))}
+                    aria-label="Previous Program"
+                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#03254c] hover:bg-[#03254c] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveProgramIdx((prev) => (prev < programs.length - 1 ? prev + 1 : 0))}
+                    aria-label="Next Program"
+                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#03254c] hover:bg-[#03254c] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
                 </div>
               )}
+            </div>
 
-              {portalDataLoaded &&
-                programs.map((program, idx) => {
-                  // Category Icon helper
-                  const getCategoryIcon = (cat = "") => {
-                    const lower = cat.toLowerCase();
-                    if (lower.includes("health") || lower.includes("med")) return Heart;
-                    if (lower.includes("infra") || lower.includes("building")) return Building2;
-                    if (lower.includes("edu") || lower.includes("school") || lower.includes("scholar")) return GraduationCap;
-                    if (lower.includes("green") || lower.includes("environ") || lower.includes("tree")) return Leaf;
-                    if (lower.includes("youth") || lower.includes("social") || lower.includes("comm")) return Users;
-                    if (lower.includes("livelihood") || lower.includes("business")) return Store;
-                    return Award;
-                  };
+            {/* Loading Skeleton */}
+            {!portalDataLoaded && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-xs grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-7 skeleton aspect-[16/10] rounded-2xl" />
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="skeleton h-5 w-1/3 rounded" />
+                  <div className="skeleton h-8 w-3/4 rounded-lg" />
+                  <div className="skeleton h-24 w-full rounded-xl" />
+                  <div className="skeleton h-12 w-full rounded-xl mt-6" />
+                </div>
+              </div>
+            )}
 
-                  const CategoryIcon = getCategoryIcon(program.category);
+            {/* Empty State */}
+            {portalDataLoaded && programs.length === 0 && (
+              <div className="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-gray-300">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#03254c] flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                  <Target className="w-8 h-8 text-[#03254c]" />
+                </div>
+                <h4 className="text-lg font-black text-gray-900 uppercase">
+                  No Programs Published Yet
+                </h4>
+                <p className="text-gray-500 text-xs sm:text-sm mt-1 max-w-md mx-auto leading-relaxed">
+                  Official community initiatives are currently being updated by the Barangay Secretariat and Council.
+                </p>
+              </div>
+            )}
 
-                  return (
-                    <div
-                      key={program.id || idx}
-                      onClick={() => setSelectedProgram(program)}
-                      className="group flex flex-col justify-between bg-white rounded-3xl overflow-hidden border border-gray-200/90 hover:border-[#03254c] hover:shadow-2xl transition-all duration-300 cursor-pointer relative fade-in-up"
-                      style={{ animationDelay: `${idx * 60}ms` }}
-                    >
-                      {/* Top Image Banner */}
-                      <div className="relative w-full aspect-[16/10] overflow-hidden bg-slate-100">
-                        <img
-                          loading="lazy"
-                          src={
-                            program.image ||
-                            "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800"
-                          }
-                          alt={program.title}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
-                        />
-                        {/* Subtle Vignette */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent opacity-70 group-hover:opacity-85 transition-opacity" />
+            {/* Active Showcase */}
+            {portalDataLoaded && programs.length > 0 && (() => {
+              const activeProg = programs[activeProgramIdx] || programs[0];
+              
+              const getCategoryIcon = (cat = "") => {
+                const lower = (cat || "").toLowerCase();
+                if (lower.includes("health") || lower.includes("med")) return Heart;
+                if (lower.includes("infra") || lower.includes("building")) return Building2;
+                if (lower.includes("edu") || lower.includes("school") || lower.includes("scholar")) return GraduationCap;
+                if (lower.includes("green") || lower.includes("environ") || lower.includes("tree")) return Leaf;
+                if (lower.includes("youth") || lower.includes("social") || lower.includes("comm")) return Users;
+                if (lower.includes("livelihood") || lower.includes("business")) return Store;
+                return Award;
+              };
 
-                        {/* Top-Left Category Badge */}
-                        <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-white/20 shadow-sm">
-                          <CategoryIcon className="w-3.5 h-3.5 text-cyan-300" />
-                          <span>{program.category || "Community Initiative"}</span>
-                        </div>
+              const CategoryIcon = getCategoryIcon(activeProg.category);
+
+              return (
+                <div className="space-y-8">
+                  {/* Main Featured Showcase Card (Left Photo, Right Details) */}
+                  <div className="bg-white rounded-3xl border border-gray-200/90 shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300">
+                    {/* Left: Large Photo (7 Cols on lg) */}
+                    <div className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto lg:min-h-[440px] bg-slate-900 overflow-hidden group">
+                      <img
+                        key={activeProg.id || activeProgramIdx}
+                        src={
+                          activeProg.image ||
+                          "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=1200"
+                        }
+                        alt={activeProg.title}
+                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 animate-in fade-in"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                      {/* Top-Left Category Badge */}
+                      <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-white/20 shadow-md">
+                        <CategoryIcon className="w-4 h-4 text-cyan-300" />
+                        <span>{activeProg.category || "Community Initiative"}</span>
                       </div>
 
-                      {/* Card Content Body */}
-                      <div className="flex flex-col flex-1 p-5 sm:p-6 space-y-4 justify-between">
-                        <div className="space-y-2">
-                          <h3 className="text-gray-950 text-base sm:text-lg font-black leading-snug group-hover:text-[#03254c] transition-colors uppercase tracking-tight line-clamp-2">
-                            {program.title}
-                          </h3>
-                          <p className="text-gray-600 text-xs sm:text-sm leading-relaxed font-medium line-clamp-3">
-                            {program.description ||
-                              "Comprehensive public welfare program delivered directly to residents across the barangay."}
-                          </p>
-                        </div>
-
-                        {/* Action Button */}
-                        <div className="pt-2 border-t border-gray-100">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedProgram(program);
-                            }}
-                            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-[#03254c] to-[#0a4b8f] group-hover:from-[#021b37] group-hover:to-[#043b78] text-white text-xs font-black uppercase tracking-wider shadow-sm group-hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-                          >
-                            <span>View Program</span>
-                            <ArrowRight className="w-3.5 h-3.5 text-cyan-300 group-hover:translate-x-1 transition-transform" />
-                          </button>
-                        </div>
+                      {/* Bottom Image Seal */}
+                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/90 text-xs font-bold">
+                        <span className="inline-flex items-center gap-1.5 text-blue-200 bg-black/50 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10">
+                          <Shield className="w-4 h-4 text-amber-300" />
+                          Barangay {tenantConfig.shortName || "Iba O' Este"}
+                        </span>
+                        <span className="bg-emerald-500/90 text-white px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border border-emerald-300/30">
+                          ● Active Mandate
+                        </span>
                       </div>
                     </div>
-                  );
-                })}
-            </div>
+
+                    {/* Right: Detailed Content (5 Cols on lg) */}
+                    <div className="lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-gradient-to-b from-white to-slate-50/50 space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-mono font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                            Initiative {String(activeProgramIdx + 1).padStart(2, "0")} of {String(programs.length).padStart(2, "0")}
+                          </span>
+                        </div>
+
+                        <h3 className="text-gray-950 text-xl sm:text-2xl font-black leading-tight uppercase tracking-tight">
+                          {activeProg.title}
+                        </h3>
+
+                        <p className="text-gray-600 text-sm sm:text-base leading-relaxed font-medium">
+                          {activeProg.description ||
+                            "Comprehensive public welfare program delivered directly to residents across the barangay to foster health, education, and community resilience."}
+                        </p>
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="pt-4 border-t border-gray-100 space-y-3">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProgram(activeProg)}
+                          className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#03254c] via-[#043b78] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white text-xs sm:text-sm font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-98"
+                        >
+                          <span>View Program</span>
+                          <ArrowRight className="w-4 h-4 text-cyan-300" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom: Interactive Thumbnails Selector */}
+                  {programs.length > 1 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-gray-500">
+                          Select an Initiative to View
+                        </h4>
+                        <span className="text-[11px] text-gray-400 font-medium">
+                          {programs.length} Active Programs
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                        {programs.map((prog, idx) => {
+                          const isActive = activeProgramIdx === idx;
+                          const ProgIcon = getCategoryIcon(prog.category);
+
+                          return (
+                            <button
+                              key={prog.id || idx}
+                              type="button"
+                              onClick={() => setActiveProgramIdx(idx)}
+                              className={`group text-left p-2.5 rounded-2xl transition-all duration-200 flex flex-col justify-between border cursor-pointer ${
+                                isActive
+                                  ? "bg-white border-[#03254c] ring-2 ring-[#03254c]/20 shadow-md scale-102"
+                                  : "bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 shadow-2xs hover:shadow-xs"
+                              }`}
+                            >
+                              <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-slate-100 mb-2">
+                                <img
+                                  src={
+                                    prog.image ||
+                                    "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=400"
+                                  }
+                                  alt={prog.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                />
+                                {isActive && (
+                                  <div className="absolute inset-0 bg-[#03254c]/30 backdrop-blur-[1px] flex items-center justify-center">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm animate-pulse" />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-gray-500 truncate">
+                                  <ProgIcon className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                                  <span className="truncate">{prog.category || "Initiative"}</span>
+                                </div>
+                                <h5
+                                  className={`text-[11px] font-bold line-clamp-2 leading-tight transition-colors ${
+                                    isActive ? "text-[#03254c]" : "text-gray-800 group-hover:text-gray-950"
+                                  }`}
+                                >
+                                  {prog.title}
+                                </h5>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </section>
       )}
