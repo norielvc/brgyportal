@@ -54,6 +54,7 @@ import {
   Sparkles,
   RefreshCw,
   Bot,
+  Smartphone,
 } from "lucide-react";
 import BarangayClearanceModal from "@/components/Forms/BarangayClearanceModal";
 import IndigencyCertificateModal from "@/components/Forms/IndigencyCertificateModal";
