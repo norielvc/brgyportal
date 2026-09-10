@@ -25,12 +25,14 @@ import {
   FileText,
   ChevronDown,
   X,
+  CreditCard,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Layout from "@/components/Layout/Layout";
 import { LoadingCard } from "@/components/UI/LoadingSpinner";
 import Pagination from "@/components/UI/Pagination";
 import Modal from "@/components/UI/Modal";
+import IssueIDModal from "@/components/Modals/IssueIDModal";
 import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
 import { generateFullAddress, PUROK_OPTIONS } from "@/lib/addressHelper";
@@ -117,6 +119,7 @@ export default function Residents() {
     second_name: "",
   });
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [showIssueIDModal, setShowIssueIDModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -869,16 +872,26 @@ export default function Residents() {
               >
                 <Trash2 className="w-3.5 h-3.5" /> Delete
               </button>
-              <div className="flex gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setShowIssueIDModal(true);
+                  }}
+                  className="px-4 py-2.5 bg-gradient-to-r from-[#03254c] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white rounded-lg text-xs font-bold transition-all shadow flex items-center gap-2"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-cyan-300" />
+                  Issue ID
+                </button>
                 <button
                   onClick={handleOpenEditModal}
-                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  className="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
                 >
                   <Edit className="w-3.5 h-3.5" /> Edit Profile
                 </button>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors"
                 >
                   Close
                 </button>
@@ -887,6 +900,16 @@ export default function Residents() {
           </div>
         )}
       </Modal>
+
+      {/* Issue ID Modal for this resident */}
+      <IssueIDModal
+        isOpen={showIssueIDModal}
+        onClose={() => setShowIssueIDModal(false)}
+        preselectedResident={selectedResident}
+        onSuccess={() => {
+          toast.success("Barangay ID successfully generated!");
+        }}
+      />
 
       <Modal
         isOpen={isFormModalOpen}

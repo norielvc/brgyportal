@@ -28,6 +28,7 @@ import {
   CheckCircle,
   MapPin,
   AlertCircle,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout, getUserData } from "@/lib/auth";
@@ -44,6 +45,12 @@ const mainMenuItems = [
     href: "/residents",
     icon: Users,
     description: "Master Census Record",
+  },
+  {
+    name: "ID Management",
+    href: "/id-management",
+    icon: CreditCard,
+    description: "Barangay Citizen IDs",
   },
   {
     name: "Certificate Requests",
