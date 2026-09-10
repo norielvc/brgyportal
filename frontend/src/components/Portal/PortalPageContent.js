@@ -4669,110 +4669,214 @@ export default function PortalPageContent({ initialTenantId }) {
         </div>
       )}
 
-      {/* Facility Photo Slider Modal */}
+      {/* Facility Photo Slider & Details Modal — Executive Dark Green Government Theme */}
       {selectedFacility && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-black/90 backdrop-blur-sm transition-opacity duration-300"
-            onClick={() => setSelectedFacility(null)}
-          ></div>
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6"
+          onClick={() => setSelectedFacility(null)}
+        >
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity animate-in fade-in duration-200" />
 
-          <div className="relative z-10 w-full max-w-4xl flex flex-col bg-white rounded-2xl overflow-hidden shadow-2xl">
-            {/* Header Bar */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
-                >
+          <div
+            className="relative z-10 w-full max-w-4xl max-h-[94vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Republic Header */}
+            <div className="bg-gradient-to-r from-[#064e3b] via-[#044a36] to-[#022c22] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-md flex-shrink-0">
                   {(() => {
                     const FacilityIcon = selectedFacility.icon || Building2;
-                    return <FacilityIcon className="w-5 h-5" style={{ color: tenantConfig.primaryColor }} />;
+                    return <FacilityIcon className="w-5 h-5 text-emerald-300" />;
                   })()}
                 </div>
-                <div className="min-w-0">
-                  <p
-                    className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
-                    style={{ color: tenantConfig.primaryColor }}
-                  >
-                    Barangay Facility
-                  </p>
-                  <h3 className="text-base md:text-lg font-bold text-gray-900 truncate">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-0.5">
+                    <Building2 className="w-3 h-3 text-amber-300" />
+                    Republic of the Philippines • Barangay {tenantConfig.shortName || "Iba O' Este"}
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black tracking-tight text-white uppercase truncate max-w-md sm:max-w-xl">
                     {selectedFacility.name}
                   </h3>
                 </div>
               </div>
+
               <button
+                type="button"
                 onClick={() => setSelectedFacility(null)}
-                className="w-9 h-9 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 rounded-xl flex items-center justify-center transition-colors border border-gray-200 shrink-0 ml-4"
+                className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-all cursor-pointer flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Main Image Content */}
-            <div className="relative flex-1 bg-gray-900 overflow-hidden flex items-center justify-center group" style={{ minHeight: '300px', maxHeight: '70vh' }}>
+            {/* Scrollable Modal Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-7 space-y-6 bg-slate-50/60">
+              {/* Main Photo Showcase with Blurred Backdrop to eliminate letterboxing */}
               {(() => {
                 const images = selectedFacility.images || ["/background.jpg"];
+                const activeImg = images[facilityImageIndex] || images[0];
+
                 return (
-                  <>
-                    {images.map((img, idx) => (
-                      <div
-                        key={idx}
-                        className={`absolute inset-0 transition-opacity duration-500 ease-in-out flex items-center justify-center ${facilityImageIndex === idx ? "opacity-100 z-10" : "opacity-0 z-0"}`}
-                      >
-                        <img loading="lazy" src={img}
-                          alt={`${selectedFacility.name} photo ${idx + 1}`}
-                          className="w-full h-full object-contain"
-                        />
+                  <div className="space-y-3">
+                    <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[50vh] rounded-2xl overflow-hidden bg-slate-950 shadow-lg flex items-center justify-center group">
+                      {/* Ambient Blurred Backdrop */}
+                      <img
+                        src={activeImg}
+                        alt="Backdrop"
+                        className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-125 pointer-events-none"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
+
+                      {/* Foreground Clear Image */}
+                      <img
+                        key={facilityImageIndex}
+                        src={activeImg}
+                        alt={`${selectedFacility.name} photo ${facilityImageIndex + 1}`}
+                        className="relative z-10 w-full h-full object-contain max-h-[50vh] transition-all duration-300 animate-in fade-in"
+                      />
+
+                      {/* Photo Badge */}
+                      <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-white bg-black/60 backdrop-blur-md border border-white/20 shadow-md">
+                        <ImageIcon className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>Photo {facilityImageIndex + 1} of {images.length}</span>
                       </div>
-                    ))}
 
-                    {/* Navigation Arrows (only if multiple images) */}
+                      {/* Navigation Arrows (if multiple photos) */}
+                      {images.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFacilityImageIndex((prev) =>
+                                prev === 0 ? images.length - 1 : prev - 1
+                              );
+                            }}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/90 flex items-center justify-center text-white rounded-full backdrop-blur-md transition-all border border-white/20 z-20 cursor-pointer shadow-lg active:scale-95"
+                          >
+                            <ChevronLeft className="w-5 h-5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFacilityImageIndex((prev) =>
+                                prev === images.length - 1 ? 0 : prev + 1
+                              );
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/90 flex items-center justify-center text-white rounded-full backdrop-blur-md transition-all border border-white/20 z-20 cursor-pointer shadow-lg active:scale-95"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Interactive Thumbnail Bar for Multi-Photo Gallery */}
                     {images.length > 1 && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFacilityImageIndex((prev) =>
-                              prev === 0 ? images.length - 1 : prev - 1,
-                            );
-                          }}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/80 flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 z-50 cursor-pointer"
-                        >
-                          <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFacilityImageIndex((prev) =>
-                              prev === images.length - 1 ? 0 : prev + 1,
-                            );
-                          }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/80 flex items-center justify-center text-white rounded-full backdrop-blur-sm transition-colors border border-white/20 z-50 cursor-pointer"
-                        >
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
-
-                        {/* Image Counter */}
-                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 px-3 py-1 rounded-full text-white/90 text-xs font-medium border border-white/20 backdrop-blur-sm z-50">
-                          {facilityImageIndex + 1} / {images.length}
-                        </div>
-                      </>
+                      <div className="flex items-center gap-2.5 overflow-x-auto pb-1 pt-0.5">
+                        {images.map((img, idx) => {
+                          const isCurrent = facilityImageIndex === idx;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setFacilityImageIndex(idx)}
+                              className={`relative w-20 sm:w-24 aspect-[16/10] rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all cursor-pointer ${
+                                isCurrent
+                                  ? "border-[#064e3b] ring-2 ring-emerald-500/50 shadow-md scale-102"
+                                  : "border-gray-200 opacity-60 hover:opacity-100 hover:border-gray-400"
+                              }`}
+                            >
+                              <img
+                                src={img}
+                                alt={`Thumbnail ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
-                  </>
+                  </div>
                 );
               })()}
-            </div>
 
-            {/* Description Footer */}
-            {selectedFacility.description && (
-              <div className="px-5 py-4 border-t border-gray-100 bg-gray-50">
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {selectedFacility.description}
+              {/* Facility Information Card */}
+              <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-200/90 shadow-xs space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-[#064e3b] pb-2 border-b border-gray-100 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-emerald-600" />
+                  Facility Overview &amp; Public Function
+                </h4>
+                <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                  {selectedFacility.description ||
+                    "Modern public facility maintained and operated by the Barangay Government for community events, health services, and constituent assistance."}
                 </p>
               </div>
-            )}
+
+              {/* Facility Metadata Matrix */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+                    Jurisdiction
+                  </span>
+                  <span className="font-black text-[#064e3b] uppercase truncate block">
+                    Barangay {tenantConfig.shortName || "Iba O' Este"}
+                  </span>
+                  <p className="text-[11px] text-gray-500 font-medium">
+                    Maintained by LGU
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+                    Access &amp; Availability
+                  </span>
+                  <span className="font-black text-gray-900 uppercase truncate block">
+                    Constituent Public Use
+                  </span>
+                  <p className="text-[11px] text-emerald-700 font-medium">
+                    Regular Operating Hours
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+                    Service Standard
+                  </span>
+                  <span className="font-black text-emerald-600 uppercase truncate block">
+                    100% Public Facility
+                  </span>
+                  <p className="text-[11px] text-gray-500 font-medium">
+                    Open for Constituent Requests
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 bg-white border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedFacility(null)}
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFacility(null);
+                  setShowESumbong(true);
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#064e3b] via-[#059669] to-emerald-600 hover:from-[#022c22] hover:to-[#059669] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <MessageCircle className="w-4 h-4 text-emerald-200" />
+                <span>Inquire / Request Facility Use</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
