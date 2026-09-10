@@ -60,40 +60,40 @@ export default function BarangayIDCard({
   // ── FRONT CARD (EC CARD) ───────────────────────────────────────────────────
   const renderFront = () => (
     <div
-      className="relative w-[360px] h-[227px] sm:w-[420px] sm:h-[265px] rounded-2xl overflow-hidden shadow-2xl border border-gray-300 select-none flex-shrink-0 bg-cover bg-center print:shadow-none print:border-gray-400 print:m-0"
+      className="relative w-[360px] h-[227px] sm:w-[440px] sm:h-[277px] rounded-2xl overflow-hidden shadow-2xl border border-gray-300 select-none flex-shrink-0 bg-cover bg-center print:shadow-none print:border-gray-400 print:m-0"
       style={{
         backgroundImage: "url('/images/id-templates/id_front_template.jpg')",
         aspectRatio: "1.586",
       }}
     >
-      {/* Front Left Content Container */}
-      <div className="absolute left-[6%] top-[16%] w-[46%] h-[74%] flex flex-col justify-between text-left">
+      {/* Front Left Content Container matching Photoshop Coordinates */}
+      <div className="absolute left-[8%] top-[29%] w-[44%] flex flex-col text-left">
         {/* Resident Full Legal Name */}
-        <div className="space-y-0.5">
-          <h2 className="text-lg sm:text-[22px] font-black text-white uppercase tracking-tight leading-none drop-shadow-sm truncate">
-            {givenNames || "JUAN"}
+        <div className="leading-none">
+          <h2 className="text-[17px] sm:text-[21px] font-black text-white uppercase tracking-tight leading-none drop-shadow-sm truncate">
+            {givenNames || "ALEXANDER C."}
           </h2>
-          <h1 className="text-xl sm:text-[26px] font-black text-[#00b4d8] uppercase tracking-tight leading-none drop-shadow-sm truncate">
-            {surname || "DELA CRUZ"}
+          <h1 className="text-[26px] sm:text-[32px] font-black text-[#00b4d8] uppercase tracking-tight leading-none drop-shadow-sm truncate mt-1">
+            {surname || "MANIO"}
           </h1>
         </div>
 
         {/* Resident Location */}
-        <div className="space-y-0.5">
-          <p className="text-[11px] sm:text-[13px] font-black text-white uppercase tracking-wider leading-tight drop-shadow-sm truncate">
+        <div className="mt-3.5 sm:mt-4 space-y-0.5 leading-tight">
+          <p className="text-[12px] sm:text-[14px] font-black text-white uppercase tracking-wide drop-shadow-sm truncate">
             {purokDisplay}
           </p>
-          <p className="text-[10px] sm:text-[12px] font-black text-white uppercase tracking-wider leading-tight drop-shadow-sm truncate">
+          <p className="text-[12px] sm:text-[14px] font-black text-white uppercase tracking-wide drop-shadow-sm truncate">
             {barangayDisplay}
           </p>
         </div>
 
         {/* EC Card Number */}
-        <div className="space-y-0.5">
-          <p className="text-[10px] sm:text-[11px] font-black text-[#00b4d8] uppercase tracking-widest leading-none drop-shadow-sm">
+        <div className="mt-3.5 sm:mt-4 space-y-0.5 leading-none">
+          <p className="text-[11px] sm:text-[13px] font-black text-[#00b4d8] uppercase tracking-wider drop-shadow-sm">
             EC CARD NO:
           </p>
-          <p className="text-base sm:text-[19px] font-black text-white tracking-wider leading-none drop-shadow-sm truncate font-sans">
+          <p className="text-[17px] sm:text-[21px] font-black text-white tracking-wider drop-shadow-sm truncate font-sans mt-0.5">
             {idNumberDisplay}
           </p>
         </div>
@@ -104,23 +104,23 @@ export default function BarangayIDCard({
   // ── BACK CARD (QR CODE & CHAIRMAN AUTH) ───────────────────────────────────
   const renderBack = () => (
     <div
-      className="relative w-[360px] h-[227px] sm:w-[420px] sm:h-[265px] rounded-2xl overflow-hidden shadow-2xl border border-gray-300 select-none flex-shrink-0 bg-cover bg-center print:shadow-none print:border-gray-400 print:m-0"
+      className="relative w-[360px] h-[227px] sm:w-[440px] sm:h-[277px] rounded-2xl overflow-hidden shadow-2xl border border-gray-300 select-none flex-shrink-0 bg-cover bg-center print:shadow-none print:border-gray-400 print:m-0"
       style={{
         backgroundImage: "url('/images/id-templates/id_back_template.jpg')",
         aspectRatio: "1.586",
       }}
     >
       {/* Center-Right QR Code Overlay */}
-      <div className="absolute right-[8%] top-[49%] -translate-y-1/2 flex items-center justify-center">
+      <div className="absolute left-[64%] top-[49%] -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
         <div className="p-2 sm:p-2.5 bg-white rounded-2xl shadow-xl border-4 border-[#1e293b] flex items-center justify-center">
           <QRCodeSVG
             value={qrValue}
-            size={116}
+            size={120}
             level="H"
             includeMargin={false}
             fgColor="#0f172a"
             bgColor="#ffffff"
-            className="w-24 h-24 sm:w-[116px] sm:h-[116px]"
+            className="w-24 h-24 sm:w-[120px] sm:h-[120px]"
           />
         </div>
       </div>
