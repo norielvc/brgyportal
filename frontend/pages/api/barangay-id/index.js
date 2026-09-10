@@ -83,9 +83,37 @@ export default async function handler(req, res) {
         });
       }
 
+      // Enrich data with fallback to joined resident date_of_birth
+      const enrichedData = (data || []).map((item) => {
+        const res = item.resident || {};
+        const bDate =
+          item.birth_date ||
+          res.date_of_birth ||
+          res.birth_date ||
+          res.birthday ||
+          res.dob ||
+          null;
+
+        let computedAge = item.age || res.age || null;
+        if (!computedAge && bDate) {
+          const b = new Date(bDate);
+          if (!isNaN(b.getTime())) {
+            const ageDiff = Date.now() - b.getTime();
+            computedAge = Math.floor(ageDiff / (1000 * 60 * 60 * 24 * 365.25));
+          }
+        }
+
+        return {
+          ...item,
+          birth_date: bDate,
+          date_of_birth: bDate,
+          age: computedAge,
+        };
+      });
+
       return res.status(200).json({
         success: true,
-        data: data || [],
+        data: enrichedData,
         total: count || 0,
         page: parseInt(page, 10),
         limit: parseInt(limit, 10),
@@ -110,7 +138,6 @@ export default async function handler(req, res) {
     try {
       const {
         resident_id,
-        blood_type,
         emergency_contact_name,
         emergency_contact_relation,
         emergency_contact_number,
@@ -173,7 +200,7 @@ export default async function handler(req, res) {
         counter++;
       }
 
-      // 3. Compute Dates
+      // 3. Compute Dates and Birth Date
       const startIssueDate = issue_date ? new Date(issue_date) : new Date();
       const expDate = new Date(startIssueDate);
       expDate.setFullYear(expDate.getFullYear() + parseInt(validity_years || 1, 10));
@@ -186,13 +213,23 @@ export default async function handler(req, res) {
         .filter(Boolean)
         .join(", ");
 
-      const qrPayload = JSON.stringify({
-        id_number: idNumber,
-        resident_id: resident.id,
-        name: fullName,
-        tenant_id: tenantId,
-        valid_until: expDate.toISOString().split("T")[0],
-      });
+      const resolvedBirthDate =
+        resident.date_of_birth ||
+        resident.birth_date ||
+        resident.birthday ||
+        resident.dob ||
+        null;
+
+      let resolvedAge = resident.age || null;
+      if (!resolvedAge && resolvedBirthDate) {
+        const b = new Date(resolvedBirthDate);
+        if (!isNaN(b.getTime())) {
+          const ageDiff = Date.now() - b.getTime();
+          resolvedAge = Math.floor(ageDiff / (1000 * 60 * 60 * 24 * 365.25));
+        }
+      }
+
+      const qrPayload = idNumber;
 
       // 4. Insert into database
       const insertData = {
@@ -206,9 +243,8 @@ export default async function handler(req, res) {
         suffix: resident.suffix || null,
         gender: resident.gender || null,
         civil_status: resident.civil_status || null,
-        birth_date: resident.birth_date || null,
-        age: resident.age || null,
-        blood_type: blood_type || resident.blood_type || "N/A",
+        birth_date: resolvedBirthDate,
+        age: resolvedAge,
         address: fullAddress || "Barangay Jurisdiction",
         purok: resident.purok || null,
         barangay: resident.barangay || null,

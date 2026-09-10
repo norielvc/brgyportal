@@ -2,18 +2,13 @@ import React, { useState, useEffect } from "react";
 import {
   X,
   Search,
-  User,
   CreditCard,
   CheckCircle2,
-  AlertCircle,
   Sparkles,
-  Calendar,
-  Phone,
   Shield,
   Eye,
   MapPin,
   ArrowRight,
-  RefreshCw,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import BarangayIDCard from "../UI/BarangayIDCard";
@@ -33,9 +28,8 @@ export default function IssueIDModal({
   const [isSearching, setIsSearching] = useState(false);
   const [selectedResident, setSelectedResident] = useState(null);
 
-  // Form Fields (simplified: validity, blood type, remarks)
+  // Form Fields
   const [formData, setFormData] = useState({
-    blood_type: "O+",
     contact_number: "",
     validity_years: 1,
     remarks: "Official EC Card issued",
@@ -83,7 +77,6 @@ export default function IssueIDModal({
     setSelectedResident(res);
     setFormData((prev) => ({
       ...prev,
-      blood_type: res.blood_type || "O+",
       contact_number: res.contact_number || res.phone_number || "",
     }));
   };
@@ -99,7 +92,6 @@ export default function IssueIDModal({
       const token = localStorage.getItem("token");
       const payload = {
         resident_id: selectedResident.id,
-        blood_type: formData.blood_type,
         contact_number: formData.contact_number,
         validity_years: formData.validity_years,
         remarks: formData.remarks,
@@ -134,8 +126,22 @@ export default function IssueIDModal({
     setSelectedResident(null);
     setSearchQuery("");
     setResidentResults([]);
-    onClose();
+    if (typeof onClose === "function") {
+      onClose();
+    }
   };
+
+  // Keyboard Escape listener
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
 
   // Generate dynamic preview ID number for selected resident
   const generatePreviewNumber = (res) => {
@@ -149,6 +155,15 @@ export default function IssueIDModal({
     const num = (Math.abs(hash) % 90000) + 10000;
     return `H${String(num).padStart(5, "0")}-F00001`;
   };
+
+  if (!isOpen) return null;
+
+  const resolvedResidentBirthDate =
+    selectedResident?.date_of_birth ||
+    selectedResident?.birth_date ||
+    selectedResident?.birthday ||
+    selectedResident?.dob ||
+    null;
 
   // Build live preview data
   const previewIDData = {
@@ -179,10 +194,9 @@ export default function IssueIDModal({
         .filter(Boolean)
         .join(", ")
       : "PUROK 2, IBA O' ESTE, CALUMPIT, BULACAN",
-    birth_date: selectedResident?.birth_date || "1995-01-01",
+    birth_date: resolvedResidentBirthDate || "1995-01-01",
     gender: selectedResident?.gender || "MALE",
     civil_status: selectedResident?.civil_status || "SINGLE",
-    blood_type: formData.blood_type,
     contact_number: formData.contact_number,
     expiry_date: new Date(
       Date.now() + (formData.validity_years || 1) * 365 * 24 * 60 * 60 * 1000
@@ -192,40 +206,59 @@ export default function IssueIDModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
+      {/* Backdrop overlay */}
+      <div
+        className="fixed inset-0 bg-black/70 backdrop-blur-md transition-opacity animate-in fade-in duration-200 cursor-pointer"
+        onClick={handleClose}
+      />
+
+      {/* Modal Dialog Content Container */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="issue-id-modal-title"
+        className="relative z-10 bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-[#03254c] via-[#043b78] to-[#0a529e] p-5 sm:p-6 text-white flex items-center justify-between relative flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-lg">
-              <CreditCard className="w-6 h-6 text-cyan-300" />
+        <div className="bg-gradient-to-r from-[#03254c] via-[#043b78] to-[#0a529e] p-4 sm:p-6 text-white flex items-center justify-between relative flex-shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-lg flex-shrink-0">
+              <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-300" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 text-[10px] font-black uppercase tracking-wider mb-0.5">
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-0.5">
                 <Sparkles className="w-3 h-3 text-amber-300" />
                 Master Census Connected
               </div>
-              <h3 className="text-xl font-black tracking-tight text-white">
+              <h3 id="issue-id-modal-title" className="text-base sm:text-xl font-black tracking-tight text-white">
                 Issue Official Barangay EC Card
               </h3>
             </div>
           </div>
 
           <button
-            onClick={handleClose}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleClose();
+            }}
+            aria-label="Close modal"
+            className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-all cursor-pointer z-20 flex items-center justify-center"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
           {/* Left Column: Selection & Details (7 Cols) */}
-          <div className="lg:col-span-7 space-y-5">
+          <div className="lg:col-span-7 space-y-4 sm:space-y-5">
             {/* Census Verification Notice */}
-            <div className="p-4 bg-blue-50/80 border border-blue-200/70 rounded-2xl flex items-start gap-3">
-              <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="p-3.5 sm:p-4 bg-blue-50/80 border border-blue-200/70 rounded-2xl flex items-start gap-2.5 sm:gap-3">
+              <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="text-xs text-blue-900 leading-relaxed">
                 <strong>Instant Issuance:</strong> Select a verified citizen from
                 the master census to immediately generate their official EC Card
@@ -278,7 +311,7 @@ export default function IssueIDModal({
                   <button
                     type="button"
                     onClick={() => setSelectedResident(null)}
-                    className="text-xs font-bold text-gray-500 hover:text-red-600 underline"
+                    className="text-xs font-bold text-gray-500 hover:text-red-600 underline cursor-pointer"
                   >
                     Change
                   </button>
@@ -297,7 +330,7 @@ export default function IssueIDModal({
                         validity_years: parseInt(e.target.value, 10),
                       }))
                     }
-                    className="w-full px-3.5 py-2.5 bg-white border border-emerald-300 rounded-xl text-xs font-bold text-gray-800"
+                    className="w-full px-3.5 py-2.5 bg-white border border-emerald-300 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                   >
                     <option value={1}>1 Year Validity (Standard)</option>
                     <option value={2}>2 Years Validity</option>
@@ -310,7 +343,7 @@ export default function IssueIDModal({
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="w-full mt-2 px-6 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full mt-2 px-6 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>
@@ -382,7 +415,7 @@ export default function IssueIDModal({
                 <button
                   type="button"
                   onClick={() => setPreviewSide("front")}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${previewSide === "front"
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${previewSide === "front"
                       ? "bg-[#03254c] text-white"
                       : "text-gray-600"
                     }`}
@@ -392,7 +425,7 @@ export default function IssueIDModal({
                 <button
                   type="button"
                   onClick={() => setPreviewSide("back")}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${previewSide === "back"
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${previewSide === "back"
                       ? "bg-[#03254c] text-white"
                       : "text-gray-600"
                     }`}
@@ -402,7 +435,7 @@ export default function IssueIDModal({
                 <button
                   type="button"
                   onClick={() => setPreviewSide("both")}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${previewSide === "both"
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${previewSide === "both"
                       ? "bg-[#03254c] text-white"
                       : "text-gray-600"
                     }`}
@@ -431,3 +464,4 @@ export default function IssueIDModal({
     </div>
   );
 }
+

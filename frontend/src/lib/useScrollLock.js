@@ -16,13 +16,11 @@ export function lockScroll() {
       overflow: document.body.style.overflow,
       paddingRight: document.body.style.paddingRight,
       htmlOverflow: document.documentElement.style.overflow,
-      htmlTouchAction: document.documentElement.style.touchAction,
       scrollY,
     };
 
-    // Lock both html and body without breaking viewport positions
+    // Lock both html and body without breaking viewport or pointer clicks
     document.documentElement.style.overflow = "hidden";
-    document.documentElement.style.touchAction = "none";
     document.body.style.overflow = "hidden";
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
@@ -38,7 +36,6 @@ export function unlockScroll() {
   activeLocks = Math.max(0, activeLocks - 1);
   if (activeLocks === 0 && originalStyles) {
     document.documentElement.style.overflow = originalStyles.htmlOverflow || "";
-    document.documentElement.style.touchAction = originalStyles.htmlTouchAction || "";
     document.body.style.overflow = originalStyles.overflow || "";
     document.body.style.paddingRight = originalStyles.paddingRight || "";
     document.body.classList.remove("modal-open");
@@ -67,3 +64,4 @@ export default function useScrollLock(isLocked = true) {
     };
   }, [isLocked]);
 }
+

@@ -292,7 +292,6 @@
 html.modal-open,
 body.modal-open {
   overflow: hidden !important;
-  touch-action: none !important;
   -webkit-overflow-scrolling: auto !important;
 }
 

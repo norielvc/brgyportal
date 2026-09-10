@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { AlertTriangle, X, Trash2, ShieldAlert } from 'lucide-react';
 import useScrollLock from '@/lib/useScrollLock';
 
@@ -15,6 +16,18 @@ export default function DeleteConfirmModal({
   const loadingState = isLoading || isDeleting;
 
   useScrollLock(isOpen);
+
+  // Keyboard Escape listener
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && handleCancel && !loadingState) {
+        handleCancel();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, handleCancel, loadingState]);
 
   if (!isOpen) return null;
 
