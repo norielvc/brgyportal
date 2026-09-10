@@ -192,7 +192,12 @@ export default function IssueIDModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-md overscroll-contain animate-in fade-in duration-200"
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-300">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#03254c] via-[#043b78] to-[#0a529e] p-5 sm:p-6 text-white flex items-center justify-between relative flex-shrink-0">
