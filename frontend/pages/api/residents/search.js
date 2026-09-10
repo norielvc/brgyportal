@@ -1,22 +1,39 @@
 import { supabase } from "../../../lib/supabase";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "brgydesk-secret-key-change-in-production";
 
 /**
  * RESIDENT SEARCH API (Next.js)
  * ----------------------------
- * Handles /api/residents/search?name=...
- * Implements resilient error handling and tenant isolation.
+ * Handles /api/residents/search?query=... or ?name=...
+ * Implements resilient multi-word token search and tenant isolation.
  */
 export default async function handler(req, res) {
-  const { name, gender, civil_status, purok, is_deceased, pending_case, sort } = req.query;
-  const tenantId = req.headers["x-tenant-id"] || req.query.tenant_id || "ibaoeste";
+  const searchParam = req.query.query || req.query.name || req.query.search || req.query.q || "";
+  const { gender, civil_status, purok, is_deceased, pending_case, sort } = req.query;
+
+  // Extract tenant_id from auth token or header
+  let tenantId = req.headers["x-tenant-id"] || req.query.tenant_id;
+  if (!tenantId) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        tenantId = decoded.tenant_id;
+      } catch (e) {
+        // Ignore token decode error and use fallback
+      }
+    }
+  }
+  tenantId = tenantId || "ibaoeste";
 
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
   const offset = (page - 1) * limit;
 
-  // Smart token search: split query into words and match each token against any name part
-  const searchName = name || "";
-  const tokens = searchName.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const tokens = searchParam.trim().toLowerCase().split(/\s+/).filter(Boolean);
 
   try {
     let query = supabase
@@ -25,8 +42,8 @@ export default async function handler(req, res) {
       .eq("tenant_id", tenantId);
 
     if (tokens.length > 0) {
-      const tokenConditions = tokens.map(token =>
-        `or(full_name.ilike.%${token}%,first_name.ilike.%${token}%,last_name.ilike.%${token}%,middle_name.ilike.%${token}%)`
+      const tokenConditions = tokens.map((token) =>
+        `or(full_name.ilike.%${token}%,first_name.ilike.%${token}%,last_name.ilike.%${token}%,middle_name.ilike.%${token}%,purok.ilike.%${token}%)`
       );
       query = query.or(`and(${tokenConditions.join(",")})`);
     }
@@ -57,8 +74,8 @@ export default async function handler(req, res) {
     } = await query.range(offset, offset + limit - 1);
 
     if (!error && residents) {
-      // Compute residential_address from structured fields when flat field is empty
       const enriched = residents.map((r) => {
+        const fullName = [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean).join(" ") || r.full_name || "Unknown Resident";
         if (!r.residential_address && (r.house_number || r.purok || r.barangay || r.municipality || r.province)) {
           const parts = [
             r.house_number ? `HOUSE NO. ${r.house_number.trim()}` : null,
@@ -67,12 +84,14 @@ export default async function handler(req, res) {
             r.municipality ? r.municipality.trim().toUpperCase() : null,
             r.province ? r.province.trim().toUpperCase() : null,
           ].filter(Boolean);
-          return { ...r, residential_address: parts.join(", ") };
+          return { ...r, full_name: fullName, residential_address: parts.join(", ") };
         }
-        return r;
+        return { ...r, full_name: fullName };
       });
+
       return res.status(200).json({
         success: true,
+        data: enriched,
         residents: enriched,
         totalItems: count || 0,
         totalPages: Math.ceil((count || 0) / limit),
@@ -83,6 +102,7 @@ export default async function handler(req, res) {
       console.warn("Supabase resident search query note:", error?.message);
       return res.status(200).json({
         success: true,
+        data: [],
         residents: [],
         totalItems: 0,
         totalPages: 0,
@@ -95,6 +115,7 @@ export default async function handler(req, res) {
     console.error("Resident search exception:", cloudError);
     return res.status(200).json({
       success: true,
+      data: [],
       residents: [],
       totalItems: 0,
       totalPages: 0,

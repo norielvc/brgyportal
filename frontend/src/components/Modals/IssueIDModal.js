@@ -65,28 +65,25 @@ export default function IssueIDModal({
   // Search residents debounced
   useEffect(() => {
     if (!isOpen || selectedResident) return;
-    if (!searchQuery.trim()) {
-      setResidentResults([]);
-      return;
-    }
 
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`/api/residents/search?query=${encodeURIComponent(searchQuery.trim())}`, {
+        const queryParam = searchQuery.trim() ? `query=${encodeURIComponent(searchQuery.trim())}` : "limit=10";
+        const res = await fetch(`/api/residents/search?${queryParam}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const json = await res.json();
-          setResidentResults(json.data || []);
+          setResidentResults(json.data || json.residents || []);
         }
       } catch (err) {
         console.error("Search residents error:", err);
       } finally {
         setIsSearching(false);
       }
-    }, 300);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [searchQuery, isOpen, selectedResident]);
