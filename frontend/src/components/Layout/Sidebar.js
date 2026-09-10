@@ -524,33 +524,29 @@ export default function Sidebar({
       </nav>
 
       {/* User Info & Actions Footer */}
-      <div className="p-3 border-t border-white/10 bg-[#021b38]/90 backdrop-blur-lg space-y-2">
+      <div className="p-3 border-t border-white/10 bg-black/20 space-y-1.5">
         {/* User Card */}
-        <div className="flex items-center gap-2.5 p-2.5 bg-white/[0.06] hover:bg-white/[0.09] border border-white/10 rounded-2xl transition-all duration-200 shadow-sm">
-          {/* Avatar with gradient & online pulse */}
+        <div className="flex items-center gap-2.5 p-2.5 bg-white/5 border border-white/10 rounded-xl">
           <div className="relative shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white font-black text-sm shadow-md shadow-blue-600/30 border border-white/20">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center border border-white/10 shadow-sm">
               {user?.firstName?.charAt(0) || "U"}
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full ring-2 ring-[#021b38] animate-pulse" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full ring-1 ring-[#03254c]" />
           </div>
 
-          {/* Name & Role */}
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-white truncate leading-tight tracking-tight">
+            <p className="text-xs font-bold text-white truncate leading-tight">
               {user?.firstName} {user?.lastName}
             </p>
-            <div className="mt-1 flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-400/20 text-[9px] font-extrabold uppercase tracking-wider">
-                <Shield className="w-2.5 h-2.5 text-blue-400" />
-                <span>{user?.role || "Staff"}</span>
-              </span>
-            </div>
+            <p className="text-[9px] font-semibold text-blue-200/60 uppercase flex items-center tracking-wider mt-0.5">
+              <Shield className="w-2.5 h-2.5 mr-1 text-blue-300/70" />
+              {user?.role || "Staff"}
+            </p>
           </div>
         </div>
 
         {/* Action Buttons Group */}
-        <div className="space-y-1.5">
+        <div className="space-y-0.5 pt-0.5">
           {/* Install Mobile App */}
           {onOpenInstall && !isInstalled && (
             <button
@@ -559,14 +555,12 @@ export default function Sidebar({
                 setIsMobileMenuOpen(false);
                 onOpenInstall();
               }}
-              className="flex items-center gap-2.5 w-full p-2 bg-gradient-to-r from-cyan-500/10 via-cyan-500/15 to-blue-500/10 hover:from-cyan-500/20 hover:to-blue-500/20 border border-cyan-500/30 hover:border-cyan-400/50 rounded-xl transition-all duration-200 group text-left"
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-blue-100/70 hover:text-white hover:bg-white/5 transition-all duration-200 group text-left"
             >
-              <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0 border border-cyan-400/30 group-hover:scale-105 transition-transform shadow-xs">
-                <Smartphone className="w-3.5 h-3.5 text-cyan-300" />
-              </div>
+              <Smartphone className="w-4 h-4 text-blue-200/50 group-hover:text-white transition-colors shrink-0" />
               <div className="flex-1 min-w-0 leading-tight">
-                <span className="text-[11px] font-black text-white block truncate">Install Mobile App</span>
-                <span className="text-[8.5px] text-cyan-300/80 font-semibold block truncate mt-0.5">iOS &amp; Android PWA</span>
+                <span className="text-xs font-bold block truncate">Install Mobile App</span>
+                <span className="text-[9px] text-blue-200/40 font-medium block truncate">iOS &amp; Android PWA</span>
               </div>
             </button>
           )}
@@ -576,12 +570,10 @@ export default function Sidebar({
             <button
               type="button"
               onClick={() => router.push("/superadmin")}
-              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 hover:border-amber-400/40 transition-all duration-200 group text-left"
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-blue-100/70 hover:text-white hover:bg-white/5 transition-all duration-200 group text-left"
             >
-              <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30 group-hover:scale-105 transition-transform">
-                <ShieldAlert className="w-3.5 h-3.5 text-amber-300" />
-              </div>
-              <span className="truncate flex-1 font-extrabold text-[11px] text-amber-200">Super Admin Panel</span>
+              <ShieldAlert className="w-4 h-4 text-blue-200/50 group-hover:text-white transition-colors shrink-0" />
+              <span className="truncate flex-1">Super Admin Panel</span>
             </button>
           )}
 
@@ -589,10 +581,10 @@ export default function Sidebar({
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center justify-center gap-2 w-full px-2.5 py-2 rounded-xl text-[11px] font-extrabold text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-600/30 border border-rose-500/20 hover:border-rose-500/40 transition-all duration-200 group"
+            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-blue-100/70 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 group text-left"
           >
-            <LogOut className="w-3.5 h-3.5 text-rose-400 group-hover:text-rose-200 group-hover:translate-x-0.5 transition-transform" />
-            <span>Sign Out Portal</span>
+            <LogOut className="w-4 h-4 text-blue-200/50 group-hover:text-red-400 transition-colors shrink-0" />
+            <span className="truncate flex-1">Sign Out Portal</span>
           </button>
         </div>
       </div>
