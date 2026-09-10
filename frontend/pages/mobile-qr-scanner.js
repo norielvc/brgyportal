@@ -337,11 +337,21 @@ export default function MobileQRScannerPage() {
       if (data.success) {
         playSuccessSound();
         showingResultRef.current = true;
+        const resData = data.resident || {};
+
         setScanResult({
           type: "success",
           data: data.data,
-          parsed,
-          photo: photoUrl,
+          resident: resData,
+          parsed: {
+            id: resData.id_number || parsed.id,
+            name: resData.full_name || parsed.name,
+            address: resData.address || parsed.address,
+            remarks: parsed.remarks !== "N/A" ? parsed.remarks : "Official Barangay ID",
+            purok: resData.purok || "",
+            status: resData.status || "active",
+          },
+          photo: resData.photo_url || photoUrl || null,
           rawToken: normalised,
           claimNumber: (stats.today || 0) + 1,
         });
@@ -354,9 +364,10 @@ export default function MobileQRScannerPage() {
         setRecentScans((prev) => [
           {
             id: data.data?.id || Date.now(),
-            name: parsed.name,
-            address: parsed.address,
-            householdId: parsed.id,
+            name: resData.full_name || parsed.name,
+            address: resData.address || parsed.address,
+            householdId: resData.id_number || parsed.id,
+            photo: resData.photo_url || null,
             time: new Date().toLocaleTimeString(),
             raw: normalised,
           },
@@ -365,25 +376,35 @@ export default function MobileQRScannerPage() {
       } else if (data.isDuplicate) {
         playWarningSound();
         showingResultRef.current = true;
+        const resData = data.resident || {};
+
         setScanResult({
           type: "duplicate",
           existingScan: data.existingScan,
-          parsed,
-          photo: photoUrl,
+          resident: resData,
+          parsed: {
+            id: resData.id_number || parsed.id,
+            name: resData.full_name || parsed.name,
+            address: resData.address || parsed.address,
+            remarks: parsed.remarks,
+          },
+          photo: resData.photo_url || photoUrl || null,
           rawToken: normalised,
-          message: data.message || "This QR code has already been scanned for this event.",
+          message: data.message || "This resident has already received assistance for this event.",
         });
       } else {
         lastScanRef.current = null;
         playWarningSound();
+        showingResultRef.current = true;
         setScanResult({
           type: "invalid",
-          message: data.error || data.message || "Invalid QR Card or Verification Failed",
+          message: data.error || data.message || "Invalid QR Code: Resident does not have an issued Barangay ID.",
           rawToken: normalised,
         });
       }
     } catch (err) {
       lastScanRef.current = null;
+      showingResultRef.current = true;
       setScanResult({
         type: "error",
         message: err.message || "Network error. Failed to communicate with server.",
@@ -862,40 +883,64 @@ export default function MobileQRScannerPage() {
             {/* SUCCESS MODAL */}
             {scanResult.type === "success" && (
               <div className="p-6 space-y-5">
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white text-center shadow-lg relative overflow-hidden">
+                <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 rounded-2xl p-5 text-white text-center shadow-lg relative overflow-hidden">
                   <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2 backdrop-blur-sm border border-white/30">
                     <CheckCircle className="w-10 h-10 text-white" />
                   </div>
-                  <h2 className="text-xl font-black tracking-tight">Identity Verified</h2>
-                  <p className="text-emerald-100 text-xs font-semibold">Eligible for Distribution / Release</p>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 text-[10px] font-extrabold uppercase tracking-wider mb-1 border border-emerald-300/30">
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>Barangay ID Active &amp; Verified</span>
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight">Resident Verified</h2>
+                  <p className="text-emerald-100 text-xs font-semibold">Eligible for Event Distribution &amp; Services</p>
                   <span className="inline-block mt-2 text-[10px] bg-white/20 text-white font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                     Claim #{scanResult.claimNumber} Recorded
                   </span>
                 </div>
 
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3">
-                  <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
-                    <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center font-black text-lg shrink-0">
-                      {scanResult.parsed.name?.charAt(0) || <User className="w-6 h-6" />}
-                    </div>
-                    <div>
-                      <h3 className="font-black text-slate-800 text-base leading-tight">
+                  <div className="flex items-center gap-3.5 pb-3 border-b border-slate-200">
+                    {scanResult.photo ? (
+                      <div className="relative shrink-0">
+                        <img
+                          src={scanResult.photo}
+                          alt={scanResult.parsed.name}
+                          className="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-500 shadow-sm"
+                        />
+                        <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 text-white stroke-[3]" />
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 border border-emerald-200">
+                        {scanResult.parsed.name?.charAt(0) || <User className="w-7 h-7" />}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-black text-slate-800 text-base leading-tight truncate">
                         {scanResult.parsed.name}
                       </h3>
-                      <p className="text-xs text-slate-500 font-mono font-bold mt-0.5">
-                        ID: {scanResult.parsed.id}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[11px] font-mono font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+                          {scanResult.parsed.id}
+                        </span>
+                        {scanResult.parsed.status && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                            {scanResult.parsed.status}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-white p-2.5 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Address</span>
-                      <p className="font-bold text-slate-700 mt-0.5">{scanResult.parsed.address}</p>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Official Address</span>
+                      <p className="font-bold text-slate-700 mt-0.5 truncate">{scanResult.parsed.address || "Barangay Jurisdiction"}</p>
                     </div>
                     <div className="bg-white p-2.5 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Remarks</span>
-                      <p className="font-bold text-slate-700 mt-0.5">{scanResult.parsed.remarks}</p>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Remarks / Type</span>
+                      <p className="font-bold text-slate-700 mt-0.5 truncate">{scanResult.parsed.remarks || "Official ID Card"}</p>
                     </div>
                   </div>
                 </div>
@@ -923,16 +968,33 @@ export default function MobileQRScannerPage() {
 
                 <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 text-amber-900 space-y-2.5 text-xs">
                   <div className="flex items-center gap-2 font-bold text-rose-700 text-sm">
-                    <AlertTriangle className="w-4 h-4" />
-                    <span>Beneficiary already received assistance</span>
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>Beneficiary already received assistance for this event</span>
                   </div>
-                  <div className="space-y-1.5 pt-1 text-slate-700">
-                    <p><strong>Name:</strong> {scanResult.parsed.name}</p>
-                    <p><strong>Household ID:</strong> {scanResult.parsed.id}</p>
+
+                  <div className="flex items-center gap-3 pt-2 pb-1 border-t border-amber-200/60">
+                    {scanResult.photo ? (
+                      <img
+                        src={scanResult.photo}
+                        alt={scanResult.parsed.name}
+                        className="w-12 h-12 rounded-xl object-cover border border-amber-300 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-amber-200 text-amber-800 rounded-xl flex items-center justify-center font-bold shrink-0">
+                        {scanResult.parsed.name?.charAt(0) || <User className="w-5 h-5" />}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-slate-800 truncate">{scanResult.parsed.name}</p>
+                      <p className="text-[11px] font-mono text-slate-600">ID: {scanResult.parsed.id}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 pt-1 text-slate-700 border-t border-amber-200/60 text-[11px]">
                     {scanResult.existingScan && (
                       <>
                         <p><strong>Original Scan Time:</strong> {new Date(scanResult.existingScan.scan_timestamp).toLocaleString()}</p>
-                        <p><strong>Operator:</strong> {scanResult.existingScan.scanned_by || "Staff"}</p>
+                        <p><strong>Processed By:</strong> {scanResult.existingScan.scanned_by_name || scanResult.existingScan.scanned_by || "Staff"}</p>
                       </>
                     )}
                   </div>
@@ -951,23 +1013,37 @@ export default function MobileQRScannerPage() {
             {/* INVALID / ERROR MODAL */}
             {(scanResult.type === "invalid" || scanResult.type === "error") && (
               <div className="p-6 space-y-4 text-center">
-                <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-1">
-                  <X className="w-8 h-8" />
+                <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-1 border-2 border-rose-200 shadow-sm">
+                  <X className="w-8 h-8 stroke-[2.5]" />
                 </div>
-                <h3 className="text-lg font-black text-slate-800">
-                  {scanResult.type === "invalid" ? "Invalid QR Code" : "Scan Error"}
-                </h3>
-                <p className="text-xs text-slate-600 max-w-sm mx-auto">{scanResult.message}</p>
+                <div>
+                  <div className="inline-flex items-center gap-1 text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>ID Verification Failed</span>
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    {scanResult.type === "invalid" ? "Invalid / Unregistered QR Code" : "Scan Error"}
+                  </h3>
+                </div>
+
+                <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-3.5 max-w-sm mx-auto text-left space-y-1.5">
+                  <p className="text-xs font-bold text-rose-900">{scanResult.message}</p>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Only registered residents with an officially issued, active Barangay ID card are valid for event scanning.
+                  </p>
+                </div>
+
                 {scanResult.rawToken && (
-                  <code className="text-[11px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg block font-mono break-all max-w-xs mx-auto">
-                    Token: {scanResult.rawToken}
+                  <code className="text-[11px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg block font-mono break-all max-w-xs mx-auto border border-slate-200">
+                    Scanned: {scanResult.rawToken}
                   </code>
                 )}
+
                 <button
                   onClick={resetScannerState}
-                  className="w-full bg-slate-800 text-white font-bold py-3.5 rounded-2xl text-xs active:scale-95 transition-all"
+                  className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3.5 rounded-2xl text-xs active:scale-95 transition-all shadow-md"
                 >
-                  Try Again / Retake
+                  Try Again / Scan Another
                 </button>
               </div>
             )}
