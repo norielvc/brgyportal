@@ -382,11 +382,10 @@ export default function IDManagement() {
           {/* Total Issued */}
           <div
             onClick={() => setStatusFilter("all")}
-            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
-              statusFilter === "all"
+            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${statusFilter === "all"
                 ? "border-[#03254c] ring-2 ring-[#03254c]/15"
                 : "border-gray-100 hover:border-blue-200"
-            }`}
+              }`}
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">
@@ -408,11 +407,10 @@ export default function IDManagement() {
           {/* Active Valid */}
           <div
             onClick={() => setStatusFilter("active")}
-            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
-              statusFilter === "active"
+            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${statusFilter === "active"
                 ? "border-emerald-600 ring-2 ring-emerald-600/15"
                 : "border-gray-100 hover:border-emerald-200"
-            }`}
+              }`}
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">
@@ -436,11 +434,10 @@ export default function IDManagement() {
           {/* Expiring Soon */}
           <div
             onClick={() => setStatusFilter("expired")}
-            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
-              statusFilter === "expired"
+            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${statusFilter === "expired"
                 ? "border-amber-500 ring-2 ring-amber-500/15"
                 : "border-gray-100 hover:border-amber-200"
-            }`}
+              }`}
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">
@@ -462,11 +459,10 @@ export default function IDManagement() {
           {/* Revoked / Lost */}
           <div
             onClick={() => setStatusFilter("revoked")}
-            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
-              statusFilter === "revoked"
+            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${statusFilter === "revoked"
                 ? "border-rose-600 ring-2 ring-rose-600/15"
                 : "border-gray-100 hover:border-rose-200"
-            }`}
+              }`}
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">
@@ -530,11 +526,10 @@ export default function IDManagement() {
               <div className="flex items-center bg-gray-100 p-1 rounded-2xl border border-gray-200 text-xs">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
-                    viewMode === "grid"
+                  className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${viewMode === "grid"
                       ? "bg-white text-[#03254c] shadow-sm font-black"
                       : "text-gray-500 hover:text-gray-900 font-bold"
-                  }`}
+                    }`}
                   title="Digital PVC Card Grid View"
                 >
                   <LayoutGrid className="w-4 h-4" />
@@ -542,11 +537,10 @@ export default function IDManagement() {
                 </button>
                 <button
                   onClick={() => setViewMode("table")}
-                  className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
-                    viewMode === "table"
+                  className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${viewMode === "table"
                       ? "bg-white text-[#03254c] shadow-sm font-black"
                       : "text-gray-500 hover:text-gray-900 font-bold"
-                  }`}
+                    }`}
                   title="Official Ledger Table View"
                 >
                   <List className="w-4 h-4" />
@@ -577,19 +571,17 @@ export default function IDManagement() {
                 <button
                   key={tab.id}
                   onClick={() => setStatusFilter(tab.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-2 ${
-                    statusFilter === tab.id
+                  className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-2 ${statusFilter === tab.id
                       ? "bg-[#03254c] text-white shadow-sm"
                       : "bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200/70"
-                  }`}
+                    }`}
                 >
                   <span>{tab.label}</span>
                   <span
-                    className={`px-1.5 py-0.5 rounded-md text-[10px] ${
-                      statusFilter === tab.id
+                    className={`px-1.5 py-0.5 rounded-md text-[10px] ${statusFilter === tab.id
                         ? "bg-white/20 text-white"
                         : "bg-gray-200 text-gray-700"
-                    }`}
+                      }`}
                   >
                     {tab.count}
                   </span>

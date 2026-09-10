@@ -161,23 +161,23 @@ export default function IssueIDModal({
     barangay: selectedResident?.barangay || "BARANGAY IBA O' ESTE",
     full_name: selectedResident
       ? [
-          selectedResident.first_name,
-          selectedResident.middle_name,
-          selectedResident.last_name,
-          selectedResident.suffix,
-        ]
-          .filter(Boolean)
-          .join(" ")
+        selectedResident.first_name,
+        selectedResident.middle_name,
+        selectedResident.last_name,
+        selectedResident.suffix,
+      ]
+        .filter(Boolean)
+        .join(" ")
       : "ALEXANDER C. MANIO",
     address: selectedResident
       ? [
-          selectedResident.house_number,
-          selectedResident.purok,
-          selectedResident.barangay,
-          selectedResident.municipality,
-        ]
-          .filter(Boolean)
-          .join(", ")
+        selectedResident.house_number,
+        selectedResident.purok,
+        selectedResident.barangay,
+        selectedResident.municipality,
+      ]
+        .filter(Boolean)
+        .join(", ")
       : "PUROK 2, IBA O' ESTE, CALUMPIT, BULACAN",
     birth_date: selectedResident?.birth_date || "1995-01-01",
     gender: selectedResident?.gender || "MALE",
@@ -192,12 +192,7 @@ export default function IssueIDModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-md overscroll-contain animate-in fade-in duration-200"
-      onTouchMove={(e) => {
-        if (e.target === e.currentTarget) e.preventDefault();
-      }}
-    >
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-300">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#03254c] via-[#043b78] to-[#0a529e] p-5 sm:p-6 text-white flex items-center justify-between relative flex-shrink-0">
@@ -344,11 +339,10 @@ export default function IssueIDModal({
                 <div
                   key={res.id}
                   onClick={() => handleSelectResident(res)}
-                  className={`p-3.5 bg-white hover:bg-blue-50/80 border rounded-2xl cursor-pointer transition-all flex items-center justify-between group shadow-sm ${
-                    selectedResident?.id === res.id
+                  className={`p-3.5 bg-white hover:bg-blue-50/80 border rounded-2xl cursor-pointer transition-all flex items-center justify-between group shadow-sm ${selectedResident?.id === res.id
                       ? "border-[#03254c] ring-2 ring-[#03254c]/20 bg-blue-50/50"
                       : "border-gray-200 hover:border-blue-400"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-[#03254c] group-hover:text-white flex items-center justify-center font-black text-sm text-gray-600 transition-colors">
@@ -388,33 +382,30 @@ export default function IssueIDModal({
                 <button
                   type="button"
                   onClick={() => setPreviewSide("front")}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${
-                    previewSide === "front"
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${previewSide === "front"
                       ? "bg-[#03254c] text-white"
                       : "text-gray-600"
-                  }`}
+                    }`}
                 >
                   Front
                 </button>
                 <button
                   type="button"
                   onClick={() => setPreviewSide("back")}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${
-                    previewSide === "back"
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${previewSide === "back"
                       ? "bg-[#03254c] text-white"
                       : "text-gray-600"
-                  }`}
+                    }`}
                 >
                   Back
                 </button>
                 <button
                   type="button"
                   onClick={() => setPreviewSide("both")}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${
-                    previewSide === "both"
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${previewSide === "both"
                       ? "bg-[#03254c] text-white"
                       : "text-gray-600"
-                  }`}
+                    }`}
                 >
                   Dual
                 </button>
@@ -438,5 +429,14 @@ export default function IssueIDModal({
         </div>
       </div>
     </div>
+  );
+}
+<p className="text-[10px] text-slate-400 font-semibold mt-2">
+  Official CR80 PVC format (85.6mm × 53.98mm) ready for high-resolution card printers.
+</p>
+          </div >
+        </div >
+      </div >
+    </div >
   );
 }

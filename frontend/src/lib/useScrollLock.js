@@ -14,9 +14,6 @@ export function lockScroll() {
 
     originalStyles = {
       overflow: document.body.style.overflow,
-      position: document.body.style.position,
-      top: document.body.style.top,
-      width: document.body.style.width,
       paddingRight: document.body.style.paddingRight,
       htmlOverflow: document.documentElement.style.overflow,
       htmlTouchAction: document.documentElement.style.touchAction,
@@ -27,9 +24,6 @@ export function lockScroll() {
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.touchAction = "none";
     document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
@@ -43,19 +37,19 @@ export function unlockScroll() {
 
   activeLocks = Math.max(0, activeLocks - 1);
   if (activeLocks === 0 && originalStyles) {
-    const scrollY = originalStyles.scrollY || 0;
     document.documentElement.style.overflow = originalStyles.htmlOverflow || "";
     document.documentElement.style.touchAction = originalStyles.htmlTouchAction || "";
     document.body.style.overflow = originalStyles.overflow || "";
-    document.body.style.position = originalStyles.position || "";
-    document.body.style.top = originalStyles.top || "";
-    document.body.style.width = originalStyles.width || "";
     document.body.style.paddingRight = originalStyles.paddingRight || "";
     document.body.classList.remove("modal-open");
     document.documentElement.classList.remove("modal-open");
 
+    const scrollY = originalStyles.scrollY;
     originalStyles = null;
-    window.scrollTo(0, scrollY);
+
+    if (scrollY !== undefined && Math.abs((window.scrollY || 0) - scrollY) > 5) {
+      window.scrollTo(0, scrollY);
+    }
   }
 }
 
