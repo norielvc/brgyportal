@@ -38,7 +38,7 @@ export default function OfflineBanner() {
   if (isOnline && !showRestored) return null;
 
   return (
-    <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[100] px-4 w-full max-w-md pointer-events-none transition-all duration-300 animate-in slide-in-from-top-4">
+    <div className="fixed top-[calc(env(safe-area-inset-top,0px)+0.5rem)] left-1/2 -translate-x-1/2 z-[100] px-4 w-full max-w-md pointer-events-none transition-all duration-300 animate-in slide-in-from-top-4">
       {showRestored ? (
         <div className="pointer-events-auto bg-emerald-600/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center justify-between gap-3 border border-emerald-400/30 text-xs sm:text-sm font-bold">
           <div className="flex items-center gap-2">

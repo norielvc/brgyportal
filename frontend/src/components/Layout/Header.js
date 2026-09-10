@@ -116,7 +116,7 @@ export default function Header({
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100/80 px-3 sm:px-6 py-3 sm:py-4 sticky top-0 z-30 shadow-sm transition-all duration-300">
+    <header className="bg-white/95 backdrop-blur-xl border-b border-gray-100/80 px-3 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 sm:py-4 sticky top-0 z-30 shadow-sm transition-all duration-300">
       <div className="flex items-center justify-between gap-3 sm:gap-4">
         {/* Mobile Menu Toggle */}
         <button

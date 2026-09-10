@@ -1282,7 +1282,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
       {/* Portal Header — Government Identity Bar */}
       <div
-        className="py-3 md:py-4 relative overflow-hidden border-b border-white/10"
+        className="pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 md:py-4 relative overflow-hidden border-b border-white/10"
         style={tenantConfig.colorStyle}
       >
         <div className="max-w-[1400px] mx-auto flex items-center justify-between px-4 lg:px-8 relative z-10">

@@ -333,9 +333,9 @@ export default function Sidebar({
   });
 
   const renderNav = (showClose) => (
-    <div className="flex flex-col h-full bg-[#03254c]">
+    <div className="flex flex-col h-full bg-[#03254c] pt-[calc(env(safe-area-inset-top,0px))] pb-[calc(env(safe-area-inset-bottom,0px))]">
       {/* Logo */}
-      <div className="flex items-center justify-between px-6 py-8 border-b border-white/10">
+      <div className="flex items-center justify-between px-6 py-6 sm:py-8 border-b border-white/10">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center mr-4 border border-white/20">
             <LayoutDashboard className="w-6 h-6 text-white" />
