@@ -1,3 +1,4 @@
+import Head from "next/head";
 import { useRouter } from "next/router";
 import PortalPageContent from "@/components/Portal/PortalPageContent";
 
@@ -22,7 +23,17 @@ export default function DynamicTenantPortal({ initialTenantId }) {
     return null; // Let the other page handle it
   }
 
-  return <PortalPageContent initialTenantId={effectiveTenant} />;
+  const tenantTitle = `Barangay ${effectiveTenant.charAt(0).toUpperCase() + effectiveTenant.slice(1)} Portal | Official Public Services`;
+
+  return (
+    <>
+      <Head>
+        <title>{tenantTitle}</title>
+        <meta name="description" content="Official Barangay Citizen Portal and Online Services" />
+      </Head>
+      <PortalPageContent initialTenantId={effectiveTenant} />
+    </>
+  );
 }
 
 export async function getStaticPaths() {
