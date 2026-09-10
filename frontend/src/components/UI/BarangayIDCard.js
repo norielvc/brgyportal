@@ -67,7 +67,7 @@ export default function BarangayIDCard({
       }}
     >
       {/* Front Left Content Container matching Photoshop Coordinates */}
-      <div className="absolute left-[8%] top-[18%] w-[45%] flex flex-col text-left">
+      <div className="absolute left-[8%] top-[18%] w-[49%] flex flex-col text-left">
         {/* Resident Full Legal Name */}
         <div className="leading-none">
           <h2 className="text-[18px] sm:text-[23px] font-black text-white uppercase tracking-tight leading-none drop-shadow-sm truncate">
@@ -93,7 +93,7 @@ export default function BarangayIDCard({
           <p className="text-[11px] sm:text-[13px] font-black text-[#00b4d8] uppercase tracking-wider drop-shadow-sm">
             EC CARD NO:
           </p>
-          <p className="text-[18px] sm:text-[23px] font-black text-white tracking-wider drop-shadow-sm truncate font-sans mt-0.5">
+          <p className="text-[15px] sm:text-[20px] font-black text-white tracking-tight drop-shadow-sm whitespace-nowrap font-sans mt-0.5">
             {idNumberDisplay}
           </p>
         </div>
