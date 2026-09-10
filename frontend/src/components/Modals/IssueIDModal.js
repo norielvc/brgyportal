@@ -431,12 +431,3 @@ export default function IssueIDModal({
     </div>
   );
 }
-<p className="text-[10px] text-slate-400 font-semibold mt-2">
-  Official CR80 PVC format (85.6mm × 53.98mm) ready for high-resolution card printers.
-</p>
-          </div >
-        </div >
-      </div >
-    </div >
-  );
-}
