@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import BarangayIDCard from "../UI/BarangayIDCard";
+import useScrollLock from "@/lib/useScrollLock";
 
 export default function IssueIDModal({
   isOpen,
@@ -25,6 +26,8 @@ export default function IssueIDModal({
   preselectedResident = null,
   tenantConfig = {},
 }) {
+  useScrollLock(isOpen);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [residentResults, setResidentResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, Printer, Download, Eye, Sparkles } from "lucide-react";
 import BarangayIDCard from "../UI/BarangayIDCard";
+import useScrollLock from "@/lib/useScrollLock";
 
 export default function PrintIDModal({
   isOpen,
@@ -8,6 +9,8 @@ export default function PrintIDModal({
   idData,
   tenantConfig = {},
 }) {
+  useScrollLock(isOpen);
+
   const [printLayout, setPrintLayout] = useState("both"); // 'both' | 'front' | 'back'
 
   if (!isOpen || !idData) return null;
