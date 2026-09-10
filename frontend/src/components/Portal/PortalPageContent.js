@@ -2080,10 +2080,10 @@ export default function PortalPageContent({ initialTenantId }) {
 
               return (
                 <div className="space-y-8">
-                  {/* Main Featured Showcase Card (Left Photo, Right Dark Green Details) */}
-                  <div className="bg-[#022c22] rounded-3xl border border-emerald-900/50 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300">
-                    {/* Left: Balanced Photo Container (6 Cols on lg) */}
-                    <div className="lg:col-span-6 relative aspect-[16/10] sm:aspect-[4/3] lg:aspect-auto h-full min-h-[340px] lg:min-h-[420px] bg-slate-900 overflow-hidden group">
+                  {/* Main Featured Showcase Card (Left Photo, Right Dark Green Details) — Fixed Height for all programs */}
+                  <div className="bg-[#022c22] rounded-3xl border border-emerald-900/50 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300 lg:min-h-[480px] lg:max-h-[500px]">
+                    {/* Left: Strictly Constrained Photo Container (6 Cols on lg) */}
+                    <div className="lg:col-span-6 relative w-full h-[280px] sm:h-[340px] lg:h-full min-h-[280px] lg:min-h-[480px] bg-slate-900 overflow-hidden group">
                       <img
                         key={activeProg.id || activeProgramIdx}
                         src={
@@ -2091,18 +2091,18 @@ export default function PortalPageContent({ initialTenantId }) {
                           "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=1200"
                         }
                         alt={activeProg.title}
-                        className="w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-105 animate-in fade-in"
+                        className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-105 animate-in fade-in"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/20 to-transparent opacity-85 lg:opacity-70" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/20 to-transparent opacity-85 lg:opacity-70 pointer-events-none" />
 
                       {/* Top-Left Category Badge */}
-                      <div className="absolute top-4 left-4 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-emerald-400/30 shadow-lg">
+                      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-emerald-400/30 shadow-lg">
                         <CategoryIcon className="w-4 h-4 text-emerald-300" />
                         <span>{activeProg.category || "Community Initiative"}</span>
                       </div>
 
                       {/* Bottom Image Seal */}
-                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs font-bold">
+                      <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between text-white text-xs font-bold">
                         <span className="inline-flex items-center gap-1.5 text-emerald-200 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15">
                           <Shield className="w-4 h-4 text-amber-300" />
                           Barangay {tenantConfig.shortName || "Iba O' Este"}
@@ -2115,7 +2115,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     </div>
 
                     {/* Right: Detailed Content — Deep Dark Green Executive Theme (6 Cols on lg) */}
-                    <div className="lg:col-span-6 p-6 sm:p-8 lg:p-9 flex flex-col justify-between bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white relative overflow-hidden border-t lg:border-t-0 lg:border-l border-emerald-800/40 space-y-6">
+                    <div className="lg:col-span-6 p-6 sm:p-8 lg:p-9 flex flex-col justify-between h-full bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white relative overflow-hidden border-t lg:border-t-0 lg:border-l border-emerald-800/40 space-y-6">
                       {/* Ambient Emerald Radial Light */}
                       <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -2129,11 +2129,11 @@ export default function PortalPageContent({ initialTenantId }) {
                           </span>
                         </div>
 
-                        <h3 className="text-white text-xl sm:text-2xl lg:text-3xl font-black leading-tight uppercase tracking-tight drop-shadow-sm">
+                        <h3 className="text-white text-xl sm:text-2xl font-black leading-tight uppercase tracking-tight drop-shadow-sm line-clamp-2">
                           {activeProg.title}
                         </h3>
 
-                        <p className="text-emerald-100/90 text-sm sm:text-base leading-relaxed font-normal">
+                        <p className="text-emerald-100/90 text-xs sm:text-sm md:text-base leading-relaxed font-normal line-clamp-3 sm:line-clamp-4">
                           {activeProg.description ||
                             "Comprehensive public welfare program delivered directly to residents across the barangay to foster health, education, and community resilience."}
                         </p>
