@@ -2015,7 +2015,7 @@ export default function PortalPageContent({ initialTenantId }) {
                       Active Registry
                     </span>
                     <span className="text-xs font-black text-gray-900 uppercase">
-                      {programs.length} Official Initiatives
+                      {portalDataLoaded ? `${programs.length} Official Initiatives` : "Loading Registry..."}
                     </span>
                   </div>
                 </div>
