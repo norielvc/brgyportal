@@ -59,17 +59,8 @@ export default function BarangayIDCard({
 
   const idNumberDisplay = id_number || "H00001-F00001";
 
-  // Verification Payload for QR Code
-  const qrValue =
-    qr_payload ||
-    JSON.stringify({
-      id: idNumberDisplay,
-      name: full_name || `${givenNames} ${surname}`,
-      purok: purokDisplay,
-      brgy: "IBA O' ESTE",
-      type: "EC_CARD",
-      auth: "OFFICIAL_VERIFIED",
-    });
+  // QR Code encodes the exact Card Number directly
+  const qrValue = idNumberDisplay;
 
   // ── FRONT CARD (EC CARD) ───────────────────────────────────────────────────
   const renderFront = () => (
