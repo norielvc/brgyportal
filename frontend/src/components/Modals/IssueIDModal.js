@@ -271,50 +271,24 @@ export default function IssueIDModal({
                 </div>
 
                 {/* Additional Card Options */}
-                <div className="pt-2 border-t border-emerald-200/60 grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-600 uppercase mb-1">
-                      Card Validity
-                    </label>
-                    <select
-                      value={formData.validity_years}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          validity_years: parseInt(e.target.value, 10),
-                        }))
-                      }
-                      className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-xs font-bold text-gray-800"
-                    >
-                      <option value={1}>1 Year Validity (Standard)</option>
-                      <option value={2}>2 Years Validity</option>
-                      <option value={3}>3 Years Validity</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-600 uppercase mb-1">
-                      Blood Type
-                    </label>
-                    <select
-                      value={formData.blood_type}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          blood_type: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-xs font-bold text-gray-800"
-                    >
-                      {["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-", "N/A"].map(
-                        (t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </div>
+                <div className="pt-2 border-t border-emerald-200/60">
+                  <label className="block text-[10px] font-black text-gray-600 uppercase mb-1">
+                    Card Validity Period
+                  </label>
+                  <select
+                    value={formData.validity_years}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        validity_years: parseInt(e.target.value, 10),
+                      }))
+                    }
+                    className="w-full px-3.5 py-2.5 bg-white border border-emerald-300 rounded-xl text-xs font-bold text-gray-800"
+                  >
+                    <option value={1}>1 Year Validity (Standard)</option>
+                    <option value={2}>2 Years Validity</option>
+                    <option value={3}>3 Years Validity</option>
+                  </select>
                 </div>
 
                 {/* Submit Action */}

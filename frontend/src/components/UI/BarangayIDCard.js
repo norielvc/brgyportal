@@ -41,8 +41,22 @@ export default function BarangayIDCard({
     }
   }
 
-  const purokDisplay = (purok || "PUROK 2").toUpperCase();
-  const barangayDisplay = (tenantConfig?.name || barangay || "BARANGAY IBA O' ESTE").toUpperCase();
+  let purokName = (purok || "PUROK 2").trim().toUpperCase();
+  if (
+    !purokName.startsWith("PUROK") &&
+    !purokName.startsWith("ZONE") &&
+    !purokName.startsWith("SITIO")
+  ) {
+    purokName = `PUROK ${purokName}`;
+  }
+  const purokDisplay = purokName;
+
+  let rawBrgy = (tenantConfig?.name || barangay || "IBA O' ESTE").trim().toUpperCase();
+  if (!rawBrgy.startsWith("BARANGAY") && !rawBrgy.startsWith("BRGY")) {
+    rawBrgy = `BARANGAY ${rawBrgy}`;
+  }
+  const barangayDisplay = rawBrgy;
+
   const idNumberDisplay = id_number || "H00001-F00001";
 
   // Verification Payload for QR Code
