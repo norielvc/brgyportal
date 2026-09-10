@@ -67,33 +67,33 @@ export default function BarangayIDCard({
       }}
     >
       {/* Front Left Content Container matching Photoshop Coordinates */}
-      <div className="absolute left-[8%] top-[29%] w-[44%] flex flex-col text-left">
+      <div className="absolute left-[8%] top-[18%] w-[45%] flex flex-col text-left">
         {/* Resident Full Legal Name */}
         <div className="leading-none">
-          <h2 className="text-[17px] sm:text-[21px] font-black text-white uppercase tracking-tight leading-none drop-shadow-sm truncate">
+          <h2 className="text-[18px] sm:text-[23px] font-black text-white uppercase tracking-tight leading-none drop-shadow-sm truncate">
             {givenNames || "ALEXANDER C."}
           </h2>
-          <h1 className="text-[26px] sm:text-[32px] font-black text-[#00b4d8] uppercase tracking-tight leading-none drop-shadow-sm truncate mt-1">
+          <h1 className="text-[28px] sm:text-[36px] font-black text-[#00b4d8] uppercase tracking-tight leading-none drop-shadow-sm truncate mt-1">
             {surname || "MANIO"}
           </h1>
         </div>
 
         {/* Resident Location */}
-        <div className="mt-3.5 sm:mt-4 space-y-0.5 leading-tight">
-          <p className="text-[12px] sm:text-[14px] font-black text-white uppercase tracking-wide drop-shadow-sm truncate">
+        <div className="mt-4 sm:mt-5 space-y-0.5 leading-tight">
+          <p className="text-[12px] sm:text-[15px] font-black text-white uppercase tracking-wide drop-shadow-sm truncate">
             {purokDisplay}
           </p>
-          <p className="text-[12px] sm:text-[14px] font-black text-white uppercase tracking-wide drop-shadow-sm truncate">
+          <p className="text-[12px] sm:text-[15px] font-black text-white uppercase tracking-wide drop-shadow-sm truncate">
             {barangayDisplay}
           </p>
         </div>
 
         {/* EC Card Number */}
-        <div className="mt-3.5 sm:mt-4 space-y-0.5 leading-none">
+        <div className="mt-4 sm:mt-5 space-y-0.5 leading-none">
           <p className="text-[11px] sm:text-[13px] font-black text-[#00b4d8] uppercase tracking-wider drop-shadow-sm">
             EC CARD NO:
           </p>
-          <p className="text-[17px] sm:text-[21px] font-black text-white tracking-wider drop-shadow-sm truncate font-sans mt-0.5">
+          <p className="text-[18px] sm:text-[23px] font-black text-white tracking-wider drop-shadow-sm truncate font-sans mt-0.5">
             {idNumberDisplay}
           </p>
         </div>
