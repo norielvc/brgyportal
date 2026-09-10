@@ -2082,8 +2082,8 @@ export default function PortalPageContent({ initialTenantId }) {
                 <div className="space-y-8">
                   {/* Main Featured Showcase Card (Left Photo, Right Dark Green Details) */}
                   <div className="bg-[#022c22] rounded-3xl border border-emerald-900/50 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300">
-                    {/* Left: Large Photo (7 Cols on lg) */}
-                    <div className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto lg:min-h-[480px] bg-slate-900 overflow-hidden group">
+                    {/* Left: Balanced Photo Container (6 Cols on lg) */}
+                    <div className="lg:col-span-6 relative aspect-[16/10] sm:aspect-[4/3] lg:aspect-auto h-full min-h-[340px] lg:min-h-[420px] bg-slate-900 overflow-hidden group">
                       <img
                         key={activeProg.id || activeProgramIdx}
                         src={
@@ -2091,9 +2091,9 @@ export default function PortalPageContent({ initialTenantId }) {
                           "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=1200"
                         }
                         alt={activeProg.title}
-                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 animate-in fade-in"
+                        className="w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-105 animate-in fade-in"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/30 to-transparent opacity-90 lg:opacity-75" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/20 to-transparent opacity-85 lg:opacity-70" />
 
                       {/* Top-Left Category Badge */}
                       <div className="absolute top-4 left-4 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-emerald-400/30 shadow-lg">
@@ -2114,8 +2114,8 @@ export default function PortalPageContent({ initialTenantId }) {
                       </div>
                     </div>
 
-                    {/* Right: Detailed Content — Deep Dark Green Executive Theme (5 Cols on lg) */}
-                    <div className="lg:col-span-5 p-7 sm:p-9 lg:p-10 flex flex-col justify-between bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white relative overflow-hidden border-t lg:border-t-0 lg:border-l border-emerald-800/40 space-y-6">
+                    {/* Right: Detailed Content — Deep Dark Green Executive Theme (6 Cols on lg) */}
+                    <div className="lg:col-span-6 p-6 sm:p-8 lg:p-9 flex flex-col justify-between bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white relative overflow-hidden border-t lg:border-t-0 lg:border-l border-emerald-800/40 space-y-6">
                       {/* Ambient Emerald Radial Light */}
                       <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
 
