@@ -1976,14 +1976,14 @@ export default function PortalPageContent({ initialTenantId }) {
         </div>
       </section>
 
-      {/* Programs Section — Featured Spotlight & Interactive Catalog */}
+      {/* Programs Section — Featured Spotlight & Interactive Catalog (Dark Green Government Theme) */}
       {!isFeatureLocked('programs') && (
-        <section id="programs" className="py-16 md:py-24 bg-gradient-to-b from-white via-slate-50/70 to-gray-100/80 w-full border-t border-gray-200/80 relative overflow-hidden">
+        <section id="programs" className="py-16 md:py-24 bg-gradient-to-b from-white via-slate-50/70 to-emerald-50/30 w-full border-t border-gray-200/80 relative overflow-hidden">
           {/* Subtle Government Geometric Watermark */}
           <div
             className="absolute inset-0 opacity-[0.03] pointer-events-none"
             style={{
-              backgroundImage: "radial-gradient(circle at 20px 20px, #03254c 2%, transparent 0%), radial-gradient(circle at 60px 60px, #03254c 2%, transparent 0%)",
+              backgroundImage: "radial-gradient(circle at 20px 20px, #064e3b 2%, transparent 0%), radial-gradient(circle at 60px 60px, #064e3b 2%, transparent 0%)",
               backgroundSize: "80px 80px",
             }}
           />
@@ -1992,8 +1992,8 @@ export default function PortalPageContent({ initialTenantId }) {
             {/* Section Header — Official Republic Style */}
             <div className="mb-10 pb-6 border-b border-gray-200/90 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div className="space-y-3 max-w-3xl">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-50/90 text-[#03254c] border border-blue-200/80 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-2xs">
-                  <Shield className="w-3.5 h-3.5 text-blue-700" />
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 text-[#064e3b] border border-emerald-200/80 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-2xs">
+                  <Shield className="w-3.5 h-3.5 text-emerald-700" />
                   <span>Republic of the Philippines • Sangguniang Barangay Initiatives</span>
                 </div>
 
@@ -2017,7 +2017,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     type="button"
                     onClick={() => setActiveProgramIdx((prev) => (prev > 0 ? prev - 1 : programs.length - 1))}
                     aria-label="Previous Program"
-                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#03254c] hover:bg-[#03254c] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#064e3b] hover:bg-[#064e3b] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
@@ -2025,7 +2025,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     type="button"
                     onClick={() => setActiveProgramIdx((prev) => (prev < programs.length - 1 ? prev + 1 : 0))}
                     aria-label="Next Program"
-                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#03254c] hover:bg-[#03254c] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#064e3b] hover:bg-[#064e3b] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -2049,8 +2049,8 @@ export default function PortalPageContent({ initialTenantId }) {
             {/* Empty State */}
             {portalDataLoaded && programs.length === 0 && (
               <div className="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-gray-300">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#03254c] flex items-center justify-center mx-auto mb-4 border border-blue-100">
-                  <Target className="w-8 h-8 text-[#03254c]" />
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-[#064e3b] flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+                  <Target className="w-8 h-8 text-[#064e3b]" />
                 </div>
                 <h4 className="text-lg font-black text-gray-900 uppercase">
                   No Programs Published Yet
@@ -2080,10 +2080,10 @@ export default function PortalPageContent({ initialTenantId }) {
 
               return (
                 <div className="space-y-8">
-                  {/* Main Featured Showcase Card (Left Photo, Right Details) */}
-                  <div className="bg-white rounded-3xl border border-gray-200/90 shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300">
+                  {/* Main Featured Showcase Card (Left Photo, Right Dark Green Details) */}
+                  <div className="bg-[#022c22] rounded-3xl border border-emerald-900/50 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300">
                     {/* Left: Large Photo (7 Cols on lg) */}
-                    <div className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto lg:min-h-[440px] bg-slate-900 overflow-hidden group">
+                    <div className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto lg:min-h-[480px] bg-slate-900 overflow-hidden group">
                       <img
                         key={activeProg.id || activeProgramIdx}
                         src={
@@ -2093,54 +2093,81 @@ export default function PortalPageContent({ initialTenantId }) {
                         alt={activeProg.title}
                         className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 animate-in fade-in"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/30 to-transparent opacity-90 lg:opacity-75" />
 
                       {/* Top-Left Category Badge */}
-                      <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-white/20 shadow-md">
-                        <CategoryIcon className="w-4 h-4 text-cyan-300" />
+                      <div className="absolute top-4 left-4 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-emerald-400/30 shadow-lg">
+                        <CategoryIcon className="w-4 h-4 text-emerald-300" />
                         <span>{activeProg.category || "Community Initiative"}</span>
                       </div>
 
                       {/* Bottom Image Seal */}
-                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/90 text-xs font-bold">
-                        <span className="inline-flex items-center gap-1.5 text-blue-200 bg-black/50 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10">
+                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs font-bold">
+                        <span className="inline-flex items-center gap-1.5 text-emerald-200 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15">
                           <Shield className="w-4 h-4 text-amber-300" />
                           Barangay {tenantConfig.shortName || "Iba O' Este"}
                         </span>
-                        <span className="bg-emerald-500/90 text-white px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border border-emerald-300/30">
-                          ● Active Mandate
+                        <span className="bg-emerald-500 text-white px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-emerald-300/40 shadow-sm flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                          <span>Active Mandate</span>
                         </span>
                       </div>
                     </div>
 
-                    {/* Right: Detailed Content (5 Cols on lg) */}
-                    <div className="lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-gradient-to-b from-white to-slate-50/50 space-y-6">
-                      <div className="space-y-4">
+                    {/* Right: Detailed Content — Deep Dark Green Executive Theme (5 Cols on lg) */}
+                    <div className="lg:col-span-5 p-7 sm:p-9 lg:p-10 flex flex-col justify-between bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white relative overflow-hidden border-t lg:border-t-0 lg:border-l border-emerald-800/40 space-y-6">
+                      {/* Ambient Emerald Radial Light */}
+                      <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+
+                      <div className="space-y-4 relative z-10">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-mono font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                          <span className="text-[11px] font-mono font-black uppercase tracking-widest text-emerald-300 bg-emerald-950/70 px-3 py-1 rounded-full border border-emerald-400/30 shadow-xs">
                             Initiative {String(activeProgramIdx + 1).padStart(2, "0")} of {String(programs.length).padStart(2, "0")}
+                          </span>
+                          <span className="text-[11px] text-emerald-200/80 font-bold uppercase tracking-wider hidden sm:inline">
+                            Sangguniang Barangay
                           </span>
                         </div>
 
-                        <h3 className="text-gray-950 text-xl sm:text-2xl font-black leading-tight uppercase tracking-tight">
+                        <h3 className="text-white text-xl sm:text-2xl lg:text-3xl font-black leading-tight uppercase tracking-tight drop-shadow-sm">
                           {activeProg.title}
                         </h3>
 
-                        <p className="text-gray-600 text-sm sm:text-base leading-relaxed font-medium">
+                        <p className="text-emerald-100/90 text-sm sm:text-base leading-relaxed font-normal">
                           {activeProg.description ||
                             "Comprehensive public welfare program delivered directly to residents across the barangay to foster health, education, and community resilience."}
                         </p>
+
+                        {/* Official Program Scope Matrix */}
+                        <div className="grid grid-cols-2 gap-2.5 pt-2 text-[11px]">
+                          <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 border border-white/10 space-y-0.5">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 block">
+                              Jurisdiction
+                            </span>
+                            <span className="font-bold text-white block truncate">
+                              Barangay {tenantConfig.shortName || "Iba O' Este"}
+                            </span>
+                          </div>
+                          <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 border border-white/10 space-y-0.5">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 block">
+                              Beneficiaries
+                            </span>
+                            <span className="font-bold text-white block truncate">
+                              All Qualified Residents
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Action Button */}
-                      <div className="pt-4 border-t border-gray-100 space-y-3">
+                      <div className="pt-4 border-t border-emerald-800/60 relative z-10">
                         <button
                           type="button"
                           onClick={() => setSelectedProgram(activeProg)}
-                          className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#03254c] via-[#043b78] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white text-xs sm:text-sm font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-98"
+                          className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-emerald-950/60 hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-98"
                         >
                           <span>View Program</span>
-                          <ArrowRight className="w-4 h-4 text-cyan-300" />
+                          <ArrowRight className="w-4 h-4 text-emerald-100" />
                         </button>
                       </div>
                     </div>
@@ -2150,10 +2177,11 @@ export default function PortalPageContent({ initialTenantId }) {
                   {programs.length > 1 && (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-gray-500">
-                          Select an Initiative to View
+                        <h4 className="text-xs font-black uppercase tracking-wider text-gray-600 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                          <span>Select an Initiative to View</span>
                         </h4>
-                        <span className="text-[11px] text-gray-400 font-medium">
+                        <span className="text-[11px] text-gray-500 font-bold">
                           {programs.length} Active Programs
                         </span>
                       </div>
@@ -2170,8 +2198,8 @@ export default function PortalPageContent({ initialTenantId }) {
                               onClick={() => setActiveProgramIdx(idx)}
                               className={`group text-left p-2.5 rounded-2xl transition-all duration-200 flex flex-col justify-between border cursor-pointer ${
                                 isActive
-                                  ? "bg-white border-[#03254c] ring-2 ring-[#03254c]/20 shadow-md scale-102"
-                                  : "bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 shadow-2xs hover:shadow-xs"
+                                  ? "bg-emerald-50/90 border-[#064e3b] ring-2 ring-[#064e3b]/30 shadow-md scale-102"
+                                  : "bg-white/90 hover:bg-white border-gray-200 hover:border-emerald-300 shadow-2xs hover:shadow-xs"
                               }`}
                             >
                               <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-slate-100 mb-2">
@@ -2184,20 +2212,20 @@ export default function PortalPageContent({ initialTenantId }) {
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                                 />
                                 {isActive && (
-                                  <div className="absolute inset-0 bg-[#03254c]/30 backdrop-blur-[1px] flex items-center justify-center">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm animate-pulse" />
+                                  <div className="absolute inset-0 bg-[#064e3b]/40 backdrop-blur-[1px] flex items-center justify-center">
+                                    <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm animate-pulse border-2 border-white" />
                                   </div>
                                 )}
                               </div>
 
                               <div className="space-y-1">
-                                <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-gray-500 truncate">
-                                  <ProgIcon className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                                <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-800 truncate">
+                                  <ProgIcon className="w-3 h-3 text-emerald-600 flex-shrink-0" />
                                   <span className="truncate">{prog.category || "Initiative"}</span>
                                 </div>
                                 <h5
                                   className={`text-[11px] font-bold line-clamp-2 leading-tight transition-colors ${
-                                    isActive ? "text-[#03254c]" : "text-gray-800 group-hover:text-gray-950"
+                                    isActive ? "text-[#064e3b] font-black" : "text-gray-800 group-hover:text-gray-950"
                                   }`}
                                 >
                                   {prog.title}
@@ -4690,13 +4718,13 @@ export default function PortalPageContent({ initialTenantId }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Republic Header */}
-            <div className="bg-gradient-to-r from-[#03254c] via-[#043b78] to-[#0a529e] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
+            <div className="bg-gradient-to-r from-[#064e3b] via-[#044a36] to-[#022c22] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-md flex-shrink-0">
-                  <Shield className="w-5 h-5 text-cyan-300" />
+                  <Shield className="w-5 h-5 text-emerald-300" />
                 </div>
                 <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-0.5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-0.5">
                     <Building2 className="w-3 h-3 text-amber-300" />
                     Republic of the Philippines • Barangay {tenantConfig.shortName || "Iba O' Este"}
                   </div>
@@ -4724,18 +4752,18 @@ export default function PortalPageContent({ initialTenantId }) {
                   alt={selectedProgram.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/40 to-transparent" />
                 
                 <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-end justify-between gap-3 text-white">
                   <div className="space-y-1">
-                    <span className="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/20 text-cyan-300 inline-block">
+                    <span className="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/20 text-emerald-300 inline-block">
                       {selectedProgram.category || "Public Initiative"}
                     </span>
                     <h2 className="text-lg sm:text-2xl font-black uppercase text-white tracking-tight drop-shadow-sm">
                       {selectedProgram.title}
                     </h2>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/90 text-white border border-emerald-300/40">
+                  <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-white border border-emerald-300/40">
                     ● Active Mandate
                   </span>
                 </div>
@@ -4743,8 +4771,8 @@ export default function PortalPageContent({ initialTenantId }) {
 
               {/* Program Details Overview */}
               <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-200/90 shadow-xs space-y-4">
-                <h4 className="text-xs font-black uppercase tracking-wider text-[#03254c] pb-2 border-b border-gray-100 flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-blue-600" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-[#064e3b] pb-2 border-b border-gray-100 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-emerald-600" />
                   Program Description &amp; Objectives
                 </h4>
                 <p className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-line">
@@ -4770,7 +4798,7 @@ export default function PortalPageContent({ initialTenantId }) {
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
                     Coverage &amp; Jurisdiction
                   </span>
-                  <span className="font-black text-[#03254c] uppercase">
+                  <span className="font-black text-[#064e3b] uppercase">
                     Purok 1 — 7 (Full Barangay)
                   </span>
                   <p className="text-[11px] text-gray-500 font-medium">
@@ -4808,9 +4836,9 @@ export default function PortalPageContent({ initialTenantId }) {
                   setSelectedProgram(null);
                   setShowESumbong(true);
                 }}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#03254c] via-[#043b78] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#064e3b] via-[#059669] to-emerald-600 hover:from-[#022c22] hover:to-[#059669] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
               >
-                <MessageCircle className="w-4 h-4 text-cyan-300" />
+                <MessageCircle className="w-4 h-4 text-emerald-200" />
                 <span>Inquire / Submit Concern</span>
               </button>
             </div>
