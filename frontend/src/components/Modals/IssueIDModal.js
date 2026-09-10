@@ -628,12 +628,12 @@ export default function IssueIDModal({
             </div>
 
             {/* Render Live ID Card */}
-            <div className="my-auto py-2 overflow-x-auto max-w-full flex items-center justify-center">
+            <div className="my-auto py-2 overflow-hidden max-w-full flex items-center justify-center">
               <BarangayIDCard
                 idData={previewIDData}
                 tenantConfig={tenantConfig}
                 side={previewSide}
-                scale={previewSide === "both" ? 0.75 : 0.88}
+                scale={previewSide === "both" ? 0.65 : 0.82}
               />
             </div>
 
