@@ -55,6 +55,10 @@ import {
   RefreshCw,
   Bot,
   Smartphone,
+  CheckCircle2,
+  ArrowRight,
+  Info,
+  BookOpen,
 } from "lucide-react";
 import BarangayClearanceModal from "@/components/Forms/BarangayClearanceModal";
 import IndigencyCertificateModal from "@/components/Forms/IndigencyCertificateModal";
@@ -244,6 +248,7 @@ export default function PortalPageContent({ initialTenantId }) {
   const [selectedAchievement, setSelectedAchievement] = useState(null);
   const [selectedNewsItem, setSelectedNewsItem] = useState(null);
   const [selectedProgram, setSelectedProgram] = useState(null);
+  const [programCategoryFilter, setProgramCategoryFilter] = useState("all");
   const [currentFormSlide, setCurrentFormSlide] = useState(0);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -1970,98 +1975,245 @@ export default function PortalPageContent({ initialTenantId }) {
         </div>
       </section>
 
-      {/* Programs Section */}
+      {/* Programs Section — Government Ready Architecture */}
       {!isFeatureLocked('programs') && (
-        <section id="programs" className="py-16 md:py-24 bg-gray-50 w-full border-t border-gray-100">
-          <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12">
-            {/* Section Header — Government Style */}
-            <div className="mb-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="w-1 h-8 rounded-full"
-                  style={{ backgroundColor: tenantConfig.primaryColor }}
-                ></div>
+        <section id="programs" className="py-16 md:py-24 bg-gradient-to-b from-white via-slate-50/70 to-gray-100/80 w-full border-t border-gray-200/80 relative overflow-hidden">
+          {/* Subtle Government Geometric Watermark */}
+          <div
+            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{
+              backgroundImage: "radial-gradient(circle at 20px 20px, #03254c 2%, transparent 0%), radial-gradient(circle at 60px 60px, #03254c 2%, transparent 0%)",
+              backgroundSize: "80px 80px",
+            }}
+          />
+
+          <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 relative z-10">
+            {/* Section Header — Official Republic Style */}
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 pb-8 border-b border-gray-200/90">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-50/90 text-[#03254c] border border-blue-200/80 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-2xs">
+                  <Shield className="w-3.5 h-3.5 text-blue-700" />
+                  <span>Republic of the Philippines • Sangguniang Barangay Initiatives</span>
+                </div>
+
                 <div>
-                  <p
-                    className="text-xs font-bold uppercase tracking-widest"
-                    style={{ color: tenantConfig.primaryColor }}
-                  >
-                    Official Barangay Programs
-                  </p>
-                  <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight mt-1">
-                    Community Programs &amp; Initiatives
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-950 tracking-tight uppercase">
+                    Community Programs &amp; Development Initiatives
                   </h2>
+                  <p className="text-gray-600 text-xs sm:text-sm md:text-base max-w-3xl mt-2 leading-relaxed font-medium">
+                    Authorized public services, health missions, educational grants, and sustainable infrastructure programs implemented by the Barangay Council for the welfare and empowerment of all constituents.
+                  </p>
                 </div>
               </div>
-              <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-gray-200">
-                Programs and services implemented by the Barangay Council to promote the welfare, development, and well-being of our constituents.
-              </p>
+
+              {/* Official Badges & Metric Strip */}
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 flex-shrink-0">
+                <div className="px-4 py-2.5 rounded-2xl bg-white border border-gray-200 shadow-xs flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block leading-none">
+                      Active Registry
+                    </span>
+                    <span className="text-xs font-black text-gray-900 uppercase">
+                      {programs.length} Official Initiatives
+                    </span>
+                  </div>
+                </div>
+
+                <div className="px-4 py-2.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 text-emerald-900 shadow-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span className="text-xs font-black tracking-wide">
+                    100% Free Public Services
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Programs Grid — Landscape Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Dynamic Category Filter Pills */}
+            {programs.length > 0 && (() => {
+              const categories = ["all", ...Array.from(new Set(programs.map(p => p.category).filter(Boolean)))];
+              if (categories.length <= 2 && categories.includes("all")) return null;
+
+              return (
+                <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-8 scrollbar-none">
+                  {categories.map((cat) => {
+                    const count = cat === "all" ? programs.length : programs.filter(p => p.category === cat).length;
+                    const isActive = programCategoryFilter === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setProgramCategoryFilter(cat)}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer shadow-2xs ${
+                          isActive
+                            ? "bg-[#03254c] text-white shadow-md scale-102"
+                            : "bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        <span>{cat === "all" ? "All Initiatives" : cat}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* Programs Grid — Government Dossier Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
               {!portalDataLoaded && (
                 <>
                   {[0, 1, 2].map((i) => (
-                    <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-200">
+                    <div key={i} className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-xs">
                       <div className="skeleton w-full aspect-[16/10]" />
-                      <div className="p-5 space-y-3">
-                        <div className="skeleton h-4 w-3/4 rounded" />
-                        <div className="skeleton h-3 w-full rounded" />
-                        <div className="skeleton h-3 w-2/3 rounded" />
-                        <div className="skeleton h-3 w-1/3 rounded mt-4" />
+                      <div className="p-6 space-y-4">
+                        <div className="skeleton h-5 w-3/4 rounded-lg" />
+                        <div className="skeleton h-3.5 w-full rounded" />
+                        <div className="skeleton h-3.5 w-2/3 rounded" />
+                        <div className="skeleton h-10 w-full rounded-xl mt-4" />
                       </div>
                     </div>
                   ))}
                 </>
               )}
+
               {portalDataLoaded && programs.length === 0 && (
-                <div className="col-span-full text-center py-12">
-                  <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-400 text-sm">Program information will be available soon.</p>
+                <div className="col-span-full text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-gray-300">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#03254c] flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                    <Target className="w-8 h-8 text-[#03254c]" />
+                  </div>
+                  <h4 className="text-lg font-black text-gray-900 uppercase">
+                    No Programs Published Yet
+                  </h4>
+                  <p className="text-gray-500 text-xs sm:text-sm mt-1 max-w-md mx-auto leading-relaxed">
+                    Official community initiatives are currently being updated by the Barangay Secretariat and Council.
+                  </p>
                 </div>
               )}
-              {portalDataLoaded && programs.map((program, idx) => (
-                <div
-                  key={program.id || idx}
-                  className="flex flex-col group cursor-pointer h-full bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 program-card fade-in-up"
-                  style={{ animationDelay: `${idx * 80}ms` }}
-                  onClick={() => setSelectedProgram(program)}
-                >
-                  <div className="relative w-full aspect-[16/10] overflow-hidden bg-gray-100">
-                    <img
-                      loading="lazy"
-                      src={program.image || "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800"}
-                      alt={program.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60 group-hover:opacity-70 transition-opacity" />
-                    <div
-                      className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm border border-white/20"
-                      style={{ backgroundColor: `${tenantConfig.primaryColor}cc` }}
-                    >
-                      {program.category}
-                    </div>
-                  </div>
-                  <div className="flex flex-col flex-1 p-5">
-                    <h3
-                      className="text-gray-900 text-base md:text-lg font-bold mb-2 leading-snug transition-colors"
-                    >
-                      {program.title}
-                    </h3>
-                    <p className="text-gray-500 text-sm leading-relaxed mb-4 flex-1">
-                      {program.description}
-                    </p>
-                    <div
-                      className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pt-3 border-t border-gray-100"
-                      style={{ color: tenantConfig.primaryColor }}
-                    >
-                      Learn More
-                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              ))}
+
+              {portalDataLoaded &&
+                programs
+                  .filter(
+                    (p) =>
+                      programCategoryFilter === "all" ||
+                      p.category?.toLowerCase() === programCategoryFilter.toLowerCase()
+                  )
+                  .map((program, idx) => {
+                    // Category Icon helper
+                    const getCategoryIcon = (cat = "") => {
+                      const lower = cat.toLowerCase();
+                      if (lower.includes("health") || lower.includes("med")) return Heart;
+                      if (lower.includes("infra") || lower.includes("building")) return Building2;
+                      if (lower.includes("edu") || lower.includes("school") || lower.includes("scholar")) return GraduationCap;
+                      if (lower.includes("green") || lower.includes("environ") || lower.includes("tree")) return Leaf;
+                      if (lower.includes("youth") || lower.includes("social") || lower.includes("comm")) return Users;
+                      if (lower.includes("livelihood") || lower.includes("business")) return Store;
+                      return Award;
+                    };
+
+                    const CategoryIcon = getCategoryIcon(program.category);
+
+                    return (
+                      <div
+                        key={program.id || idx}
+                        onClick={() => setSelectedProgram(program)}
+                        className="group flex flex-col justify-between bg-white rounded-3xl overflow-hidden border border-gray-200/90 hover:border-[#03254c] hover:shadow-2xl transition-all duration-300 cursor-pointer relative fade-in-up"
+                        style={{ animationDelay: `${idx * 60}ms` }}
+                      >
+                        {/* Top Image Banner */}
+                        <div className="relative w-full aspect-[16/10] overflow-hidden bg-slate-100">
+                          <img
+                            loading="lazy"
+                            src={
+                              program.image ||
+                              "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800"
+                            }
+                            alt={program.title}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
+                          />
+                          {/* Elegant Vignette Gradient */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10 opacity-80 group-hover:opacity-90 transition-opacity" />
+
+                          {/* Top-Left Category Badge */}
+                          <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-white/20 shadow-sm">
+                            <CategoryIcon className="w-3.5 h-3.5 text-cyan-300" />
+                            <span>{program.category || "Community Initiative"}</span>
+                          </div>
+
+                          {/* Top-Right Official Status Tag */}
+                          <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/80 backdrop-blur-md border border-emerald-500/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>Official Program</span>
+                          </div>
+
+                          {/* Bottom-Left Badge on Photo */}
+                          <div className="absolute bottom-3 left-3.5 right-3.5 flex items-center justify-between text-white/90 text-[11px] font-bold">
+                            <span className="inline-flex items-center gap-1 text-blue-200">
+                              <Shield className="w-3.5 h-3.5 text-amber-300" />
+                              Barangay {tenantConfig.shortName || "Iba O' Este"}
+                            </span>
+                            <span className="bg-white/15 px-2 py-0.5 rounded-md backdrop-blur-sm text-[10px] font-mono font-bold text-white/90">
+                              2026 Mandate
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Card Content Body */}
+                        <div className="flex flex-col flex-1 p-5 sm:p-6 space-y-4">
+                          <div className="space-y-2">
+                            <h3 className="text-gray-950 text-base sm:text-lg font-black leading-snug group-hover:text-[#03254c] transition-colors uppercase tracking-tight line-clamp-2">
+                              {program.title}
+                            </h3>
+                            <p className="text-gray-600 text-xs sm:text-sm leading-relaxed font-medium line-clamp-3">
+                              {program.description ||
+                                "Comprehensive public welfare program delivered directly to residents across the barangay."}
+                            </p>
+                          </div>
+
+                          {/* Official Micro-Scope Ribbon */}
+                          <div className="grid grid-cols-2 gap-2 py-2.5 px-3 rounded-2xl bg-slate-50 border border-gray-100 text-[11px]">
+                            <div>
+                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider block">
+                                Target Group
+                              </span>
+                              <span className="font-bold text-gray-800 truncate block">
+                                All Registered Citizens
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider block">
+                                Cost &amp; Access
+                              </span>
+                              <span className="font-bold text-emerald-700 truncate block">
+                                100% Free / Subsidized
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Action Button */}
+                          <div className="pt-2 border-t border-gray-100">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProgram(program);
+                              }}
+                              className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-[#03254c] to-[#0a4b8f] group-hover:from-[#021b37] group-hover:to-[#043b78] text-white text-xs font-black uppercase tracking-wider shadow-sm group-hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                            >
+                              <span>View Program Dossier</span>
+                              <ArrowRight className="w-3.5 h-3.5 text-cyan-300 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
             </div>
           </div>
         </section>
@@ -4523,6 +4675,147 @@ export default function PortalPageContent({ initialTenantId }) {
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Official Program Dossier Modal */}
+      {selectedProgram && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6"
+          onClick={() => setSelectedProgram(null)}
+        >
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200" />
+
+          <div
+            className="relative z-10 w-full max-w-4xl max-h-[92vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Republic Header */}
+            <div className="bg-gradient-to-r from-[#03254c] via-[#043b78] to-[#0a529e] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-md flex-shrink-0">
+                  <Shield className="w-5 h-5 text-cyan-300" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-0.5">
+                    <Building2 className="w-3 h-3 text-amber-300" />
+                    Republic of the Philippines • Barangay {tenantConfig.shortName || "Iba O' Este"}
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black tracking-tight text-white uppercase truncate max-w-md sm:max-w-xl">
+                    Official Program Brief &amp; Dossier
+                  </h3>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedProgram(null)}
+                className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-all cursor-pointer flex items-center justify-center"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-6 bg-slate-50/50">
+              {/* Program Banner */}
+              <div className="relative w-full aspect-[21/9] sm:aspect-[2.4/1] rounded-2xl overflow-hidden bg-slate-900 shadow-md">
+                <img
+                  src={selectedProgram.image || "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800"}
+                  alt={selectedProgram.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+                
+                <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-end justify-between gap-3 text-white">
+                  <div className="space-y-1">
+                    <span className="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/20 text-cyan-300 inline-block">
+                      {selectedProgram.category || "Public Initiative"}
+                    </span>
+                    <h2 className="text-lg sm:text-2xl font-black uppercase text-white tracking-tight drop-shadow-sm">
+                      {selectedProgram.title}
+                    </h2>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/90 text-white border border-emerald-300/40">
+                    ● Active Mandate
+                  </span>
+                </div>
+              </div>
+
+              {/* Program Details Overview */}
+              <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-200/90 shadow-xs space-y-4">
+                <h4 className="text-xs font-black uppercase tracking-wider text-[#03254c] pb-2 border-b border-gray-100 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-blue-600" />
+                  Program Description &amp; Objectives
+                </h4>
+                <p className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-line">
+                  {selectedProgram.description || "Comprehensive community assistance and development initiative enacted by the Barangay Local Government Unit."}
+                </p>
+              </div>
+
+              {/* Program Metadata Matrix */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+                    Target Beneficiaries
+                  </span>
+                  <span className="font-black text-gray-900 uppercase">
+                    All Qualified Residents
+                  </span>
+                  <p className="text-[11px] text-gray-500 font-medium">
+                    Verified through Master Census
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+                    Coverage &amp; Jurisdiction
+                  </span>
+                  <span className="font-black text-[#03254c] uppercase">
+                    Purok 1 — 7 (Full Barangay)
+                  </span>
+                  <p className="text-[11px] text-gray-500 font-medium">
+                    {tenantConfig.name || "Barangay Iba O' Este"}
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+                    Service Fee
+                  </span>
+                  <span className="font-black text-emerald-600 uppercase">
+                    100% Free / Subsidized
+                  </span>
+                  <p className="text-[11px] text-emerald-700 font-medium">
+                    Funded via Sangguniang Barangay
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 sm:p-5 bg-white border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedProgram(null)}
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Close Dossier
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProgram(null);
+                  setShowESumbong(true);
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#03254c] via-[#043b78] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <MessageCircle className="w-4 h-4 text-cyan-300" />
+                <span>Inquire / Submit Concern</span>
+              </button>
             </div>
           </div>
         </div>
