@@ -176,13 +176,19 @@ export default function IssueIDModal({
 
   // Build live preview data
   const previewIDData = {
-    id_number: "BID-PREVIEW-2026",
+    id_number: selectedResident?.id_number || "H00001-F00001",
+    first_name: selectedResident?.first_name || "ALEXANDER",
+    middle_name: selectedResident?.middle_name || "C.",
+    last_name: selectedResident?.last_name || "MANIO",
+    suffix: selectedResident?.suffix || "",
+    purok: selectedResident?.purok || "PUROK 2",
+    barangay: selectedResident?.barangay || "BARANGAY IBA O' ESTE",
     full_name: selectedResident
       ? [selectedResident.first_name, selectedResident.middle_name, selectedResident.last_name, selectedResident.suffix].filter(Boolean).join(" ")
-      : "RESIDENT FULL NAME",
+      : "ALEXANDER C. MANIO",
     address: selectedResident
       ? [selectedResident.house_number, selectedResident.purok, selectedResident.barangay, selectedResident.municipality].filter(Boolean).join(", ")
-      : "BARANGAY JURISDICTION",
+      : "PUROK 2, IBA O' ESTE, CALUMPIT, BULACAN",
     birth_date: selectedResident?.birth_date || "1995-01-01",
     gender: selectedResident?.gender || "MALE",
     civil_status: selectedResident?.civil_status || "SINGLE",
