@@ -261,6 +261,7 @@ export default function PortalPageContent({ initialTenantId }) {
   const [itemsPerView, setItemsPerView] = useState(4);
   const [heroCarouselIndex, setHeroCarouselIndex] = useState(0);
   const [selectedFacility, setSelectedFacility] = useState(null);
+  const [activeFacilityIdx, setActiveFacilityIdx] = useState(0);
   const [facilityImageIndex, setFacilityImageIndex] = useState(0);
   const [portalDataLoaded, setPortalDataLoaded] = useState(false);
 
@@ -2244,131 +2245,263 @@ export default function PortalPageContent({ initialTenantId }) {
         </section>
       )}
 
-      {/* Facilities Section — Modern Government Directory */}
+      {/* Facilities Section — Featured Spotlight & Interactive Catalog (Dark Green Government Theme) */}
       {!isFeatureLocked('facilities') && (
-        <section id="directory" className="bg-gray-50 border-t border-gray-200">
-          <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 py-12 md:py-16">
-            {/* Section Header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-3">
-                <div
-                  className="w-1 h-8 rounded-full"
-                  style={{ backgroundColor: tenantConfig.primaryColor }}
-                ></div>
+        <section id="directory" className="py-16 md:py-24 bg-gradient-to-b from-white via-slate-50/70 to-emerald-50/30 w-full border-t border-gray-200/80 relative overflow-hidden">
+          {/* Subtle Government Geometric Watermark */}
+          <div
+            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{
+              backgroundImage: "radial-gradient(circle at 20px 20px, #064e3b 2%, transparent 0%), radial-gradient(circle at 60px 60px, #064e3b 2%, transparent 0%)",
+              backgroundSize: "80px 80px",
+            }}
+          />
+
+          <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 relative z-10">
+            {/* Section Header — Official Republic Style */}
+            <div className="mb-10 pb-6 border-b border-gray-200/90 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div className="space-y-3 max-w-3xl">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 text-[#064e3b] border border-emerald-200/80 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-2xs">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Republic of the Philippines • Public Infrastructure &amp; Facilities</span>
+                </div>
+
                 <div>
-                  <p
-                    className="text-xs font-bold uppercase tracking-widest"
-                    style={{ color: tenantConfig.primaryColor }}
-                  >
-                    Barangay Infrastructure &amp; Public Facilities
-                  </p>
-                  <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight mt-1">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-950 tracking-tight uppercase">
                     Community Facilities Directory
                   </h2>
+                  <p className="text-gray-600 text-xs sm:text-sm md:text-base mt-2 leading-relaxed font-medium">
+                    A directory of public infrastructure and facilities maintained by the Barangay government, available for the use and benefit of all constituents.
+                  </p>
                 </div>
               </div>
-              <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-gray-200">
-                A directory of public infrastructure and facilities maintained by the Barangay government, available for the use and benefit of our constituents.
-              </p>
-            </div>
 
-            {/* Facilities Grid — Government Info Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {!portalDataLoaded && (
-                <>
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-200">
-                      <div className="skeleton w-full aspect-[16/9]" />
-                      <div className="p-5 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="skeleton w-10 h-10 rounded-lg shrink-0" />
-                          <div className="flex-1 space-y-1.5">
-                            <div className="skeleton h-4 w-3/4 rounded" />
-                            <div className="skeleton h-2.5 w-1/2 rounded" />
-                          </div>
-                        </div>
-                        <div className="skeleton h-3 w-full rounded" />
-                        <div className="skeleton h-3 w-2/3 rounded" />
-                        <div className="skeleton h-3 w-1/3 rounded mt-3" />
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-              {portalDataLoaded && facilities.map((facility, index) => {
-                const FacilityIcon = facility.icon || Building2;
-                const photoCount = (facility.images || []).length;
-                return (
-                  <div
-                    key={index}
-                    className="group flex flex-col cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200 fade-in-up"
-                    style={{ animationDelay: `${index * 80}ms` }}
-                    onClick={() => setSelectedFacility(facility)}
+              {/* Navigation Arrows for Featured Facility */}
+              {portalDataLoaded && facilities.length > 1 && (
+                <div className="flex items-center gap-2 self-start md:self-end">
+                  <span className="text-xs font-mono font-bold text-gray-400 mr-2">
+                    {String(activeFacilityIdx + 1).padStart(2, "0")} / {String(facilities.length).padStart(2, "0")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveFacilityIdx((prev) => (prev > 0 ? prev - 1 : facilities.length - 1))}
+                    aria-label="Previous Facility"
+                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#064e3b] hover:bg-[#064e3b] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
                   >
-                    {/* Image */}
-                    <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
-                      <img
-                        src={facility.images?.[0]}
-                        alt={facility.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                      {photoCount > 1 && (
-                        <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-md bg-black/70 text-white text-[10px] font-bold backdrop-blur-sm border border-white/20">
-                          <ImageIcon className="w-3 h-3" />
-                          {photoCount} Photos
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex flex-col flex-1 p-5">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div
-                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
-                        >
-                          <FacilityIcon
-                            className="w-5 h-5"
-                            style={{ color: tenantConfig.primaryColor }}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-base font-bold text-gray-900 leading-snug">
-                            {facility.name}
-                          </h3>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-0.5">
-                            Barangay Facility
-                          </p>
-                        </div>
-                      </div>
-
-                      {facility.description && (
-                        <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">
-                          {facility.description}
-                        </p>
-                      )}
-
-                      <div
-                        className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pt-3 border-t border-gray-100"
-                        style={{ color: tenantConfig.primaryColor }}
-                      >
-                        {photoCount > 1 ? "View Photo Gallery" : "View Details"}
-                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveFacilityIdx((prev) => (prev < facilities.length - 1 ? prev + 1 : 0))}
+                    aria-label="Next Facility"
+                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#064e3b] hover:bg-[#064e3b] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Loading Skeleton */}
+            {!portalDataLoaded && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-xs grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-7 skeleton aspect-[16/10] rounded-2xl" />
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="skeleton h-5 w-1/3 rounded" />
+                  <div className="skeleton h-8 w-3/4 rounded-lg" />
+                  <div className="skeleton h-24 w-full rounded-xl" />
+                  <div className="skeleton h-12 w-full rounded-xl mt-6" />
+                </div>
+              </div>
+            )}
 
             {/* Empty State */}
             {portalDataLoaded && facilities.length === 0 && (
-              <div className="text-center py-12">
-                <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-400 text-sm">Facility information will be available soon.</p>
+              <div className="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-gray-300">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-[#064e3b] flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+                  <Building2 className="w-8 h-8 text-[#064e3b]" />
+                </div>
+                <h4 className="text-lg font-black text-gray-900 uppercase">
+                  No Facilities Listed Yet
+                </h4>
+                <p className="text-gray-500 text-xs sm:text-sm mt-1 max-w-md mx-auto leading-relaxed">
+                  Official community facility information is currently being updated by the Barangay Administration.
+                </p>
               </div>
             )}
+
+            {/* Active Facility Showcase */}
+            {portalDataLoaded && facilities.length > 0 && (() => {
+              const activeFac = facilities[activeFacilityIdx] || facilities[0];
+              const FacilityIcon = activeFac.icon || Building2;
+              const photoCount = (activeFac.images || []).length;
+              const mainImage = activeFac.images?.[0] || "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&q=80&w=1200";
+
+              return (
+                <div className="space-y-8">
+                  {/* Main Featured Showcase Card — Locked Fixed Dimensions */}
+                  <div className="bg-[#022c22] rounded-3xl border border-emerald-900/50 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300 lg:min-h-[480px] lg:max-h-[500px]">
+                    {/* Left: Strictly Constrained Photo Container (6 Cols on lg) */}
+                    <div className="lg:col-span-6 relative w-full h-[280px] sm:h-[340px] lg:h-full min-h-[280px] lg:min-h-[480px] bg-slate-900 overflow-hidden group">
+                      <img
+                        key={activeFac.id || activeFacilityIdx}
+                        src={mainImage}
+                        alt={activeFac.name}
+                        className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-105 animate-in fade-in"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/20 to-transparent opacity-85 lg:opacity-70 pointer-events-none" />
+
+                      {/* Top-Left Category Badge */}
+                      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-emerald-400/30 shadow-lg">
+                        <FacilityIcon className="w-4 h-4 text-emerald-300" />
+                        <span>Barangay Public Facility</span>
+                      </div>
+
+                      {/* Top-Right Photos Count Badge */}
+                      {photoCount > 0 && (
+                        <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-black/60 backdrop-blur-md border border-white/20 shadow-lg">
+                          <ImageIcon className="w-3.5 h-3.5 text-cyan-300" />
+                          <span>{photoCount} {photoCount === 1 ? "Photo" : "Photos"}</span>
+                        </div>
+                      )}
+
+                      {/* Bottom Image Seal */}
+                      <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between text-white text-xs font-bold">
+                        <span className="inline-flex items-center gap-1.5 text-emerald-200 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15">
+                          <Shield className="w-4 h-4 text-amber-300" />
+                          Barangay {tenantConfig.shortName || "Iba O' Este"}
+                        </span>
+                        <span className="bg-emerald-500 text-white px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-emerald-300/40 shadow-sm flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                          <span>Public Service</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Right: Detailed Content — Deep Dark Green Executive Theme (6 Cols on lg) */}
+                    <div className="lg:col-span-6 p-6 sm:p-8 lg:p-9 flex flex-col justify-between h-full bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white relative overflow-hidden border-t lg:border-t-0 lg:border-l border-emerald-800/40 space-y-6">
+                      {/* Ambient Emerald Radial Light */}
+                      <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+
+                      <div className="space-y-4 relative z-10">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-mono font-black uppercase tracking-widest text-emerald-300 bg-emerald-950/70 px-3 py-1 rounded-full border border-emerald-400/30 shadow-xs">
+                            Facility {String(activeFacilityIdx + 1).padStart(2, "0")} of {String(facilities.length).padStart(2, "0")}
+                          </span>
+                          <span className="text-[11px] text-emerald-200/80 font-bold uppercase tracking-wider hidden sm:inline">
+                            Public Infrastructure
+                          </span>
+                        </div>
+
+                        <h3 className="text-white text-xl sm:text-2xl font-black leading-tight uppercase tracking-tight drop-shadow-sm line-clamp-2">
+                          {activeFac.name}
+                        </h3>
+
+                        <p className="text-emerald-100/90 text-xs sm:text-sm md:text-base leading-relaxed font-normal line-clamp-3 sm:line-clamp-4">
+                          {activeFac.description ||
+                            "Modern public facility maintained and operated by the Barangay Government for events, public wellness, and constituent service delivery."}
+                        </p>
+
+                        {/* Official Facility Scope Matrix */}
+                        <div className="grid grid-cols-2 gap-2.5 pt-2 text-[11px]">
+                          <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 border border-white/10 space-y-0.5">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 block">
+                              Jurisdiction
+                            </span>
+                            <span className="font-bold text-white block truncate">
+                              Barangay {tenantConfig.shortName || "Iba O' Este"}
+                            </span>
+                          </div>
+                          <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 border border-white/10 space-y-0.5">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 block">
+                              Access &amp; Usage
+                            </span>
+                            <span className="font-bold text-white block truncate">
+                              Constituent Use / Public
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="pt-4 border-t border-emerald-800/60 relative z-10">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFacility(activeFac)}
+                          className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-emerald-950/60 hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-98"
+                        >
+                          <span>{photoCount > 1 ? "View Photo Gallery & Details" : "View Facility Details"}</span>
+                          <ArrowRight className="w-4 h-4 text-emerald-100" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom: Interactive Thumbnails Selector */}
+                  {facilities.length > 1 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-gray-600 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                          <span>Select a Facility to View</span>
+                        </h4>
+                        <span className="text-[11px] text-gray-500 font-bold">
+                          {facilities.length} Public Facilities
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {facilities.map((fac, idx) => {
+                          const isActive = activeFacilityIdx === idx;
+                          const FacIcon = fac.icon || Building2;
+                          const thumbImg = fac.images?.[0] || "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&q=80&w=400";
+
+                          return (
+                            <button
+                              key={fac.id || idx}
+                              type="button"
+                              onClick={() => setActiveFacilityIdx(idx)}
+                              className={`group text-left p-2.5 rounded-2xl transition-all duration-200 flex flex-col justify-between border cursor-pointer ${
+                                isActive
+                                  ? "bg-emerald-50/90 border-[#064e3b] ring-2 ring-[#064e3b]/30 shadow-md scale-102"
+                                  : "bg-white/90 hover:bg-white border-gray-200 hover:border-emerald-300 shadow-2xs hover:shadow-xs"
+                              }`}
+                            >
+                              <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-slate-100 mb-2">
+                                <img
+                                  src={thumbImg}
+                                  alt={fac.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                />
+                                {isActive && (
+                                  <div className="absolute inset-0 bg-[#064e3b]/40 backdrop-blur-[1px] flex items-center justify-center">
+                                    <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm animate-pulse border-2 border-white" />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-800 truncate">
+                                  <FacIcon className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                                  <span className="truncate">Public Facility</span>
+                                </div>
+                                <h5
+                                  className={`text-[11px] font-bold line-clamp-2 leading-tight transition-colors ${
+                                    isActive ? "text-[#064e3b] font-black" : "text-gray-800 group-hover:text-gray-950"
+                                  }`}
+                                >
+                                  {fac.name}
+                                </h5>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </section>
       )}
