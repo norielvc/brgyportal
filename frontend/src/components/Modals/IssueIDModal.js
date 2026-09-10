@@ -134,11 +134,22 @@ export default function IssueIDModal({
     onClose();
   };
 
-  if (!isOpen) return null;
+  // Generate dynamic preview ID number for selected resident
+  const generatePreviewNumber = (res) => {
+    if (!res) return "H00001-F00001";
+    if (res.id_number) return res.id_number;
+    let hash = 0;
+    const str = String(res.id || res.last_name || "");
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) % 99999;
+    }
+    const num = (Math.abs(hash) % 90000) + 10000;
+    return `H${String(num).padStart(5, "0")}-F00001`;
+  };
 
   // Build live preview data
   const previewIDData = {
-    id_number: selectedResident?.id_number || "H00001-F00001",
+    id_number: generatePreviewNumber(selectedResident),
     first_name: selectedResident?.first_name || "ALEXANDER",
     middle_name: selectedResident?.middle_name || "C.",
     last_name: selectedResident?.last_name || "MANIO",

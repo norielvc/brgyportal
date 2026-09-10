@@ -97,6 +97,7 @@ export default async function handler(req, res) {
           revoked: revokedCount,
           expiringSoon: expiringSoonCount,
         },
+        next_ec_number: `H${String((allStats ? allStats.length : 0) + 1).padStart(5, "0")}-F00001`,
       });
     } catch (error) {
       console.error("GET /api/barangay-id error:", error);
@@ -149,17 +150,28 @@ export default async function handler(req, res) {
         });
       }
 
-      // 2. Generate Unique Barangay ID Number (e.g. BID-IBA-2026-0001)
-      const currentYear = new Date().getFullYear();
-      const tenantPrefix = (tenantId || "BRGY").substring(0, 4).toUpperCase();
-      
+      // 2. Generate Guaranteed Unique EC Card Number (Format: H00001-F00001)
       const { count: existingCount } = await supabase
         .from("barangay_ids")
         .select("*", { count: "exact", head: true })
         .eq("tenant_id", tenantId);
 
-      const sequence = String((existingCount || 0) + 1).padStart(4, "0");
-      const idNumber = `BID-${tenantPrefix}-${currentYear}-${sequence}`;
+      let counter = (existingCount || 0) + 1;
+      let idNumber = `H${String(counter).padStart(5, "0")}-F00001`;
+
+      // Collision loop check
+      while (true) {
+        idNumber = `H${String(counter).padStart(5, "0")}-F00001`;
+        const { data: duplicate } = await supabase
+          .from("barangay_ids")
+          .select("id")
+          .eq("tenant_id", tenantId)
+          .eq("id_number", idNumber)
+          .maybeSingle();
+
+        if (!duplicate) break;
+        counter++;
+      }
 
       // 3. Compute Dates
       const startIssueDate = issue_date ? new Date(issue_date) : new Date();
