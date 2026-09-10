@@ -341,17 +341,17 @@ export default function Sidebar({
 
   const renderNav = (showClose) => (
     <div className="flex flex-col h-full bg-[#03254c] pt-[calc(env(safe-area-inset-top,0px))] pb-[calc(env(safe-area-inset-bottom,0px))]">
-      {/* Logo */}
-      <div className="flex items-center justify-between px-6 py-6 sm:py-8 border-b border-white/10">
+      {/* Logo Header */}
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10">
         <div className="flex items-center">
-          <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center mr-4 border border-white/20">
-            <LayoutDashboard className="w-6 h-6 text-white" />
+          <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center mr-3 border border-white/20">
+            <LayoutDashboard className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-black text-white leading-tight tracking-tight">
+            <h1 className="text-xs font-black text-white leading-tight tracking-tight">
               BrgyDesk
             </h1>
-            <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-[0.2em]">
+            <p className="text-[9px] font-bold text-blue-300/80 uppercase tracking-[0.18em]">
               Management Portal
             </p>
           </div>
@@ -360,21 +360,21 @@ export default function Sidebar({
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(false)}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>
 
-      {/* Navigation */}
+      {/* Navigation List */}
       <nav
         ref={navRef}
         onScroll={handleScroll}
-        className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10"
+        className="flex-1 px-3 py-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10"
       >
-        <div className="mb-4">
-          <p className="px-4 text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">
+        <div className="mb-2 px-3">
+          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.25em]">
             Admin Navigator
           </p>
         </div>
@@ -385,73 +385,73 @@ export default function Sidebar({
           const isDirectActive = router.pathname === item.href;
 
           return (
-            <div key={item.name} className="space-y-1">
+            <div key={item.name} className="space-y-0.5">
               {/* Main Menu Item */}
               {hasChildren ? (
                 <button
                   type="button"
                   onClick={() => toggleExpanded(item.name)}
                   className={cn(
-                    "group flex items-center w-full px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300",
+                    "group flex items-center w-full px-3 py-2 text-xs font-bold rounded-xl transition-all duration-200",
                     isParentActive(item)
-                      ? "bg-white/10 text-white shadow-lg shadow-black/20"
-                      : "text-blue-100/60 hover:bg-white/5 hover:text-white",
+                      ? "bg-white/10 text-white shadow-sm shadow-black/20"
+                      : "text-blue-100/70 hover:bg-white/5 hover:text-white",
                   )}
                 >
                   <item.icon
                     className={cn(
-                      "w-5 h-5 mr-3 transition-all",
+                      "w-4 h-4 mr-2.5 transition-all shrink-0",
                       isParentActive(item)
-                        ? "text-blue-400 scale-110"
-                        : "text-white/20 group-hover:text-blue-300",
+                        ? "text-blue-400 scale-105"
+                        : "text-white/30 group-hover:text-blue-300",
                     )}
                   />
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="text-sm truncate">{item.name}</div>
+                    <div className="text-xs truncate">{item.name}</div>
                     <div
                       className={cn(
-                        "text-[10px] truncate transition-colors",
+                        "text-[9px] truncate transition-colors",
                         isParentActive(item)
                           ? "text-blue-300"
-                          : "text-blue-200/30 group-hover:text-blue-200/50",
+                          : "text-blue-200/40 group-hover:text-blue-200/60",
                       )}
                     >
                       {item.description}
                     </div>
                   </div>
                   {isExpanded ? (
-                    <ChevronDown className="w-4 h-4 text-white/20" />
+                    <ChevronDown className="w-3.5 h-3.5 text-white/30 shrink-0 ml-1" />
                   ) : (
-                    <ChevronRight className="w-4 h-4 text-white/20" />
+                    <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0 ml-1" />
                   )}
                 </button>
               ) : (
                 <Link
                   href={item.href}
                   className={cn(
-                    "group flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300",
+                    "group flex items-center px-3 py-2 text-xs font-bold rounded-xl transition-all duration-200",
                     isDirectActive
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-black"
-                      : "text-blue-100/60 hover:bg-white/5 hover:text-white",
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 font-black"
+                      : "text-blue-100/70 hover:bg-white/5 hover:text-white",
                   )}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <item.icon
                     className={cn(
-                      "w-5 h-5 mr-3 transition-all",
+                      "w-4 h-4 mr-2.5 transition-all shrink-0",
                       isDirectActive
-                        ? "text-white scale-110"
-                        : "text-white/20 group-hover:text-blue-300",
+                        ? "text-white scale-105"
+                        : "text-white/30 group-hover:text-blue-300",
                     )}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm truncate">{item.name}</div>
+                    <div className="text-xs truncate">{item.name}</div>
                     <div
                       className={cn(
-                        "text-[10px] truncate",
+                        "text-[9px] truncate",
                         isDirectActive
-                          ? "text-blue-100/70"
-                          : "text-blue-200/30 group-hover:text-blue-200/50",
+                          ? "text-blue-100/80"
+                          : "text-blue-200/40 group-hover:text-blue-200/60",
                       )}
                     >
                       {item.description}
@@ -462,7 +462,7 @@ export default function Sidebar({
 
               {/* Child Menu Items */}
               {hasChildren && isExpanded && (
-                <div className="pl-4 mt-1 space-y-1 animate-in slide-in-from-top-1 duration-200">
+                <div className="pl-3 mt-0.5 space-y-0.5 animate-in slide-in-from-top-1 duration-150 border-l border-white/10 ml-4">
                   {item.children
                     .filter(
                       (child) =>
@@ -470,25 +470,21 @@ export default function Sidebar({
                     )
                     .map((child) => {
                       const isChildActive = router.pathname === child.href;
-                      // Check if locked based on plan
                       const isProLocked = child.proOnly && !isProPlan;
                       const isStarterLocked = child.starterOnly && !canAccessStarterLocked;
                       const isLocked = isProLocked || isStarterLocked;
-                      
-                      // Determine which plan is required
-                      const requiredPlan = child.proOnly ? "Pro" : child.starterOnly ? "Standard or Pro" : null;
-                      
+
                       return (
                         <Link
                           key={child.name}
                           href={isLocked ? "#" : child.href}
                           className={cn(
-                            "group flex items-center px-4 py-2 text-[12px] font-bold rounded-lg transition-all",
+                            "group flex items-center px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all",
                             isLocked
                               ? "text-blue-100/20 cursor-not-allowed opacity-50"
                               : isChildActive
                               ? "bg-white/10 text-white"
-                              : "text-blue-100/40 hover:bg-white/5 hover:text-white",
+                              : "text-blue-100/50 hover:bg-white/5 hover:text-white",
                           )}
                           onClick={(e) => {
                             if (isLocked) {
@@ -503,19 +499,19 @@ export default function Sidebar({
                         >
                           <child.icon
                             className={cn(
-                              "w-4 h-4 mr-3 transition-all",
+                              "w-3.5 h-3.5 mr-2 transition-all shrink-0",
                               isLocked
                                 ? "text-white/10"
                                 : isChildActive
                                 ? "text-blue-400"
-                                : "text-white/10 group-hover:text-blue-300",
+                                : "text-white/20 group-hover:text-blue-300",
                             )}
                           />
                           <div className="flex-1 min-w-0">
                             <div className="truncate">{child.name}</div>
                           </div>
                           {isLocked && (
-                            <Lock className="w-3 h-3 text-yellow-400 ml-2" />
+                            <Lock className="w-2.5 h-2.5 text-yellow-400 ml-1.5 shrink-0" />
                           )}
                         </Link>
                       );
@@ -527,27 +523,29 @@ export default function Sidebar({
         })}
       </nav>
 
-      {/* User info and logout */}
-      <div className="p-6 border-t border-white/10 bg-black/20">
-        <div className="flex items-center mb-4 p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+      {/* User Info & Actions Footer */}
+      <div className="p-3 border-t border-white/10 bg-black/25 space-y-1.5">
+        {/* User Card */}
+        <div className="flex items-center p-2 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-              <span className="text-sm font-black text-white">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+              <span className="text-xs font-black text-white">
                 {user?.firstName?.charAt(0) || "U"}
               </span>
             </div>
           </div>
-          <div className="ml-3 flex-1 min-w-0">
-            <p className="text-sm font-black text-white truncate">
+          <div className="ml-2.5 flex-1 min-w-0">
+            <p className="text-xs font-black text-white truncate leading-tight">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-[10px] font-bold text-blue-300/60 uppercase flex items-center tracking-wider">
-              <Shield className="w-3 h-3 mr-1" />
+            <p className="text-[9px] font-bold text-blue-300/70 uppercase flex items-center tracking-wider mt-0.5">
+              <Shield className="w-2.5 h-2.5 mr-1 text-blue-400" />
               {user?.role}
             </p>
           </div>
         </div>
 
+        {/* Install Mobile App */}
         {onOpenInstall && !isInstalled && (
           <button
             type="button"
@@ -555,34 +553,36 @@ export default function Sidebar({
               setIsMobileMenuOpen(false);
               onOpenInstall();
             }}
-            className="flex items-center w-full px-4 py-2.5 mb-2 text-xs font-black text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-xl transition-all duration-300 group"
+            className="flex items-center w-full px-2.5 py-1.5 text-[11px] font-black text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg transition-all duration-200 group"
           >
-            <Smartphone className="w-4 h-4 mr-2.5 text-cyan-400 group-hover:scale-110 transition-transform" />
-            <div className="flex-1 text-left">
-              <span className="block">Install Mobile App</span>
-              <span className="text-[9px] text-blue-200/60 font-semibold block">iOS / Android PWA</span>
+            <Smartphone className="w-3.5 h-3.5 mr-2 text-cyan-400 group-hover:scale-110 transition-transform shrink-0" />
+            <div className="flex-1 text-left min-w-0 leading-tight">
+              <span className="block truncate">Install Mobile App</span>
+              <span className="text-[8px] text-blue-200/60 font-medium block">iOS / Android PWA</span>
             </div>
           </button>
         )}
 
+        {/* Super Admin Panel */}
         {role && ["superadmin", "super_admin"].includes(role) && (
           <button
             type="button"
             onClick={() => router.push("/superadmin")}
-            className="flex items-center w-full px-4 py-3 mb-1 text-sm font-bold text-amber-400/80 rounded-xl hover:bg-amber-500/10 hover:text-amber-400 transition-all duration-300 group"
+            className="flex items-center w-full px-2.5 py-1.5 text-[11px] font-bold text-amber-400/90 rounded-lg hover:bg-amber-500/15 hover:text-amber-300 transition-all duration-200 group"
           >
-            <ShieldAlert className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
-            Super Admin Panel
+            <ShieldAlert className="w-3.5 h-3.5 mr-2 group-hover:scale-110 transition-transform shrink-0" />
+            <span className="truncate">Super Admin Panel</span>
           </button>
         )}
 
+        {/* Sign Out */}
         <button
           type="button"
           onClick={handleLogout}
-          className="flex items-center w-full px-4 py-3 text-sm font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 group"
+          className="flex items-center w-full px-2.5 py-1.5 text-[11px] font-bold text-red-400/90 rounded-lg hover:bg-red-500/15 hover:text-red-300 transition-all duration-200 group"
         >
-          <LogOut className="w-5 h-5 mr-3 group-hover:translate-x-1 transition-transform" />
-          Sign Out Portal
+          <LogOut className="w-3.5 h-3.5 mr-2 group-hover:translate-x-0.5 transition-transform shrink-0" />
+          <span className="truncate">Sign Out Portal</span>
         </button>
       </div>
     </div>
