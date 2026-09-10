@@ -1,15 +1,29 @@
 import { AlertTriangle, X, Trash2, ShieldAlert } from 'lucide-react';
 import useScrollLock from '@/lib/useScrollLock';
 
-export default function DeleteConfirmModal({ title, message, onConfirm, onCancel, isLoading }) {
-  useScrollLock(true);
+export default function DeleteConfirmModal({
+  isOpen = true,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  onClose,
+  isLoading,
+  isDeleting,
+}) {
+  const handleCancel = onCancel || onClose;
+  const loadingState = isLoading || isDeleting;
+
+  useScrollLock(isOpen);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
-          onClick={onCancel}
+          onClick={handleCancel}
           onTouchMove={(e) => e.preventDefault()}
         />
 
@@ -38,18 +52,18 @@ export default function DeleteConfirmModal({ title, message, onConfirm, onCancel
             <div className="space-y-3">
               <button
                 onClick={onConfirm}
-                disabled={isLoading}
+                disabled={loadingState}
                 className="w-full px-6 sm:px-8 py-3.5 sm:py-5 bg-rose-600 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-rose-200 hover:bg-rose-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
               >
-                {isLoading ? (
+                {loadingState ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   'Execute Deletion'
                 )}
               </button>
               <button
-                onClick={onCancel}
-                disabled={isLoading}
+                onClick={handleCancel}
+                disabled={loadingState}
                 className="w-full px-6 sm:px-8 py-3.5 sm:py-5 bg-gray-50 text-gray-400 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] hover:bg-gray-100 hover:text-gray-600 transition-all active:scale-95"
               >
                 Abort Deletion

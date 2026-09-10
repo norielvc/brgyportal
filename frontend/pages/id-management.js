@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout/Layout";
 import {
@@ -15,6 +15,7 @@ import {
   Clock,
   Ban,
   Shield,
+  ShieldCheck,
   LayoutGrid,
   List,
   Sparkles,
@@ -23,6 +24,13 @@ import {
   User,
   MapPin,
   Phone,
+  QrCode,
+  FileSpreadsheet,
+  Layers,
+  Award,
+  ChevronRight,
+  Info,
+  ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import BarangayIDCard from "@/components/UI/BarangayIDCard";
@@ -31,13 +39,31 @@ import PrintIDModal from "@/components/Modals/PrintIDModal";
 import DeleteConfirmModal from "@/components/Modals/DeleteConfirmModal";
 import Pagination from "@/components/UI/Pagination";
 
+const PUROK_LIST = [
+  "All Puroks",
+  "Purok 1",
+  "Purok 2",
+  "Purok 3",
+  "Purok 4",
+  "Purok 5",
+  "Purok 6",
+  "Purok 7",
+];
+
 export default function IDManagement() {
   const router = useRouter();
   const [ids, setIds] = useState([]);
-  const [stats, setStats] = useState({ total: 0, active: 0, expired: 0, revoked: 0, expiringSoon: 0 });
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    expired: 0,
+    revoked: 0,
+    expiringSoon: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [purokFilter, setPurokFilter] = useState("All Puroks");
   const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'table'
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -70,7 +96,15 @@ export default function IDManagement() {
         const json = await res.json();
         if (json.success) {
           setIds(json.data || []);
-          setStats(json.stats || { total: 0, active: 0, expired: 0, revoked: 0, expiringSoon: 0 });
+          setStats(
+            json.stats || {
+              total: 0,
+              active: 0,
+              expired: 0,
+              revoked: 0,
+              expiringSoon: 0,
+            }
+          );
           setTotalPages(json.totalPages || 1);
           setTotalCount(json.total || 0);
         }
@@ -96,9 +130,78 @@ export default function IDManagement() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Filtered IDs by Purok (client-side refinement)
+  const filteredIDs = useMemo(() => {
+    if (purokFilter === "All Puroks") return ids;
+    return ids.filter(
+      (item) =>
+        item.purok?.toLowerCase() === purokFilter.toLowerCase() ||
+        item.address?.toLowerCase().includes(purokFilter.toLowerCase())
+    );
+  }, [ids, purokFilter]);
+
+  // Export to CSV
+  const handleExportCSV = () => {
+    if (ids.length === 0) {
+      toast.error("No ID records to export");
+      return;
+    }
+
+    const headers = [
+      "Barangay ID No",
+      "Full Legal Name",
+      "Gender",
+      "Civil Status",
+      "Date of Birth",
+      "Blood Type",
+      "Purok",
+      "Address",
+      "Contact Number",
+      "Emergency Contact",
+      "Emergency Phone",
+      "Issue Date",
+      "Expiry Date",
+      "Status",
+    ];
+
+    const rows = ids.map((c) => [
+      `"${c.id_number || ""}"`,
+      `"${c.full_name || ""}"`,
+      `"${c.gender || ""}"`,
+      `"${c.civil_status || ""}"`,
+      `"${c.birth_date || ""}"`,
+      `"${c.blood_type || ""}"`,
+      `"${c.purok || ""}"`,
+      `"${(c.address || "").replace(/"/g, '""')}"`,
+      `"${c.contact_number || ""}"`,
+      `"${c.emergency_contact_name || ""}"`,
+      `"${c.emergency_contact_number || ""}"`,
+      `"${c.issue_date || ""}"`,
+      `"${c.expiry_date || ""}"`,
+      `"${c.status || ""}"`,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `Barangay_IDs_Ledger_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Barangay ID Ledger exported successfully!");
+  };
+
   // Handle Renew
   const handleRenew = async (card) => {
-    if (!confirm(`Renew Barangay ID for ${card.full_name} for another 1 year?`)) return;
+    if (!confirm(`Renew Barangay ID for ${card.full_name} for another 1 year?`))
+      return;
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/barangay-id/${card.id}`, {
@@ -111,7 +214,7 @@ export default function IDManagement() {
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        toast.success(json.message || "ID renewed!");
+        toast.success(json.message || "ID renewed successfully!");
         fetchIDs();
       } else {
         toast.error(json.message || "Failed to renew ID");
@@ -123,7 +226,10 @@ export default function IDManagement() {
 
   // Handle Revoke
   const handleRevoke = async (card) => {
-    const reason = prompt(`Reason for revoking Barangay ID of ${card.full_name}:`, "Card lost / Resident relocated");
+    const reason = prompt(
+      `Reason for revoking Barangay ID of ${card.full_name}:`,
+      "Card lost / Resident relocated"
+    );
     if (!reason) return;
     try {
       const token = localStorage.getItem("token");
@@ -139,6 +245,8 @@ export default function IDManagement() {
       if (res.ok && json.success) {
         toast.success("Barangay ID revoked.");
         fetchIDs();
+      } else {
+        toast.error(json.message || "Failed to revoke ID");
       }
     } catch (err) {
       toast.error("Revocation failed");
@@ -171,21 +279,21 @@ export default function IDManagement() {
     const isExpired = expiry_date && new Date(expiry_date) < new Date();
     if (status === "revoked") {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-700">
-          <Ban className="w-3 h-3" /> Revoked
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
+          <Ban className="w-3 h-3 text-rose-600" /> Revoked
         </span>
       );
     }
     if (status === "expired" || isExpired) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-700">
-          <Clock className="w-3 h-3" /> Expired
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200">
+          <Clock className="w-3 h-3 text-amber-600" /> Expired
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">
-        <CheckCircle2 className="w-3 h-3" /> Active
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+        <ShieldCheck className="w-3 h-3 text-emerald-600" /> Active
       </span>
     );
   };
@@ -195,226 +303,475 @@ export default function IDManagement() {
       title="Barangay ID Management"
       subtitle="OFFICIAL CITIZEN IDENTIFICATION REGISTRY & PVC CARD ISSUANCE"
     >
-      <div className="space-y-6">
-        {/* KPI Metric Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 bg-white rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                Total IDs Issued
-              </p>
-              <h3 className="text-2xl font-black text-gray-900 mt-1">
-                {stats.total.toLocaleString()}
-              </h3>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#03254c] flex items-center justify-center font-black">
-              <CreditCard className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
+      <div className="space-y-6 max-w-7xl mx-auto">
+        {/* Official Republic Banner Header */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#021b38] via-[#03254c] to-[#0d3b66] p-6 sm:p-8 text-white shadow-xl border border-blue-900/40">
+          {/* Subtle Guilloche geometric background overlay */}
+          <div
+            className="absolute inset-0 opacity-10 pointer-events-none"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 25px 25px, white 2%, transparent 0%), radial-gradient(circle at 75px 75px, white 2%, transparent 0%)",
+              backgroundSize: "100px 100px",
+            }}
+          />
+          <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-blue-400/10 blur-3xl pointer-events-none" />
 
-          <div className="p-5 bg-white rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                Active Valid IDs
+          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-amber-300 text-[10px] sm:text-xs font-black uppercase tracking-widest">
+                <Shield className="w-3.5 h-3.5 text-amber-400" />
+                Republic of the Philippines • Official Citizen Registry
+              </div>
+              <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white uppercase">
+                Barangay Citizen Identification System
+              </h1>
+              <p className="text-xs sm:text-sm text-blue-100/80 font-medium max-w-2xl leading-relaxed">
+                Centralized biometric & credential registry. Issuing authorized,
+                high-security CR80 PVC Barangay IDs with anti-tamper QR code
+                validation exclusively for registered master census residents.
               </p>
-              <h3 className="text-2xl font-black text-emerald-600 mt-1">
-                {stats.active.toLocaleString()}
-              </h3>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-          </div>
 
-          <div className="p-5 bg-white rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                Expiring Soon (30d)
-              </p>
-              <h3 className="text-2xl font-black text-amber-600 mt-1">
-                {stats.expiringSoon.toLocaleString()}
-              </h3>
+              {/* Official Badges */}
+              <div className="flex flex-wrap items-center gap-3 pt-2 text-[11px] font-bold text-blue-200">
+                <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/10">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Master Census Verified
+                </span>
+                <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/10">
+                  <QrCode className="w-3.5 h-3.5 text-cyan-300" /> 2D Dynamic QR Verification
+                </span>
+                <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/10">
+                  <CreditCard className="w-3.5 h-3.5 text-amber-300" /> CR80 Dual-Sided PVC Print
+                </span>
+              </div>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">
-              <Clock className="w-6 h-6" />
-            </div>
-          </div>
 
-          <div className="p-5 bg-white rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                Revoked / Lost
-              </p>
-              <h3 className="text-2xl font-black text-red-600 mt-1">
-                {stats.revoked.toLocaleString()}
-              </h3>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center font-black">
-              <Ban className="w-6 h-6" />
+            {/* Quick Master Actions */}
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full lg:w-auto">
+              <button
+                onClick={handleExportCSV}
+                className="flex-1 sm:flex-none px-4 py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-black rounded-2xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-2 shadow-sm"
+                title="Export Official ID Registry Ledger (CSV)"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
+                <span>Export Ledger</span>
+              </button>
+
+              <button
+                onClick={() => router.push("/qr-scan-history")}
+                className="flex-1 sm:flex-none px-4 py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-black rounded-2xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-2 shadow-sm"
+                title="Scan and Verify Barangay ID QR"
+              >
+                <QrCode className="w-4 h-4 text-cyan-300" />
+                <span>Scan QR</span>
+              </button>
+
+              <button
+                onClick={() => setShowIssueModal(true)}
+                className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs sm:text-sm font-black rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4 text-slate-950 stroke-[3]" />
+                <span>+ Issue Barangay ID</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Action Controls Bar */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        {/* Executive Stat KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          {/* Total Issued */}
+          <div
+            onClick={() => setStatusFilter("all")}
+            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
+              statusFilter === "all"
+                ? "border-[#03254c] ring-2 ring-[#03254c]/15"
+                : "border-gray-100 hover:border-blue-200"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">
+                Total IDs Issued
+              </span>
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#03254c] flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-black text-gray-900 mt-2">
+              {stats.total.toLocaleString()}
+            </h3>
+            <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
+              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+              Official Master Registry
+            </div>
+          </div>
+
+          {/* Active Valid */}
+          <div
+            onClick={() => setStatusFilter("active")}
+            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
+              statusFilter === "active"
+                ? "border-emerald-600 ring-2 ring-emerald-600/15"
+                : "border-gray-100 hover:border-emerald-200"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">
+                Active Valid IDs
+              </span>
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 mt-2">
+              {stats.active.toLocaleString()}
+            </h3>
+            <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              {stats.total > 0
+                ? `${Math.round((stats.active / stats.total) * 100)}% active compliance`
+                : "100% active"}
+            </div>
+          </div>
+
+          {/* Expiring Soon */}
+          <div
+            onClick={() => setStatusFilter("expired")}
+            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
+              statusFilter === "expired"
+                ? "border-amber-500 ring-2 ring-amber-500/15"
+                : "border-gray-100 hover:border-amber-200"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">
+                Expiring Soon (30D)
+              </span>
+              <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Clock className="w-5 h-5" />
+              </div>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-black text-amber-600 mt-2">
+              {stats.expiringSoon.toLocaleString()}
+            </h3>
+            <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-amber-700">
+              <AlertTriangle className="w-3 h-3 text-amber-500" />
+              Due for 1-Year Renewal
+            </div>
+          </div>
+
+          {/* Revoked / Lost */}
+          <div
+            onClick={() => setStatusFilter("revoked")}
+            className={`p-5 bg-white rounded-3xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
+              statusFilter === "revoked"
+                ? "border-rose-600 ring-2 ring-rose-600/15"
+                : "border-gray-100 hover:border-rose-200"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">
+                Revoked / Lost
+              </span>
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <Ban className="w-5 h-5" />
+              </div>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-black text-rose-600 mt-2">
+              {stats.revoked.toLocaleString()}
+            </h3>
+            <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-rose-600">
+              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+              Voided Credentials
+            </div>
+          </div>
+        </div>
+
+        {/* Action Controls & Filters Bar */}
+        <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
             {/* Search Input */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, ID number (e.g. BID-IBA), or purok..."
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-xs sm:text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#03254c] focus:bg-white transition-all"
+                placeholder="Search by Citizen Name, ID Number (BID-IBA-...), or Street..."
+                className="w-full pl-11 pr-10 py-3 bg-gray-50/80 border border-gray-200 rounded-2xl text-xs sm:text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#03254c] focus:bg-white transition-all shadow-inner"
               />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold p-1"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
-            {/* Right Controls */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {/* Purok Selector */}
+            <div className="w-full lg:w-48">
+              <select
+                value={purokFilter}
+                onChange={(e) => setPurokFilter(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-2xl text-xs sm:text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#03254c] focus:bg-white cursor-pointer"
+              >
+                {PUROK_LIST.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Right Controls (View Mode Toggle & New ID Button) */}
+            <div className="flex items-center gap-3">
               {/* View Toggle */}
               <div className="flex items-center bg-gray-100 p-1 rounded-2xl border border-gray-200 text-xs">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded-xl transition-all ${
-                    viewMode === "grid" ? "bg-white text-[#03254c] shadow-sm font-bold" : "text-gray-500 hover:text-gray-900"
+                  className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
+                    viewMode === "grid"
+                      ? "bg-white text-[#03254c] shadow-sm font-black"
+                      : "text-gray-500 hover:text-gray-900 font-bold"
                   }`}
-                  title="Card Grid View"
+                  title="Digital PVC Card Grid View"
                 >
                   <LayoutGrid className="w-4 h-4" />
+                  <span className="hidden sm:inline">Cards</span>
                 </button>
                 <button
                   onClick={() => setViewMode("table")}
-                  className={`p-1.5 rounded-xl transition-all ${
-                    viewMode === "table" ? "bg-white text-[#03254c] shadow-sm font-bold" : "text-gray-500 hover:text-gray-900"
+                  className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
+                    viewMode === "table"
+                      ? "bg-white text-[#03254c] shadow-sm font-black"
+                      : "text-gray-500 hover:text-gray-900 font-bold"
                   }`}
-                  title="Table List View"
+                  title="Official Ledger Table View"
                 >
                   <List className="w-4 h-4" />
+                  <span className="hidden sm:inline">Ledger</span>
                 </button>
               </div>
 
               {/* + Issue ID Button */}
               <button
                 onClick={() => setShowIssueModal(true)}
-                className="px-5 py-2.5 bg-gradient-to-r from-[#03254c] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white text-xs sm:text-sm font-black rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                className="px-5 py-3 bg-[#03254c] hover:bg-[#021b37] text-white text-xs sm:text-sm font-black rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 flex-shrink-0"
               >
-                <Plus className="w-4 h-4" />
-                <span>Issue Barangay ID</span>
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span className="hidden sm:inline">Issue ID</span>
               </button>
             </div>
           </div>
 
-          {/* Status Filter Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {[
-              { id: "all", label: "All IDs" },
-              { id: "active", label: "Active" },
-              { id: "expired", label: "Expired" },
-              { id: "revoked", label: "Revoked" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={`px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  statusFilter === tab.id
-                    ? "bg-[#03254c] text-white shadow-sm"
-                    : "bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200/60"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          {/* Filter Status Tabs */}
+          <div className="flex items-center justify-between border-t border-gray-100 pt-3 flex-wrap gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {[
+                { id: "all", label: "All ID Records", count: stats.total },
+                { id: "active", label: "Active Valid", count: stats.active },
+                { id: "expired", label: "Expired", count: stats.expired },
+                { id: "revoked", label: "Revoked / Lost", count: stats.revoked },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-2 ${
+                    statusFilter === tab.id
+                      ? "bg-[#03254c] text-white shadow-sm"
+                      : "bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200/70"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-md text-[10px] ${
+                      statusFilter === tab.id
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <span className="text-[11px] font-bold text-gray-400">
+              Showing {filteredIDs.length} of {totalCount} records
+            </span>
           </div>
         </div>
 
-        {/* Content Area */}
+        {/* Main Content Area */}
         {isLoading ? (
-          <div className="p-16 text-center bg-white rounded-3xl border border-gray-100">
-            <div className="animate-spin w-8 h-8 border-3 border-gray-200 border-t-[#03254c] rounded-full mx-auto mb-3" />
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Loading Barangay ID records...
+          <div className="p-20 text-center bg-white rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <div className="animate-spin w-10 h-10 border-4 border-gray-200 border-t-[#03254c] rounded-full mx-auto" />
+            <p className="text-xs font-black text-gray-600 uppercase tracking-widest">
+              Connecting to Barangay ID Master Ledger...
             </p>
           </div>
-        ) : ids.length === 0 ? (
-          <div className="p-16 text-center bg-white rounded-3xl border border-gray-100">
-            <CreditCard className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-            <h4 className="text-base font-black text-gray-800">No Barangay IDs Found</h4>
-            <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto leading-relaxed">
-              {search
-                ? `No IDs match "${search}". Try searching with a different name or number.`
-                : "No Barangay IDs have been issued yet. Click 'Issue Barangay ID' to create official ID cards for registered residents."}
-            </p>
-            <button
-              onClick={() => setShowIssueModal(true)}
-              className="mt-5 px-5 py-2.5 bg-[#03254c] text-white text-xs font-black rounded-xl hover:bg-blue-900 transition-all shadow"
-            >
-              + Issue First Barangay ID
-            </button>
+        ) : filteredIDs.length === 0 ? (
+          /* Government Standard Empty State with Issuance Steps */
+          <div className="bg-white rounded-3xl border border-gray-200/80 shadow-sm p-8 sm:p-14 text-center overflow-hidden relative">
+            <div className="max-w-xl mx-auto space-y-5">
+              <div className="w-20 h-20 rounded-3xl bg-blue-50 text-[#03254c] flex items-center justify-center mx-auto shadow-inner border border-blue-100">
+                <CreditCard className="w-10 h-10 text-blue-700" />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tight">
+                  {search
+                    ? "No Matching Barangay IDs Found"
+                    : "Barangay ID Issuance Station Ready"}
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
+                  {search
+                    ? `No ID card records match "${search}". Try searching with another name or ID number.`
+                    : "No Barangay IDs have been issued yet. The system is calibrated and connected to the Master Census to issue official citizen ID cards."}
+                </p>
+              </div>
+
+              {/* 3-Step Guided Workflow */}
+              {!search && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 text-left">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-gray-100 space-y-1">
+                    <span className="text-[10px] font-black text-[#03254c] bg-blue-100/70 px-2 py-0.5 rounded uppercase">
+                      Step 1
+                    </span>
+                    <h5 className="text-xs font-black text-gray-900 mt-1">
+                      Census Verification
+                    </h5>
+                    <p className="text-[11px] text-gray-500 leading-tight">
+                      Search and verify resident from the official census records.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-gray-100 space-y-1">
+                    <span className="text-[10px] font-black text-[#03254c] bg-blue-100/70 px-2 py-0.5 rounded uppercase">
+                      Step 2
+                    </span>
+                    <h5 className="text-xs font-black text-gray-900 mt-1">
+                      Biometrics & Photo
+                    </h5>
+                    <p className="text-[11px] text-gray-500 leading-tight">
+                      Capture 2x2 official portrait photo and digital signature.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-gray-100 space-y-1">
+                    <span className="text-[10px] font-black text-[#03254c] bg-blue-100/70 px-2 py-0.5 rounded uppercase">
+                      Step 3
+                    </span>
+                    <h5 className="text-xs font-black text-gray-900 mt-1">
+                      Print PVC Card
+                    </h5>
+                    <p className="text-[11px] text-gray-500 leading-tight">
+                      Generate dual-sided CR80 PVC card with anti-tamper QR code.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4">
+                <button
+                  onClick={() => setShowIssueModal(true)}
+                  className="px-8 py-3.5 bg-gradient-to-r from-[#03254c] via-[#043b7a] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white text-xs sm:text-sm font-black rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all inline-flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                  <span>Issue New Barangay ID</span>
+                </button>
+              </div>
+            </div>
           </div>
         ) : viewMode === "grid" ? (
-          /* GRID VIEW */
+          /* GRID VIEW: Official Visual Cards */
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {ids.map((card) => (
+            {filteredIDs.map((card) => (
               <div
                 key={card.id}
-                className="bg-white rounded-3xl border border-gray-200/80 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group"
+                className="bg-white rounded-3xl border border-gray-200/90 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between group"
               >
                 {/* ID Card Front Mini Preview */}
-                <div className="p-4 bg-slate-50 border-b border-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="p-4 bg-slate-100/70 border-b border-gray-200/80 flex items-center justify-center overflow-hidden relative">
                   <BarangayIDCard
                     idData={card}
                     side="front"
                     scale={0.88}
                   />
+                  <div className="absolute top-3 right-3">
+                    {getStatusBadge(card.status, card.expiry_date)}
+                  </div>
                 </div>
 
-                {/* Card Meta & Actions */}
-                <div className="p-4 sm:p-5 space-y-3 flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-xs font-mono font-bold text-[#03254c] bg-blue-50 px-2 py-0.5 rounded-md">
+                {/* Card Meta Dossier */}
+                <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold text-[#03254c] bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
                         {card.id_number}
                       </span>
-                      {getStatusBadge(card.status, card.expiry_date)}
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        {card.gender || "RESIDENT"}
+                      </span>
                     </div>
-                    <h4 className="text-sm font-black text-gray-900 uppercase truncate">
+
+                    <h4 className="text-base font-black text-gray-900 uppercase truncate pt-1">
                       {card.full_name}
                     </h4>
-                    <p className="text-xs text-gray-500 truncate flex items-center gap-1 mt-0.5">
+
+                    <p className="text-xs text-gray-600 truncate flex items-center gap-1.5 font-semibold">
                       <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                      {card.purok || card.address}
+                      {card.purok ? `${card.purok}, ` : ""}
+                      {card.address}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 text-[11px] text-gray-600">
+                  {/* Details Matrix */}
+                  <div className="grid grid-cols-3 gap-2 py-2.5 px-3 bg-slate-50 rounded-2xl border border-gray-100 text-[11px]">
                     <div>
-                      <span className="text-gray-400 font-bold block text-[10px] uppercase">Issued</span>
-                      <span className="font-semibold">{card.issue_date}</span>
+                      <span className="text-gray-400 font-bold block text-[9px] uppercase">
+                        Blood Type
+                      </span>
+                      <span className="font-black text-rose-600">
+                        {card.blood_type || "N/A"}
+                      </span>
                     </div>
                     <div>
-                      <span className="text-gray-400 font-bold block text-[10px] uppercase">Valid Until</span>
-                      <span className="font-semibold">{card.expiry_date}</span>
+                      <span className="text-gray-400 font-bold block text-[9px] uppercase">
+                        Issued
+                      </span>
+                      <span className="font-bold text-gray-700 truncate block">
+                        {card.issue_date}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 font-bold block text-[9px] uppercase">
+                        Expires
+                      </span>
+                      <span className="font-bold text-emerald-700 truncate block">
+                        {card.expiry_date}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* Actions Toolbar */}
                   <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                     <button
                       onClick={() => {
                         setSelectedCard(card);
                         setShowPrintModal(true);
                       }}
-                      className="flex-1 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-[#03254c] text-xs font-black rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2.5 px-3 bg-[#03254c] hover:bg-[#021b37] text-white text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"
                     >
-                      <Printer className="w-3.5 h-3.5 text-blue-600" />
-                      Print Card
+                      <Printer className="w-3.5 h-3.5 text-blue-200" />
+                      <span>Print PVC Card</span>
                     </button>
 
                     {card.status === "active" ? (
                       <button
                         onClick={() => handleRenew(card)}
-                        className="p-2 hover:bg-gray-100 text-gray-600 hover:text-emerald-700 rounded-xl transition-colors"
+                        className="p-2.5 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 rounded-xl transition-colors border border-gray-200/60"
                         title="Renew ID (Extend 1 Year)"
                       >
                         <RefreshCw className="w-4 h-4" />
@@ -424,7 +781,7 @@ export default function IDManagement() {
                     {card.status === "active" ? (
                       <button
                         onClick={() => handleRevoke(card)}
-                        className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-xl transition-colors"
+                        className="p-2.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-xl transition-colors border border-gray-200/60"
                         title="Revoke / Report Lost"
                       >
                         <Ban className="w-4 h-4" />
@@ -433,7 +790,7 @@ export default function IDManagement() {
 
                     <button
                       onClick={() => setIdToDelete(card)}
-                      className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-xl transition-colors"
+                      className="p-2.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-xl transition-colors border border-gray-200/60"
                       title="Delete Record"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -444,66 +801,84 @@ export default function IDManagement() {
             ))}
           </div>
         ) : (
-          /* TABLE VIEW */
-          <div className="bg-white rounded-3xl border border-gray-200/80 shadow-sm overflow-hidden">
+          /* TABLE VIEW: Official Government Ledger */
+          <div className="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50/80 border-b border-gray-200 text-gray-500 uppercase tracking-wider font-black">
+                <thead className="bg-[#03254c] text-white uppercase tracking-wider font-black text-[10px]">
                   <tr>
-                    <th className="py-3.5 px-4">Barangay ID No</th>
-                    <th className="py-3.5 px-4">Resident Name</th>
-                    <th className="py-3.5 px-4">Purok / Address</th>
-                    <th className="py-3.5 px-4">Blood Type</th>
-                    <th className="py-3.5 px-4">Valid Until</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
+                    <th className="py-4 px-4">Barangay ID No</th>
+                    <th className="py-4 px-4">Citizen Legal Name</th>
+                    <th className="py-4 px-4">Purok / Address</th>
+                    <th className="py-4 px-4">Blood</th>
+                    <th className="py-4 px-4">Date Issued</th>
+                    <th className="py-4 px-4">Valid Until</th>
+                    <th className="py-4 px-4">Status</th>
+                    <th className="py-4 px-4 text-right">Ledger Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {ids.map((card) => (
-                    <tr key={card.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-[#03254c]">
-                        {card.id_number}
+                  {filteredIDs.map((card) => (
+                    <tr
+                      key={card.id}
+                      className="hover:bg-blue-50/40 transition-colors"
+                    >
+                      <td className="py-4 px-4">
+                        <span className="font-mono font-bold text-[#03254c] bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                          {card.id_number}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 font-black text-gray-900 uppercase">
-                        {card.full_name}
+                      <td className="py-4 px-4">
+                        <div className="font-black text-gray-900 uppercase">
+                          {card.full_name}
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-semibold">
+                          {card.gender || "RESIDENT"} • DOB: {card.birth_date || "N/A"}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 text-gray-600 truncate max-w-xs">
-                        {card.purok || card.address}
+                      <td className="py-4 px-4 text-gray-700 font-medium max-w-xs truncate">
+                        <span className="font-bold text-[#03254c]">
+                          {card.purok ? `${card.purok}, ` : ""}
+                        </span>
+                        {card.address}
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-red-600">
+                      <td className="py-4 px-4 font-black text-rose-600">
                         {card.blood_type || "N/A"}
                       </td>
-                      <td className="py-3.5 px-4 text-gray-700 font-semibold">
+                      <td className="py-4 px-4 text-gray-600 font-semibold">
+                        {card.issue_date}
+                      </td>
+                      <td className="py-4 px-4 text-gray-800 font-bold">
                         {card.expiry_date}
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-4 px-4">
                         {getStatusBadge(card.status, card.expiry_date)}
                       </td>
-                      <td className="py-3.5 px-4 text-right space-x-1">
+                      <td className="py-4 px-4 text-right space-x-1.5">
                         <button
                           onClick={() => {
                             setSelectedCard(card);
                             setShowPrintModal(true);
                           }}
-                          className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
-                          title="Print ID"
+                          className="p-2 bg-blue-50 hover:bg-blue-100 text-[#03254c] rounded-xl transition-colors inline-flex items-center gap-1 font-black"
+                          title="Print PVC Card"
                         >
-                          <Printer className="w-4 h-4" />
+                          <Printer className="w-3.5 h-3.5 text-blue-700" />
+                          <span className="text-[11px]">Print</span>
                         </button>
                         <button
                           onClick={() => handleRenew(card)}
-                          className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
+                          className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-xl transition-colors"
                           title="Renew ID"
                         >
-                          <RefreshCw className="w-4 h-4" />
+                          <RefreshCw className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setIdToDelete(card)}
-                          className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors"
-                          title="Delete"
+                          className="p-2 hover:bg-rose-50 text-rose-500 rounded-xl transition-colors"
+                          title="Delete Record"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
@@ -516,7 +891,7 @@ export default function IDManagement() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center pt-2">
+          <div className="flex justify-center pt-4">
             <Pagination
               currentPage={page}
               totalPages={totalPages}
@@ -544,14 +919,17 @@ export default function IDManagement() {
       />
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={Boolean(idToDelete)}
-        onClose={() => setIdToDelete(null)}
-        onConfirm={confirmDelete}
-        title="Delete Barangay ID Record"
-        message={`Are you sure you want to delete the Barangay ID record for ${idToDelete?.full_name}? This action cannot be undone.`}
-        isDeleting={isDeleting}
-      />
+      {idToDelete && (
+        <DeleteConfirmModal
+          isOpen={Boolean(idToDelete)}
+          onClose={() => setIdToDelete(null)}
+          onCancel={() => setIdToDelete(null)}
+          onConfirm={confirmDelete}
+          title="Delete Barangay ID Record"
+          message={`Are you sure you want to delete the Barangay ID record for ${idToDelete?.full_name}? This action cannot be undone.`}
+          isLoading={isDeleting}
+        />
+      )}
     </Layout>
   );
 }
