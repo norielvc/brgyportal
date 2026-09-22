@@ -118,11 +118,35 @@ export default function InstallAppModal({
                 </div>
               </div>
             </div>
-          ) : (
+          ) : isInstallable ? (
             <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
               <p className="text-xs text-gray-600 leading-relaxed">
                 Clicking <strong className="text-[#03254c]">"Install App Now"</strong> will add BrgyDesk directly to your Android app drawer or Desktop apps with full-screen native mobile features.
               </p>
+            </div>
+          ) : (
+            <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 space-y-3">
+              <p className="text-xs font-black uppercase tracking-wider text-blue-800 flex items-center gap-1.5">
+                <span>📱 Android / Chrome Installation:</span>
+              </p>
+              <div className="space-y-2.5 text-xs text-blue-700">
+                <div className="flex items-start gap-3">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">
+                    1
+                  </span>
+                  <div>
+                    Tap the <strong>3-dot menu</strong> <span className="inline-block tracking-tighter font-bold">⋮</span> at the top right of your browser.
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">
+                    2
+                  </span>
+                  <div>
+                    Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -135,13 +159,23 @@ export default function InstallAppModal({
               Maybe Later
             </button>
             {!isIOS ? (
-              <button
-                onClick={onInstallClick}
-                className="flex-1 px-5 py-3 bg-gradient-to-r from-[#03254c] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white font-black text-sm rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Install App Now
-              </button>
+              isInstallable ? (
+                <button
+                  onClick={onInstallClick}
+                  className="flex-1 px-5 py-3 bg-gradient-to-r from-[#03254c] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white font-black text-sm rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Install App Now
+                </button>
+              ) : (
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Got It!
+                </button>
+              )
             ) : (
               <button
                 onClick={onClose}
