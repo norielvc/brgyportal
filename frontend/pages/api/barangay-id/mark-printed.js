@@ -1,4 +1,4 @@
-import { authenticateToken } from "../../../../src/lib/api-auth";
+import { authenticateToken } from "../../../src/lib/api-auth";
 import { createClient } from "@supabase/supabase-js";
 
 function getSupabase() {
