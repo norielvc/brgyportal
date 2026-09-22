@@ -851,115 +851,123 @@ export default function IDManagement() {
           </div>
         ) : (
           /* TABLE VIEW: Official Government Ledger */
-          <div className="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#03254c] text-white uppercase tracking-wider font-black text-[10px]">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50/80 text-slate-500 uppercase tracking-widest font-black text-[10px] border-b border-slate-200">
                   <tr>
-                    <th className="py-4 px-4">Barangay ID No</th>
-                    <th className="py-4 px-4">Citizen Legal Name</th>
-                    <th className="py-4 px-4">Purok / Address</th>
-                    <th className="py-4 px-4">Date Issued</th>
-                    <th className="py-4 px-4">Valid Until</th>
-                    <th className="py-4 px-4">Status</th>
-                    <th className="py-4 px-4 text-right">Ledger Actions</th>
+                    <th className="py-4 px-5 whitespace-nowrap">EC Card No.</th>
+                    <th className="py-4 px-5 whitespace-nowrap">Citizen Legal Name</th>
+                    <th className="py-4 px-5 whitespace-nowrap">Address</th>
+                    <th className="py-4 px-5 whitespace-nowrap">Issuance & Expiry</th>
+                    <th className="py-4 px-5 whitespace-nowrap">Status</th>
+                    <th className="py-4 px-5 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-slate-100/80 text-slate-700">
                   {filteredIDs.map((card) => (
                     <tr
                       key={card.id}
                       onClick={() => setViewCardModal(card)}
                       className="hover:bg-blue-50/60 transition-colors cursor-pointer group"
                     >
-                      <td className="py-4 px-4">
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="font-mono font-bold text-[#03254c] bg-blue-50 group-hover:bg-blue-100 group-hover:text-blue-900 px-2.5 py-1 rounded-md border border-blue-200/80 transition-all inline-flex items-center gap-1">
+                      <td className="py-4 px-5">
+                        <div className="flex flex-col items-start gap-1.5">
+                          <span className="font-mono font-bold text-[#03254c] bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-700 px-2.5 py-1 rounded-md transition-all inline-flex items-center gap-1.5 text-xs shadow-xs border border-slate-200 group-hover:border-blue-200">
+                            <CreditCard className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500" />
                             <span>{card.id_number}</span>
-                            <ExternalLink className="w-3 h-3 text-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
                           </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5">
+                        <div className="font-black text-slate-900 group-hover:text-[#03254c] uppercase transition-colors text-xs">
+                          {card.full_name}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
+                          {card.gender || "RESIDENT"} • DOB: {card.birth_date || card.date_of_birth || card.birthday || card.resident?.date_of_birth || "N/A"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-5 text-slate-600 font-medium max-w-xs truncate text-xs">
+                        {card.address}
+                      </td>
+                      <td className="py-4 px-5 text-xs">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-slate-600 font-semibold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> {card.issue_date}
+                          </span>
+                          <span className="text-slate-500 font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> {card.expiry_date}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5">
+                        <div className="flex flex-col gap-1.5 items-start">
+                          {getStatusBadge(card.status, card.expiry_date)}
                           {card.is_printed ? (
-                            <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer transition-colors" title="Click to mark as NOT printed">
-                               Printed
+                            <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 cursor-pointer transition-colors" title="Click to mark as NOT printed">
+                               <Printer className="w-2.5 h-2.5" /> Printed
                             </button>
                           ) : (
-                            <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gray-100 hover:bg-gray-200 text-gray-500 border border-gray-200 cursor-pointer transition-colors" title="Click to mark as PRINTED">
-                               Pending Print
+                            <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 cursor-pointer transition-colors shadow-xs" title="Click to mark as PRINTED">
+                               <Printer className="w-2.5 h-2.5" /> Pending Print
                             </button>
                           )}
                         </div>
                       </td>
-                      <td className="py-4 px-4">
-                        <div className="font-black text-gray-900 group-hover:text-[#03254c] uppercase transition-colors">
-                          {card.full_name}
-                        </div>
-                        <span className="text-[10px] text-gray-400 font-semibold">
-                          {card.gender || "RESIDENT"} • DOB: {card.birth_date || card.date_of_birth || card.birthday || card.resident?.date_of_birth || "N/A"}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-gray-700 font-medium max-w-xs truncate">
-                        {card.address}
-                      </td>
-                      <td className="py-4 px-4 text-gray-600 font-semibold">
-                        {card.issue_date}
-                      </td>
-                      <td className="py-4 px-4 text-gray-800 font-bold">
-                        {card.expiry_date}
-                      </td>
-                      <td className="py-4 px-4">
-                        {getStatusBadge(card.status, card.expiry_date)}
-                      </td>
                       <td
-                        className="py-4 px-4 text-right space-x-1.5"
+                        className="py-4 px-5 text-right whitespace-nowrap"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewCardModal(card);
-                          }}
-                          className="p-2 bg-slate-100 hover:bg-slate-200 text-gray-700 rounded-xl transition-colors inline-flex items-center gap-1 font-bold cursor-pointer"
-                          title="View Official Dossier"
-                        >
-                          <ShieldCheck className="w-3.5 h-3.5 text-[#03254c]" />
-                          <span className="text-[11px]">View</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCard(card);
-                            setShowPrintModal(true);
-                          }}
-                          className="p-2 bg-blue-50 hover:bg-blue-100 text-[#03254c] rounded-xl transition-colors inline-flex items-center gap-1 font-black cursor-pointer"
-                          title="Print PVC Card"
-                        >
-                          <Printer className="w-3.5 h-3.5 text-blue-700" />
-                          <span className="text-[11px]">Print</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRenew(card);
-                          }}
-                          className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-xl transition-colors cursor-pointer"
-                          title="Renew ID"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIdToDelete(card);
-                          }}
-                          className="p-2 hover:bg-rose-50 text-rose-500 rounded-xl transition-colors cursor-pointer"
-                          title="Delete Record"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewCardModal(card);
+                            }}
+                            className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 rounded-lg transition-all inline-flex items-center gap-1.5 font-bold cursor-pointer shadow-xs text-xs"
+                            title="View Dossier"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 text-[#03254c]" />
+                            <span>View</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCard(card);
+                              setShowPrintModal(true);
+                            }}
+                            className="px-3 py-1.5 bg-[#03254c] hover:bg-[#021b37] border border-[#03254c] text-white rounded-lg transition-all inline-flex items-center gap-1.5 font-bold cursor-pointer shadow-xs text-xs"
+                            title="Print Card"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-blue-200" />
+                            <span>Print</span>
+                          </button>
+                          <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRenew(card);
+                            }}
+                            className="p-1.5 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-md transition-colors cursor-pointer"
+                            title="Renew ID"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIdToDelete(card);
+                            }}
+                            className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-md transition-colors cursor-pointer"
+                            title="Delete Record"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
