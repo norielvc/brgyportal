@@ -77,6 +77,7 @@ export default async function handler(req, res) {
         updates.printed_at = req.body.is_printed ? new Date().toISOString() : null;
       } else {
         if (req.body.full_name !== undefined) updates.full_name = req.body.full_name;
+        if (req.body.id_number !== undefined) updates.id_number = req.body.id_number;
         if (req.body.gender !== undefined) updates.gender = req.body.gender;
         if (req.body.birth_date !== undefined) updates.birth_date = req.body.birth_date;
         if (req.body.civil_status !== undefined) updates.civil_status = req.body.civil_status;

@@ -49,6 +49,7 @@ export default function ViewBarangayIDModal({
     if (card) {
       setEditData({
         full_name: card.full_name || "",
+        id_number: card.id_number || "",
         gender: card.gender || "",
         birth_date: card.birth_date || card.date_of_birth || "",
         civil_status: card.civil_status || "",
@@ -68,6 +69,7 @@ export default function ViewBarangayIDModal({
         body: JSON.stringify({
           action: "update",
           full_name: editData.full_name,
+          id_number: editData.id_number,
           gender: editData.gender,
           birth_date: editData.birth_date,
           civil_status: editData.civil_status,
@@ -374,12 +376,16 @@ export default function ViewBarangayIDModal({
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                    Barangay ID Serial
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                    EC Card No.
                   </span>
-                  <span className="font-mono font-bold text-[#03254c]">
-                    {card.id_number}
-                  </span>
+                  {isEditing ? (
+                    <input type="text" value={editData.id_number} onChange={e => setEditData({...editData, id_number: e.target.value.toUpperCase()})} className="w-full px-2 py-1.5 border border-blue-200 rounded-lg font-mono font-bold text-sm uppercase bg-white focus:ring-2 focus:ring-blue-500 outline-none text-[#03254c]" />
+                  ) : (
+                    <span className="font-mono font-bold text-[#03254c]">
+                      {card.id_number}
+                    </span>
+                  )}
                 </div>
 
                 <div>
