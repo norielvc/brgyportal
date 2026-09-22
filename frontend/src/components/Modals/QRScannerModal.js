@@ -19,6 +19,7 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
   const [processing, setProcessing] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [error, setError] = useState(null);
+  const [scanResult, setScanResult] = useState(null);
 
   const scannerRef = useRef(null);
   const readerDivId = "id-management-qr-reader";
@@ -111,7 +112,7 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
   }, [isOpen, stopCamera]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !scanResult) {
       if (activeMode === "camera") {
         startCamera();
       }
@@ -119,7 +120,7 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
       stopCamera();
     }
     return () => stopCamera();
-  }, [isOpen, activeMode, startCamera, stopCamera]);
+  }, [isOpen, activeMode, startCamera, stopCamera, scanResult]);
 
   const handleSubmitScan = async (rawScanData) => {
     const idNumber = parseIDNumber(rawScanData);
@@ -146,16 +147,10 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
 
       if (data.success) {
         playSuccessSound();
-        toast.success(data.message || `ID ${idNumber} marked as printed.`);
+        setScanResult(data.data);
         if (onSuccess) onSuccess();
-        
-        // Wait a bit before restarting camera to prevent double scans
-        setTimeout(() => {
-          processingRef.current = false;
-          setProcessing(false);
-          setManualToken("H");
-          if (activeMode === "camera" && isOpen) startCamera();
-        }, 2000);
+        processingRef.current = false;
+        setProcessing(false);
       } else {
         playWarningSound();
         toast.error(data.message || "Failed to update record.");
@@ -176,6 +171,14 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
     e.preventDefault();
     if (!manualToken.trim()) return;
     handleSubmitScan(manualToken);
+  };
+
+  const handleScanNext = () => {
+    setScanResult(null);
+    setManualToken("H");
+    if (activeMode === "camera" && isOpen) {
+      startCamera();
+    }
   };
 
   if (!isOpen) return null;
@@ -229,12 +232,51 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
 
         {/* Content */}
         <div className="p-6 overflow-y-auto">
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-700 text-xs font-bold rounded-xl flex gap-2 items-center">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              {error}
+          {scanResult ? (
+            <div className="flex flex-col items-center justify-center text-center space-y-5 py-4">
+              <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center border-4 border-emerald-50 mb-2 shadow-sm">
+                <CheckCircle className="w-10 h-10 text-emerald-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900 mb-1">Successfully Printed!</h3>
+                <p className="text-sm text-gray-500">The ID has been recorded in the ledger.</p>
+              </div>
+              
+              <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-5 text-left shadow-inner">
+                <div className="flex items-center gap-4">
+                  {scanResult.photo_url ? (
+                    <img src={scanResult.photo_url} alt="Resident" className="w-16 h-16 rounded-xl object-cover border border-gray-200" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-gray-200 flex items-center justify-center border border-gray-300">
+                      <Camera className="w-6 h-6 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase inline-block mb-1 border border-emerald-100">
+                      ID: {scanResult.id_number}
+                    </div>
+                    <h4 className="text-sm font-black text-gray-900 truncate uppercase">{scanResult.full_name}</h4>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">{scanResult.address}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleScanNext}
+                className="w-full py-4 bg-[#03254c] hover:bg-[#021b37] text-white font-black rounded-2xl shadow-md transition-all mt-4"
+              >
+                Scan Next ID
+              </button>
             </div>
-          )}
+          ) : (
+            <>
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 text-red-700 text-xs font-bold rounded-xl flex gap-2 items-center">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
 
           {activeMode === "camera" && (
             <div className="flex flex-col items-center">
@@ -321,6 +363,8 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
                 )}
               </button>
             </form>
+          )}
+          </>
           )}
         </div>
       </div>
