@@ -76,6 +76,12 @@ export default async function handler(req, res) {
         updates.is_printed = req.body.is_printed;
         updates.printed_at = req.body.is_printed ? new Date().toISOString() : null;
       } else {
+        if (req.body.full_name !== undefined) updates.full_name = req.body.full_name;
+        if (req.body.gender !== undefined) updates.gender = req.body.gender;
+        if (req.body.birth_date !== undefined) updates.birth_date = req.body.birth_date;
+        if (req.body.civil_status !== undefined) updates.civil_status = req.body.civil_status;
+        if (req.body.address !== undefined) updates.address = req.body.address;
+        
         if (status) updates.status = status;
         if (blood_type) updates.blood_type = blood_type;
         if (emergency_contact_name) updates.emergency_contact_name = emergency_contact_name;

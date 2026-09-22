@@ -993,6 +993,10 @@ export default function IDManagement() {
           }}
           onRenew={handleRenew}
           onRevoke={handleRevoke}
+          onUpdate={(updatedCard) => {
+            setViewCardModal(updatedCard);
+            fetchIDs();
+          }}
         />
       )}
 

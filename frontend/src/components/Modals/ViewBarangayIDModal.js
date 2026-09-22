@@ -19,6 +19,8 @@ import {
   Building2,
   RefreshCw,
   ExternalLink,
+  Edit2,
+  Save,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import BarangayIDCard from "../UI/BarangayIDCard";
@@ -31,6 +33,7 @@ export default function ViewBarangayIDModal({
   onPrint,
   onRenew,
   onRevoke,
+  onUpdate,
   tenantConfig = {},
 }) {
   useScrollLock(isOpen);
@@ -38,6 +41,55 @@ export default function ViewBarangayIDModal({
   const [cardSide, setCardSide] = useState("front"); // 'front' | 'back' | 'both'
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("card"); // 'card' | 'dossier'
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editData, setEditData] = useState({});
+
+  useEffect(() => {
+    if (card) {
+      setEditData({
+        full_name: card.full_name || "",
+        gender: card.gender || "",
+        birth_date: card.birth_date || card.date_of_birth || "",
+        civil_status: card.civil_status || "",
+        address: card.address || "",
+      });
+      setIsEditing(false);
+    }
+  }, [card]);
+
+  const handleSaveEdit = async () => {
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/barangay-id/${card.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          action: "update",
+          full_name: editData.full_name,
+          gender: editData.gender,
+          birth_date: editData.birth_date,
+          civil_status: editData.civil_status,
+          address: editData.address,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        toast.success("ID details updated successfully!");
+        setIsEditing(false);
+        if (typeof onUpdate === "function") {
+          onUpdate(json.data);
+        }
+      } else {
+        toast.error(json.message || "Failed to update ID");
+      }
+    } catch (err) {
+      toast.error("An error occurred while saving.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleClose = () => {
     if (typeof onClose === "function") {
@@ -284,21 +336,41 @@ export default function ViewBarangayIDModal({
           <div className="space-y-5">
             {/* Section 1: Citizen Census Record */}
             <div className="bg-white rounded-2xl p-5 border border-gray-200/90 shadow-xs space-y-3.5">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                <User className="w-4 h-4 text-[#03254c]" />
-                <h4 className="text-xs font-black text-[#03254c] uppercase tracking-wider">
-                  Citizen Census Profile
-                </h4>
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-[#03254c]" />
+                  <h4 className="text-xs font-black text-[#03254c] uppercase tracking-wider">
+                    Citizen Census Profile
+                  </h4>
+                </div>
+                {!isEditing ? (
+                  <button type="button" onClick={() => setIsEditing(true)} className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg cursor-pointer">
+                    <Edit2 className="w-3.5 h-3.5" /> Edit Details
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setIsEditing(false)} className="text-xs font-bold text-gray-500 hover:text-gray-700 px-2 py-1 cursor-pointer transition-colors">
+                      Cancel
+                    </button>
+                    <button type="button" onClick={handleSaveEdit} disabled={isSaving} className="flex items-center gap-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-lg disabled:opacity-50 transition-colors cursor-pointer shadow-sm">
+                      {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
                     Full Legal Name
                   </span>
-                  <span className="font-black text-gray-900 text-sm uppercase">
-                    {card.full_name}
-                  </span>
+                  {isEditing ? (
+                    <input type="text" value={editData.full_name} onChange={e => setEditData({...editData, full_name: e.target.value})} className="w-full px-2 py-1.5 border border-blue-200 rounded-lg font-black text-sm uppercase bg-white focus:ring-2 focus:ring-blue-500 outline-none text-gray-900" />
+                  ) : (
+                    <span className="font-black text-gray-900 text-sm uppercase">
+                      {card.full_name}
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -311,21 +383,32 @@ export default function ViewBarangayIDModal({
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
                     Gender / Sex
                   </span>
-                  <span className="font-bold text-gray-800">
-                    {card.gender || "MALE"}
-                  </span>
+                  {isEditing ? (
+                    <select value={editData.gender} onChange={e => setEditData({...editData, gender: e.target.value})} className="w-full px-2 py-1.5 border border-blue-200 rounded-lg font-bold text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                      <option value="MALE">MALE</option>
+                      <option value="FEMALE">FEMALE</option>
+                    </select>
+                  ) : (
+                    <span className="font-bold text-gray-800">
+                      {card.gender || "MALE"}
+                    </span>
+                  )}
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
                     Date of Birth
                   </span>
-                  <span className="font-bold text-gray-800">
-                    {resolvedBirthDate || "N/A"}
-                  </span>
+                  {isEditing ? (
+                    <input type="date" value={editData.birth_date} onChange={e => setEditData({...editData, birth_date: e.target.value})} className="w-full px-2 py-1.5 border border-blue-200 rounded-lg font-bold text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                  ) : (
+                    <span className="font-bold text-gray-800">
+                      {resolvedBirthDate || "N/A"}
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -338,22 +421,35 @@ export default function ViewBarangayIDModal({
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
                     Civil Status
                   </span>
-                  <span className="font-bold text-gray-800">
-                    {card.civil_status || "SINGLE"}
-                  </span>
+                  {isEditing ? (
+                    <select value={editData.civil_status} onChange={e => setEditData({...editData, civil_status: e.target.value})} className="w-full px-2 py-1.5 border border-blue-200 rounded-lg font-bold text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                      <option value="SINGLE">SINGLE</option>
+                      <option value="MARRIED">MARRIED</option>
+                      <option value="WIDOWED">WIDOWED</option>
+                      <option value="LEGALLY SEPARATED">LEGALLY SEPARATED</option>
+                    </select>
+                  ) : (
+                    <span className="font-bold text-gray-800">
+                      {card.civil_status || "SINGLE"}
+                    </span>
+                  )}
                 </div>
 
                 <div className="sm:col-span-2 md:col-span-3">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
                     Official Residential Address
                   </span>
-                  <span className="font-bold text-gray-800 flex items-center gap-1.5 mt-0.5">
-                    <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                    {card.address || "BARANGAY IBA O' ESTE, CALUMPIT, BULACAN"}
-                  </span>
+                  {isEditing ? (
+                    <textarea value={editData.address} onChange={e => setEditData({...editData, address: e.target.value})} className="w-full px-2 py-1.5 border border-blue-200 rounded-lg font-bold text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none" rows="2" />
+                  ) : (
+                    <span className="font-bold text-gray-800 flex items-center gap-1.5 mt-0.5">
+                      <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                      {card.address || "BARANGAY IBA O' ESTE, CALUMPIT, BULACAN"}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
