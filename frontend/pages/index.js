@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import LandingPageContent from "@/components/Portal/LandingPageContent";
+import { useRouter } from "next/router";
 import PortalPageContent from "@/components/Portal/PortalPageContent";
 
 export default function Home() {
-  const [view, setView] = useState("loading"); // 'loading', 'landing', 'portal'
+  const router = useRouter();
+  const [view, setView] = useState("loading"); // 'loading', 'portal'
   const [tenantId, setTenantId] = useState(null);
 
   useEffect(() => {
@@ -22,9 +23,10 @@ export default function Home() {
       if (
         hostname === "brgydesk.up.railway.app" ||
         hostname === "localhost" ||
-        hostname === "127.0.0.1"
+        hostname === "127.0.0.1" ||
+        hostname.includes("vercel.app")
       ) {
-        setView("landing");
+        router.replace("/login");
       } else if (hostname.includes("-brgydesk.up.railway.app")) {
         // Support for ibaoeste-brgydesk.up.railway.app structure (SSL compatible)
         const tenant = hostname.split("-brgydesk")[0];
@@ -48,11 +50,11 @@ export default function Home() {
         setTenantId(tenant || "ibaoeste");
         setView("portal");
       } else {
-        // Default to landing
-        setView("landing");
+        // Default to login
+        router.replace("/login");
       }
     }
-  }, []);
+  }, [router]);
 
   if (view === "loading") {
     return (
@@ -66,5 +68,5 @@ export default function Home() {
     return <PortalPageContent initialTenantId={tenantId} />;
   }
 
-  return <LandingPageContent />;
+  return null;
 }
