@@ -4,14 +4,24 @@ import toast from "react-hot-toast";
 import Tesseract from "tesseract.js";
 
 // Simple robust parser for our ID formats
-function parseIDNumber(qrData) {
-  if (!qrData || typeof qrData !== "string") return null;
-  const trimmed = qrData.trim();
-  // Match standard format HXXXXX-FXXXXX or similar legacy IDs
-  const idMatch = trimmed.match(/^H[a-z0-9]+-(?:F)?[a-z0-9]+/i) || trimmed.match(/^(?:EM|BC|CR|CI)-[A-Za-z0-9-]+/i);
+function parseIDNumber(rawText) {
+  if (!rawText || typeof rawText !== "string") return null;
+  
+  // Try to find the pattern anywhere in the text (don't anchor to start)
+  // We also remove whitespace around hyphens just in case OCR added them
+  const normalizedText = rawText.replace(/\s+-\s+/g, '-');
+  
+  // Match standard format HXXXXX-FXXXXX or similar legacy IDs anywhere in the text
+  const idMatch = normalizedText.match(/H[a-z0-9]+-(?:F)?[a-z0-9]+/i) || normalizedText.match(/(?:EM|BC|CR|CI)-[A-Za-z0-9-]+/i);
   if (idMatch) return idMatch[0].toUpperCase();
-  // If it doesn't strictly match the prefix but looks like an ID, we just return the trimmed string
-  return trimmed.split(' ')[0].toUpperCase(); // Just grab the first token
+  
+  // If no strict pattern is found, but the input is very short (like a clean QR scan)
+  const trimmed = rawText.trim();
+  if (trimmed.length < 25 && !trimmed.includes('\n')) {
+    return trimmed.split(' ')[0].toUpperCase();
+  }
+  
+  return null;
 }
 
 export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
