@@ -220,6 +220,34 @@ export default function IDManagement() {
     }
   };
 
+  // Toggle Printed Status
+  const handleTogglePrintStatus = async (card) => {
+    const newStatus = !card.is_printed;
+    if (!confirm(`Manually mark this ID as ${newStatus ? "PRINTED" : "NOT PRINTED"}?`)) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/barangay-id/${card.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "toggle_print", is_printed: newStatus }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        toast.success(`ID marked as ${newStatus ? "Printed" : "Not Printed"}`);
+        fetchIDs();
+      } else {
+        toast.error(json.message || "Failed to update print status");
+      }
+    } catch (err) {
+      toast.error("Failed to update print status");
+    }
+  };
+
   // Handle Delete
   const confirmDelete = async () => {
     if (!idToDelete) return;
@@ -711,13 +739,13 @@ export default function IDManagement() {
                     </span>
                     <div className="flex items-center gap-1.5">
                       {card.is_printed ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200" title="Card has been printed">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer transition-colors" title="Click to mark as NOT printed">
                            Printed
-                        </span>
+                        </button>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gray-100 text-gray-500 border border-gray-200" title="Card pending printing">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gray-100 hover:bg-gray-200 text-gray-500 border border-gray-200 cursor-pointer transition-colors" title="Click to mark as PRINTED">
                            Pending Print
-                        </span>
+                        </button>
                       )}
                       {getStatusBadge(card.status, card.expiry_date)}
                     </div>
@@ -845,10 +873,21 @@ export default function IDManagement() {
                       className="hover:bg-blue-50/60 transition-colors cursor-pointer group"
                     >
                       <td className="py-4 px-4">
-                        <span className="font-mono font-bold text-[#03254c] bg-blue-50 group-hover:bg-blue-100 group-hover:text-blue-900 px-2.5 py-1 rounded-md border border-blue-200/80 transition-all inline-flex items-center gap-1">
-                          <span>{card.id_number}</span>
-                          <ExternalLink className="w-3 h-3 text-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
-                        </span>
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="font-mono font-bold text-[#03254c] bg-blue-50 group-hover:bg-blue-100 group-hover:text-blue-900 px-2.5 py-1 rounded-md border border-blue-200/80 transition-all inline-flex items-center gap-1">
+                            <span>{card.id_number}</span>
+                            <ExternalLink className="w-3 h-3 text-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+                          </span>
+                          {card.is_printed ? (
+                            <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer transition-colors" title="Click to mark as NOT printed">
+                               Printed
+                            </button>
+                          ) : (
+                            <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gray-100 hover:bg-gray-200 text-gray-500 border border-gray-200 cursor-pointer transition-colors" title="Click to mark as PRINTED">
+                               Pending Print
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-4">
                         <div className="font-black text-gray-900 group-hover:text-[#03254c] uppercase transition-colors">

@@ -72,6 +72,9 @@ export default async function handler(req, res) {
         updates.remarks = remarks || "Revoked by Barangay Administrator";
       } else if (action === "activate") {
         updates.status = "active";
+      } else if (action === "toggle_print") {
+        updates.is_printed = req.body.is_printed;
+        updates.printed_at = req.body.is_printed ? new Date().toISOString() : null;
       } else {
         if (status) updates.status = status;
         if (blood_type) updates.blood_type = blood_type;
