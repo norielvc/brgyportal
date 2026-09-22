@@ -20,6 +20,7 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
   const [cameraActive, setCameraActive] = useState(false);
   const [error, setError] = useState(null);
   const [scanResult, setScanResult] = useState(null);
+  const [scanError, setScanError] = useState(null);
 
   const scannerRef = useRef(null);
   const readerDivId = "id-management-qr-reader";
@@ -112,7 +113,7 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
   }, [isOpen, stopCamera]);
 
   useEffect(() => {
-    if (isOpen && !scanResult) {
+    if (isOpen && !scanResult && !scanError) {
       if (activeMode === "camera") {
         startCamera();
       }
@@ -120,15 +121,14 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
       stopCamera();
     }
     return () => stopCamera();
-  }, [isOpen, activeMode, startCamera, stopCamera, scanResult]);
+  }, [isOpen, activeMode, startCamera, stopCamera, scanResult, scanError]);
 
   const handleSubmitScan = async (rawScanData) => {
     const idNumber = parseIDNumber(rawScanData);
     if (!idNumber) {
       playWarningSound();
-      toast.error("Invalid QR format. Could not extract ID number.");
+      setScanError("Invalid QR format. Could not extract ID number.");
       processingRef.current = false;
-      if (activeMode === "camera") startCamera();
       return;
     }
 
@@ -153,17 +153,15 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
         setProcessing(false);
       } else {
         playWarningSound();
-        toast.error(data.message || "Failed to update record.");
+        setScanError(data.message || "Failed to update record.");
         processingRef.current = false;
         setProcessing(false);
-        if (activeMode === "camera" && isOpen) startCamera();
       }
     } catch (err) {
       playWarningSound();
-      toast.error("Network error.");
+      setScanError("Network error.");
       processingRef.current = false;
       setProcessing(false);
-      if (activeMode === "camera" && isOpen) startCamera();
     }
   };
 
@@ -175,6 +173,7 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
 
   const handleScanNext = () => {
     setScanResult(null);
+    setScanError(null);
     setManualToken("H");
     if (activeMode === "camera" && isOpen) {
       startCamera();
@@ -267,6 +266,24 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
                 className="w-full py-4 bg-[#03254c] hover:bg-[#021b37] text-white font-black rounded-2xl shadow-md transition-all mt-4"
               >
                 Scan Next ID
+              </button>
+            </div>
+          ) : scanError ? (
+            <div className="flex flex-col items-center justify-center text-center space-y-5 py-4">
+              <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center border-4 border-rose-50 mb-2 shadow-sm">
+                <AlertTriangle className="w-10 h-10 text-rose-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900 mb-1">Scan Failed</h3>
+                <p className="text-sm text-gray-500">{scanError}</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleScanNext}
+                className="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black rounded-2xl transition-all mt-4"
+              >
+                Try Again
               </button>
             </div>
           ) : (
