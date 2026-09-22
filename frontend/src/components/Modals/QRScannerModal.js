@@ -13,7 +13,31 @@ function parseIDNumber(rawText) {
   
   // Match standard format HXXXXX-FXXXXX or similar legacy IDs anywhere in the text
   const idMatch = normalizedText.match(/H[a-z0-9]+-(?:F)?[a-z0-9]+/i) || normalizedText.match(/(?:EM|BC|CR|CI)-[A-Za-z0-9-]+/i);
-  if (idMatch) return idMatch[0].toUpperCase();
+  
+  if (idMatch) {
+    let extracted = idMatch[0].toUpperCase();
+    
+    // Auto-correct common OCR mistakes for the standard Barangay ID format (H00000-F00000)
+    // Sometimes OCR reads '0' as 'O', '5' as 'S', '1' as 'I' or 'L'
+    if (extracted.startsWith("H") && extracted.includes("-F")) {
+      const parts = extracted.split("-");
+      if (parts.length === 2) {
+        const fixNumber = (str) => str.replace(/O/g, '0').replace(/S/g, '5').replace(/I|L/g, '1').replace(/Z/g, '2').replace(/B/g, '8').replace(/Q/g, '0').replace(/D/g, '0');
+        
+        const p1 = parts[0];
+        const p1Prefix = p1.charAt(0); // 'H'
+        const p1Num = fixNumber(p1.substring(1));
+        
+        const p2 = parts[1];
+        const p2Prefix = p2.charAt(0); // 'F'
+        const p2Num = fixNumber(p2.substring(1));
+        
+        extracted = `${p1Prefix}${p1Num}-${p2Prefix}${p2Num}`;
+      }
+    }
+    
+    return extracted;
+  }
   
   // If no strict pattern is found, but the input is very short (like a clean QR scan)
   const trimmed = rawText.trim();
