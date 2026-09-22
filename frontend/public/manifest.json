@@ -2,7 +2,7 @@
   "name": "BrgyDesk - Barangay Portal & Services",
   "short_name": "BrgyDesk",
   "description": "Progressive Web App for Barangay Portal, Citizen Services, Certificate Requests, Census & Field Inspections",
-  "start_url": "/?source=pwa",
+  "start_url": "/login?source=pwa",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
