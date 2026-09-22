@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { X, Camera, Keyboard, CheckCircle, AlertTriangle, RefreshCw, Upload } from "lucide-react";
+import { X, Camera, Keyboard, CheckCircle, AlertTriangle, RefreshCw, Upload, Type } from "lucide-react";
 import toast from "react-hot-toast";
+import Tesseract from "tesseract.js";
 
 // Simple robust parser for our ID formats
 function parseIDNumber(qrData) {
@@ -21,8 +22,11 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
   const [error, setError] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [scanError, setScanError] = useState(null);
+  const [ocrProgress, setOcrProgress] = useState("");
 
   const scannerRef = useRef(null);
+  const ocrVideoRef = useRef(null);
+  const ocrStreamRef = useRef(null);
   const readerDivId = "id-management-qr-reader";
   const processingRef = useRef(false);
 
@@ -112,16 +116,48 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
     }
   }, [isOpen, stopCamera]);
 
+  const stopTextCamera = useCallback(() => {
+    if (ocrStreamRef.current) {
+      ocrStreamRef.current.getTracks().forEach((track) => track.stop());
+      ocrStreamRef.current = null;
+    }
+  }, []);
+
+  const startTextCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } 
+      });
+      ocrStreamRef.current = stream;
+      if (ocrVideoRef.current) {
+        ocrVideoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      setError("Could not access camera for text scanning.");
+    }
+  }, []);
+
   useEffect(() => {
     if (isOpen && !scanResult && !scanError) {
       if (activeMode === "camera") {
         startCamera();
+        stopTextCamera();
+      } else if (activeMode === "text") {
+        stopCamera();
+        startTextCamera();
+      } else {
+        stopCamera();
+        stopTextCamera();
       }
     } else {
       stopCamera();
+      stopTextCamera();
     }
-    return () => stopCamera();
-  }, [isOpen, activeMode, startCamera, stopCamera, scanResult, scanError]);
+    return () => {
+      stopCamera();
+      stopTextCamera();
+    };
+  }, [isOpen, activeMode, startCamera, stopCamera, startTextCamera, stopTextCamera, scanResult, scanError]);
 
   const handleSubmitScan = async (rawScanData) => {
     const idNumber = parseIDNumber(rawScanData);
@@ -165,6 +201,46 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  const handleCaptureText = async () => {
+    if (!ocrVideoRef.current) return;
+    setProcessing(true);
+    setOcrProgress("Capturing image...");
+    
+    // Draw current video frame to a canvas
+    const canvas = document.createElement("canvas");
+    canvas.width = ocrVideoRef.current.videoWidth;
+    canvas.height = ocrVideoRef.current.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(ocrVideoRef.current, 0, 0, canvas.width, canvas.height);
+    
+    setOcrProgress("Reading text (this may take a moment)...");
+    try {
+      const { data: { text } } = await Tesseract.recognize(
+        canvas,
+        'eng',
+        { logger: m => {
+          if (m.status === "recognizing text") {
+            setOcrProgress(`Reading text... ${Math.round(m.progress * 100)}%`);
+          }
+        }}
+      );
+      
+      const idNumber = parseIDNumber(text);
+      if (idNumber) {
+        setOcrProgress("ID found! Verifying...");
+        await handleSubmitScan(idNumber);
+      } else {
+        playWarningSound();
+        setScanError(`Could not find a valid ID number in the text. Read: "${text.substring(0, 30)}..."`);
+        setProcessing(false);
+      }
+    } catch (err) {
+      playWarningSound();
+      setScanError("OCR Processing failed.");
+      setProcessing(false);
+    }
+  };
+
   const handleManualSubmit = (e) => {
     e.preventDefault();
     if (!manualToken.trim()) return;
@@ -175,8 +251,10 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
     setScanResult(null);
     setScanError(null);
     setManualToken("H");
-    if (activeMode === "camera" && isOpen) {
-      startCamera();
+    setOcrProgress("");
+    if (isOpen) {
+      if (activeMode === "camera") startCamera();
+      if (activeMode === "text") startTextCamera();
     }
   };
 
@@ -203,29 +281,38 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
           <button
             type="button"
             onClick={() => setActiveMode("camera")}
-            className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+            className={`flex-1 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-colors ${
               activeMode === "camera" ? "text-[#03254c] border-b-2 border-[#03254c] bg-blue-50/50" : "text-gray-500 hover:bg-gray-50"
             }`}
           >
-            <Camera className="w-4 h-4" /> Camera
+            <Camera className="w-4 h-4 hidden sm:block" /> QR
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode("text")}
+            className={`flex-1 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-colors ${
+              activeMode === "text" ? "text-[#03254c] border-b-2 border-[#03254c] bg-blue-50/50" : "text-gray-500 hover:bg-gray-50"
+            }`}
+          >
+            <Type className="w-4 h-4 hidden sm:block" /> Text (OCR)
           </button>
           <button
             type="button"
             onClick={() => setActiveMode("capture")}
-            className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+            className={`flex-1 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-colors ${
               activeMode === "capture" ? "text-[#03254c] border-b-2 border-[#03254c] bg-blue-50/50" : "text-gray-500 hover:bg-gray-50"
             }`}
           >
-            <Upload className="w-4 h-4" /> Image
+            <Upload className="w-4 h-4 hidden sm:block" /> Image
           </button>
           <button
             type="button"
             onClick={() => setActiveMode("manual")}
-            className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+            className={`flex-1 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-colors ${
               activeMode === "manual" ? "text-[#03254c] border-b-2 border-[#03254c] bg-blue-50/50" : "text-gray-500 hover:bg-gray-50"
             }`}
           >
-            <Keyboard className="w-4 h-4" /> Manual
+            <Keyboard className="w-4 h-4 hidden sm:block" /> Manual
           </button>
         </div>
 
@@ -308,6 +395,37 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
               </div>
               <p className="text-xs text-gray-500 font-medium mt-4 text-center">
                 Point your camera at the QR code on the back of the printed PVC card.
+              </p>
+            </div>
+          )}
+
+          {activeMode === "text" && (
+            <div className="flex flex-col items-center">
+              <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden relative shadow-inner">
+                {processing && (
+                  <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center px-4 text-center">
+                    <RefreshCw className="w-8 h-8 text-[#03254c] animate-spin mb-2" />
+                    <span className="text-sm font-bold text-[#03254c]">{ocrProgress}</span>
+                  </div>
+                )}
+                <video 
+                  ref={ocrVideoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleCaptureText}
+                disabled={processing}
+                className="w-full py-4 bg-[#03254c] hover:bg-[#021b37] disabled:bg-gray-300 text-white font-black rounded-2xl shadow-md transition-all mt-4 flex items-center justify-center gap-2"
+              >
+                <Type className="w-5 h-5" /> Capture & Read Text
+              </button>
+              <p className="text-xs text-gray-500 font-medium mt-3 text-center">
+                Point the camera at the ID Number (e.g., H03015-F03015) and tap capture.
               </p>
             </div>
           )}
