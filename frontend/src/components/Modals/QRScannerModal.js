@@ -199,13 +199,23 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
         setProcessing(false);
       } else {
         playWarningSound();
-        setScanError(data.message || "Failed to update record.");
+        setScanError(
+          <>
+            <span className="block font-mono font-bold text-rose-700 bg-rose-200/50 px-2 py-1 rounded mb-2 text-[10px]">Scanned: {idNumber}</span>
+            {data.message || "Failed to update record."}
+          </>
+        );
         processingRef.current = false;
         setProcessing(false);
       }
     } catch (err) {
       playWarningSound();
-      setScanError("Network error.");
+      setScanError(
+        <>
+          <span className="block font-mono font-bold text-rose-700 bg-rose-200/50 px-2 py-1 rounded mb-2 text-[10px]">Scanned: {idNumber}</span>
+          Network error.
+        </>
+      );
       processingRef.current = false;
       setProcessing(false);
     }
