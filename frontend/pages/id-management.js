@@ -22,6 +22,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 import BarangayIDCard from "@/components/UI/BarangayIDCard";
 import IssueIDModal from "@/components/Modals/IssueIDModal";
 import PrintIDModal from "@/components/Modals/PrintIDModal";
@@ -135,56 +136,33 @@ export default function IDManagement() {
     );
   }, [ids, purokFilter]);
 
-  // Export to CSV
-  const handleExportCSV = () => {
+  // Export to Excel
+  const handleExportExcel = () => {
     if (ids.length === 0) {
       toast.error("No ID records to export");
       return;
     }
 
-    const headers = [
-      "Barangay ID No",
-      "Full Legal Name",
-      "Gender",
-      "Civil Status",
-      "Date of Birth",
-      "Purok",
-      "Address",
-      "Contact Number",
-      "Issue Date",
-      "Expiry Date",
-      "Status",
-    ];
+    const data = ids.map((c) => {
+      // FIRST_MI - first name + middle initial
+      const middleInitial = c.middle_name ? `${c.middle_name.charAt(0)}.` : "";
+      const firstMi = `${c.first_name || ""} ${middleInitial}`.trim();
 
-    const rows = ids.map((c) => [
-      `"${c.id_number || ""}"`,
-      `"${c.full_name || ""}"`,
-      `"${c.gender || ""}"`,
-      `"${c.civil_status || ""}"`,
-      `"${c.birth_date || ""}"`,
-      `"${c.purok || ""}"`,
-      `"${(c.address || "").replace(/"/g, '""')}"`,
-      `"${c.contact_number || ""}"`,
-      `"${c.issue_date || ""}"`,
-      `"${c.expiry_date || ""}"`,
-      `"${c.status || ""}"`,
-    ]);
+      return {
+        "FIRST_MI": firstMi,
+        "LAST_NAME": c.last_name || "",
+        "ADDRESS": c.address || "",
+        "EC CARD_NUMBER": c.id_number || "",
+        "EC CARD_NUMBER_QR_CODE": c.id_number || "", // Same as ID number for QR generation
+      };
+    });
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `Barangay_IDs_Ledger_${new Date().toISOString().split("T")[0]}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Barangay ID Ledger exported successfully!");
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Barangay IDs");
+    
+    XLSX.writeFile(workbook, `Barangay_IDs_Export_${new Date().toISOString().split("T")[0]}.xlsx`);
+    toast.success("Barangay ID Ledger exported to Excel!");
   };
 
   // Handle Renew
@@ -348,9 +326,9 @@ export default function IDManagement() {
 
               <button
                 type="button"
-                onClick={handleExportCSV}
+                onClick={handleExportExcel}
                 className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-[11px] sm:text-xs font-black rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer"
-                title="Export Official ID Registry Ledger (CSV)"
+                title="Export Official ID Registry Ledger (Excel)"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
                 <span className="whitespace-nowrap">Export</span>
