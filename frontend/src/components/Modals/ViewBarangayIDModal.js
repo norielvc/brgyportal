@@ -352,7 +352,6 @@ export default function ViewBarangayIDModal({
                   </span>
                   <span className="font-bold text-gray-800 flex items-center gap-1.5 mt-0.5">
                     <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                    {card.purok ? `${card.purok}, ` : ""}
                     {card.address || "BARANGAY IBA O' ESTE, CALUMPIT, BULACAN"}
                   </span>
                 </div>

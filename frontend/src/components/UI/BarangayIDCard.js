@@ -73,12 +73,22 @@ export default function BarangayIDCard({
     >
       {/* Front Left Content Container matching Photoshop Coordinates */}
       <div className="absolute left-[8%] top-[18%] w-[49%] flex flex-col text-left">
+        {/* EC Card Title */}
+        <div className="mb-2 sm:mb-3">
+          <h3 className="text-[16px] sm:text-[20px] font-black text-white uppercase tracking-wider leading-none drop-shadow-sm">
+            EC CARD
+          </h3>
+          <p className="text-[6px] sm:text-[8px] font-bold text-gray-300 uppercase tracking-widest leading-none mt-0.5">
+            Emergency Calamity<br/>Identification Card
+          </p>
+        </div>
+
         {/* Resident Full Legal Name */}
         <div className="leading-none">
           <h2 className="text-[18px] sm:text-[23px] font-black text-white uppercase tracking-tight leading-none drop-shadow-sm truncate">
             {givenNames || "ALEXANDER C."}
           </h2>
-          <h1 className="text-[28px] sm:text-[36px] font-black text-[#00b4d8] uppercase tracking-tight leading-none drop-shadow-sm truncate mt-1">
+          <h1 className="text-[28px] sm:text-[36px] font-black text-white uppercase tracking-tight leading-none drop-shadow-sm truncate mt-1">
             {surname || "MANIO"}
           </h1>
         </div>
@@ -93,15 +103,7 @@ export default function BarangayIDCard({
           </p>
         </div>
 
-        {/* EC Card Number */}
-        <div className="mt-4 sm:mt-5 space-y-0.5 leading-none">
-          <p className="text-[11px] sm:text-[13px] font-black text-[#00b4d8] uppercase tracking-wider drop-shadow-sm">
-            EC CARD NO:
-          </p>
-          <p className="text-[15px] sm:text-[20px] font-black text-white tracking-tight drop-shadow-sm whitespace-nowrap font-sans mt-0.5">
-            {idNumberDisplay}
-          </p>
-        </div>
+
       </div>
     </div>
   );
@@ -128,6 +130,13 @@ export default function BarangayIDCard({
             className="w-24 h-24 sm:w-[120px] sm:h-[120px]"
           />
         </div>
+      </div>
+
+      {/* EC Card Number on the Back */}
+      <div className="absolute left-0 top-0 w-[55%] h-full flex items-center justify-center px-4">
+        <p className="text-[14px] sm:text-[18px] font-black text-gray-800 tracking-tight font-sans">
+          {idNumberDisplay}
+        </p>
       </div>
     </div>
   );

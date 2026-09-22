@@ -27,6 +27,7 @@ import IssueIDModal from "@/components/Modals/IssueIDModal";
 import PrintIDModal from "@/components/Modals/PrintIDModal";
 import ViewBarangayIDModal from "@/components/Modals/ViewBarangayIDModal";
 import DeleteConfirmModal from "@/components/Modals/DeleteConfirmModal";
+import QRScannerModal from "@/components/Modals/QRScannerModal";
 import Pagination from "@/components/UI/Pagination";
 
 const PUROK_LIST = [
@@ -53,6 +54,7 @@ export default function IDManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [printedFilter, setPrintedFilter] = useState(""); // '' | 'printed' | 'not_printed'
   const [purokFilter, setPurokFilter] = useState("All Puroks");
   const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'table'
   const [page, setPage] = useState(1);
@@ -66,6 +68,7 @@ export default function IDManagement() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [idToDelete, setIdToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   // Fetch IDs
   const fetchIDs = async () => {
@@ -77,6 +80,7 @@ export default function IDManagement() {
         limit: "24",
         search: search.trim(),
         status: statusFilter,
+        printed_status: printedFilter,
       });
 
       const res = await fetch(`/api/barangay-id?${queryParams.toString()}`, {
@@ -110,7 +114,7 @@ export default function IDManagement() {
 
   useEffect(() => {
     fetchIDs();
-  }, [page, statusFilter]);
+  }, [page, statusFilter, printedFilter]);
 
   // Debounced search
   useEffect(() => {
@@ -334,22 +338,22 @@ export default function IDManagement() {
             <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto pt-1 sm:pt-0">
               <button
                 type="button"
+                onClick={() => setShowScanner(true)}
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-[11px] sm:text-xs font-black rounded-xl sm:rounded-2xl backdrop-blur-md border border-emerald-500/50 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer"
+                title="Scan Printed ID to update status"
+              >
+                <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
+                <span className="whitespace-nowrap">Scan Printed ID</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleExportCSV}
                 className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-[11px] sm:text-xs font-black rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer"
                 title="Export Official ID Registry Ledger (CSV)"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
                 <span className="whitespace-nowrap">Export</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => router.push("/qr-scan-history")}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-[11px] sm:text-xs font-black rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer"
-                title="Scan and Verify Barangay ID QR"
-              >
-                <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-300" />
-                <span className="whitespace-nowrap">Scan QR</span>
               </button>
 
               <button
@@ -561,6 +565,8 @@ export default function IDManagement() {
             <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none w-full sm:w-auto">
               {[
                 { id: "all", label: "All Records", count: stats.total },
+                { id: "household", label: "Household Head", count: stats.householdHead || 0 },
+                { id: "family", label: "Family Member", count: stats.familyMember || 0 },
                 { id: "active", label: "Active", count: stats.active },
                 { id: "expired", label: "Expired", count: stats.expired },
                 { id: "revoked", label: "Revoked", count: stats.revoked },
@@ -589,7 +595,37 @@ export default function IDManagement() {
               ))}
             </div>
 
-            <span className="text-[10px] sm:text-[11px] font-bold text-gray-400">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 sm:border-l border-gray-100 sm:pl-3 pt-2 sm:pt-0">
+              {[
+                { id: "", label: "All Print Status", count: stats.total },
+                { id: "printed", label: "Printed", count: stats.printed || 0 },
+                { id: "not_printed", label: "Not Printed", count: stats.notPrinted || 0 },
+              ].map((tab) => (
+                <button
+                  key={`print-${tab.id}`}
+                  type="button"
+                  onClick={() => setPrintedFilter(tab.id)}
+                  className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                    printedFilter === tab.id
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200/70"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-md text-[10px] ${
+                      printedFilter === tab.id
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 w-full sm:w-auto text-right mt-2 sm:mt-0">
               Showing {filteredIDs.length} of {totalCount} records
             </span>
           </div>
@@ -695,7 +731,16 @@ export default function IDManagement() {
                       <span>{card.id_number}</span>
                       <ExternalLink className="w-3 h-3 text-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
                     </span>
-                    <div>
+                    <div className="flex items-center gap-1.5">
+                      {card.is_printed ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200" title="Card has been printed">
+                           Printed
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gray-100 text-gray-500 border border-gray-200" title="Card pending printing">
+                           Pending Print
+                        </span>
+                      )}
                       {getStatusBadge(card.status, card.expiry_date)}
                     </div>
                   </div>
@@ -713,7 +758,6 @@ export default function IDManagement() {
 
                   <p className="text-xs text-gray-600 truncate flex items-center gap-1.5 font-semibold">
                     <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                    {card.purok ? `${card.purok}, ` : ""}
                     {card.address}
                   </p>
                 </div>
@@ -837,9 +881,6 @@ export default function IDManagement() {
                         </span>
                       </td>
                       <td className="py-4 px-4 text-gray-700 font-medium max-w-xs truncate">
-                        <span className="font-bold text-[#03254c]">
-                          {card.purok ? `${card.purok}, ` : ""}
-                        </span>
                         {card.address}
                       </td>
                       <td className="py-4 px-4 text-gray-600 font-semibold">
@@ -943,6 +984,15 @@ export default function IDManagement() {
         <IssueIDModal
           isOpen={showIssueModal}
           onClose={() => setShowIssueModal(false)}
+          onSuccess={() => fetchIDs()}
+        />
+      )}
+
+      {/* QR Scanner Modal */}
+      {showScanner && (
+        <QRScannerModal
+          isOpen={showScanner}
+          onClose={() => setShowScanner(false)}
           onSuccess={() => fetchIDs()}
         />
       )}

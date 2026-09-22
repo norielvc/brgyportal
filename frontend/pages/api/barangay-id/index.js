@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   // ── GET: List Barangay IDs with filters and stats ──────────────────────────
   if (req.method === "GET") {
     try {
-      const { search = "", status = "", limit = 50, page = 1 } = req.query;
+      const { search = "", status = "", printed_status = "", limit = 50, page = 1 } = req.query;
       const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
       // Fetch all IDs for tenant
@@ -30,12 +30,27 @@ export default async function handler(req, res) {
         .order("created_at", { ascending: false });
 
       if (status && status !== "all") {
-        query = query.eq("status", status);
+        if (status === "household") {
+          query = query.not("id_number", "like", "%M-%");
+        } else if (status === "family") {
+          query = query.like("id_number", "%M-%");
+        } else {
+          query = query.eq("status", status);
+        }
       }
 
       if (search && search.trim()) {
         const term = search.trim();
         query = query.or(`full_name.ilike.%${term}%,id_number.ilike.%${term}%,purok.ilike.%${term}%`);
+      }
+
+      if (printed_status) {
+        if (printed_status === "printed") {
+          query = query.eq("is_printed", true);
+        } else if (printed_status === "not_printed") {
+          // Check false or null
+          query = query.or("is_printed.eq.false,is_printed.is.null");
+        }
       }
 
       const { data, count, error } = await query.range(offset, offset + parseInt(limit, 10) - 1);
@@ -54,34 +69,40 @@ export default async function handler(req, res) {
         throw error;
       }
 
-      // Calculate stats
-      const { data: allStats } = await supabase
-        .from("barangay_ids")
-        .select("status, expiry_date")
-        .eq("tenant_id", tenantId);
+      // Calculate exact stats using count queries to bypass 1000 row limit
+      const [
+        { count: totalCount }, 
+        { count: activeCount }, 
+        { count: expiredCount }, 
+        { count: revokedCount },
+        { count: householdCount },
+        { count: familyCount },
+        { count: printedCount },
+        { count: notPrintedCount }
+      ] = await Promise.all([
+        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId),
+        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "active"),
+        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "expired"),
+        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "revoked"),
+        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).not("id_number", "like", "%M-%"),
+        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).like("id_number", "%M-%"),
+        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_printed", true),
+        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).or("is_printed.eq.false,is_printed.is.null")
+      ]);
 
+      // Calculate expiring soon (active but expires in <= 30 days)
       const now = new Date();
-      let activeCount = 0;
-      let expiredCount = 0;
-      let revokedCount = 0;
-      let expiringSoonCount = 0;
+      const in30Days = new Date();
+      in30Days.setDate(now.getDate() + 30);
+      
+      const { count: expiringSoonCount } = await supabase
+        .from("barangay_ids")
+        .select("*", { count: "exact", head: true })
+        .eq("tenant_id", tenantId)
+        .eq("status", "active")
+        .lte("expiry_date", in30Days.toISOString())
+        .gte("expiry_date", now.toISOString());
 
-      if (allStats) {
-        allStats.forEach((item) => {
-          if (item.status === "revoked") {
-            revokedCount++;
-          } else if (item.status === "expired" || (item.expiry_date && new Date(item.expiry_date) < now)) {
-            expiredCount++;
-          } else {
-            activeCount++;
-            if (item.expiry_date) {
-              const exp = new Date(item.expiry_date);
-              const daysLeft = (exp - now) / (1000 * 60 * 60 * 24);
-              if (daysLeft >= 0 && daysLeft <= 30) expiringSoonCount++;
-            }
-          }
-        });
-      }
 
       // Enrich data with fallback to joined resident date_of_birth
       const enrichedData = (data || []).map((item) => {
@@ -119,13 +140,17 @@ export default async function handler(req, res) {
         limit: parseInt(limit, 10),
         totalPages: Math.ceil((count || 0) / parseInt(limit, 10)),
         stats: {
-          total: allStats ? allStats.length : 0,
-          active: activeCount,
-          expired: expiredCount,
-          revoked: revokedCount,
-          expiringSoon: expiringSoonCount,
+          total: totalCount || 0,
+          active: activeCount || 0,
+          expired: expiredCount || 0,
+          revoked: revokedCount || 0,
+          expiringSoon: expiringSoonCount || 0,
+          householdHead: householdCount || 0,
+          familyMember: familyCount || 0,
+          printed: printedCount || 0,
+          notPrinted: notPrintedCount || 0,
         },
-        next_ec_number: `H${String((allStats ? allStats.length : 0) + 1).padStart(5, "0")}-F00001`,
+        next_ec_number: `H${String((totalCount || 0) + 1).padStart(5, "0")}-F00001`,
       });
     } catch (error) {
       console.error("GET /api/barangay-id error:", error);
