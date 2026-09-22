@@ -296,10 +296,7 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
     setScanError(null);
     setManualToken("H");
     setOcrProgress("");
-    if (isOpen) {
-      if (activeMode === "camera") startCamera();
-      if (activeMode === "text") startTextCamera();
-    }
+    processingRef.current = false;
   };
 
   if (!isOpen) return null;
