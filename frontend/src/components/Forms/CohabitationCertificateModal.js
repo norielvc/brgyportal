@@ -7,7 +7,7 @@
 import React, { useState } from 'react';
 import UnifiedCertModal from './UnifiedCertModal';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
-import { PUROK_OPTIONS, isSubdivisionPurok } from '../../lib/addressHelper';
+import { PUROK_OPTIONS, isSubdivisionPurok, hasPhaseField } from '../../lib/addressHelper';
 import { Search, CheckCircle, MapPin, Info } from 'lucide-react';
 
 export default function CohabitationCertificateModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
@@ -177,47 +177,78 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
 
       {/* House No. or Phase/Block/Lot — conditional on purok */}
       {isSubdivisionPurok(purok) ? (
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
-              Phase <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={phase}
-              onChange={e => setPhase(e.target.value)}
-              placeholder="1"
-              className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
-            />
+        hasPhaseField(purok) ? (
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+                Phase <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={phase}
+                onChange={e => setPhase(e.target.value)}
+                placeholder="1"
+                className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+                Block <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={block}
+                onChange={e => setBlock(e.target.value)}
+                placeholder="1"
+                className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+                Lot <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={lot}
+                onChange={e => setLot(e.target.value)}
+                placeholder="2"
+                className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
-              Block <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={block}
-              onChange={e => setBlock(e.target.value)}
-              placeholder="1"
-              className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
-            />
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+                Block <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={block}
+                onChange={e => setBlock(e.target.value)}
+                placeholder="1"
+                className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
+                Lot <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={lot}
+                onChange={e => setLot(e.target.value)}
+                placeholder="2"
+                className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
-              Lot <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={lot}
-              onChange={e => setLot(e.target.value)}
-              placeholder="2"
-              className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
-            />
-          </div>
-        </div>
+        )
       ) : purok ? (
         <div>
           <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">

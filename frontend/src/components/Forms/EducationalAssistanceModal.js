@@ -114,10 +114,14 @@ export default function EducationalAssistanceModal({
       newErrors.email = true;
     }
 
-    const isPhaseBlockLot = ["NV9", "NORTH VILLE 9", "CREEKSTONE"].includes(formData.purok?.toUpperCase());
+    const isNorthVille = ["NV9", "NORTH VILLE 9"].includes(formData.purok?.toUpperCase());
+    const isCreekstone = formData.purok?.toUpperCase() === "CREEKSTONE";
 
-    if (isPhaseBlockLot) {
+    if (isNorthVille) {
       if (!formData.phaseNumber) newErrors.phaseNumber = true;
+      if (!formData.blockNumber) newErrors.blockNumber = true;
+      if (!formData.lotNumber) newErrors.lotNumber = true;
+    } else if (isCreekstone) {
       if (!formData.blockNumber) newErrors.blockNumber = true;
       if (!formData.lotNumber) newErrors.lotNumber = true;
     } else if (formData.purok) {
@@ -141,10 +145,13 @@ export default function EducationalAssistanceModal({
       formData;
     let address = "";
 
-    const isPhaseBlockLot = ["NV9", "NORTH VILLE 9", "CREEKSTONE"].includes(purok?.toUpperCase());
+    const isNorthVille = ["NV9", "NORTH VILLE 9"].includes(purok?.toUpperCase());
+    const isCreekstone = purok?.toUpperCase() === "CREEKSTONE";
 
-    if (isPhaseBlockLot) {
+    if (isNorthVille) {
       address = `Phase ${phaseNumber}, Block ${blockNumber}, Lot ${lotNumber}, ${purok}`;
+    } else if (isCreekstone) {
+      address = `Block ${blockNumber}, Lot ${lotNumber}, ${purok}`;
     } else {
       address = `House #${houseNumber}, ${purok}`;
     }
@@ -541,7 +548,7 @@ export default function EducationalAssistanceModal({
                             "CREEKSTONE",
                             "Purok 2",
                             "NORTH VILLE 9",
-                            "SITIO BANAUE",
+                            "SITIO BANAWE",
                             "Purok 3",
                             "Purok 4",
                             "Purok 5",
@@ -559,7 +566,7 @@ export default function EducationalAssistanceModal({
                           Identification Number / Numero ng Pagkakakilanlan{" "}
                           <span className="text-red-500">*</span>
                         </label>
-                        {["NV9", "NORTH VILLE 9", "CREEKSTONE"].includes(formData.purok?.toUpperCase()) ? (
+                        {["NV9", "NORTH VILLE 9"].includes(formData.purok?.toUpperCase()) ? (
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1">
                               <input
@@ -574,6 +581,35 @@ export default function EducationalAssistanceModal({
                                 Phase / Bahagi
                               </span>
                             </div>
+                            <div className="space-y-1">
+                              <input
+                                type="text"
+                                name="blockNumber"
+                                value={formData.blockNumber}
+                                onChange={handleInputChange}
+                                placeholder="BLK"
+                                className={`w-full px-4 py-4 bg-white border-2 ${errors.blockNumber ? "border-red-500 bg-red-50" : "border-gray-100"} rounded-xl focus:border-[#2d5a3d] outline-none text-center font-black`}
+                              />
+                              <span className="text-sm text-gray-400 font-black uppercase text-center block">
+                                Block / Bloke
+                              </span>
+                            </div>
+                            <div className="space-y-1">
+                              <input
+                                type="text"
+                                name="lotNumber"
+                                value={formData.lotNumber}
+                                onChange={handleInputChange}
+                                placeholder="LOT"
+                                className={`w-full px-4 py-4 bg-white border-2 ${errors.lotNumber ? "border-red-500 bg-red-50" : "border-gray-100"} rounded-xl focus:border-[#2d5a3d] outline-none text-center font-black`}
+                              />
+                              <span className="text-sm text-gray-400 font-black uppercase text-center block">
+                                Lot / Lote
+                              </span>
+                            </div>
+                          </div>
+                        ) : formData.purok?.toUpperCase() === "CREEKSTONE" ? (
+                          <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <input
                                 type="text"

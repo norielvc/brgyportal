@@ -35,7 +35,7 @@ import Modal from "@/components/UI/Modal";
 import IssueIDModal from "@/components/Modals/IssueIDModal";
 import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
-import { generateFullAddress, PUROK_OPTIONS, isSubdivisionPurok, getSubdivisionInfo } from "@/lib/addressHelper";
+import { generateFullAddress, PUROK_OPTIONS, isSubdivisionPurok, getSubdivisionInfo, hasPhaseField } from "@/lib/addressHelper";
 
 export default function Residents() {
   const router = useRouter();
@@ -245,8 +245,8 @@ export default function Residents() {
       detectedPurokValue = "CREEKSTONE";
     } else if (/NORTH\s*VILLE\s*9|NORTHVILLE\s*9|NV9/i.test(addr) || /NORTH\s*VILLE\s*9|NORTHVILLE\s*9|NV9/i.test(selectedResident.purok)) {
       detectedPurokValue = "NORTH VILLE 9";
-    } else if (/BANAUE/i.test(addr) || /BANAUE/i.test(selectedResident.purok)) {
-      detectedPurokValue = "SITIO BANAUE";
+    } else if (/BANAWE|BANAUE/i.test(addr) || /BANAWE|BANAUE/i.test(selectedResident.purok)) {
+      detectedPurokValue = "SITIO BANAWE";
     }
 
     const isSubdivision = isSubdivisionPurok(detectedPurokValue);
@@ -1278,47 +1278,78 @@ export default function Residents() {
               </div>
 
               {isSubdivisionPurok(formData.purok) ? (
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="label">Phase <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="1"
-                      className="input uppercase font-bold text-center"
-                      value={formData.phase}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phase: e.target.value })
-                      }
-                    />
+                hasPhaseField(formData.purok) ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="label">Phase <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="1"
+                        className="input uppercase font-bold text-center"
+                        value={formData.phase}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phase: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Block <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="1"
+                        className="input uppercase font-bold text-center"
+                        value={formData.block}
+                        onChange={(e) =>
+                          setFormData({ ...formData, block: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Lot <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="2"
+                        className="input uppercase font-bold text-center"
+                        value={formData.lot}
+                        onChange={(e) =>
+                          setFormData({ ...formData, lot: e.target.value })
+                        }
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="label">Block <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="1"
-                      className="input uppercase font-bold text-center"
-                      value={formData.block}
-                      onChange={(e) =>
-                        setFormData({ ...formData, block: e.target.value })
-                      }
-                    />
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="label">Block <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="1"
+                        className="input uppercase font-bold text-center"
+                        value={formData.block}
+                        onChange={(e) =>
+                          setFormData({ ...formData, block: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Lot <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="2"
+                        className="input uppercase font-bold text-center"
+                        value={formData.lot}
+                        onChange={(e) =>
+                          setFormData({ ...formData, lot: e.target.value })
+                        }
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="label">Lot <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="2"
-                      className="input uppercase font-bold text-center"
-                      value={formData.lot}
-                      onChange={(e) =>
-                        setFormData({ ...formData, lot: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
+                )
               ) : formData.purok ? (
                 <div>
                   <label className="label">House Number <span className="text-red-500">*</span></label>
