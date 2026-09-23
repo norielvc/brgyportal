@@ -153,28 +153,29 @@ export function validateAddress(addressData) {
 }
 
 /**
- * Subdivisions that use Phase, Block, and Lot format with their assigned Parent Purok
+ * Subdivisions & Sitios configuration with assigned parent purok and numbering format
  */
 export const SUBDIVISIONS_CONFIG = {
-  'HAZEL HEIGHTS': { subdivision: 'HAZEL HEIGHTS', parentPurok: 'Purok 1', label: 'PUROK 1 - HAZEL HEIGHTS' },
-  'CREEKSTONE': { subdivision: 'CREEKSTONE', parentPurok: 'Purok 1', label: 'PUROK 1 - CREEKSTONE' },
-  'NORTH VILLE 9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', label: 'PUROK 2 - NORTH VILLE 9' },
-  'NORTHVILLE 9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', label: 'PUROK 2 - NORTH VILLE 9' },
-  'NV9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', label: 'PUROK 2 - NORTH VILLE 9' },
+  'HAZEL HEIGHTS': { subdivision: 'HAZEL HEIGHTS', parentPurok: 'Purok 1', hasPhaseBlockLot: false, label: 'PUROK 1 - HAZEL HEIGHTS' },
+  'CREEKSTONE': { subdivision: 'CREEKSTONE', parentPurok: 'Purok 1', hasPhaseBlockLot: true, label: 'PUROK 1 - CREEKSTONE' },
+  'NORTH VILLE 9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, label: 'PUROK 2 - NORTH VILLE 9' },
+  'NORTHVILLE 9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, label: 'PUROK 2 - NORTH VILLE 9' },
+  'NV9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, label: 'PUROK 2 - NORTH VILLE 9' },
+  'SITIO BANAUE': { subdivision: 'SITIO BANAUE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, label: 'PUROK 2 - SITIO BANAUE' },
+  'BANAUE': { subdivision: 'SITIO BANAUE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, label: 'PUROK 2 - SITIO BANAUE' },
 };
 
 export const SUBDIVISION_PUROKS = [
   'NORTH VILLE 9',
   'NORTHVILLE 9',
   'NV9',
-  'HAZEL HEIGHTS',
   'CREEKSTONE',
 ];
 
 /**
  * Get subdivision details and assigned parent purok
  * @param {string} val
- * @returns {{ subdivision: string, parentPurok: string, label: string } | null}
+ * @returns {{ subdivision: string, parentPurok: string, hasPhaseBlockLot: boolean, label: string } | null}
  */
 export function getSubdivisionInfo(val) {
   if (!val) return null;
@@ -183,17 +184,19 @@ export function getSubdivisionInfo(val) {
   if (upper.includes('HAZEL')) return SUBDIVISIONS_CONFIG['HAZEL HEIGHTS'];
   if (upper.includes('CREEKSTONE')) return SUBDIVISIONS_CONFIG['CREEKSTONE'];
   if (upper.includes('NORTH') || upper.includes('NV9')) return SUBDIVISIONS_CONFIG['NORTH VILLE 9'];
+  if (upper.includes('BANAUE')) return SUBDIVISIONS_CONFIG['SITIO BANAUE'];
   return null;
 }
 
 /**
- * Check if a purok/location is a subdivision with Phase/Block/Lot
+ * Check if a purok/location is a subdivision requiring Phase/Block/Lot inputs
  * @param {string} purok
  * @returns {boolean}
  */
 export function isSubdivisionPurok(purok) {
   if (!purok) return false;
-  return getSubdivisionInfo(purok) !== null;
+  const info = getSubdivisionInfo(purok);
+  return info?.hasPhaseBlockLot === true;
 }
 
 /**
@@ -205,6 +208,7 @@ export const PUROK_OPTIONS = [
   { value: 'CREEKSTONE', label: 'PUROK 1 - CREEKSTONE' },
   { value: 'Purok 2', label: 'PUROK 2' },
   { value: 'NORTH VILLE 9', label: 'PUROK 2 - NORTH VILLE 9' },
+  { value: 'SITIO BANAUE', label: 'PUROK 2 - SITIO BANAUE' },
   { value: 'Purok 3', label: 'PUROK 3' },
   { value: 'Purok 4', label: 'PUROK 4' },
   { value: 'Purok 5', label: 'PUROK 5' },

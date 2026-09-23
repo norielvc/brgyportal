@@ -245,6 +245,8 @@ export default function Residents() {
       detectedPurokValue = "CREEKSTONE";
     } else if (/NORTH\s*VILLE\s*9|NORTHVILLE\s*9|NV9/i.test(addr) || /NORTH\s*VILLE\s*9|NORTHVILLE\s*9|NV9/i.test(selectedResident.purok)) {
       detectedPurokValue = "NORTH VILLE 9";
+    } else if (/BANAUE/i.test(addr) || /BANAUE/i.test(selectedResident.purok)) {
+      detectedPurokValue = "SITIO BANAUE";
     }
 
     const isSubdivision = isSubdivisionPurok(detectedPurokValue);
@@ -284,17 +286,19 @@ export default function Residents() {
       const cleanedData = { ...formData };
       const subInfo = getSubdivisionInfo(cleanedData.purok);
 
-      // For subdivisions (North Ville 9, Hazel Heights, Creekstone), combine phase/block/lot into house_number
+      // For subdivisions requiring phase/block/lot (North Ville 9, Creekstone), combine into house_number
       if (subInfo) {
-        const phase = cleanedData.phase?.trim() || '';
-        const block = cleanedData.block?.trim() || '';
-        const lot = cleanedData.lot?.trim() || '';
-        cleanedData.house_number = [phase && `PHASE ${phase}`, block && `BLOCK ${block}`, lot && `LOT ${lot}`].filter(Boolean).join(' ');
+        if (subInfo.hasPhaseBlockLot) {
+          const phase = cleanedData.phase?.trim() || '';
+          const block = cleanedData.block?.trim() || '';
+          const lot = cleanedData.lot?.trim() || '';
+          cleanedData.house_number = [phase && `PHASE ${phase}`, block && `BLOCK ${block}`, lot && `LOT ${lot}`].filter(Boolean).join(' ');
+        }
         // Set underlying parent purok (e.g. Purok 1 or Purok 2) for census querying
         cleanedData.purok = subInfo.parentPurok;
       }
 
-      // Generate full address with subdivision & parent purok
+      // Generate full address with subdivision/sitio & parent purok
       const effectiveBarangay = cleanedData.barangay || tenantAddressDefaults.barangay;
       const effectiveMunicipality = cleanedData.municipality || tenantAddressDefaults.municipality;
       const effectiveProvince = cleanedData.province || tenantAddressDefaults.province;

@@ -114,9 +114,9 @@ export default function EducationalAssistanceModal({
       newErrors.email = true;
     }
 
-    const isSubdivision = ["NV9", "NORTH VILLE 9", "HAZEL HEIGHTS", "CREEKSTONE"].includes(formData.purok?.toUpperCase());
+    const isPhaseBlockLot = ["NV9", "NORTH VILLE 9", "CREEKSTONE"].includes(formData.purok?.toUpperCase());
 
-    if (isSubdivision) {
+    if (isPhaseBlockLot) {
       if (!formData.phaseNumber) newErrors.phaseNumber = true;
       if (!formData.blockNumber) newErrors.blockNumber = true;
       if (!formData.lotNumber) newErrors.lotNumber = true;
@@ -141,9 +141,9 @@ export default function EducationalAssistanceModal({
       formData;
     let address = "";
 
-    const isSubdivision = ["NV9", "NORTH VILLE 9", "HAZEL HEIGHTS", "CREEKSTONE"].includes(purok?.toUpperCase());
+    const isPhaseBlockLot = ["NV9", "NORTH VILLE 9", "CREEKSTONE"].includes(purok?.toUpperCase());
 
-    if (isSubdivision) {
+    if (isPhaseBlockLot) {
       address = `Phase ${phaseNumber}, Block ${blockNumber}, Lot ${lotNumber}, ${purok}`;
     } else {
       address = `House #${houseNumber}, ${purok}`;
@@ -537,14 +537,15 @@ export default function EducationalAssistanceModal({
                           </option>
                           {[
                             "Purok 1",
+                            "HAZEL HEIGHTS",
+                            "CREEKSTONE",
                             "Purok 2",
+                            "NORTH VILLE 9",
+                            "SITIO BANAUE",
                             "Purok 3",
                             "Purok 4",
                             "Purok 5",
                             "Purok 6",
-                            "NORTH VILLE 9",
-                            "HAZEL HEIGHTS",
-                            "CREEKSTONE",
                           ].map((p) => (
                             <option key={p} value={p}>
                               {p.toUpperCase()}
@@ -558,7 +559,7 @@ export default function EducationalAssistanceModal({
                           Identification Number / Numero ng Pagkakakilanlan{" "}
                           <span className="text-red-500">*</span>
                         </label>
-                        {["NV9", "NORTH VILLE 9", "HAZEL HEIGHTS", "CREEKSTONE"].includes(formData.purok?.toUpperCase()) ? (
+                        {["NV9", "NORTH VILLE 9", "CREEKSTONE"].includes(formData.purok?.toUpperCase()) ? (
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1">
                               <input

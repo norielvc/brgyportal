@@ -113,8 +113,8 @@ router.post('/', async (req, res) => {
     }
 
     // Validate address based on purok
-    const isSubdivision = ['NV9', 'NORTH VILLE 9', 'HAZEL HEIGHTS', 'CREEKSTONE'].includes(purok?.toUpperCase());
-    if (isSubdivision) {
+    const isPhaseBlockLot = ['NV9', 'NORTH VILLE 9', 'CREEKSTONE'].includes(purok?.toUpperCase());
+    if (isPhaseBlockLot) {
       if (!phaseNumber || !blockNumber || !lotNumber) {
         return res.status(400).json({
           success: false,
@@ -125,7 +125,7 @@ router.post('/', async (req, res) => {
       if (!houseNumber) {
         return res.status(400).json({
           success: false,
-          message: 'House number is required for regular puroks'
+          message: 'House number is required'
         });
       }
     }
