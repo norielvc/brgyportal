@@ -35,7 +35,7 @@ import Modal from "@/components/UI/Modal";
 import IssueIDModal from "@/components/Modals/IssueIDModal";
 import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
-import { generateFullAddress, PUROK_OPTIONS } from "@/lib/addressHelper";
+import { generateFullAddress, PUROK_OPTIONS, isSubdivisionPurok } from "@/lib/addressHelper";
 
 export default function Residents() {
   const router = useRouter();
