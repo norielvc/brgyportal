@@ -163,6 +163,17 @@ export default async function handler(req, res) {
     try {
       const {
         resident_id,
+        id_number: customIdNumber,
+        full_name: customFullName,
+        first_name: customFirstName,
+        middle_name: customMiddleName,
+        last_name: customLastName,
+        suffix: customSuffix,
+        gender: customGender,
+        civil_status: customCivilStatus,
+        birth_date: customBirthDate,
+        address: customAddress,
+        purok: customPurok,
         emergency_contact_name,
         emergency_contact_relation,
         emergency_contact_number,
@@ -202,18 +213,11 @@ export default async function handler(req, res) {
         });
       }
 
-      // 2. Generate Guaranteed Unique EC Card Number (Format: H00001-F00001)
-      const { count: existingCount } = await supabase
-        .from("barangay_ids")
-        .select("*", { count: "exact", head: true })
-        .eq("tenant_id", tenantId);
+      // 2. Determine EC Card Number (Custom or Auto-generated)
+      let idNumber = customIdNumber ? String(customIdNumber).trim().toUpperCase() : null;
 
-      let counter = (existingCount || 0) + 1;
-      let idNumber = `H${String(counter).padStart(5, "0")}-F00001`;
-
-      // Collision loop check
-      while (true) {
-        idNumber = `H${String(counter).padStart(5, "0")}-F00001`;
+      if (idNumber) {
+        // Check if custom EC Card No already exists
         const { data: duplicate } = await supabase
           .from("barangay_ids")
           .select("id")
@@ -221,8 +225,32 @@ export default async function handler(req, res) {
           .eq("id_number", idNumber)
           .maybeSingle();
 
-        if (!duplicate) break;
-        counter++;
+        if (duplicate) {
+          return res.status(400).json({
+            success: false,
+            message: `EC Card No. "${idNumber}" is already in use by another card. Please provide a unique EC Card No.`,
+          });
+        }
+      } else {
+        // Generate Guaranteed Unique EC Card Number (Format: H00001-F00001)
+        const { count: existingCount } = await supabase
+          .from("barangay_ids")
+          .select("*", { count: "exact", head: true })
+          .eq("tenant_id", tenantId);
+
+        let counter = (existingCount || 0) + 1;
+        while (true) {
+          idNumber = `H${String(counter).padStart(5, "0")}-F00001`;
+          const { data: duplicate } = await supabase
+            .from("barangay_ids")
+            .select("id")
+            .eq("tenant_id", tenantId)
+            .eq("id_number", idNumber)
+            .maybeSingle();
+
+          if (!duplicate) break;
+          counter++;
+        }
       }
 
       // 3. Compute Dates and Birth Date
@@ -230,15 +258,27 @@ export default async function handler(req, res) {
       const expDate = new Date(startIssueDate);
       expDate.setFullYear(expDate.getFullYear() + parseInt(validity_years || 1, 10));
 
-      const fullName = [resident.first_name, resident.middle_name, resident.last_name, resident.suffix]
-        .filter(Boolean)
-        .join(" ");
+      const firstName = customFirstName !== undefined && customFirstName !== "" ? customFirstName : resident.first_name;
+      const middleName = customMiddleName !== undefined ? customMiddleName : resident.middle_name;
+      const lastName = customLastName !== undefined && customLastName !== "" ? customLastName : resident.last_name;
+      const suffix = customSuffix !== undefined ? customSuffix : resident.suffix;
 
-      const fullAddress = [resident.house_number, resident.purok, resident.barangay, resident.municipality, resident.province]
-        .filter(Boolean)
-        .join(", ");
+      const fullName = customFullName && customFullName.trim()
+        ? customFullName.trim().toUpperCase()
+        : [firstName, middleName, lastName, suffix]
+            .filter(Boolean)
+            .join(" ")
+            .toUpperCase();
+
+      const fullAddress = customAddress && customAddress.trim()
+        ? customAddress.trim().toUpperCase()
+        : [resident.house_number, resident.purok, resident.barangay, resident.municipality, resident.province]
+            .filter(Boolean)
+            .join(", ")
+            .toUpperCase();
 
       const resolvedBirthDate =
+        customBirthDate ||
         resident.date_of_birth ||
         resident.birth_date ||
         resident.birthday ||
@@ -246,7 +286,7 @@ export default async function handler(req, res) {
         null;
 
       let resolvedAge = resident.age || null;
-      if (!resolvedAge && resolvedBirthDate) {
+      if (resolvedBirthDate) {
         const b = new Date(resolvedBirthDate);
         if (!isNaN(b.getTime())) {
           const ageDiff = Date.now() - b.getTime();
@@ -262,16 +302,16 @@ export default async function handler(req, res) {
         resident_id: resident.id,
         id_number: idNumber,
         full_name: fullName,
-        first_name: resident.first_name,
-        last_name: resident.last_name,
-        middle_name: resident.middle_name || null,
-        suffix: resident.suffix || null,
-        gender: resident.gender || null,
-        civil_status: resident.civil_status || null,
+        first_name: firstName,
+        last_name: lastName,
+        middle_name: middleName || null,
+        suffix: suffix || null,
+        gender: customGender || resident.gender || "MALE",
+        civil_status: customCivilStatus || resident.civil_status || "SINGLE",
         birth_date: resolvedBirthDate,
         age: resolvedAge,
         address: fullAddress || "Barangay Jurisdiction",
-        purok: resident.purok || null,
+        purok: customPurok || resident.purok || null,
         barangay: resident.barangay || null,
         municipality: resident.municipality || null,
         province: resident.province || null,
