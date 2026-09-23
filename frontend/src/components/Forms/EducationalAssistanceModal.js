@@ -114,7 +114,9 @@ export default function EducationalAssistanceModal({
       newErrors.email = true;
     }
 
-    if (formData.purok === "NV9") {
+    const isSubdivision = ["NV9", "NORTH VILLE 9", "HAZEL HEIGHTS", "CREEKSTONE"].includes(formData.purok?.toUpperCase());
+
+    if (isSubdivision) {
       if (!formData.phaseNumber) newErrors.phaseNumber = true;
       if (!formData.blockNumber) newErrors.blockNumber = true;
       if (!formData.lotNumber) newErrors.lotNumber = true;
@@ -139,8 +141,10 @@ export default function EducationalAssistanceModal({
       formData;
     let address = "";
 
-    if (purok === "NV9") {
-      address = `Phase ${phaseNumber}, Block ${blockNumber}, Lot ${lotNumber}, NV9`;
+    const isSubdivision = ["NV9", "NORTH VILLE 9", "HAZEL HEIGHTS", "CREEKSTONE"].includes(purok?.toUpperCase());
+
+    if (isSubdivision) {
+      address = `Phase ${phaseNumber}, Block ${blockNumber}, Lot ${lotNumber}, ${purok}`;
     } else {
       address = `House #${houseNumber}, ${purok}`;
     }
@@ -538,7 +542,9 @@ export default function EducationalAssistanceModal({
                             "Purok 4",
                             "Purok 5",
                             "Purok 6",
-                            "NV9",
+                            "NORTH VILLE 9",
+                            "HAZEL HEIGHTS",
+                            "CREEKSTONE",
                           ].map((p) => (
                             <option key={p} value={p}>
                               {p.toUpperCase()}
@@ -552,7 +558,7 @@ export default function EducationalAssistanceModal({
                           Identification Number / Numero ng Pagkakakilanlan{" "}
                           <span className="text-red-500">*</span>
                         </label>
-                        {formData.purok === "NV9" ? (
+                        {["NV9", "NORTH VILLE 9", "HAZEL HEIGHTS", "CREEKSTONE"].includes(formData.purok?.toUpperCase()) ? (
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1">
                               <input

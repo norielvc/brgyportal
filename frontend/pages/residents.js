@@ -236,11 +236,11 @@ export default function Residents() {
   };
 
   const handleOpenEditModal = () => {
-    const isNorthVille9 = selectedResident.purok === 'NORTH VILLE 9';
+    const isSubdivision = isSubdivisionPurok(selectedResident.purok);
     let phase = "";
     let block = "";
     let lot = "";
-    if (isNorthVille9 && selectedResident.house_number) {
+    if (isSubdivision && selectedResident.house_number) {
       const match = selectedResident.house_number.match(/PHASE\s*(\d+)\s*BLOCK\s*(\d+)\s*LOT\s*(\d+)/i);
       if (match) {
         phase = match[1] || "";
@@ -269,8 +269,8 @@ export default function Residents() {
       // Clean up data for database compatibility
       const cleanedData = { ...formData };
 
-      // For North Ville 9, combine phase/block/lot into house_number
-      if (cleanedData.purok === 'NORTH VILLE 9') {
+      // For subdivisions (North Ville 9, Hazel Heights, Creekstone), combine phase/block/lot into house_number
+      if (isSubdivisionPurok(cleanedData.purok)) {
         const phase = cleanedData.phase?.trim() || '';
         const block = cleanedData.block?.trim() || '';
         const lot = cleanedData.lot?.trim() || '';
@@ -1255,7 +1255,7 @@ export default function Residents() {
                 </select>
               </div>
 
-              {formData.purok === 'NORTH VILLE 9' ? (
+              {isSubdivisionPurok(formData.purok) ? (
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <label className="label">Phase <span className="text-red-500">*</span></label>
@@ -1359,7 +1359,7 @@ export default function Residents() {
               <p className="text-sm font-semibold text-gray-800 uppercase">
                 {generateFullAddress({
                   ...formData,
-                  house_number: formData.purok === 'NORTH VILLE 9'
+                  house_number: isSubdivisionPurok(formData.purok)
                     ? [formData.phase?.trim() && `PHASE ${formData.phase.trim()}`, formData.block?.trim() && `BLOCK ${formData.block.trim()}`, formData.lot?.trim() && `LOT ${formData.lot.trim()}`].filter(Boolean).join(' ')
                     : formData.house_number,
                 }) || 'Enter house number and purok to see preview'}

@@ -100,7 +100,7 @@ export function parseAddress(addressString) {
   if (purokMatch) {
     result.purok = parts[0];
     parts.shift();
-  } else if (parts[0]?.match(/^(PUROK|SITIO|NV9|NORTH VILLE 9)/i)) {
+  } else if (parts[0]?.match(/^(PUROK|SITIO|NV9|NORTH VILLE 9|NORTHVILLE 9|HAZEL HEIGHTS|CREEKSTONE)/i)) {
     result.purok = parts[0];
     parts.shift();
   }
@@ -143,6 +143,27 @@ export function validateAddress(addressData) {
 }
 
 /**
+ * Subdivisions that use Phase, Block, and Lot format
+ */
+export const SUBDIVISION_PUROKS = [
+  'NORTH VILLE 9',
+  'NORTHVILLE 9',
+  'NV9',
+  'HAZEL HEIGHTS',
+  'CREEKSTONE',
+];
+
+/**
+ * Check if a purok/location is a subdivision with Phase/Block/Lot
+ * @param {string} purok
+ * @returns {boolean}
+ */
+export function isSubdivisionPurok(purok) {
+  if (!purok) return false;
+  return SUBDIVISION_PUROKS.includes(purok.trim().toUpperCase());
+}
+
+/**
  * Common purok options for dropdown
  */
 export const PUROK_OPTIONS = [
@@ -153,4 +174,6 @@ export const PUROK_OPTIONS = [
   { value: 'Purok 5', label: 'Purok 5' },
   { value: 'Purok 6', label: 'Purok 6' },
   { value: 'NORTH VILLE 9', label: 'NORTH VILLE 9' },
+  { value: 'HAZEL HEIGHTS', label: 'HAZEL HEIGHTS' },
+  { value: 'CREEKSTONE', label: 'CREEKSTONE' },
 ];

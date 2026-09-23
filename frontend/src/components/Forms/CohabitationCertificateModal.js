@@ -7,7 +7,7 @@
 import React, { useState } from 'react';
 import UnifiedCertModal from './UnifiedCertModal';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
-import { PUROK_OPTIONS } from '../../lib/addressHelper';
+import { PUROK_OPTIONS, isSubdivisionPurok } from '../../lib/addressHelper';
 import { Search, CheckCircle, MapPin, Info } from 'lucide-react';
 
 export default function CohabitationCertificateModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
@@ -37,8 +37,8 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
   // Auto barangay suffix for the full address
   const barangaySuffix = `${barangay}, ${municipality}, ${province}`;
 
-  // Effective house number: combine phase/block/lot for North Ville 9
-  const effectiveHouseNo = purok === 'NORTH VILLE 9'
+  // Effective house number: combine phase/block/lot for subdivisions (North Ville 9, Hazel Heights, Creekstone)
+  const effectiveHouseNo = isSubdivisionPurok(purok)
     ? [phase.trim() && `PHASE ${phase.trim()}`, block.trim() && `BLOCK ${block.trim()}`, lot.trim() && `LOT ${lot.trim()}`].filter(Boolean).join(' ')
     : houseNo;
 
@@ -176,7 +176,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
       </div>
 
       {/* House No. or Phase/Block/Lot — conditional on purok */}
-      {purok === 'NORTH VILLE 9' ? (
+      {isSubdivisionPurok(purok) ? (
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
