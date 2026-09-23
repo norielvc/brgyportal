@@ -27,6 +27,7 @@ export function generateFullAddress(addressData) {
   const {
     house_number,
     purok,
+    subdivision,
     barangay,
     municipality,
     province,
@@ -44,8 +45,17 @@ export function generateFullAddress(addressData) {
     }
   }
 
-  if (purok?.trim()) {
-    parts.push(purok.trim().toUpperCase());
+  // Determine subdivision and parent purok if purok is a subdivision key
+  const subInfo = getSubdivisionInfo(purok || subdivision);
+  const effectiveSubdivision = subInfo?.subdivision || (subdivision ? subdivision.trim().toUpperCase() : null);
+  const effectivePurok = subInfo?.parentPurok || purok;
+
+  if (effectiveSubdivision) {
+    parts.push(effectiveSubdivision);
+  }
+
+  if (effectivePurok?.trim()) {
+    parts.push(effectivePurok.trim().toUpperCase());
   }
 
   if (barangay?.trim()) {
@@ -143,8 +153,16 @@ export function validateAddress(addressData) {
 }
 
 /**
- * Subdivisions that use Phase, Block, and Lot format
+ * Subdivisions that use Phase, Block, and Lot format with their assigned Parent Purok
  */
+export const SUBDIVISIONS_CONFIG = {
+  'HAZEL HEIGHTS': { subdivision: 'HAZEL HEIGHTS', parentPurok: 'Purok 1', label: 'PUROK 1 - HAZEL HEIGHTS' },
+  'CREEKSTONE': { subdivision: 'CREEKSTONE', parentPurok: 'Purok 1', label: 'PUROK 1 - CREEKSTONE' },
+  'NORTH VILLE 9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', label: 'PUROK 2 - NORTH VILLE 9' },
+  'NORTHVILLE 9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', label: 'PUROK 2 - NORTH VILLE 9' },
+  'NV9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', label: 'PUROK 2 - NORTH VILLE 9' },
+};
+
 export const SUBDIVISION_PUROKS = [
   'NORTH VILLE 9',
   'NORTHVILLE 9',
@@ -154,26 +172,41 @@ export const SUBDIVISION_PUROKS = [
 ];
 
 /**
+ * Get subdivision details and assigned parent purok
+ * @param {string} val
+ * @returns {{ subdivision: string, parentPurok: string, label: string } | null}
+ */
+export function getSubdivisionInfo(val) {
+  if (!val) return null;
+  const upper = val.trim().toUpperCase();
+  if (SUBDIVISIONS_CONFIG[upper]) return SUBDIVISIONS_CONFIG[upper];
+  if (upper.includes('HAZEL')) return SUBDIVISIONS_CONFIG['HAZEL HEIGHTS'];
+  if (upper.includes('CREEKSTONE')) return SUBDIVISIONS_CONFIG['CREEKSTONE'];
+  if (upper.includes('NORTH') || upper.includes('NV9')) return SUBDIVISIONS_CONFIG['NORTH VILLE 9'];
+  return null;
+}
+
+/**
  * Check if a purok/location is a subdivision with Phase/Block/Lot
  * @param {string} purok
  * @returns {boolean}
  */
 export function isSubdivisionPurok(purok) {
   if (!purok) return false;
-  return SUBDIVISION_PUROKS.includes(purok.trim().toUpperCase());
+  return getSubdivisionInfo(purok) !== null;
 }
 
 /**
  * Common purok options for dropdown
  */
 export const PUROK_OPTIONS = [
-  { value: 'Purok 1', label: 'Purok 1' },
-  { value: 'Purok 2', label: 'Purok 2' },
-  { value: 'Purok 3', label: 'Purok 3' },
-  { value: 'Purok 4', label: 'Purok 4' },
-  { value: 'Purok 5', label: 'Purok 5' },
-  { value: 'Purok 6', label: 'Purok 6' },
-  { value: 'NORTH VILLE 9', label: 'NORTH VILLE 9' },
-  { value: 'HAZEL HEIGHTS', label: 'HAZEL HEIGHTS' },
-  { value: 'CREEKSTONE', label: 'CREEKSTONE' },
+  { value: 'Purok 1', label: 'PUROK 1' },
+  { value: 'HAZEL HEIGHTS', label: 'PUROK 1 - HAZEL HEIGHTS' },
+  { value: 'CREEKSTONE', label: 'PUROK 1 - CREEKSTONE' },
+  { value: 'Purok 2', label: 'PUROK 2' },
+  { value: 'NORTH VILLE 9', label: 'PUROK 2 - NORTH VILLE 9' },
+  { value: 'Purok 3', label: 'PUROK 3' },
+  { value: 'Purok 4', label: 'PUROK 4' },
+  { value: 'Purok 5', label: 'PUROK 5' },
+  { value: 'Purok 6', label: 'PUROK 6' },
 ];

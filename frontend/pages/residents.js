@@ -35,7 +35,7 @@ import Modal from "@/components/UI/Modal";
 import IssueIDModal from "@/components/Modals/IssueIDModal";
 import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
-import { generateFullAddress, PUROK_OPTIONS, isSubdivisionPurok } from "@/lib/addressHelper";
+import { generateFullAddress, PUROK_OPTIONS, isSubdivisionPurok, getSubdivisionInfo } from "@/lib/addressHelper";
 
 export default function Residents() {
   const router = useRouter();
@@ -236,20 +236,34 @@ export default function Residents() {
   };
 
   const handleOpenEditModal = () => {
-    const isSubdivision = isSubdivisionPurok(selectedResident.purok);
+    const addr = selectedResident.residential_address || "";
+    let detectedPurokValue = selectedResident.purok || "";
+
+    if (/HAZEL\s*HEIGHTS/i.test(addr) || /HAZEL\s*HEIGHTS/i.test(selectedResident.purok)) {
+      detectedPurokValue = "HAZEL HEIGHTS";
+    } else if (/CREEKSTONE/i.test(addr) || /CREEKSTONE/i.test(selectedResident.purok)) {
+      detectedPurokValue = "CREEKSTONE";
+    } else if (/NORTH\s*VILLE\s*9|NORTHVILLE\s*9|NV9/i.test(addr) || /NORTH\s*VILLE\s*9|NORTHVILLE\s*9|NV9/i.test(selectedResident.purok)) {
+      detectedPurokValue = "NORTH VILLE 9";
+    }
+
+    const isSubdivision = isSubdivisionPurok(detectedPurokValue);
     let phase = "";
     let block = "";
     let lot = "";
-    if (isSubdivision && selectedResident.house_number) {
-      const match = selectedResident.house_number.match(/PHASE\s*(\d+)\s*BLOCK\s*(\d+)\s*LOT\s*(\d+)/i);
-      if (match) {
-        phase = match[1] || "";
-        block = match[2] || "";
-        lot = match[3] || "";
-      }
+    if (isSubdivision) {
+      const fullHouseText = `${selectedResident.house_number || ""} ${addr}`;
+      const pMatch = fullHouseText.match(/PHASE\s*(\d+)/i);
+      const bMatch = fullHouseText.match(/BLOCK\s*(\d+)/i);
+      const lMatch = fullHouseText.match(/LOT\s*(\d+)/i);
+      if (pMatch) phase = pMatch[1];
+      if (bMatch) block = bMatch[1];
+      if (lMatch) lot = lMatch[1];
     }
+
     setFormData({
       ...selectedResident,
+      purok: detectedPurokValue,
       phase,
       block,
       lot,
@@ -268,22 +282,26 @@ export default function Residents() {
     try {
       // Clean up data for database compatibility
       const cleanedData = { ...formData };
+      const subInfo = getSubdivisionInfo(cleanedData.purok);
 
       // For subdivisions (North Ville 9, Hazel Heights, Creekstone), combine phase/block/lot into house_number
-      if (isSubdivisionPurok(cleanedData.purok)) {
+      if (subInfo) {
         const phase = cleanedData.phase?.trim() || '';
         const block = cleanedData.block?.trim() || '';
         const lot = cleanedData.lot?.trim() || '';
         cleanedData.house_number = [phase && `PHASE ${phase}`, block && `BLOCK ${block}`, lot && `LOT ${lot}`].filter(Boolean).join(' ');
+        // Set underlying parent purok (e.g. Purok 1 or Purok 2) for census querying
+        cleanedData.purok = subInfo.parentPurok;
       }
 
-      // Generate full address for backward compatibility, filling in tenant defaults if needed
+      // Generate full address with subdivision & parent purok
       const effectiveBarangay = cleanedData.barangay || tenantAddressDefaults.barangay;
       const effectiveMunicipality = cleanedData.municipality || tenantAddressDefaults.municipality;
       const effectiveProvince = cleanedData.province || tenantAddressDefaults.province;
       cleanedData.residential_address = generateFullAddress({
         house_number: cleanedData.house_number,
-        purok: cleanedData.purok,
+        purok: subInfo ? subInfo.parentPurok : cleanedData.purok,
+        subdivision: subInfo ? subInfo.subdivision : null,
         barangay: effectiveBarangay,
         municipality: effectiveMunicipality,
         province: effectiveProvince,
