@@ -149,7 +149,9 @@ export default function EducationalAssistanceModal({
     const isCreekstone = purok?.toUpperCase() === "CREEKSTONE";
 
     if (isNorthVille) {
-      address = `Phase ${phaseNumber}, Block ${blockNumber}, Lot ${lotNumber}, ${purok}`;
+      const ph = phaseNumber?.trim() || '';
+      const formattedPhase = ph.toUpperCase().startsWith('PHASE') || ['YAKAL', 'PALIKPIK'].includes(ph.toUpperCase()) ? ph.toUpperCase() : `Phase ${ph}`;
+      address = `${formattedPhase}, Block ${blockNumber}, Lot ${lotNumber}, ${purok}`;
     } else if (isCreekstone) {
       address = `Block ${blockNumber}, Lot ${lotNumber}, ${purok}`;
     } else {
@@ -569,14 +571,18 @@ export default function EducationalAssistanceModal({
                         {["NV9", "NORTH VILLE 9"].includes(formData.purok?.toUpperCase()) ? (
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1">
-                              <input
-                                type="text"
+                              <select
                                 name="phaseNumber"
                                 value={formData.phaseNumber}
                                 onChange={handleInputChange}
-                                placeholder="PH"
-                                className={`w-full px-4 py-4 bg-white border-2 ${errors.phaseNumber ? "border-red-500 bg-red-50" : "border-gray-100"} rounded-xl focus:border-[#2d5a3d] outline-none text-center font-black`}
-                              />
+                                className={`w-full px-4 py-4 bg-white border-2 ${errors.phaseNumber ? "border-red-500 bg-red-50" : "border-gray-100"} rounded-xl focus:border-[#2d5a3d] outline-none text-center font-black uppercase text-sm`}
+                              >
+                                <option value="">-- Phase --</option>
+                                <option value="PHASE 1">PHASE 1</option>
+                                <option value="PHASE 2">PHASE 2</option>
+                                <option value="YAKAL">YAKAL</option>
+                                <option value="PALIKPIK">PALIKPIK</option>
+                              </select>
                               <span className="text-sm text-gray-400 font-black uppercase text-center block">
                                 Phase / Bahagi
                               </span>

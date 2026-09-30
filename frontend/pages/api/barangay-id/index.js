@@ -285,12 +285,17 @@ export default async function handler(req, res) {
         resident.dob ||
         null;
 
+      let cleanBirthDate = null;
       let resolvedAge = resident.age || null;
       if (resolvedBirthDate) {
         const b = new Date(resolvedBirthDate);
         if (!isNaN(b.getTime())) {
-          const ageDiff = Date.now() - b.getTime();
-          resolvedAge = Math.floor(ageDiff / (1000 * 60 * 60 * 24 * 365.25));
+          const year = b.getFullYear();
+          if (year >= 1900 && year <= 2026) {
+            cleanBirthDate = b.toISOString().split("T")[0];
+            const ageDiff = Date.now() - b.getTime();
+            resolvedAge = Math.floor(ageDiff / (1000 * 60 * 60 * 24 * 365.25));
+          }
         }
       }
 
@@ -308,7 +313,7 @@ export default async function handler(req, res) {
         suffix: suffix || null,
         gender: customGender || resident.gender || "MALE",
         civil_status: customCivilStatus || resident.civil_status || "SINGLE",
-        birth_date: resolvedBirthDate,
+        birth_date: cleanBirthDate,
         age: resolvedAge,
         address: fullAddress || "Barangay Jurisdiction",
         purok: customPurok || resident.purok || null,

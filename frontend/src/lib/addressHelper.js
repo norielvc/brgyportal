@@ -227,3 +227,14 @@ export const PUROK_OPTIONS = [
   { value: 'Purok 5', label: 'PUROK 5' },
   { value: 'Purok 6', label: 'PUROK 6' },
 ];
+
+/**
+ * Phase options for Northville 9 / subdivisions with phases
+ */
+export const PHASE_OPTIONS = [
+  { value: 'PHASE 1', label: 'PHASE 1' },
+  { value: 'PHASE 2', label: 'PHASE 2' },
+  { value: 'YAKAL', label: 'YAKAL' },
+  { value: 'PALIKPIK', label: 'PALIKPIK' },
+];
+

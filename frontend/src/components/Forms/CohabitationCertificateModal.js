@@ -7,7 +7,7 @@
 import React, { useState } from 'react';
 import UnifiedCertModal from './UnifiedCertModal';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
-import { PUROK_OPTIONS, isSubdivisionPurok, hasPhaseField } from '../../lib/addressHelper';
+import { PUROK_OPTIONS, PHASE_OPTIONS, isSubdivisionPurok, hasPhaseField } from '../../lib/addressHelper';
 import { Search, CheckCircle, MapPin, Info } from 'lucide-react';
 
 export default function CohabitationCertificateModal({ isOpen, onClose, isDemo = false, tenantConfig = {} }) {
@@ -38,8 +38,9 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
   const barangaySuffix = `${barangay}, ${municipality}, ${province}`;
 
   // Effective house number: combine phase/block/lot for subdivisions (North Ville 9, Hazel Heights, Creekstone)
+  const effectivePhase = phase.trim() ? (phase.trim().toUpperCase().startsWith('PHASE') || ['YAKAL', 'PALIKPIK'].includes(phase.trim().toUpperCase()) ? phase.trim().toUpperCase() : `PHASE ${phase.trim()}`) : '';
   const effectiveHouseNo = isSubdivisionPurok(purok)
-    ? [phase.trim() && `PHASE ${phase.trim()}`, block.trim() && `BLOCK ${block.trim()}`, lot.trim() && `LOT ${lot.trim()}`].filter(Boolean).join(' ')
+    ? [effectivePhase, block.trim() && `BLOCK ${block.trim()}`, lot.trim() && `LOT ${lot.trim()}`].filter(Boolean).join(' ')
     : houseNo;
 
   // Composed full address
@@ -183,14 +184,19 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
               <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
                 Phase <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 required
                 value={phase}
                 onChange={e => setPhase(e.target.value)}
-                placeholder="1"
-                className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase text-center"
-              />
+                className="w-full px-4 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase"
+              >
+                <option value="">-- Select --</option>
+                {PHASE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">

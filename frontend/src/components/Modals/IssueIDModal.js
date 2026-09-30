@@ -138,9 +138,12 @@ export default function IssueIDModal({
     let formattedBirthDate = "";
     if (resolvedBirthDate) {
       try {
-        formattedBirthDate = new Date(resolvedBirthDate).toISOString().split("T")[0];
+        const d = new Date(resolvedBirthDate);
+        if (!isNaN(d.getTime()) && d.getFullYear() >= 1900 && d.getFullYear() <= 2026) {
+          formattedBirthDate = d.toISOString().split("T")[0];
+        }
       } catch {
-        formattedBirthDate = String(resolvedBirthDate).substring(0, 10);
+        formattedBirthDate = "";
       }
     }
 

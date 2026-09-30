@@ -35,7 +35,7 @@ import Modal from "@/components/UI/Modal";
 import IssueIDModal from "@/components/Modals/IssueIDModal";
 import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
-import { generateFullAddress, PUROK_OPTIONS, isSubdivisionPurok, getSubdivisionInfo, hasPhaseField } from "@/lib/addressHelper";
+import { generateFullAddress, PUROK_OPTIONS, PHASE_OPTIONS, isSubdivisionPurok, getSubdivisionInfo, hasPhaseField } from "@/lib/addressHelper";
 
 export default function Residents() {
   const router = useRouter();
@@ -255,10 +255,17 @@ export default function Residents() {
     let lot = "";
     if (isSubdivision) {
       const fullHouseText = `${selectedResident.house_number || ""} ${addr}`;
-      const pMatch = fullHouseText.match(/PHASE\s*(\d+)/i);
+      const pMatch = fullHouseText.match(/PHASE\s*(\d+|1|2|YAKAL|PALIKPIK)|YAKAL|PALIKPIK/i);
       const bMatch = fullHouseText.match(/BLOCK\s*(\d+)/i);
       const lMatch = fullHouseText.match(/LOT\s*(\d+)/i);
-      if (pMatch) phase = pMatch[1];
+      if (pMatch) {
+        const val = pMatch[0].trim().toUpperCase();
+        if (val.includes('1') || val === '1') phase = 'PHASE 1';
+        else if (val.includes('2') || val === '2') phase = 'PHASE 2';
+        else if (val.includes('YAKAL')) phase = 'YAKAL';
+        else if (val.includes('PALIKPIK')) phase = 'PALIKPIK';
+        else phase = val;
+      }
       if (bMatch) block = bMatch[1];
       if (lMatch) lot = lMatch[1];
     }
@@ -289,10 +296,11 @@ export default function Residents() {
       // For subdivisions requiring phase/block/lot (North Ville 9, Creekstone), combine into house_number
       if (subInfo) {
         if (subInfo.hasPhaseBlockLot) {
-          const phase = cleanedData.phase?.trim() || '';
+          const rawPhase = cleanedData.phase?.trim().toUpperCase() || '';
+          const phase = rawPhase ? (rawPhase.startsWith('PHASE') || ['YAKAL', 'PALIKPIK'].includes(rawPhase) ? rawPhase : `PHASE ${rawPhase}`) : '';
           const block = cleanedData.block?.trim() || '';
           const lot = cleanedData.lot?.trim() || '';
-          cleanedData.house_number = [phase && `PHASE ${phase}`, block && `BLOCK ${block}`, lot && `LOT ${lot}`].filter(Boolean).join(' ');
+          cleanedData.house_number = [phase, block && `BLOCK ${block}`, lot && `LOT ${lot}`].filter(Boolean).join(' ');
         }
         // Set underlying parent purok (e.g. Purok 1 or Purok 2) for census querying
         cleanedData.purok = subInfo.parentPurok;
@@ -1282,16 +1290,21 @@ export default function Residents() {
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <label className="label">Phase <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
+                      <select
                         required
-                        placeholder="1"
-                        className="input uppercase font-bold text-center"
+                        className="input uppercase font-bold"
                         value={formData.phase}
                         onChange={(e) =>
                           setFormData({ ...formData, phase: e.target.value })
                         }
-                      />
+                      >
+                        <option value="">-- Select --</option>
+                        {PHASE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="label">Block <span className="text-red-500">*</span></label>
@@ -1413,7 +1426,11 @@ export default function Residents() {
                 {generateFullAddress({
                   ...formData,
                   house_number: isSubdivisionPurok(formData.purok)
-                    ? [formData.phase?.trim() && `PHASE ${formData.phase.trim()}`, formData.block?.trim() && `BLOCK ${formData.block.trim()}`, formData.lot?.trim() && `LOT ${formData.lot.trim()}`].filter(Boolean).join(' ')
+                    ? [
+                        formData.phase?.trim() && (formData.phase.trim().toUpperCase().startsWith('PHASE') || ['YAKAL', 'PALIKPIK'].includes(formData.phase.trim().toUpperCase()) ? formData.phase.trim().toUpperCase() : `PHASE ${formData.phase.trim()}`),
+                        formData.block?.trim() && `BLOCK ${formData.block.trim()}`,
+                        formData.lot?.trim() && `LOT ${formData.lot.trim()}`
+                      ].filter(Boolean).join(' ')
                     : formData.house_number,
                 }) || 'Enter house number and purok to see preview'}
               </p>
