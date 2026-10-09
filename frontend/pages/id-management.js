@@ -61,6 +61,7 @@ export default function IDManagement() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Modals
   const [showIssueModal, setShowIssueModal] = useState(false);
@@ -82,6 +83,7 @@ export default function IDManagement() {
         search: search.trim(),
         status: statusFilter,
         printed_status: printedFilter,
+        purok: purokFilter !== "All Puroks" ? purokFilter : "",
       });
 
       const res = await fetch(`/api/barangay-id?${queryParams.toString()}`, {
@@ -115,7 +117,7 @@ export default function IDManagement() {
 
   useEffect(() => {
     fetchIDs();
-  }, [page, statusFilter, printedFilter]);
+  }, [page, statusFilter, printedFilter, purokFilter]);
 
   // Debounced search
   useEffect(() => {
@@ -126,43 +128,76 @@ export default function IDManagement() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Filtered IDs by Purok
+  // Filtered IDs by Purok (purok is filtered on server, so filteredIDs matches ids)
   const filteredIDs = useMemo(() => {
-    if (purokFilter === "All Puroks") return ids;
-    return ids.filter(
-      (item) =>
-        item.purok?.toLowerCase() === purokFilter.toLowerCase() ||
-        item.address?.toLowerCase().includes(purokFilter.toLowerCase())
-    );
-  }, [ids, purokFilter]);
+    return ids;
+  }, [ids]);
 
-  // Export to Excel
-  const handleExportExcel = () => {
-    if (ids.length === 0) {
-      toast.error("No ID records to export");
-      return;
+  // Export ALL matching records to Excel
+  const handleExportExcel = async () => {
+    if (isExporting) return;
+
+    setIsExporting(true);
+    const toastId = toast.loading("Preparing all ID records for export...");
+
+    try {
+      const token = localStorage.getItem("token");
+      const queryParams = new URLSearchParams({
+        search: search.trim(),
+        status: statusFilter,
+        printed_status: printedFilter,
+        purok: purokFilter !== "All Puroks" ? purokFilter : "",
+      });
+
+      const res = await fetch(`/api/barangay-id/export?${queryParams.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch export data from server");
+      }
+
+      const json = await res.json();
+      if (!json.success || !json.data || json.data.length === 0) {
+        toast.error("No ID records found to export", { id: toastId });
+        return;
+      }
+
+      const exportRows = json.data.map((c) => {
+        // FIRST_MI - first name + middle initial
+        let firstMi = "";
+        if (c.first_name) {
+          const middleInitial = c.middle_name ? `${c.middle_name.trim().charAt(0)}.` : "";
+          firstMi = `${c.first_name.trim()} ${middleInitial}`.trim();
+        } else if (c.full_name) {
+          firstMi = c.full_name;
+        }
+
+        return {
+          "FIRST_MI": firstMi,
+          "LAST_NAME": c.last_name || "",
+          "ADDRESS": c.address || "",
+          "EC CARD_NUMBER": c.id_number || "",
+          "EC CARD_NUMBER_QR_CODE": c.id_number || "", // Same as ID number for QR generation
+          "PRINTED": c.is_printed ? "PRINTED" : "NOT PRINTED",
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(exportRows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Barangay IDs");
+
+      const dateStr = new Date().toISOString().split("T")[0];
+      const filterSuffix = statusFilter !== "all" ? `_${statusFilter}` : "";
+      XLSX.writeFile(workbook, `Barangay_IDs_Export${filterSuffix}_${dateStr}.xlsx`);
+
+      toast.success(`Successfully exported all ${exportRows.length.toLocaleString()} Barangay ID records!`, { id: toastId });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export Barangay IDs", { id: toastId });
+    } finally {
+      setIsExporting(false);
     }
-
-    const data = ids.map((c) => {
-      // FIRST_MI - first name + middle initial
-      const middleInitial = c.middle_name ? `${c.middle_name.charAt(0)}.` : "";
-      const firstMi = `${c.first_name || ""} ${middleInitial}`.trim();
-
-      return {
-        "FIRST_MI": firstMi,
-        "LAST_NAME": c.last_name || "",
-        "ADDRESS": c.address || "",
-        "EC CARD_NUMBER": c.id_number || "",
-        "EC CARD_NUMBER_QR_CODE": c.id_number || "", // Same as ID number for QR generation
-      };
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Barangay IDs");
-    
-    XLSX.writeFile(workbook, `Barangay_IDs_Export_${new Date().toISOString().split("T")[0]}.xlsx`);
-    toast.success("Barangay ID Ledger exported to Excel!");
   };
 
   // Handle Renew
@@ -354,12 +389,17 @@ export default function IDManagement() {
 
               <button
                 type="button"
+                disabled={isExporting}
                 onClick={handleExportExcel}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-[11px] sm:text-xs font-black rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-[11px] sm:text-xs font-black rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Export Official ID Registry Ledger (Excel)"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
-                <span className="whitespace-nowrap">Export</span>
+                {isExporting ? (
+                  <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
+                )}
+                <span className="whitespace-nowrap">{isExporting ? "Exporting..." : "Export"}</span>
               </button>
 
               <button
@@ -378,7 +418,10 @@ export default function IDManagement() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {/* Total Issued */}
           <div
-            onClick={() => setStatusFilter("all")}
+            onClick={() => {
+              setStatusFilter("all");
+              setPage(1);
+            }}
             className={`p-3.5 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
               statusFilter === "all"
                 ? "border-[#03254c] ring-2 ring-[#03254c]/15"
@@ -404,7 +447,10 @@ export default function IDManagement() {
 
           {/* Active Valid */}
           <div
-            onClick={() => setStatusFilter("active")}
+            onClick={() => {
+              setStatusFilter("active");
+              setPage(1);
+            }}
             className={`p-3.5 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
               statusFilter === "active"
                 ? "border-emerald-600 ring-2 ring-emerald-600/15"
@@ -432,7 +478,10 @@ export default function IDManagement() {
 
           {/* Expiring Soon */}
           <div
-            onClick={() => setStatusFilter("expired")}
+            onClick={() => {
+              setStatusFilter("expired");
+              setPage(1);
+            }}
             className={`p-3.5 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
               statusFilter === "expired"
                 ? "border-amber-500 ring-2 ring-amber-500/15"
@@ -458,7 +507,10 @@ export default function IDManagement() {
 
           {/* Revoked / Lost */}
           <div
-            onClick={() => setStatusFilter("revoked")}
+            onClick={() => {
+              setStatusFilter("revoked");
+              setPage(1);
+            }}
             className={`p-3.5 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
               statusFilter === "revoked"
                 ? "border-rose-600 ring-2 ring-rose-600/15"
@@ -513,7 +565,10 @@ export default function IDManagement() {
               <div className="flex-1 lg:w-48">
                 <select
                   value={purokFilter}
-                  onChange={(e) => setPurokFilter(e.target.value)}
+                  onChange={(e) => {
+                    setPurokFilter(e.target.value);
+                    setPage(1);
+                  }}
                   className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50/80 border border-gray-200 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#03254c] focus:bg-white cursor-pointer"
                 >
                   {PUROK_LIST.map((p) => (
@@ -580,7 +635,10 @@ export default function IDManagement() {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setStatusFilter(tab.id)}
+                  onClick={() => {
+                    setStatusFilter(tab.id);
+                    setPage(1);
+                  }}
                   className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                     statusFilter === tab.id
                       ? "bg-[#03254c] text-white shadow-xs"
@@ -610,7 +668,10 @@ export default function IDManagement() {
                 <button
                   key={`print-${tab.id}`}
                   type="button"
-                  onClick={() => setPrintedFilter(tab.id)}
+                  onClick={() => {
+                    setPrintedFilter(tab.id);
+                    setPage(1);
+                  }}
                   className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                     printedFilter === tab.id
                       ? "bg-emerald-600 text-white shadow-xs"
@@ -861,6 +922,7 @@ export default function IDManagement() {
                     <th className="py-4 px-5 whitespace-nowrap">Address</th>
                     <th className="py-4 px-5 whitespace-nowrap">Issuance & Expiry</th>
                     <th className="py-4 px-5 whitespace-nowrap">Status</th>
+                    <th className="py-4 px-5 whitespace-nowrap">Printed Status</th>
                     <th className="py-4 px-5 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
@@ -901,18 +963,36 @@ export default function IDManagement() {
                         </div>
                       </td>
                       <td className="py-4 px-5">
-                        <div className="flex flex-col gap-1.5 items-start">
-                          {getStatusBadge(card.status, card.expiry_date)}
-                          {card.is_printed ? (
-                            <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 cursor-pointer transition-colors" title="Click to mark as NOT printed">
-                               <Printer className="w-2.5 h-2.5" /> Printed
-                            </button>
-                          ) : (
-                            <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 cursor-pointer transition-colors shadow-xs" title="Click to mark as PRINTED">
-                               <Printer className="w-2.5 h-2.5" /> Pending Print
-                            </button>
-                          )}
-                        </div>
+                        {getStatusBadge(card.status, card.expiry_date)}
+                      </td>
+                      <td className="py-4 px-5">
+                        {card.is_printed ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTogglePrintStatus(card);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer transition-colors shadow-2xs"
+                            title="Click to toggle print status"
+                          >
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>PRINTED</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTogglePrintStatus(card);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 cursor-pointer transition-colors shadow-2xs"
+                            title="Click to toggle print status"
+                          >
+                            <Printer className="w-3 h-3 text-amber-600" />
+                            <span>NOT PRINTED</span>
+                          </button>
+                        )}
                       </td>
                       <td
                         className="py-4 px-5 text-right whitespace-nowrap"

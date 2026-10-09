@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   // ── GET: List Barangay IDs with filters and stats ──────────────────────────
   if (req.method === "GET") {
     try {
-      const { search = "", status = "", printed_status = "", limit = 50, page = 1 } = req.query;
+      const { search = "", status = "", printed_status = "", purok = "", limit = 50, page = 1 } = req.query;
       const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
       // Fetch all IDs for tenant
@@ -51,6 +51,10 @@ export default async function handler(req, res) {
           // Check false or null
           query = query.or("is_printed.eq.false,is_printed.is.null");
         }
+      }
+
+      if (purok && purok !== "All Puroks") {
+        query = query.or(`purok.ilike.%${purok}%,address.ilike.%${purok}%`);
       }
 
       const { data, count, error } = await query.range(offset, offset + parseInt(limit, 10) - 1);
