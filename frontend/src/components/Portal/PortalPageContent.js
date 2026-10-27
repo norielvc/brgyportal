@@ -47,7 +47,7 @@ import {
   Quote,
   Navigation,
   MessageCircle,
-  HeadphonesIcon,
+  Headphones,
   HelpCircle,
   AlertCircle,
   Image as ImageIcon,
@@ -72,7 +72,6 @@ import GuardianshipCertificateModal from "@/components/Forms/GuardianshipCertifi
 import CohabitationCertificateModal from "@/components/Forms/CohabitationCertificateModal";
 import MedicoLegalModal from "@/components/Forms/MedicoLegalModal";
 import SamePersonCertificateModal from "@/components/Forms/SamePersonCertificateModal";
-import ESumbongModal from "@/components/Forms/ESumbongModal";
 import ResidentMobileActionBar from "@/components/Portal/ResidentMobileActionBar";
 import InstallAppModal from "@/components/UI/InstallAppModal";
 import usePwa from "@/lib/usePwa";
@@ -84,7 +83,9 @@ export default function PortalPageContent({ initialTenantId }) {
   const p = getPortalStrings();
   const router = useRouter();
   const [tenantId, setTenantId] = useState((initialTenantId || "ibaoeste").toLowerCase());
-  const [showESumbong, setShowESumbong] = useState(false);
+  const openESumbong = () => {
+    router.push(`/${tenantId}/e-sumbong`);
+  };
 
   const {
     isInstallable,
@@ -213,8 +214,29 @@ export default function PortalPageContent({ initialTenantId }) {
   }, [tenantId]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [navAtPageTop, setNavAtPageTop] = useState(true);
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false);
   const [navCommunityOpen, setNavCommunityOpen] = useState(false);
   const navCommunityRef = useRef(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const syncViewport = () => setIsDesktopViewport(mq.matches);
+    syncViewport();
+    mq.addEventListener("change", syncViewport);
+    return () => mq.removeEventListener("change", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    const updateNavBlend = () => {
+      setNavAtPageTop(window.scrollY < 56);
+    };
+    updateNavBlend();
+    window.addEventListener("scroll", updateNavBlend, { passive: true });
+    return () => window.removeEventListener("scroll", updateNavBlend);
+  }, []);
+
+  const headerSolidBg = mobileMenuOpen || !navAtPageTop || isDesktopViewport;
 
   useEffect(() => {
     if (!navCommunityOpen) return;
@@ -227,14 +249,7 @@ export default function PortalPageContent({ initialTenantId }) {
     return () => document.removeEventListener("mousedown", close);
   }, [navCommunityOpen]);
 
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [mobileMenuOpen]);
+  useScrollLock(mobileMenuOpen);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showAssistance, setShowAssistance] = useState(false);
@@ -947,6 +962,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
   // Get the Barangay Captain from officials data
   const captain = officials.find((o) => o.position_type === "captain");
+  const captainDisplayName = captain?.name || p.kapchatCaptainFallback;
 
   // Load saved KapChat identity from localStorage on mount
   useEffect(() => {
@@ -1245,6 +1261,10 @@ export default function PortalPageContent({ initialTenantId }) {
           }
         }
 
+        .hero-news-slide {
+          transition: opacity 0.5s ease-in-out;
+        }
+
         nav a:hover {
           color: ${tenantConfig.accentColor} !important;
         }
@@ -1303,8 +1323,14 @@ export default function PortalPageContent({ initialTenantId }) {
 
       {/* Portal Header — Government Identity Bar */}
       <div
-        className="sticky top-0 z-[60] pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] pb-2.5 md:pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] md:pb-3 md:py-4 relative overflow-hidden border-b border-white/10 md:static md:z-auto"
-        style={tenantConfig.colorStyle}
+        className={`sticky top-0 z-[60] pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] pb-2.5 md:pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] md:pb-3 md:py-4 relative transition-[background,backdrop-filter,border-color,box-shadow] duration-300 md:static md:z-auto md:overflow-hidden ${
+          mobileMenuOpen ? "overflow-visible" : "overflow-x-hidden overflow-y-visible"
+        } ${
+          !headerSolidBg
+            ? "border-transparent bg-black/25 backdrop-blur-md shadow-none"
+            : "border-b border-white/10 shadow-sm"
+        }`}
+        style={headerSolidBg ? tenantConfig.colorStyle : undefined}
       >
         <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-2 px-4 lg:px-8 relative z-10">
           {/* Left Side - Seal/Logo and Title */}
@@ -1358,10 +1384,28 @@ export default function PortalPageContent({ initialTenantId }) {
 
         </div>
 
-        {/* Mobile navigation drawer */}
+        {/* Mobile navigation drawer — fixed panel so it is not clipped by header overflow */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/15 bg-black/20 backdrop-blur-md max-h-[min(70vh,480px)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
-            <div className="px-4 py-3 space-y-0.5">
+          <>
+            <button
+              type="button"
+              aria-label={p.closeMenu}
+              className="md:hidden fixed inset-0 z-[54] bg-black/35 touch-manipulation"
+              style={{
+                top: "calc(env(safe-area-inset-top, 0px) + 4.25rem)",
+              }}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div
+              className="md:hidden fixed left-0 right-0 z-[55] border-t border-white/15 bg-[#022c22]/95 backdrop-blur-md overflow-y-auto overscroll-contain touch-pan-y animate-in slide-in-from-top-2 duration-200 shadow-xl"
+              style={{
+                top: "calc(env(safe-area-inset-top, 0px) + 4.25rem)",
+                maxHeight:
+                  "calc(100dvh - env(safe-area-inset-top, 0px) - 4.25rem - env(safe-area-inset-bottom, 0px))",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+            <div className="px-4 py-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-0.5">
               {[
                 { href: "#news", label: p.navNews },
                 { href: "#forms", label: p.navForms },
@@ -1420,13 +1464,18 @@ export default function PortalPageContent({ initialTenantId }) {
                 {p.login}
               </button>
             </div>
-          </div>
+            </div>
+          </>
         )}
       </div>
 
       {/* Navigation Bar — desktop only */}
       <nav
-        className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200/90 shadow-sm hidden md:block"
+        className={`sticky top-0 z-50 hidden md:block transition-[background,backdrop-filter,border-color,box-shadow] duration-300 ${
+          navAtPageTop
+            ? "bg-black/15 backdrop-blur-md border-b border-white/15 shadow-none"
+            : "bg-white/95 backdrop-blur-md border-b border-gray-200/90 shadow-sm"
+        }`}
         aria-label="Pangunahing menu"
       >
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -1448,7 +1497,11 @@ export default function PortalPageContent({ initialTenantId }) {
                   href={link.href}
                   title={link.full}
                   role="menuitem"
-                  className="nav-link px-2.5 lg:px-3 py-2 rounded-md text-gray-700 text-sm font-semibold whitespace-nowrap transition-colors hover:bg-gray-100"
+                  className={`nav-link px-2.5 lg:px-3 py-2 rounded-md text-sm font-semibold whitespace-nowrap transition-colors ${
+                    navAtPageTop
+                      ? "text-white/95 hover:bg-white/10"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
                 >
                   {link.short}
                 </a>
@@ -1461,7 +1514,11 @@ export default function PortalPageContent({ initialTenantId }) {
                   aria-expanded={navCommunityOpen}
                   aria-haspopup="true"
                   title={`${p.navFacilities}, ${p.navTourism}, ${p.navAchievements}`}
-                  className="nav-link flex items-center gap-0.5 px-2.5 lg:px-3 py-2 rounded-md text-sm font-semibold whitespace-nowrap text-gray-700 transition-colors hover:bg-gray-100"
+                  className={`nav-link flex items-center gap-0.5 px-2.5 lg:px-3 py-2 rounded-md text-sm font-semibold whitespace-nowrap transition-colors ${
+                    navAtPageTop
+                      ? "text-white/95 hover:bg-white/10"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
                 >
                   {p.navCommunity}
                   <ChevronDown
@@ -1507,7 +1564,7 @@ export default function PortalPageContent({ initialTenantId }) {
         id="news"
         aria-label={p.newsCarouselAria}
         tabIndex={-1}
-        className="relative h-[min(72vh,420px)] min-h-[280px] md:h-[420px] lg:h-[480px] overflow-hidden bg-gray-900 scroll-mt-[4.5rem] md:scroll-mt-0"
+        className="relative overflow-hidden bg-gray-900 scroll-mt-[4.5rem] md:scroll-mt-0 -mt-[calc(env(safe-area-inset-top,0px)+4.25rem)] pt-[calc(env(safe-area-inset-top,0px)+4.25rem)] md:mt-0 md:pt-0 md:-mt-[3.25rem] md:pt-[3.25rem] h-[min(100dvh,42rem)] min-h-[min(30rem,100dvh)] md:min-h-0 md:h-[420px] md:max-h-none lg:h-[480px]"
       >
         <span id="main-content" tabIndex={-1} className="sr-only">
           {p.skipToContent}
@@ -1526,8 +1583,10 @@ export default function PortalPageContent({ initialTenantId }) {
         {newsItems.map((item, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-700 ${
-              currentSlide === index ? "opacity-100 z-10" : "opacity-0 z-0"
+            className={`hero-news-slide absolute inset-0 ${
+              currentSlide === index
+                ? "opacity-100 z-10"
+                : "opacity-0 z-0 pointer-events-none"
             }`}
           >
             {item.image ? (
@@ -1548,25 +1607,31 @@ export default function PortalPageContent({ initialTenantId }) {
                 }}
               />
             )}
-            <div className="absolute inset-0 hero-gradient" />
-            <div className="relative h-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 flex items-end pb-24 md:items-center md:pb-0">
+            <div className="absolute inset-0 hero-gradient" aria-hidden />
+            <div
+              className="absolute inset-x-0 bottom-0 z-[1] h-[min(62%,22rem)] bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none md:hidden"
+              aria-hidden
+            />
+
+            <div className="absolute inset-0 z-[2] flex flex-col justify-end max-w-[1400px] mx-auto w-full px-4 pb-[8.25rem] sm:pb-[8.75rem] md:px-12 md:pb-24 md:justify-center md:items-stretch">
               <div className="max-w-2xl text-white w-full">
                 <span
-                  className="inline-flex items-center px-3 py-1 rounded text-[10px] font-bold uppercase tracking-[0.15em] mb-5 text-white"
+                  className="inline-flex items-center px-3 py-1 rounded text-[10px] font-bold uppercase tracking-[0.15em] mb-2 md:mb-5 text-white"
                   style={{ backgroundColor: `${tenantConfig.accentColor}cc` }}
                 >
                   <Calendar className="w-3 h-3 mr-1.5" />
                   {item.date}
                 </span>
-                <h2 className="text-lg sm:text-xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-3 leading-tight tracking-tight line-clamp-2 md:line-clamp-none">
+                <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-1.5 md:mb-3 leading-tight tracking-tight line-clamp-2 md:line-clamp-none">
                   {item.title}
                 </h2>
-                <p className="text-sm md:text-base text-white/80 mb-4 md:mb-6 line-clamp-2 md:line-clamp-3 leading-relaxed max-w-xl">
+                <p className="text-sm md:text-base text-white/90 mb-3 md:mb-6 line-clamp-2 md:line-clamp-3 leading-snug md:leading-relaxed max-w-xl">
                   {item.description}
                 </p>
                 <button
+                  type="button"
                   onClick={() => setSelectedNewsItem(item)}
-                  className="bg-white px-5 py-3 md:px-6 md:py-2.5 rounded-lg font-semibold transition-opacity hover:opacity-90 flex items-center gap-2 text-sm min-h-[44px] touch-manipulation"
+                  className="bg-white px-5 py-2.5 md:px-6 md:py-2.5 rounded-lg font-semibold transition-opacity hover:opacity-90 inline-flex items-center gap-2 text-sm min-h-[44px] touch-manipulation"
                   style={{ color: tenantConfig.primaryColor }}
                 >
                   {p.readFullAnnouncement}
@@ -1579,7 +1644,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
         {/* Carousel Navigation */}
         {newsItems.length > 1 && (
-          <div className="absolute bottom-[5.5rem] md:bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-2 md:gap-3">
+          <div className="absolute bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))] md:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 md:gap-3 z-30">
             <button
               onClick={() =>
                 setCurrentSlide(
@@ -1970,7 +2035,7 @@ export default function PortalPageContent({ initialTenantId }) {
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 relative z-10">
           <div className="text-center mb-8 md:mb-10 max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.18em] mb-4 border border-white/30 bg-white/15 text-white backdrop-blur-md">
-              <HeadphonesIcon className="w-3.5 h-3.5" />
+              <Headphones className="w-3.5 h-3.5" />
               {p.helpDeskBadge}
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight mb-3 drop-shadow-sm">
@@ -2021,7 +2086,7 @@ export default function PortalPageContent({ initialTenantId }) {
             {/* E-Sumbong */}
             <button
               type="button"
-              onClick={() => setShowESumbong(true)}
+              onClick={openESumbong}
               className="group help-desk-card text-left h-full min-h-[15.5rem] md:min-h-[16.75rem] rounded-2xl border border-red-200/25 bg-white/10 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_8px_24px_-6px_rgba(0,0,0,0.4)] hover:bg-red-950/20 hover:border-red-200/40 transition-all duration-300 p-5 md:p-6 flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent overflow-hidden relative"
             >
               <div
@@ -2061,7 +2126,7 @@ export default function PortalPageContent({ initialTenantId }) {
               </span>
               <div className="flex items-center gap-3 mb-3 min-h-[2.75rem]">
                 <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center bg-white/15 border border-white/20 group-hover:bg-white/20 transition-colors">
-                  <HeadphonesIcon className="w-5 h-5 text-white" />
+                  <Headphones className="w-5 h-5 text-white" />
                 </div>
                 <h3 className="text-lg font-black text-white leading-tight line-clamp-2">{p.brgyAssist}</h3>
               </div>
@@ -4628,26 +4693,28 @@ export default function PortalPageContent({ initialTenantId }) {
         <div className="max-w-[1400px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             {/* Official Identity */}
-            <div className="flex flex-col items-center md:items-start gap-3">
-              <div className="flex items-center gap-3">
-                <img
-                  loading="lazy"
-                  src={tenantConfig.logo}
-                  alt={`${tenantConfig.shortName} seal`}
-                  className="h-14 w-14 object-contain opacity-80"
-                />
-                <div>
-                  <p className="text-white font-bold text-sm leading-tight">{tenantConfig.name}</p>
-                  <p className="text-white/50 text-xs mt-0.5">{tenantConfig.subtitle}</p>
+            <div className="flex flex-col gap-3 max-md:items-start max-md:text-left">
+              <div className="flex justify-start">
+                <div className="flex items-center gap-3 max-md:w-full">
+                  <img
+                    loading="lazy"
+                    src={tenantConfig.logo}
+                    alt={`${tenantConfig.shortName} seal`}
+                    className="h-14 w-14 object-contain opacity-80"
+                  />
+                  <div className="text-left">
+                    <p className="text-white font-bold text-sm leading-tight">{tenantConfig.name}</p>
+                    <p className="text-white/50 text-xs mt-0.5">{tenantConfig.subtitle}</p>
+                  </div>
                 </div>
               </div>
-              <p className="text-xs text-white/40 leading-relaxed text-center md:text-left max-w-xs">
+              <p className="text-xs text-white/40 leading-relaxed text-left max-w-none md:max-w-xs">
                 {p.footerBlurb}
               </p>
             </div>
 
             {/* Quick Links */}
-            <div className="flex flex-col items-center md:items-start gap-2">
+            <div className="flex flex-col items-start gap-2 text-left">
               <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">{p.footerServices}</h4>
               <a href="#forms" className="text-xs text-white/50 hover:text-white transition-colors">{p.footerFormsLink}</a>
               <a href="#citizen-help" className="text-xs text-white/50 hover:text-white transition-colors">{p.footerHelpLink}</a>
@@ -4659,7 +4726,7 @@ export default function PortalPageContent({ initialTenantId }) {
             </div>
 
             {/* Privacy & Compliance */}
-            <div className="flex flex-col items-center md:items-start gap-2">
+            <div className="flex flex-col items-start gap-2 text-left">
               <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">{p.footerPrivacy}</h4>
               <p className="text-xs text-white/40 leading-relaxed">
                 {p.footerPrivacyText}
@@ -4670,7 +4737,7 @@ export default function PortalPageContent({ initialTenantId }) {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center sm:justify-start gap-3 pb-8 mb-2">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-start gap-3 pb-8 mb-2">
             <a
               href="#track"
               className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-2.5 rounded-lg text-sm font-semibold text-white border border-white/25 bg-white/10 hover:bg-white/15 transition-colors"
@@ -4695,8 +4762,8 @@ export default function PortalPageContent({ initialTenantId }) {
             )}
           </div>
 
-          <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[10px] text-white/30 uppercase tracking-widest text-center sm:text-left">
+          <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-left">
+            <p className="text-[10px] text-white/30 uppercase tracking-widest">
               {p.footerPhilippines}
             </p>
             <div className="flex items-center gap-4">
@@ -4737,8 +4804,8 @@ export default function PortalPageContent({ initialTenantId }) {
                   <MessageCircle className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-gray-900">KapChat</p>
-                  <p className="text-xs text-gray-500">Direct message to the Barangay Captain</p>
+                  <p className="text-sm font-bold text-gray-900">{p.kapchat}</p>
+                  <p className="text-xs text-gray-500">{p.kapchatPanelBlurb}</p>
                 </div>
               </button>
 
@@ -4750,7 +4817,7 @@ export default function PortalPageContent({ initialTenantId }) {
                   className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
                 >
-                  <HeadphonesIcon className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
+                  <Headphones className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-gray-900">Brgy Assistance</p>
@@ -4761,7 +4828,7 @@ export default function PortalPageContent({ initialTenantId }) {
               <button
                 onClick={() => {
                   setShowAssistance(false);
-                  setShowESumbong(true);
+                  openESumbong();
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-red-50 transition-colors text-left"
               >
@@ -4825,12 +4892,12 @@ export default function PortalPageContent({ initialTenantId }) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="text-sm font-black text-white truncate leading-tight">
-                      {captain?.full_name || "Barangay Captain"}
+                      {captainDisplayName}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-white/80 font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                    <span>Official KapChat · Live Desk</span>
+                    <span>{p.kapchatHeaderSubtitle}</span>
                     {isChatSyncing && (
                       <RefreshCw className="w-2.5 h-2.5 animate-spin text-white/70" />
                     )}
@@ -4872,10 +4939,7 @@ export default function PortalPageContent({ initialTenantId }) {
                       {p.kapchatWelcome}
                     </h4>
                     <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
-                      {p.kapchatWelcomeDesc.replace(
-                        "{captain}",
-                        captain?.full_name || "Kapitan ng Barangay",
-                      )}
+                      {p.kapchatWelcomeDesc.replace("{captain}", captainDisplayName)}
                     </p>
                   </div>
 
@@ -4954,13 +5018,15 @@ export default function PortalPageContent({ initialTenantId }) {
                     </div>
                     <div className="max-w-[85%] bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 border border-gray-200/90 shadow-sm">
                       <p className="text-[10px] font-bold text-gray-500 mb-0.5">
-                        {captain?.full_name || "Barangay Captain"}
+                        {captainDisplayName}
                       </p>
                       <p className="text-xs text-gray-800 leading-relaxed font-normal">
-                        Mabuhay <strong>{chatUserInfo.name.split(" ")[0]}</strong>! Ako si Kapitan {captain?.full_name || ""}. Paano po kami makakatulong sa inyong concern ngayong araw?
+                        {p.kapchatWelcomeGreeting
+                          .replace("{firstName}", chatUserInfo.name.split(" ")[0] || "")
+                          .replace("{captain}", captainDisplayName)}
                       </p>
                       <span className="text-[9px] text-gray-400 font-medium block mt-1">
-                        Official Assistant
+                        {p.kapchatOfficialBadge}
                       </span>
                     </div>
                   </div>
@@ -4970,7 +5036,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     <div className="pt-2 pb-1 space-y-1.5">
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-1">
                         <Sparkles className="w-3 h-3 text-amber-500" />
-                        Quick Inquiries
+                        {p.kapchatQuickInquiries}
                       </p>
                       <div className="grid grid-cols-1 gap-1.5">
                         {kapchatQuickPrompts.map((prompt, idx) => (
@@ -5014,7 +5080,7 @@ export default function PortalPageContent({ initialTenantId }) {
                         >
                           {!isUser && (
                             <p className="text-[10px] font-bold text-emerald-700 mb-0.5">
-                              {msg.sender_name || captain?.full_name || "Barangay Official"}
+                              {msg.sender_name || captainDisplayName}
                             </p>
                           )}
                           <p className="text-xs leading-relaxed font-normal whitespace-pre-wrap">
@@ -5098,7 +5164,7 @@ export default function PortalPageContent({ initialTenantId }) {
                   className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                   style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
                 >
-                  <HeadphonesIcon className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
+                  <Headphones className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-gray-900">Brgy Assistance</p>
@@ -5229,7 +5295,7 @@ export default function PortalPageContent({ initialTenantId }) {
             </>
           ) : (
             <>
-              <HeadphonesIcon className="w-5 h-5 md:w-4 md:h-4" />
+              <Headphones className="w-5 h-5 md:w-4 md:h-4" />
               <span className="hidden md:inline text-sm font-bold">{p.needHelp}</span>
             </>
           )}
@@ -5840,12 +5906,6 @@ export default function PortalPageContent({ initialTenantId }) {
         }
       `}</style>
 
-      <ESumbongModal
-        isOpen={showESumbong}
-        onClose={() => setShowESumbong(false)}
-        publicMode={true}
-      />
-
       {/* Resident Mobile Bottom Action Bar */}
       <ResidentMobileActionBar
         onRequestDocs={() => {
@@ -5856,7 +5916,7 @@ export default function PortalPageContent({ initialTenantId }) {
           const trackSection = document.getElementById("track");
           if (trackSection) trackSection.scrollIntoView({ behavior: "smooth" });
         }}
-        onESumbong={() => setShowESumbong(true)}
+        onESumbong={openESumbong}
         onInstallApp={promptInstall}
         isInstalled={isInstalled}
       />

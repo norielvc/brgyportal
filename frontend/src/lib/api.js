@@ -234,7 +234,7 @@ export const certificatesAPI = {
 // Blotter / E-Sumbong API functions
 export const blotterAPI = {
   createReport: async (data) => {
-    const response = await api.post("/blotter", data);
+    const response = await api.post("/blotter", data, { timeout: 60000 });
     return response.data;
   },
 
