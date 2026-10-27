@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import Head from "next/head";
@@ -75,6 +75,7 @@ import SamePersonCertificateModal from "@/components/Forms/SamePersonCertificate
 import ResidentMobileActionBar from "@/components/Portal/ResidentMobileActionBar";
 import InstallAppModal from "@/components/UI/InstallAppModal";
 import usePwa from "@/lib/usePwa";
+import useDisablePinchZoom from "@/lib/useDisablePinchZoom";
 import useScrollLock from "@/lib/useScrollLock";
 import { getPortalStrings, getPortalFormDefinitions, getKapchatPrompts } from "@/lib/portalLang";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
@@ -86,6 +87,13 @@ export default function PortalPageContent({ initialTenantId }) {
   const openESumbong = () => {
     router.push(`/${tenantId}/e-sumbong`);
   };
+
+  useEffect(() => {
+    if (!tenantId) return;
+    router.prefetch(`/${tenantId}/e-sumbong`);
+  }, [tenantId, router]);
+
+  useDisablePinchZoom(true);
 
   const {
     isInstallable,
@@ -214,6 +222,29 @@ export default function PortalPageContent({ initialTenantId }) {
   }, [tenantId]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuPortalReady, setMobileMenuPortalReady] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuPortalReady(true);
+  }, []);
+
+  const scrollToPortalSection = useCallback((sectionId) => {
+    const id = sectionId.replace(/^#/, "");
+    setMobileMenuOpen(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          try {
+            window.history.replaceState(null, "", `#${id}`);
+          } catch {
+            window.location.hash = id;
+          }
+        }
+      });
+    });
+  }, []);
   const [navAtPageTop, setNavAtPageTop] = useState(true);
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
   const [navCommunityOpen, setNavCommunityOpen] = useState(false);
@@ -249,7 +280,29 @@ export default function PortalPageContent({ initialTenantId }) {
     return () => document.removeEventListener("mousedown", close);
   }, [navCommunityOpen]);
 
-  useScrollLock(mobileMenuOpen);
+  // Mobile menu: avoid position:fixed body lock (causes blank viewport + broken hash nav on iOS)
+  useEffect(() => {
+    if (!mobileMenuOpen || typeof window === "undefined") return;
+
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    const prevHtmlOverscroll = html.style.overscrollBehavior;
+    const prevBodyOverscroll = body.style.overscrollBehavior;
+
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    body.style.overscrollBehavior = "none";
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+      html.style.overscrollBehavior = prevHtmlOverscroll;
+      body.style.overscrollBehavior = prevBodyOverscroll;
+    };
+  }, [mobileMenuOpen]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showAssistance, setShowAssistance] = useState(false);
@@ -1391,89 +1444,97 @@ export default function PortalPageContent({ initialTenantId }) {
 
         </div>
 
-        {/* Mobile navigation drawer — fixed panel so it is not clipped by header overflow */}
-        {mobileMenuOpen && (
-          <>
-            <button
-              type="button"
-              aria-label={p.closeMenu}
-              className="md:hidden fixed inset-0 z-[54] bg-black/35 touch-manipulation"
-              style={{
-                top: "calc(env(safe-area-inset-top, 0px) + 4.25rem)",
-              }}
-              onClick={() => setMobileMenuOpen(false)}
-            />
-            <div
-              className="md:hidden fixed left-0 right-0 z-[55] border-t border-white/15 bg-[#022c22]/95 backdrop-blur-md overflow-y-auto overscroll-contain touch-pan-y animate-in slide-in-from-top-2 duration-200 shadow-xl"
-              style={{
-                top: "calc(env(safe-area-inset-top, 0px) + 4.25rem)",
-                maxHeight:
-                  "calc(100dvh - env(safe-area-inset-top, 0px) - 4.25rem - env(safe-area-inset-bottom, 0px))",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-            <div className="px-4 py-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-0.5">
-              {[
-                { href: "#news", label: p.navNews },
-                { href: "#forms", label: p.navForms },
-                { href: "#citizen-help", label: p.navHelp },
-                { href: "#track", label: p.trackRequestShort },
-                { href: "#officials", label: p.navOfficialsMobile },
-                { href: "#contact", label: p.navContact },
-              ].map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block py-3 px-2 rounded-lg text-white font-semibold text-sm active:bg-white/10"
-                >
-                  {link.label}
-                </a>
-              ))}
-              <p className="pt-2 pb-1 px-2 text-[10px] font-bold uppercase tracking-wider text-white/50">
-                {p.navCommunity}
-              </p>
-              {[
-                { href: "#directory", label: p.navFacilities },
-                { href: "#tourism", label: p.navTourismMobile },
-                { href: "#achievements", label: p.navAchievementsMobile },
-              ].map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block py-2.5 px-3 rounded-lg text-white/90 text-sm font-medium active:bg-white/10"
-                >
-                  {link.label}
-                </a>
-              ))}
-              {!isInstalled && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    promptInstall();
-                  }}
-                  className="w-full mt-2 py-3 px-3 rounded-lg text-sm font-semibold text-white bg-white/15 border border-white/25"
-                >
-                  {p.installAppMobile}
-                </button>
-              )}
+        {/* Mobile navigation drawer — portaled so iOS never shows a blank clipped layer */}
+        {mobileMenuOpen &&
+          mobileMenuPortalReady &&
+          createPortal(
+            <>
               <button
                 type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  router.push("/login");
+                aria-label={p.closeMenu}
+                className="md:hidden fixed inset-0 z-[200] bg-black/35 touch-manipulation"
+                style={{
+                  top: "calc(env(safe-area-inset-top, 0px) + 4.25rem)",
                 }}
-                className="w-full mt-2 py-3 rounded-lg text-sm font-bold text-white"
-                style={{ backgroundColor: tenantConfig.accentColor || tenantConfig.primaryColor }}
+                onClick={() => setMobileMenuOpen(false)}
+              />
+              <div
+                className="md:hidden fixed left-0 right-0 z-[201] border-t border-white/15 bg-[#022c22]/98 backdrop-blur-md overflow-y-auto overscroll-contain touch-pan-y shadow-xl"
+                style={{
+                  top: "calc(env(safe-area-inset-top, 0px) + 4.25rem)",
+                  maxHeight:
+                    "calc(100dvh - env(safe-area-inset-top, 0px) - 4.25rem - env(safe-area-inset-bottom, 0px))",
+                  WebkitOverflowScrolling: "touch",
+                }}
+                role="dialog"
+                aria-modal="true"
+                aria-label={p.openMenu}
               >
-                {p.login}
-              </button>
-            </div>
-            </div>
-          </>
-        )}
+                <div className="px-4 py-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-0.5">
+                  {[
+                    { href: "#news", label: p.navNews },
+                    { href: "#forms", label: p.navForms },
+                    { href: "#citizen-help", label: p.navHelp },
+                    { href: "#track", label: p.trackRequestShort },
+                    { href: "#officials", label: p.navOfficialsMobile },
+                    { href: "#contact", label: p.navContact },
+                  ].map((link) => (
+                    <button
+                      key={link.href}
+                      type="button"
+                      onClick={() => scrollToPortalSection(link.href)}
+                      className="w-full text-left block py-3 px-2 rounded-lg text-white font-semibold text-sm active:bg-white/10 touch-manipulation"
+                    >
+                      {link.label}
+                    </button>
+                  ))}
+                  <p className="pt-2 pb-1 px-2 text-[10px] font-bold uppercase tracking-wider text-white/50">
+                    {p.navCommunity}
+                  </p>
+                  {[
+                    { href: "#directory", label: p.navFacilities },
+                    { href: "#tourism", label: p.navTourismMobile },
+                    { href: "#achievements", label: p.navAchievementsMobile },
+                  ].map((link) => (
+                    <button
+                      key={link.href}
+                      type="button"
+                      onClick={() => scrollToPortalSection(link.href)}
+                      className="w-full text-left block py-2.5 px-3 rounded-lg text-white/90 text-sm font-medium active:bg-white/10 touch-manipulation"
+                    >
+                      {link.label}
+                    </button>
+                  ))}
+                  {!isInstalled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        promptInstall();
+                      }}
+                      className="w-full mt-2 py-3 px-3 rounded-lg text-sm font-semibold text-white bg-white/15 border border-white/25 touch-manipulation"
+                    >
+                      {p.installAppMobile}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      router.push("/login");
+                    }}
+                    className="w-full mt-2 py-3 rounded-lg text-sm font-bold text-white touch-manipulation"
+                    style={{
+                      backgroundColor: tenantConfig.accentColor || tenantConfig.primaryColor,
+                    }}
+                  >
+                    {p.login}
+                  </button>
+                </div>
+              </div>
+            </>,
+            document.body,
+          )}
       </div>
 
       {/* Navigation Bar — desktop only */}

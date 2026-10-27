@@ -279,16 +279,6 @@ export default function ESumbongForm({
             <FieldLabel icon={FileText}>
               Idetalye ang iyong sumbong <span className="text-red-500">*</span>
             </FieldLabel>
-            {isPage && (
-              <p
-                id="esumbong-details-hint"
-                className="text-xs text-gray-500 leading-snug -mt-1 mb-2"
-              >
-                Maaari kang mag-type o mag-paste ng mahabang ulat (hanggang{" "}
-                {DETAILS_MAX_CHARS.toLocaleString()} titik). Lumalaki ang kahon habang
-                sumusulat; mag-scroll sa loob kung napakahaba na.
-              </p>
-            )}
             <textarea
               ref={detailsRef}
               id="esumbong-details"
@@ -305,9 +295,7 @@ export default function ESumbongForm({
               className={isPage ? textareaPageClass : textareaModalClass}
               spellCheck
               autoComplete="off"
-              aria-describedby={
-                isPage ? "esumbong-details-hint esumbong-details-count" : "esumbong-details-count"
-              }
+              aria-describedby="esumbong-details-count"
             />
             <div className="flex items-start justify-between gap-2 mt-1.5">
               <FieldError message={errors.details} />

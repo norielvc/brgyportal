@@ -5,6 +5,7 @@ import {
   getLandingFeatureTexts,
 } from "@/lib/landingLang";
 import { useRouter } from "next/router";
+import useDisablePinchZoom from "@/lib/useDisablePinchZoom";
 import {
   Shield,
   FileText,
@@ -221,6 +222,7 @@ const FAQS = [
 
 export default function LandingPageContent() {
   const router = useRouter();
+  useDisablePinchZoom(true);
   const l = getLandingStrings();
   const landingCerts = getLandingCerts();
   const featureTexts = getLandingFeatureTexts();

@@ -1,9 +1,29 @@
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
-import ESumbongForm from "@/components/Forms/ESumbongForm";
 import { getPortalStrings } from "@/lib/portalLang";
+import useEsumbongPageInteractionLock from "@/lib/useEsumbongPageInteractionLock";
+
+const ESumbongForm = dynamic(() => import("@/components/Forms/ESumbongForm"), {
+  loading: () => (
+    <div className="flex-1 animate-pulse space-y-6 py-2" aria-busy="true" aria-label="Loading form">
+      <div className="space-y-3">
+        <div className="h-3 w-24 bg-gray-100 rounded" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="h-11 bg-gray-100 rounded-lg" />
+          <div className="h-11 bg-gray-100 rounded-lg" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="h-3 w-32 bg-gray-100 rounded" />
+        <div className="h-40 bg-gray-100 rounded-lg" />
+      </div>
+      <div className="h-11 w-full sm:w-40 bg-gray-200 rounded-lg ml-auto" />
+    </div>
+  ),
+});
 
 const RESERVED = new Set([
   "login",
@@ -23,6 +43,8 @@ export default function TenantESumbongPage({ initialTenantId }) {
 
   const portalHref = tenant ? `/${tenant}#citizen-help` : "/";
 
+  useEsumbongPageInteractionLock(true);
+
   const goBack = () => {
     router.push(portalHref);
   };
@@ -36,11 +58,12 @@ export default function TenantESumbongPage({ initialTenantId }) {
         <meta name="robots" content="noindex" />
       </Head>
 
-      <div className="min-h-[100dvh] bg-gray-100 flex flex-col">
+      <div className="min-h-[100dvh] bg-gray-100 flex flex-col overflow-x-hidden overscroll-x-none touch-pan-y max-w-[100vw]">
         <header className="shrink-0 bg-gradient-to-r from-red-600 to-red-700 text-white pt-[max(env(safe-area-inset-top,0px),0.75rem)]">
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
             <Link
               href={portalHref}
+              prefetch
               className="inline-flex items-center gap-2 text-sm font-semibold text-red-50 hover:text-white mb-4"
             >
               <ArrowLeft className="w-4 h-4 shrink-0" aria-hidden />
@@ -75,7 +98,10 @@ export default function TenantESumbongPage({ initialTenantId }) {
 }
 
 export async function getStaticPaths() {
-  return { paths: [], fallback: "blocking" };
+  return {
+    paths: [{ params: { tenant: "ibaoeste" } }],
+    fallback: "blocking",
+  };
 }
 
 export async function getStaticProps({ params }) {
