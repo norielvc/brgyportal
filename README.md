@@ -10,6 +10,23 @@ Production-oriented portal for barangay operations: resident census, barangay ID
 - [Setup guide](docs/guides/SETUP_GUIDE.md) — detailed setup  
 - Historical SQL/scripts: [`_archive/`](_archive/README.md) (not used at runtime)
 
+## GitHub repository
+
+This codebase is **only** for the **norielvc** org/account — not linked to any other GitHub user.
+
+| Remote | URL |
+|--------|-----|
+| **origin** | https://github.com/norielvc/brgyportal |
+| **deployment-frontend** | https://github.com/norielvc/brgyportal-frontend |
+
+Sign in and push as **norielvc**:
+
+```powershell
+gh auth login -h github.com -p https -w --skip-ssh-key
+gh auth setup-git
+git push origin main
+```
+
 ## Features (summary)
 
 - Multi-tenant admin dashboard with role-based access
