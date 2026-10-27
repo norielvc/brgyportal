@@ -14,11 +14,12 @@ export default async function handler(req, res) {
   if (!tenantId) return res.status(400).json({ success: false, message: 'Tenant context required' });
 
   try {
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+    const { supabase, isSupabaseServerConfigured } = await import(
+      "../../../lib/supabase"
     );
+    if (!isSupabaseServerConfigured()) {
+      return res.status(500).json({ success: false, message: "Database not configured" });
+    }
 
     const { data, error } = await supabase
       .from('certificate_requests')

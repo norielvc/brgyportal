@@ -1,11 +1,14 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../../../lib/supabase";
 import sharp from "sharp";
 
 /**
  * POST /api/upload/image
- * Accepts a base64 image, compresses it (max 1200px, WebP, quality 80),
- * uploads to Supabase Storage under {tenant_id}/{folder}/, returns public URL.
+ * Accepts a base64 image, optionally compresses it, uploads to Supabase Storage
+ * under {tenant_id}/{folder}/, returns public URL.
+ *
+ * Default: max 1200px, WebP quality 80.
+ * Hero/news (`folder: "events"`) and officials group photo (`officials-hero`): no downscale — WebP quality 92 only.
  *
  * Body: { base64: "data:image/jpeg;base64,...", folder: "facilities" }
  * Optional: { oldUrl: "https://..." } — if provided, old file is deleted first
@@ -30,11 +33,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
     // Parse base64
     const matches = base64.match(/^data:(.+);base64,(.+)$/);
     if (!matches) {
@@ -44,10 +42,19 @@ export default async function handler(req, res) {
     const base64Data = matches[2];
     const inputBuffer = Buffer.from(base64Data, "base64");
 
-    // Compress: resize to max 1200px wide/tall, convert to WebP at quality 80
-    const compressedBuffer = await sharp(inputBuffer)
-      .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 80 })
+    const preserveFullResolution =
+      folder === "events" || folder === "officials-hero";
+    let pipeline = sharp(inputBuffer).rotate();
+
+    if (!preserveFullResolution) {
+      pipeline = pipeline.resize(1200, 1200, {
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+    }
+
+    const compressedBuffer = await pipeline
+      .webp({ quality: preserveFullResolution ? 92 : 80 })
       .toBuffer();
 
     const fileName = `${tenantId}/${folder}/${Date.now()}.webp`;

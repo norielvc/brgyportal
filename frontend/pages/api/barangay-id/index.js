@@ -1,9 +1,5 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
+import { supabase } from "../../../lib/supabase";
 
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
@@ -13,8 +9,6 @@ export default async function handler(req, res) {
   if (!tenantId) {
     return res.status(403).json({ success: false, message: "No tenant context in token" });
   }
-
-  const supabase = getSupabase();
 
   // ── GET: List Barangay IDs with filters and stats ──────────────────────────
   if (req.method === "GET") {

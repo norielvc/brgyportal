@@ -1,9 +1,5 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
+import { supabase } from "../../../lib/supabase";
 
 export default async function handler(req, res) {
   // Only allow POST requests
@@ -26,8 +22,6 @@ export default async function handler(req, res) {
   }
 
   const normalizedId = id_number.trim();
-  const supabase = getSupabase();
-
   try {
     // 1. Find the ID record
     const { data: idRecord, error: findError } = await supabase

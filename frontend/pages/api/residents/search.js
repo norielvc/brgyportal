@@ -1,7 +1,6 @@
 import { supabase } from "../../../lib/supabase";
 import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "brgydesk-secret-key-change-in-production";
+import { getJwtSecret } from "../../../lib/jwtSecret";
 
 /**
  * RESIDENT SEARCH API (Next.js)
@@ -20,7 +19,14 @@ export default async function handler(req, res) {
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
         const token = authHeader.split(" ")[1];
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const jwtSecret = getJwtSecret();
+        if (!jwtSecret) {
+          return res.status(500).json({
+            success: false,
+            message: "Server configuration error (JWT)",
+          });
+        }
+        const decoded = jwt.verify(token, jwtSecret);
         tenantId = decoded.tenant_id;
       } catch (e) {
         // Ignore token decode error and use fallback

@@ -22,8 +22,8 @@ echo ========================================
 echo   DASHBOARD STARTED SUCCESSFULLY!
 echo ========================================
 echo.
-echo Backend API: http://localhost:5000/api
-echo Frontend:   http://localhost:3000
+echo Backend API: http://localhost:5005/api (or PORT in backend/.env)
+echo Frontend:   http://localhost:3003
 echo.
 echo Login Credentials:
 echo   Admin: admin@example.com / admin123
@@ -33,7 +33,7 @@ echo Press any key to open the dashboard...
 pause > nul
 
 REM Open the dashboard in default browser
-start http://localhost:3000
+start http://localhost:3003
 
 echo.
 echo Dashboard opened in your browser!

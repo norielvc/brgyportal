@@ -17,28 +17,11 @@ export default async function handler(req, res) {
       throw new Error("Missing Supabase env vars");
     }
 
-    const { createClient } = require("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_ANON_KEY,
-      {
-        global: {
-          fetch: (url, options) => {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-            return fetch(url, { ...options, signal: controller.signal })
-              .then((res) => {
-                clearTimeout(timeoutId);
-                return res;
-              })
-              .catch((err) => {
-                clearTimeout(timeoutId);
-                throw err;
-              });
-          },
-        },
-      },
-    );
+    const { createAnonClient } = await import("../../../lib/supabase");
+    const supabase = createAnonClient({ timeoutMs: 3000 });
+    if (!supabase) {
+      throw new Error("Missing Supabase env vars");
+    }
 
     const { data: tenant, error } = await supabase
       .from("tenants")

@@ -8,7 +8,7 @@ import { Check, Globe } from "lucide-react";
 import { LANGUAGES, getStrings } from "../../lib/certLang";
 
 export default function LanguageGate({ accentColor, onSelect, lang }) {
-  const t = getStrings(lang || "en");
+  const t = getStrings(lang || "tl");
 
   return (
     <div className="px-4 sm:px-8 py-5 sm:py-8">
@@ -20,11 +20,11 @@ export default function LanguageGate({ accentColor, onSelect, lang }) {
           <Globe className="w-6 h-6" />
         </div>
         <h3 className="text-lg font-bold text-gray-900 mb-1.5">
-          Choose your language / Pumili ng wika
+          Pumili ng wika / Choose your language
         </h3>
         <p className="text-sm text-gray-500 max-w-sm leading-relaxed">
-          Select the language you are most comfortable with. Piliin ang wikang
-          mas komportable sa iyo.
+          Inirerekomenda ang Tagalog para sa karamihan ng mga residente. Maaari
+          ring magpatuloy sa English kung mas komportable kayo.
         </p>
       </div>
 

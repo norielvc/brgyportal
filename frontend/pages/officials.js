@@ -481,7 +481,11 @@ export default function OfficialsPage() {
       const response = await fetch("/api/upload/image", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ base64: croppedBase64, folder: "officials", oldUrl }),
+        body: JSON.stringify({
+          base64: croppedBase64,
+          folder: field === "hero_image" ? "officials-hero" : "officials",
+          oldUrl,
+        }),
       });
       const data = await response.json();
       if (!data.success) throw new Error(data.message);

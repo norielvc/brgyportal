@@ -1,6 +1,10 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { supabase } from "../../../lib/supabase";
+import {
+  allowLoginAttempt,
+  loginRateLimitMessage,
+} from "../../../lib/loginRateLimit";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -10,6 +14,13 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (!allowLoginAttempt(req)) {
+      return res.status(429).json({
+        success: false,
+        message: loginRateLimitMessage(),
+      });
+    }
+
     const { email, password } = req.body;
 
     if (!email || !password) {

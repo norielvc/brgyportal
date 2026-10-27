@@ -15,11 +15,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, message: "Missing x-tenant-id header" });
 
   try {
-    const { createClient } = require("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+    const { supabase, isSupabaseServerConfigured } = await import(
+      "../../../lib/supabase"
     );
+    if (!isSupabaseServerConfigured()) {
+      return res.status(500).json({ success: false, message: "Database not configured" });
+    }
 
     const dataPath = path.join(process.cwd(), "src/data/mock/pending_requests.json");
     if (!fs.existsSync(dataPath)) {

@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabase, isSupabaseServerConfigured } from "../../../lib/supabase";
 
 export default async function handler(req, res) {
   const tenantId = req.headers["x-tenant-id"];
@@ -8,11 +8,7 @@ export default async function handler(req, res) {
       .json({ success: false, message: "Tenant context required" });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
+  if (!isSupabaseServerConfigured()) {
     return res.status(500).json({
       success: false,
       message: "Supabase URL and key are not configured",
@@ -20,8 +16,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     if (req.method === "POST") {
       const {
       complainant_resident_id,

@@ -4,6 +4,26 @@ import { useEffect } from "react";
 let activeLocks = 0;
 let originalStyles = null;
 
+/** Restore scroll without smooth animation (portal uses global scroll-behavior: smooth). */
+function restoreScrollPosition(scrollY) {
+  const html = document.documentElement;
+  const prevHtmlBehavior = html.style.scrollBehavior;
+  const prevBodyBehavior = document.body.style.scrollBehavior;
+  html.style.scrollBehavior = "auto";
+  document.body.style.scrollBehavior = "auto";
+
+  try {
+    window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
+  } catch {
+    window.scrollTo(0, scrollY);
+  }
+
+  requestAnimationFrame(() => {
+    html.style.scrollBehavior = prevHtmlBehavior;
+    document.body.style.scrollBehavior = prevBodyBehavior;
+  });
+}
+
 export function lockScroll() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
@@ -16,12 +36,22 @@ export function lockScroll() {
       overflow: document.body.style.overflow,
       paddingRight: document.body.style.paddingRight,
       htmlOverflow: document.documentElement.style.overflow,
+      bodyPosition: document.body.style.position,
+      bodyTop: document.body.style.top,
+      bodyLeft: document.body.style.left,
+      bodyRight: document.body.style.right,
+      bodyWidth: document.body.style.width,
       scrollY,
     };
 
-    // Lock both html and body without breaking viewport or pointer clicks
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
@@ -35,18 +65,21 @@ export function unlockScroll() {
 
   activeLocks = Math.max(0, activeLocks - 1);
   if (activeLocks === 0 && originalStyles) {
+    const scrollY = originalStyles.scrollY ?? 0;
+
     document.documentElement.style.overflow = originalStyles.htmlOverflow || "";
     document.body.style.overflow = originalStyles.overflow || "";
     document.body.style.paddingRight = originalStyles.paddingRight || "";
+    document.body.style.position = originalStyles.bodyPosition || "";
+    document.body.style.top = originalStyles.bodyTop || "";
+    document.body.style.left = originalStyles.bodyLeft || "";
+    document.body.style.right = originalStyles.bodyRight || "";
+    document.body.style.width = originalStyles.bodyWidth || "";
     document.body.classList.remove("modal-open");
     document.documentElement.classList.remove("modal-open");
 
-    const scrollY = originalStyles.scrollY;
     originalStyles = null;
-
-    if (scrollY !== undefined && Math.abs((window.scrollY || 0) - scrollY) > 5) {
-      window.scrollTo(0, scrollY);
-    }
+    restoreScrollPosition(scrollY);
   }
 }
 
@@ -64,4 +97,3 @@ export default function useScrollLock(isLocked = true) {
     };
   }, [isLocked]);
 }
-

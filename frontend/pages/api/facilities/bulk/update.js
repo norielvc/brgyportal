@@ -2,7 +2,7 @@
  * PUT /api/facilities/bulk/update — bulk replace facilities for tenant
  */
 import { authenticateToken } from "../../../../src/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../../../../lib/supabase";
 
 export default async function handler(req, res) {
   if (req.method !== "PUT") {
@@ -12,11 +12,6 @@ export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
   if (!userRes) return;
   const tenantId = userRes.tenant_id;
-
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
 
   const { facilities } = req.body;
   if (!Array.isArray(facilities)) {

@@ -108,9 +108,9 @@ export default function UnifiedCertModal({
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [lang, setLang] = useState(null);
+  const [lang, setLang] = useState("tl");
 
-  const t = getStrings(lang || 'en');
+  const t = getStrings(lang || "tl");
 
   const [formData, setFormData] = useState({
     fullName: '', residentId: null, age: '', sex: '', civilStatus: '',
@@ -126,7 +126,7 @@ export default function UnifiedCertModal({
     if (!isOpen) {
       setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
       setErrors({}); setNotification(null); setConsentChecked(false); setConsentExpanded(false); setShowPrivacyModal(false);
-      setLang(null);
+      setLang("tl");
       setFormData({ fullName: '', residentId: null, age: '', sex: '', civilStatus: '', address: '', dateOfBirth: '', placeOfBirth: '', contactNumber: '', email: '', purpose: '', pickupMethod: 'pickup' });
       setPickupError('');
     }
@@ -232,7 +232,7 @@ export default function UnifiedCertModal({
             <p className="text-xs text-gray-500 mt-2">{t.saveReference}</p>
           </div>
           <button onClick={onClose} className="w-full py-3 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity" style={{ backgroundColor: accentColor }}>
-            {t.done}
+            {t.close}
           </button>
         </div>
       </div>
@@ -673,7 +673,7 @@ export default function UnifiedCertModal({
           onSelect={handleResidentSelect}
           isDemo={isDemo}
           tenantConfig={tenantConfig}
-          lang={lang || 'en'}
+          lang={lang || "tl"}
         />
       )}
     </>

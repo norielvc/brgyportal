@@ -110,7 +110,7 @@ export default function GuardianshipCertificateModal({ isOpen, onClose, isDemo =
           onSelect={handleGuardianSelect}
           isDemo={isDemo}
           tenantConfig={tenantConfig}
-          lang={lang || 'en'}
+          lang={lang || "tl"}
         />
       )}
     </div>

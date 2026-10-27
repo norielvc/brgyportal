@@ -1,5 +1,5 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../../../lib/supabase";
 
 /**
  * DELETE /api/upload/delete
@@ -36,11 +36,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
     const { error } = await supabase.storage
       .from("portal-images")
       .remove([path]);

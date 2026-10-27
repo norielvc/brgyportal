@@ -384,8 +384,8 @@ export default function BarangayClearanceModal({
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const accentColor = tenantConfig.primaryColor || '#059669';
-  const [lang, setLang] = useState(null);
-  const t = getStrings(lang || 'en');
+  const [lang, setLang] = useState("tl");
+  const t = getStrings(lang || "tl");
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -1222,7 +1222,7 @@ export default function BarangayClearanceModal({
                   className="w-full text-white py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
                   style={{ backgroundColor: accentColor }}
                 >
-                  {t.done}
+                  {t.close}
                 </button>
               </div>
             </div>
@@ -1236,7 +1236,7 @@ export default function BarangayClearanceModal({
             onSelect={handleResidentSelect}
             isDemo={isDemo}
             tenantConfig={tenantConfig}
-            lang={lang || 'en'}
+            lang={lang || "tl"}
           />
         )}
         <style jsx>{`

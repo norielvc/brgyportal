@@ -59,13 +59,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, message: "Method Not Allowed" });
   }
 
-  // 1. Rate limit by IP — create supabase client early for config fetch
-  const { createClient: createSupabaseClient } = require("@supabase/supabase-js");
-  const supabaseForConfig = createSupabaseClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+  // 1. Rate limit by IP — shared Supabase client for config fetch
+  const { supabase, isSupabaseServerConfigured } = await import(
+    "../../../lib/supabase"
   );
-  const config = await getProtectionConfig(supabaseForConfig);
+  if (!isSupabaseServerConfigured()) {
+    return res.status(500).json({ success: false, message: "Database not configured" });
+  }
+  const config = await getProtectionConfig(supabase);
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
   const rateCheck = checkRateLimit(ip, config);
   if (rateCheck.blocked) {
@@ -120,13 +121,6 @@ export default async function handler(req, res) {
    * STAGE 2: Attempt Live Supabase Insert
    */
   try {
-    const { createClient } = require("@supabase/supabase-js");
-    // Use service role key to bypass RLS for portal submissions
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY,
-    );
-
     // 0. SUBSCRIPTION ENFORCEMENT
     const { data: sub } = await supabase
       .from('barangay_subscriptions')

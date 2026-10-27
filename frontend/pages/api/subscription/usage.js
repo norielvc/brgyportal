@@ -1,9 +1,5 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
+import { supabase } from "../../../lib/supabase";
 
 export default async function handler(req, res) {
   if (req.method !== "GET")
@@ -23,8 +19,6 @@ export default async function handler(req, res) {
     return res.status(403).json({ success: false, message: "Tenant context required" });
 
   try {
-    const supabase = getSupabase();
-    
     // 1. Get Active Subscription
     const { data: sub, error: subError } = await supabase
         .from('barangay_subscriptions')

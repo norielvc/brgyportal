@@ -1,4 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  getLandingStrings,
+  getLandingCerts,
+  getLandingFeatureTexts,
+} from "@/lib/landingLang";
 import { useRouter } from "next/router";
 import {
   Shield,
@@ -216,6 +221,21 @@ const FAQS = [
 
 export default function LandingPageContent() {
   const router = useRouter();
+  const l = getLandingStrings();
+  const landingCerts = getLandingCerts();
+  const featureTexts = getLandingFeatureTexts();
+  const localizedFeatures = useMemo(
+    () =>
+      featureTexts
+        ? FEATURES.map((f, i) => ({
+            ...f,
+            title: featureTexts[i]?.title ?? f.title,
+            desc: featureTexts[i]?.desc ?? f.desc,
+          }))
+        : FEATURES,
+    [featureTexts],
+  );
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [mounted, setMounted] = useState(false);
@@ -226,12 +246,12 @@ export default function LandingPageContent() {
   }, []);
 
   const NAV = [
-    { label: "Features", href: "#features" },
-    { label: "How It Works", href: "#how" },
-    { label: "Certificates", href: "#certs" },
-    { label: "Demo", href: "#demo" },
-    { label: "Pricing", href: "#pricing" },
-    { label: "FAQ", href: "#faq" },
+    { label: l.navFeatures, href: "#features" },
+    { label: l.navHow, href: "#how" },
+    { label: l.navCerts, href: "#certs" },
+    { label: l.navDemo, href: "#demo" },
+    { label: l.navPricing, href: "#pricing" },
+    { label: l.navFaq, href: "#faq" },
   ];
 
   return (
@@ -274,7 +294,7 @@ export default function LandingPageContent() {
                 className="block text-[10px] font-semibold uppercase tracking-widest"
                 style={{ color: GOLD }}
               >
-                Barangay Management
+                {l.brandSubtitle}
               </span>
             </div>
           </div>
@@ -296,7 +316,7 @@ export default function LandingPageContent() {
               onClick={() => router.push("/login")}
               className="text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors px-4 py-2"
             >
-              Log in
+              {l.login}
             </button>
             <a
               href="/demo"
@@ -315,7 +335,7 @@ export default function LandingPageContent() {
                 e.currentTarget.style.background = `${GOLD}10`;
               }}
             >
-              Visit Demo
+              {l.visitDemo}
             </a>
             <button
               onClick={() => router.push("/pricing")}
@@ -324,7 +344,7 @@ export default function LandingPageContent() {
                 background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})`,
               }}
             >
-              See Pricing
+              {l.seePricing}
             </button>
           </div>
 
@@ -412,15 +432,15 @@ export default function LandingPageContent() {
                 className="w-2 h-2 rounded-full animate-pulse"
                 style={{ background: GOLD }}
               ></span>
-              Built for Philippine Barangays
+              {l.heroBadge}
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight">
-              The complete digital
+              {l.heroTitle1}
               <br />
-              system for your
+              {l.heroTitle2}
               <br />
               <span className="relative inline-block">
-                <span style={{ color: GOLD }}>barangay.</span>
+                <span style={{ color: GOLD }}>{l.heroTitleAccent}</span>
                 <span
                   className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full"
                   style={{
@@ -434,9 +454,7 @@ export default function LandingPageContent() {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr] gap-20 items-start">
             <div className="z-10 relative">
               <p className="text-lg lg:text-xl text-gray-500 leading-relaxed mb-10 max-w-2xl font-medium">
-                BrgyDesk gives your barangay a public website, online
-                certificate requests, multi-step approval workflows, official
-                receipts, and a full admin dashboard — all in one platform.
+                {l.heroDesc}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
@@ -446,7 +464,7 @@ export default function LandingPageContent() {
                     background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})`,
                   }}
                 >
-                  View Plans & Pricing <ArrowRight className="w-5 h-5" />
+                  {l.heroCtaPricing} <ArrowRight className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => router.push("/login")}
@@ -523,7 +541,7 @@ export default function LandingPageContent() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {FEATURES.map((f, i) => {
+            {localizedFeatures.map((f, i) => {
               const Icon = f.icon;
               return (
                 <div
@@ -1004,7 +1022,7 @@ export default function LandingPageContent() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {CERTS.map((c, i) => (
+              {landingCerts.map((c, i) => (
                 <span
                   key={i}
                   className="cert-pill inline-flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium cursor-default"
@@ -1366,7 +1384,7 @@ export default function LandingPageContent() {
                 background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})`,
               }}
             >
-              Get Started Now
+              {l.getStarted}
             </button>
           </div>
         </div>
@@ -1385,12 +1403,12 @@ export default function LandingPageContent() {
                 className="block text-[9px] font-semibold uppercase tracking-widest mt-0.5"
                 style={{ color: GOLD }}
               >
-                Barangay Management
+                {l.brandSubtitle}
               </span>
             </div>
           </div>
           <p className="text-sm text-gray-600">
-            © {new Date().getFullYear()} BrgyDesk. All rights reserved.
+            © {new Date().getFullYear()} BrgyDesk. {l.footerRights}
           </p>
         </div>
       </footer>

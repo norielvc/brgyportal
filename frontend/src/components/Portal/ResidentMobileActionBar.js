@@ -1,13 +1,19 @@
 import React from "react";
 import {
-  FileText,
-  Search,
-  AlertTriangle,
+  ClipboardList,
+  FilePlus2,
+  ShieldAlert,
   Download,
-  Smartphone,
   CheckCircle2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { getPortalStrings } from "@/lib/portalLang";
+
+/** Keep in sync with page bottom padding / FAB offset in PortalPageContent */
+export const MOBILE_ACTION_BAR_CLEARANCE =
+  "calc(4.875rem + env(safe-area-inset-bottom, 0px))";
+
+const ICON_SIZE = "w-[1.125rem] h-[1.125rem]";
+const ICON_STROKE = 1.75;
 
 export default function ResidentMobileActionBar({
   onRequestDocs,
@@ -16,67 +22,80 @@ export default function ResidentMobileActionBar({
   onInstallApp,
   isInstalled,
 }) {
+  const p = getPortalStrings();
+
+  const items = [
+    {
+      key: "track",
+      onClick: onTrackStatus,
+      icon: ClipboardList,
+      label: p.mobileTrack,
+    },
+    {
+      key: "apply",
+      onClick: onRequestDocs,
+      icon: FilePlus2,
+      label: p.mobileApply,
+      emphasis: true,
+    },
+    {
+      key: "sumbong",
+      onClick: onESumbong,
+      icon: ShieldAlert,
+      label: p.esumbong,
+    },
+    {
+      key: "install",
+      onClick: onInstallApp,
+      icon: isInstalled ? CheckCircle2 : Download,
+      label: isInstalled ? p.mobileAppActive : p.mobileInstall,
+      showBadge: !isInstalled,
+    },
+  ];
+
   return (
-    <div
-      aria-label="Resident Quick Actions"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-gray-200/80 shadow-[0_-8px_25px_rgba(0,0,0,0.1)] pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 px-3 transition-all"
+    <nav
+      aria-label={p.mobileActionBarAria}
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 pointer-events-none"
     >
-      <div className="flex items-center justify-around max-w-md mx-auto">
-        {/* Track Status */}
-        <button
-          type="button"
-          onClick={onTrackStatus}
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-gray-600 hover:text-emerald-700 active:scale-95 transition-all"
-        >
-          <Search className="w-5 h-5 mb-1 text-emerald-600" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">
-            Track
-          </span>
-        </button>
+      <div className="pointer-events-auto border-t border-white/10 bg-[#112e1f]/98 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.2)] px-2 pt-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
+        <div className="grid grid-cols-4 gap-1 max-w-lg mx-auto">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const emphasis = item.emphasis;
 
-        {/* Request Docs (Center Highlighted) */}
-        <button
-          type="button"
-          onClick={onRequestDocs}
-          className="relative -top-3 flex flex-col items-center group active:scale-95 transition-all"
-        >
-          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-[0_6px_15px_rgba(5,150,105,0.4)] border-3 border-white">
-            <FileText className="w-5 h-5" />
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 mt-0.5">
-            Apply Docs
-          </span>
-        </button>
-
-        {/* E-Sumbong */}
-        <button
-          type="button"
-          onClick={onESumbong}
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-gray-600 hover:text-red-600 active:scale-95 transition-all"
-        >
-          <AlertTriangle className="w-5 h-5 mb-1 text-red-500" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">
-            E-Sumbong
-          </span>
-        </button>
-
-        {/* Install App */}
-        <button
-          type="button"
-          onClick={onInstallApp}
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-gray-600 hover:text-blue-600 active:scale-95 transition-all"
-        >
-          <div className="relative">
-            <Smartphone className="w-5 h-5 mb-1 text-blue-600" />
-            {!isInstalled && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-600 rounded-full animate-ping" />
-            )}
-          </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700">
-            {isInstalled ? "App Active" : "Install"}
-          </span>
-        </button>
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={item.onClick}
+                className="flex flex-col items-center justify-center gap-1 min-h-[56px] py-1 rounded-lg active:bg-white/[0.06] touch-manipulation transition-colors"
+              >
+                <span
+                  className={`relative flex items-center justify-center w-11 h-11 rounded-full shrink-0 ${
+                    emphasis
+                      ? "bg-white text-[#112e1f] shadow-sm"
+                      : "bg-white/10 text-white/90"
+                  }`}
+                  aria-hidden
+                >
+                  <Icon className={ICON_SIZE} strokeWidth={ICON_STROKE} />
+                  {item.showBadge && (
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white/90 ring-1 ring-[#112e1f]" />
+                  )}
+                </span>
+                <span
+                  className={`text-[10px] leading-tight text-center line-clamp-2 max-w-[5rem] ${
+                    emphasis ? "font-semibold text-white" : "font-medium text-white/70"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </nav>
   );
 }

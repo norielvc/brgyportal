@@ -1,9 +1,6 @@
 import jwt from "jsonwebtoken";
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
+import { supabase } from "../../lib/supabase";
+import { getJwtSecret } from "../../lib/jwtSecret";
 
 /**
  * Middleware-like helper for Next.js API routes to authenticate JWT tokens
@@ -23,10 +20,17 @@ export const authenticateToken = async (req, res) => {
 
     // Verify the token using the SAME secret as backend
     // Note: On Vercel, you MUST add JWT_SECRET to your Environment Variables
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = getJwtSecret();
+    if (!jwtSecret) {
+      res.status(500).json({
+        success: false,
+        message: "Server configuration error (JWT)",
+      });
+      return null;
+    }
 
-    const supabase = getSupabase();
-    
+    const decoded = jwt.verify(token, jwtSecret);
+
     // Find the user in Supabase
     const { data: user, error } = await supabase
       .from("users")

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import {
@@ -6,6 +7,7 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Plus,
   Send,
   Phone,
@@ -75,9 +77,11 @@ import ResidentMobileActionBar from "@/components/Portal/ResidentMobileActionBar
 import InstallAppModal from "@/components/UI/InstallAppModal";
 import usePwa from "@/lib/usePwa";
 import useScrollLock from "@/lib/useScrollLock";
+import { getPortalStrings, getPortalFormDefinitions, getKapchatPrompts } from "@/lib/portalLang";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
 
 export default function PortalPageContent({ initialTenantId }) {
+  const p = getPortalStrings();
   const router = useRouter();
   const [tenantId, setTenantId] = useState((initialTenantId || "ibaoeste").toLowerCase());
   const [showESumbong, setShowESumbong] = useState(false);
@@ -179,9 +183,10 @@ export default function PortalPageContent({ initialTenantId }) {
           tenant?.municipality,
           tenant?.region,
         ].filter(Boolean);
+        const portalSuffix = getPortalStrings().pageTitleSuffix;
         const subtitle = subtitleParts.length > 0
-          ? `${subtitleParts.join(", ")} · Official Barangay Portal`
-          : "Official Barangay Portal";
+          ? `${subtitleParts.join(", ")} · ${portalSuffix}`
+          : portalSuffix;
 
         setTenantConfig({
           tenant_id: tenantId,
@@ -197,7 +202,7 @@ export default function PortalPageContent({ initialTenantId }) {
           tenant_id: tenantId,
           name: "BARANGAY",
           shortName: "Barangay",
-          subtitle: "Official Barangay Portal",
+          subtitle: getPortalStrings().pageTitleSuffix,
           logo: "/logo.png",
           ...defaultColors,
         });
@@ -208,6 +213,29 @@ export default function PortalPageContent({ initialTenantId }) {
   }, [tenantId]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [navCommunityOpen, setNavCommunityOpen] = useState(false);
+  const navCommunityRef = useRef(null);
+
+  useEffect(() => {
+    if (!navCommunityOpen) return;
+    const close = (e) => {
+      if (navCommunityRef.current && !navCommunityRef.current.contains(e.target)) {
+        setNavCommunityOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [navCommunityOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileMenuOpen]);
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showAssistance, setShowAssistance] = useState(false);
   const [assistanceMode, setAssistanceMode] = useState(null); // 'kapchat' | 'assistance' | null
@@ -249,6 +277,12 @@ export default function PortalPageContent({ initialTenantId }) {
   const [selectedNewsItem, setSelectedNewsItem] = useState(null);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [activeProgramIdx, setActiveProgramIdx] = useState(0);
+  const programSlideTouchStart = useRef(null);
+  const facilitySlideTouchStart = useRef(null);
+  const achievementSlideTouchStart = useRef(null);
+  const tourismSlideTouchStart = useRef(null);
+  const [activeAchievementIdx, setActiveAchievementIdx] = useState(0);
+  const [activeTourismIdx, setActiveTourismIdx] = useState(0);
   const [programCategoryFilter, setProgramCategoryFilter] = useState("all");
   const [currentFormSlide, setCurrentFormSlide] = useState(0);
   const [formData, setFormData] = useState({
@@ -264,6 +298,11 @@ export default function PortalPageContent({ initialTenantId }) {
   const [activeFacilityIdx, setActiveFacilityIdx] = useState(0);
   const [facilityImageIndex, setFacilityImageIndex] = useState(0);
   const [portalDataLoaded, setPortalDataLoaded] = useState(false);
+  const [achievementModalMounted, setAchievementModalMounted] = useState(false);
+
+  useEffect(() => {
+    setAchievementModalMounted(true);
+  }, []);
 
   const [subscription, setSubscription] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -334,144 +373,113 @@ export default function PortalPageContent({ initialTenantId }) {
     openModalAction(true);
   };
 
-  const forms = useMemo(
-    () => [
+  const forms = useMemo(() => {
+    const copy = getPortalFormDefinitions(tenantConfig.shortName);
+    const byId = Object.fromEntries(copy.map((f) => [f.id, f]));
+    const pick = (id) => byId[id] || { title: id, description: "", features: [] };
+
+    return [
       {
-        id: "barangay_clearance",
-        title: "Barangay Clearance",
-        description:
-          "Official clearance for employment, business permits, and other legal purposes.",
+        ...pick("barangay_clearance"),
         icon: Shield,
         color: "blue",
-        features: ["Employment", "Business", "Legal"],
         locked: isFeatureLocked("barangay_clearance"),
-        onClick: () => handleFeatureClick("barangay_clearance", "Barangay Clearance", setShowClearanceModal),
+        onClick: () =>
+          handleFeatureClick("barangay_clearance", pick("barangay_clearance").title, setShowClearanceModal),
       },
       {
-        id: "certificate_of_indigency",
-        title: "Certificate of Indigency",
-        description:
-          "Proof of financial status for medical, educational, and social assistance programs.",
+        ...pick("certificate_of_indigency"),
         icon: FileText,
         color: "green",
-        features: ["Medical", "Education", "Assistance"],
         locked: isFeatureLocked("certificate_of_indigency"),
-        onClick: () => handleFeatureClick("certificate_of_indigency", "Certificate of Indigency", setShowIndigencyModal),
+        onClick: () =>
+          handleFeatureClick("certificate_of_indigency", pick("certificate_of_indigency").title, setShowIndigencyModal),
       },
       {
-        id: "barangay_residency",
-        title: "Barangay Residency",
-        description: `Certificate confirming your residence in ${tenantConfig.shortName} for various requirements.`,
+        ...pick("barangay_residency"),
         icon: Home,
         color: "orange",
-        features: ["Proof", "Enrollment", "ID"],
         locked: isFeatureLocked("barangay_residency"),
-        onClick: () => handleFeatureClick("barangay_residency", "Barangay Residency", setShowResidencyModal),
+        onClick: () =>
+          handleFeatureClick("barangay_residency", pick("barangay_residency").title, setShowResidencyModal),
       },
       {
-        id: "business_permit",
-        title: "Business Permit",
-        description: `Official permit to operate a business within ${tenantConfig.shortName} barangay jurisdiction.`,
+        ...pick("business_permit"),
         icon: Building2,
         color: "purple",
-        features: ["New Business", "Renewal", "Transfer"],
         locked: isFeatureLocked("business_permit"),
-        onClick: () => handleFeatureClick("business_permit", "Business Permit", setShowBusinessPermitModal),
+        onClick: () =>
+          handleFeatureClick("business_permit", pick("business_permit").title, setShowBusinessPermitModal),
       },
       {
-        id: "business_closure",
-        title: "Business Closure",
-        description:
-          "Official notice to cease business operations within the barangay.",
+        ...pick("business_closure"),
         icon: Briefcase,
         color: "blue",
-        features: ["Liquidation", "Permit Exit", "Tax Clearance"],
-        locked: isFeatureLocked("business_permit"), // Grouped with business
-        onClick: () => handleFeatureClick("business_permit", "Business Closure", setShowComingSoonModal),
+        locked: isFeatureLocked("business_permit"),
+        onClick: () =>
+          handleFeatureClick("business_permit", pick("business_closure").title, setShowComingSoonModal),
       },
       {
-        id: "barangay_cohabitation",
-        title: "Co-habitation",
-        description:
-          "Certification for couples living together without formal marriage.",
+        ...pick("barangay_cohabitation"),
         icon: Heart,
         color: "green",
-        features: ["Live-in", "Relationship", "Proof"],
         locked: isFeatureLocked("barangay_cohabitation"),
-        onClick: () => handleFeatureClick("barangay_cohabitation", "Co-habitation", setShowCohabitationModal),
+        onClick: () =>
+          handleFeatureClick("barangay_cohabitation", pick("barangay_cohabitation").title, setShowCohabitationModal),
       },
       {
-        id: "medico_legal",
-        title: "Medico-legal",
-        description:
-          "Official document for cases requiring medical and legal coordination.",
+        ...pick("medico_legal"),
         icon: Stethoscope,
         color: "orange",
-        features: ["Accident", "Legal Case", "Medical Report"],
         locked: isFeatureLocked("medico_legal"),
-        onClick: () => handleFeatureClick("medico_legal", "Medico-legal", setShowMedicoLegalModal),
+        onClick: () =>
+          handleFeatureClick("medico_legal", pick("medico_legal").title, setShowMedicoLegalModal),
       },
       {
-        id: "certification_same_person",
-        title: "Certification of Same Person",
-        description:
-          "Certification that differences in name records refer to the same individual.",
+        ...pick("certification_same_person"),
         icon: Fingerprint,
         color: "purple",
-        features: ["ID Match", "Affidavit", "Verification"],
         locked: isFeatureLocked("certification_same_person"),
-        onClick: () => handleFeatureClick("certification_same_person", "Certification of Same Person", setShowSamePersonModal),
+        onClick: () =>
+          handleFeatureClick(
+            "certification_same_person",
+            pick("certification_same_person").title,
+            setShowSamePersonModal,
+          ),
       },
       {
-        id: "barangay_guardianship",
-        title: "Guardianship",
-        description:
-          "Legal certification for designated guardians of minors or dependents.",
+        ...pick("barangay_guardianship"),
         icon: UserPlus,
         color: "blue",
-        features: ["Legal Guardian", "Minor Support", "Custody"],
         locked: isFeatureLocked("barangay_guardianship"),
-        onClick: () => handleFeatureClick("barangay_guardianship", "Guardianship", setShowGuardianshipModal),
+        onClick: () =>
+          handleFeatureClick("barangay_guardianship", pick("barangay_guardianship").title, setShowGuardianshipModal),
       },
       {
-        id: "natural_death",
-        title: "Natural Death",
-        description:
-          "Official certification for natural death recording and burial requirements.",
+        ...pick("natural_death"),
         icon: Flower2,
         color: "green",
-        features: ["Certified", "Family Record", "Cemetery"],
         locked: isFeatureLocked("natural_death"),
-        onClick: () => handleFeatureClick("natural_death", "Natural Death", setShowNaturalDeathModal),
+        onClick: () =>
+          handleFeatureClick("natural_death", pick("natural_death").title, setShowNaturalDeathModal),
       },
       {
-        id: "educational_assistance",
-        title: "Educational Assistance",
-        description:
-          "Apply for scholarship and financial support for studying residents.",
+        ...pick("educational_assistance"),
         icon: GraduationCap,
         color: "blue",
-        features: ["Scholarship", "Allowance", "Education"],
         locked: isFeatureLocked("educational_assistance"),
-        onClick: () => handleFeatureClick("educational_assistance", "Educational Assistance", setShowEducationalAssistanceModal),
+        onClick: () =>
+          handleFeatureClick(
+            "educational_assistance",
+            pick("educational_assistance").title,
+            setShowEducationalAssistanceModal,
+          ),
       },
-    ],
-    [
-      setShowClearanceModal,
-      setShowIndigencyModal,
-      setShowResidencyModal,
-      setShowBusinessPermitModal,
-      setShowGuardianshipModal,
-      setShowComingSoonModal,
-      setShowNaturalDeathModal,
-      setShowCohabitationModal,
-      setShowMedicoLegalModal,
-      setShowSamePersonModal,
-      setShowEducationalAssistanceModal,
-      tenantConfig.shortName,
-      subscription, // Important: re-memo if subscription data changes
-    ],
-  );
+    ];
+  }, [
+    tenantConfig.shortName,
+    subscription,
+  ]);
 
   // Responsive items per view for forms carousel
   useEffect(() => {
@@ -784,28 +792,28 @@ export default function PortalPageContent({ initialTenantId }) {
         // Morning (6 AM - 12 PM)
         weather = {
           icon: Sun,
-          text: "Morning, 28°C",
+          text: "Umaga, 28°C",
           color: "text-yellow-400",
         };
       } else if (hour >= 12 && hour < 18) {
         // Afternoon (12 PM - 6 PM)
         weather = {
           icon: Sun,
-          text: "Afternoon, 31°C",
+          text: "Hapon, 31°C",
           color: "text-orange-400",
         };
       } else if (hour >= 18 && hour < 21) {
         // Evening (6 PM - 9 PM)
         weather = {
           icon: Cloud,
-          text: "Evening, 26°C",
+          text: "Gabi (hapon), 26°C",
           color: "text-blue-300",
         };
       } else {
         // Night (9 PM - 6 AM)
         weather = {
           icon: Moon,
-          text: "Night, 24°C",
+          text: "Gabi, 24°C",
           color: "text-blue-200",
         };
       }
@@ -913,9 +921,9 @@ export default function PortalPageContent({ initialTenantId }) {
   }, []);
 
   const stats = [
-    { label: "Total Population", value: "12,847", icon: Users },
-    { label: "Active Programs", value: "24", icon: TrendingUp },
-    { label: "Forms Processed This Month", value: "1,256", icon: FileText },
+    { label: p.statPopulation, value: "12,847", icon: Users },
+    { label: p.statPrograms, value: "24", icon: TrendingUp },
+    { label: p.statForms, value: "1,256", icon: FileText },
   ];
 
   const hotlines = [
@@ -927,7 +935,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Message sent successfully! We will get back to you soon.");
+    alert("Naipadala ang mensahe! Makikipag-ugnayan kami sa inyo sa lalong madaling panahon.");
     setFormData({
       firstName: "",
       lastName: "",
@@ -1006,13 +1014,7 @@ export default function PortalPageContent({ initialTenantId }) {
     return () => clearInterval(interval);
   }, [showAssistance, assistanceMode, chatStarted, chatUserInfo.contact]);
 
-  // KapChat — Quick Inquiry Prompt Suggestions
-  const KAPCHAT_QUICK_PROMPTS = [
-    { label: "📄 Barangay Clearance Requirements", text: "Good day Kap! May I ask what the requirements and process are for Barangay Clearance?" },
-    { label: "🕒 Barangay Hall Office Hours", text: "Good day Kap! What are the official office hours and working days of the Barangay Hall?" },
-    { label: "🚨 Emergency Barangay Assistance", text: "Good day Kap! Where can I call for emergency barangay assistance and patrol tanod?" },
-    { label: "📑 Track Document Request", text: "Good day Kap! I would like to follow up on the status of my submitted barangay document request." },
-  ];
+  const kapchatQuickPrompts = getKapchatPrompts();
 
   // KapChat — Start chat session handler
   const handleStartChat = (e) => {
@@ -1133,26 +1135,26 @@ export default function PortalPageContent({ initialTenantId }) {
 
   return (
     <div
-      className="min-h-screen bg-gray-50"
+      className="min-h-screen bg-gray-50 pb-[calc(4.875rem+env(safe-area-inset-bottom,0px))] md:pb-0"
       style={{ fontFamily: "'Outfit', 'Inter', sans-serif" }}
     >
       <Head>
-        <title>{tenantConfig.shortName} — Official Barangay Portal</title>
-        <meta name="description" content={`Official online portal of ${tenantConfig.name}, ${tenantConfig.subtitle}. Request certificates, track requests, and access barangay services online.`} />
+        <meta httpEquiv="content-language" content="fil" />
+        <title>{tenantConfig.shortName} — {p.pageTitleSuffix}</title>
+        <meta name="description" content={`${tenantConfig.name}, ${tenantConfig.subtitle}. ${p.pageDescription}`} />
         <meta name="keywords" content="barangay, portal, certificate, clearance, permit, online services, Philippines, local government" />
         <meta name="author" content={tenantConfig.name} />
         <meta name="robots" content="index, follow" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
 
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:title" content={`${tenantConfig.shortName} — Official Barangay Portal`} />
-        <meta property="og:description" content={`Official online portal of ${tenantConfig.name}, ${tenantConfig.subtitle}. Request certificates, track requests, and access barangay services online.`} />
+        <meta property="og:title" content={`${tenantConfig.shortName} — ${p.pageTitleSuffix}`} />
+        <meta property="og:description" content={`${tenantConfig.name}, ${tenantConfig.subtitle}. ${p.pageDescription}`} />
         <meta property="og:image" content={tenantConfig.logo} />
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${tenantConfig.shortName} — Official Barangay Portal`} />
+        <meta name="twitter:title" content={`${tenantConfig.shortName} — ${p.pageTitleSuffix}`} />
         <meta name="twitter:description" content={`Official online portal of ${tenantConfig.name}, ${tenantConfig.subtitle}.`} />
 
         {/* Theme Color */}
@@ -1232,6 +1234,17 @@ export default function PortalPageContent({ initialTenantId }) {
           );
         }
 
+        @media (max-width: 767px) {
+          .hero-gradient {
+            background: linear-gradient(
+              to top,
+              rgba(0, 0, 0, 0.92) 0%,
+              rgba(0, 0, 0, 0.55) 42%,
+              rgba(0, 0, 0, 0.35) 100%
+            );
+          }
+        }
+
         nav a:hover {
           color: ${tenantConfig.accentColor} !important;
         }
@@ -1285,41 +1298,53 @@ export default function PortalPageContent({ initialTenantId }) {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-white focus:text-gray-900 focus:rounded-lg focus:shadow-xl focus:text-sm focus:font-bold"
       >
-        Skip to content
+        {p.skipToContent}
       </a>
 
       {/* Portal Header — Government Identity Bar */}
       <div
-        className="pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 md:py-4 relative overflow-hidden border-b border-white/10"
+        className="sticky top-0 z-[60] pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] pb-2.5 md:pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] md:pb-3 md:py-4 relative overflow-hidden border-b border-white/10 md:static md:z-auto"
         style={tenantConfig.colorStyle}
       >
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between px-4 lg:px-8 relative z-10">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-2 px-4 lg:px-8 relative z-10">
           {/* Left Side - Seal/Logo and Title */}
-          <div className="flex items-center gap-3 lg:gap-5">
+          <div className="flex items-center gap-2.5 md:gap-5 min-w-0 flex-1">
             <div className="shrink-0">
               <img
                 loading="eager"
                 src={tenantConfig.logo}
                 alt="Barangay Seal"
-                className="h-12 w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 object-contain"
+                className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 object-contain"
               />
             </div>
-            <div>
-              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white tracking-tight leading-tight">
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white tracking-tight leading-tight truncate">
                 {tenantConfig.name}
               </h1>
-              <p className="text-[10px] sm:text-xs md:text-sm text-white/60 font-medium uppercase tracking-[0.12em] mt-0.5">
+              <p className="hidden sm:block text-[10px] sm:text-xs md:text-sm text-white/60 font-medium uppercase tracking-[0.12em] mt-0.5 line-clamp-1">
                 {tenantConfig.subtitle}
               </p>
             </div>
           </div>
 
+          {/* Mobile menu */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? p.closeMenu : p.openMenu}
+            aria-expanded={mobileMenuOpen}
+            className="md:hidden shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/15 border border-white/25 text-white active:scale-95 transition-transform"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <span className="text-xs font-bold uppercase tracking-wide">{p.navMenu}</span>
+          </button>
+
           {/* Right Side - Date/Time and Weather */}
-          <div className="hidden sm:flex flex-col items-end gap-1 text-white/80">
+          <div className="hidden sm:flex flex-col items-end gap-1 text-white/80 shrink-0">
             <div className="flex items-center gap-2 text-[10px] lg:text-xs font-medium tracking-wide">
               <Clock className="w-3 h-3 text-white/60 shrink-0" />
               <span className="truncate max-w-[200px] lg:max-w-none">
-                {currentTime || "Loading..."}
+                {currentTime || p.loading}
               </span>
             </div>
             <div className="flex items-center gap-2 text-[10px] lg:text-xs font-medium tracking-wide uppercase">
@@ -1331,155 +1356,162 @@ export default function PortalPageContent({ initialTenantId }) {
             </div>
           </div>
 
-          {/* Mobile: compact weather */}
-          <div className="flex sm:hidden items-center gap-1.5 text-white/80">
-            {weatherInfo.icon &&
-              React.createElement(weatherInfo.icon, {
-                className: `w-3 h-3 ${weatherInfo.color}`,
-              })}
-            <span className="text-[9px] font-medium uppercase">{weatherInfo.text}</span>
-          </div>
         </div>
-      </div>
 
-      {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 transition-all duration-300 py-2.5">
-        <div className="max-w-[1400px] mx-auto px-6 sm:px-8">
-          <div className="flex justify-end items-center h-10 gap-8">
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-7">
+        {/* Mobile navigation drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-white/15 bg-black/20 backdrop-blur-md max-h-[min(70vh,480px)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+            <div className="px-4 py-3 space-y-0.5">
               {[
-                { href: "#news", label: "News & Updates" },
-                { href: "#forms", label: "Barangay Forms" },
-                { href: "#directory", label: "Facilities" },
-                { href: "#tourism", label: "Tourism" },
-                { href: "#achievements", label: "Achievements" },
-                { href: "#officials", label: "Officials" },
-                { href: "#contact", label: "Contact Us" },
+                { href: "#news", label: p.navNews },
+                { href: "#forms", label: p.navForms },
+                { href: "#citizen-help", label: p.navHelp },
+                { href: "#track", label: p.trackRequestShort },
+                { href: "#officials", label: p.navOfficialsMobile },
+                { href: "#contact", label: p.navContact },
               ].map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
-                  className="nav-link text-gray-700 text-sm font-medium transition-colors"
-                  style={{ "--hover-color": tenantConfig.accentColor }}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-3 px-2 rounded-lg text-white font-semibold text-sm active:bg-white/10"
                 >
                   {link.label}
                 </a>
               ))}
-              {/* Track Request */}
-              <a
-                href="#track"
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold border transition-colors"
-                style={{ color: tenantConfig.primaryColor, borderColor: `${tenantConfig.primaryColor}30`, backgroundColor: `${tenantConfig.primaryColor}05` }}
-              >
-                <Search className="w-3.5 h-3.5" />
-                Track Request
-              </a>
-
-              {/* PWA Install Button (Desktop/Tablet) */}
+              <p className="pt-2 pb-1 px-2 text-[10px] font-bold uppercase tracking-wider text-white/50">
+                {p.navCommunity}
+              </p>
+              {[
+                { href: "#directory", label: p.navFacilities },
+                { href: "#tourism", label: p.navTourismMobile },
+                { href: "#achievements", label: p.navAchievementsMobile },
+              ].map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-2.5 px-3 rounded-lg text-white/90 text-sm font-medium active:bg-white/10"
+                >
+                  {link.label}
+                </a>
+              ))}
               {!isInstalled && (
                 <button
-                  onClick={promptInstall}
-                  title="Install BrgyDesk App on your device"
-                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-bold transition-all shadow-sm hover:shadow"
-                  style={{
-                    backgroundColor: `${tenantConfig.primaryColor}15`,
-                    color: tenantConfig.primaryColor,
-                    border: `1px solid ${tenantConfig.primaryColor}30`,
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    promptInstall();
                   }}
+                  className="w-full mt-2 py-3 px-3 rounded-lg text-sm font-semibold text-white bg-white/15 border border-white/25"
                 >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  <span>Install App</span>
+                  {p.installAppMobile}
                 </button>
               )}
-
               <button
-                onClick={() => router.push("/login")}
-                className="px-5 py-1.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 ml-1"
-                style={{ backgroundColor: tenantConfig.primaryColor }}
-              >
-                Login
-              </button>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileMenuOpen}
-              className="md:hidden p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-            >
-              {mobileMenuOpen ? (
-                <X className="w-5 h-5 text-gray-800" />
-              ) : (
-                <Menu className="w-5 h-5 text-gray-800" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100 py-6 px-6 space-y-4 animate-in slide-in-from-top-4 duration-300">
-            {[
-              { href: "#news", label: "News & Updates" },
-              { href: "#forms", label: "Barangay Forms" },
-              { href: "#directory", label: "Facilities" },
-              { href: "#tourism", label: "Tourism & Lifestyle" },
-              { href: "#achievements", label: "Achievements & Awards" },
-              { href: "#officials", label: "Barangay Officials" },
-              { href: "#contact", label: "Contact Us" },
-            ].map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-3 text-gray-800 font-bold text-lg mobile-nav-link border-b border-gray-50 last:border-0"
-              >
-                {link.label}
-              </a>
-            ))}
-            <a
-              href="#track"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 py-3 font-bold text-lg border-b border-gray-50"
-              style={{ color: tenantConfig.primaryColor }}
-            >
-              <Search className="w-5 h-5" />
-              Track My Request
-            </a>
-
-            {!isInstalled && (
-              <button
+                type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  promptInstall();
+                  router.push("/login");
                 }}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-blue-700 bg-blue-50 border border-blue-200 shadow-sm transition-all"
+                className="w-full mt-2 py-3 rounded-lg text-sm font-bold text-white"
+                style={{ backgroundColor: tenantConfig.accentColor || tenantConfig.primaryColor }}
               >
-                <Smartphone className="w-4 h-4 text-blue-600" />
-                Install Mobile App (PWA)
+                {p.login}
               </button>
-            )}
-
-            <button
-              onClick={() => router.push("/login")}
-              className="w-full text-white px-6 py-3 rounded-lg font-semibold text-sm mt-4"
-              style={{ backgroundColor: tenantConfig.primaryColor }}
-            >
-              Login
-            </button>
+            </div>
           </div>
         )}
+      </div>
+
+      {/* Navigation Bar — desktop only */}
+      <nav
+        className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200/90 shadow-sm hidden md:block"
+        aria-label="Pangunahing menu"
+      >
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Desktop — menu + login aligned right */}
+          <div className="hidden md:flex items-center justify-end gap-2 lg:gap-3 min-h-[3rem] py-2 w-full">
+            <div
+              className="flex items-center flex-wrap justify-end gap-x-0.5 lg:gap-x-1 gap-y-1"
+              role="menubar"
+            >
+              {[
+                { href: "#news", short: p.navNewsShort, full: p.navNews },
+                { href: "#forms", short: p.navFormsShort, full: p.navForms },
+                { href: "#citizen-help", short: p.navHelpShort, full: p.navHelp },
+                { href: "#officials", short: p.navOfficialsShort, full: p.navOfficials },
+                { href: "#contact", short: p.navContactShort, full: p.navContact },
+              ].map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  title={link.full}
+                  role="menuitem"
+                  className="nav-link px-2.5 lg:px-3 py-2 rounded-md text-gray-700 text-sm font-semibold whitespace-nowrap transition-colors hover:bg-gray-100"
+                >
+                  {link.short}
+                </a>
+              ))}
+
+              <div className="relative shrink-0" ref={navCommunityRef}>
+                <button
+                  type="button"
+                  onClick={() => setNavCommunityOpen((o) => !o)}
+                  aria-expanded={navCommunityOpen}
+                  aria-haspopup="true"
+                  title={`${p.navFacilities}, ${p.navTourism}, ${p.navAchievements}`}
+                  className="nav-link flex items-center gap-0.5 px-2.5 lg:px-3 py-2 rounded-md text-sm font-semibold whitespace-nowrap text-gray-700 transition-colors hover:bg-gray-100"
+                >
+                  {p.navCommunity}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-gray-400 transition-transform ${navCommunityOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {navCommunityOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-56 py-1.5 bg-white rounded-lg border border-gray-200 shadow-lg z-[60] animate-in fade-in zoom-in-95 duration-150">
+                    {[
+                      { href: "#directory", label: p.navFacilities },
+                      { href: "#tourism", label: p.navTourism },
+                      { href: "#achievements", label: p.navAchievements },
+                    ].map((item) => (
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setNavCommunityOpen(false)}
+                        className="block px-3.5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => router.push("/login")}
+              className="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 ml-0.5 lg:ml-1"
+              style={{ backgroundColor: tenantConfig.primaryColor }}
+            >
+              {p.login}
+            </button>
+          </div>
+
+        </div>
       </nav>
 
       {/* Hero Section — News & Announcements */}
       <section
         id="news"
-        aria-label="News and announcements carousel"
+        aria-label={p.newsCarouselAria}
         tabIndex={-1}
-        className="relative h-[320px] md:h-[420px] lg:h-[480px] overflow-hidden bg-gray-900"
+        className="relative h-[min(72vh,420px)] min-h-[280px] md:h-[420px] lg:h-[480px] overflow-hidden bg-gray-900 scroll-mt-[4.5rem] md:scroll-mt-0"
       >
+        <span id="main-content" tabIndex={-1} className="sr-only">
+          {p.skipToContent}
+        </span>
         {/* Loading Skeleton */}
         {newsItems.length === 0 && (
           <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
@@ -1498,17 +1530,27 @@ export default function PortalPageContent({ initialTenantId }) {
               currentSlide === index ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
           >
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage: item.image
-                  ? `url(${item.image})`
-                  : `linear-gradient(135deg, ${tenantConfig.primaryColor} 0%, ${tenantConfig.cardBackground} 100%)`,
-              }}
-            />
+            {item.image ? (
+              <img
+                src={item.image}
+                alt=""
+                aria-hidden
+                decoding={currentSlide === index ? "sync" : "async"}
+                fetchpriority={currentSlide === index ? "high" : "low"}
+                className="absolute inset-0 w-full h-full object-cover object-center"
+                draggable={false}
+              />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(135deg, ${tenantConfig.primaryColor} 0%, ${tenantConfig.cardBackground} 100%)`,
+                }}
+              />
+            )}
             <div className="absolute inset-0 hero-gradient" />
-            <div className="relative h-full max-w-[1400px] mx-auto px-6 md:px-12 flex items-center">
-              <div className="max-w-2xl text-white">
+            <div className="relative h-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 flex items-end pb-24 md:items-center md:pb-0">
+              <div className="max-w-2xl text-white w-full">
                 <span
                   className="inline-flex items-center px-3 py-1 rounded text-[10px] font-bold uppercase tracking-[0.15em] mb-5 text-white"
                   style={{ backgroundColor: `${tenantConfig.accentColor}cc` }}
@@ -1516,18 +1558,18 @@ export default function PortalPageContent({ initialTenantId }) {
                   <Calendar className="w-3 h-3 mr-1.5" />
                   {item.date}
                 </span>
-                <h2 className="text-xl md:text-3xl lg:text-4xl font-bold mb-3 leading-tight tracking-tight">
+                <h2 className="text-lg sm:text-xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-3 leading-tight tracking-tight line-clamp-2 md:line-clamp-none">
                   {item.title}
                 </h2>
-                <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-3 leading-relaxed max-w-xl">
+                <p className="text-sm md:text-base text-white/80 mb-4 md:mb-6 line-clamp-2 md:line-clamp-3 leading-relaxed max-w-xl">
                   {item.description}
                 </p>
                 <button
                   onClick={() => setSelectedNewsItem(item)}
-                  className="bg-white px-6 py-2.5 rounded-lg font-semibold transition-opacity hover:opacity-90 flex items-center gap-2 text-sm"
+                  className="bg-white px-5 py-3 md:px-6 md:py-2.5 rounded-lg font-semibold transition-opacity hover:opacity-90 flex items-center gap-2 text-sm min-h-[44px] touch-manipulation"
                   style={{ color: tenantConfig.primaryColor }}
                 >
-                  Read Full Announcement
+                  {p.readFullAnnouncement}
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -1537,17 +1579,17 @@ export default function PortalPageContent({ initialTenantId }) {
 
         {/* Carousel Navigation */}
         {newsItems.length > 1 && (
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-3">
+          <div className="absolute bottom-[5.5rem] md:bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-2 md:gap-3">
             <button
               onClick={() =>
                 setCurrentSlide(
                   (prev) => (prev - 1 + newsItems.length) % newsItems.length,
                 )
               }
-              aria-label="Previous slide"
-              className="bg-white/20 hover:bg-white/40 p-1.5 rounded transition-colors touch-manipulation"
+              aria-label={p.carouselPrev}
+              className="bg-white/25 hover:bg-white/40 p-2.5 md:p-1.5 rounded-lg md:rounded transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
-              <ChevronLeft className="w-4 h-4 text-white" />
+              <ChevronLeft className="w-5 h-5 md:w-4 md:h-4 text-white" />
             </button>
 
             <div className="flex gap-2">
@@ -1555,7 +1597,7 @@ export default function PortalPageContent({ initialTenantId }) {
                 <button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
-                  aria-label={`Go to slide ${index + 1}`}
+                  aria-label={`${p.carouselGoTo} ${index + 1}`}
                   aria-current={currentSlide === index}
                   className={`h-1.5 rounded-full transition-all ${
                     currentSlide === index
@@ -1570,72 +1612,19 @@ export default function PortalPageContent({ initialTenantId }) {
               onClick={() =>
                 setCurrentSlide((prev) => (prev + 1) % newsItems.length)
               }
-              aria-label="Next slide"
-              className="bg-white/20 hover:bg-white/40 p-1.5 rounded transition-colors touch-manipulation"
+              aria-label={p.carouselNext}
+              className="bg-white/25 hover:bg-white/40 p-2.5 md:p-1.5 rounded-lg md:rounded transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
-              <ChevronRight className="w-4 h-4 text-white" />
+              <ChevronRight className="w-5 h-5 md:w-4 md:h-4 text-white" />
             </button>
           </div>
         )}
       </section>
 
-      {/* Quick Action Bar — Task-First Citizen Services */}
-      <div className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12 py-4">
-          <div className="grid grid-cols-3 gap-3 sm:gap-6">
-            <a
-              href="#forms"
-              className="flex items-center gap-3 p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors group"
-            >
-              <div
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: `${tenantConfig.primaryColor}15` }}
-              >
-                <FileText className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: tenantConfig.primaryColor }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">Request Certificate</p>
-                <p className="text-[10px] sm:text-xs text-gray-500 truncate hidden sm:block">Barangay clearance, permits, and more</p>
-              </div>
-            </a>
-            <a
-              href="#track"
-              className="flex items-center gap-3 p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors group"
-            >
-              <div
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: `${tenantConfig.accentColor}15` }}
-              >
-                <Search className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: tenantConfig.accentColor }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">Track Request</p>
-                <p className="text-[10px] sm:text-xs text-gray-500 truncate hidden sm:block">Check your certificate status</p>
-              </div>
-            </a>
-            <a
-              href="#contact"
-              className="flex items-center gap-3 p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors group"
-            >
-              <div
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: `${tenantConfig.secondaryColor}20` }}
-              >
-                <Phone className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: tenantConfig.secondaryColor }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">Contact Us</p>
-                <p className="text-[10px] sm:text-xs text-gray-500 truncate hidden sm:block">Hotlines and office hours</p>
-              </div>
-            </a>
-          </div>
-        </div>
-      </div>
-
       {/* Available Forms Section - Modern Design with Responsive Background */}
       <section
         id="forms"
-        className="py-10 md:py-16 relative overflow-hidden animate-on-scroll"
+        className="py-10 md:py-16 relative overflow-hidden animate-on-scroll scroll-mt-[3.5rem] md:scroll-mt-0"
       >
         {/* Modern Mesh Gradient Background */}
         <div className="absolute inset-0 bg-[#fdfdfd] z-0">
@@ -1671,7 +1660,7 @@ export default function PortalPageContent({ initialTenantId }) {
               >
                 <FileText className="w-3 h-3 text-white" />
               </div>
-              Digital Services Center
+              {p.formsBadge}
               <span
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: tenantConfig.accentColor }}
@@ -1680,7 +1669,7 @@ export default function PortalPageContent({ initialTenantId }) {
                 className="font-black"
                 style={{ color: tenantConfig.accentColor }}
               >
-                Online Now
+                {p.formsBadgeLive}
               </span>
             </div>
 
@@ -1692,11 +1681,11 @@ export default function PortalPageContent({ initialTenantId }) {
                   backgroundImage: `linear-gradient(to right, ${tenantConfig.accentColor}, ${tenantConfig.primaryColor})`,
                 }}
               >
-                Online Services
+                {p.formsTitle}
               </span>
             </h2>
             <p className="text-gray-500 max-w-2xl mx-auto text-base md:text-lg font-medium leading-relaxed">
-              Request official barangay certificates and permits online. Secure, paperless, and accessible anytime.
+              {p.formsSubtitle}
             </p>
           </div>
 
@@ -1865,7 +1854,7 @@ export default function PortalPageContent({ initialTenantId }) {
                                   {form.title}
                                   {form.locked && (
                                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black bg-gray-100 text-gray-400 border border-gray-200 uppercase tracking-tighter">
-                                      <Shield className="w-2.5 h-2.5 mr-1" /> Locked
+                                      <Shield className="w-2.5 h-2.5 mr-1" /> {p.locked}
                                     </span>
                                   )}
                                 </h3>
@@ -1898,7 +1887,7 @@ export default function PortalPageContent({ initialTenantId }) {
                                 >
                                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
                                   <span className="relative z-10">
-                                    {form.locked ? 'Locked (Upgrade Needed)' : 'Request Certificate'}
+                                    {form.locked ? p.lockedUpgrade : p.requestCertificate}
                                   </span>
                                   {form.locked ? (
                                     <Shield className="w-5 h-5 relative z-10" />
@@ -1960,104 +1949,263 @@ export default function PortalPageContent({ initialTenantId }) {
         </div>
       </section>
 
+      {/* Citizen Help Desk — KapChat, E-Sumbong, Brgy Assistance */}
+      <section
+        id="citizen-help"
+        className="py-12 md:py-16 w-full border-t border-gray-200 relative overflow-hidden scroll-mt-[3.5rem] md:scroll-mt-0"
+      >
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
+          style={{ backgroundImage: "url(/images/community.jpg)" }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `linear-gradient(135deg, ${tenantConfig.primaryColor}e6 0%, rgba(15, 23, 42, 0.88) 55%, rgba(0, 0, 0, 0.75) 100%)`,
+          }}
+          aria-hidden
+        />
+
+        <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 relative z-10">
+          <div className="text-center mb-8 md:mb-10 max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.18em] mb-4 border border-white/30 bg-white/15 text-white backdrop-blur-md">
+              <HeadphonesIcon className="w-3.5 h-3.5" />
+              {p.helpDeskBadge}
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight mb-3 drop-shadow-sm">
+              {p.helpDeskTitle}{" "}
+              <span
+                className="text-transparent bg-clip-text"
+                style={{
+                  backgroundImage: `linear-gradient(to right, #ffffff, ${tenantConfig.accentColor})`,
+                }}
+              >
+                {p.helpDeskTitleAccent}
+              </span>
+            </h2>
+            <p className="text-white/85 text-sm md:text-base leading-relaxed font-medium drop-shadow-sm">
+              {p.helpDeskSubtitle}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 max-w-6xl mx-auto items-stretch">
+            {/* KapChat */}
+            <button
+              type="button"
+              onClick={() => openAssistance("kapchat")}
+              className="group help-desk-card text-left h-full min-h-[15.5rem] md:min-h-[16.75rem] rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_8px_24px_-6px_rgba(0,0,0,0.4)] hover:bg-white/[0.16] hover:border-white/35 transition-all duration-300 p-5 md:p-6 flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent overflow-hidden relative"
+            >
+              <div
+                className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"
+                aria-hidden
+              />
+              <span className="text-[9px] font-black uppercase tracking-widest mb-3 min-h-[1.125rem] text-emerald-100/90">
+                {p.kapchatLive}
+              </span>
+              <div className="flex items-center gap-3 mb-3 min-h-[2.75rem]">
+                <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center bg-white/15 border border-white/20 group-hover:bg-white/20 transition-colors">
+                  <MessageCircle className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-black text-white leading-tight line-clamp-2">{p.kapchat}</h3>
+              </div>
+              <p className="text-sm text-white/75 leading-snug flex-1 min-h-[4.5rem] line-clamp-4 md:line-clamp-3">
+                {p.kapchatDesc}
+              </p>
+              <span className="mt-4 inline-flex items-center justify-center gap-1.5 w-full min-h-[2.5rem] py-2.5 rounded-lg text-xs font-bold text-white border border-white/25 bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-all">
+                {p.openKapchat}
+                <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+              </span>
+            </button>
+
+            {/* E-Sumbong */}
+            <button
+              type="button"
+              onClick={() => setShowESumbong(true)}
+              className="group help-desk-card text-left h-full min-h-[15.5rem] md:min-h-[16.75rem] rounded-2xl border border-red-200/25 bg-white/10 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_8px_24px_-6px_rgba(0,0,0,0.4)] hover:bg-red-950/20 hover:border-red-200/40 transition-all duration-300 p-5 md:p-6 flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent overflow-hidden relative"
+            >
+              <div
+                className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-300/60 to-transparent"
+                aria-hidden
+              />
+              <span className="text-[9px] font-black uppercase tracking-widest mb-3 min-h-[1.125rem] text-red-100/90">
+                {p.esumbongOfficial}
+              </span>
+              <div className="flex items-center gap-3 mb-3 min-h-[2.75rem]">
+                <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center bg-red-500/20 border border-red-200/25">
+                  <AlertCircle className="w-5 h-5 text-red-100" />
+                </div>
+                <h3 className="text-lg font-black text-white leading-tight line-clamp-2">{p.esumbong}</h3>
+              </div>
+              <p className="text-sm text-white/75 leading-snug flex-1 min-h-[4.5rem] line-clamp-4 md:line-clamp-3">
+                {p.esumbongDesc}
+              </p>
+              <span className="mt-4 inline-flex items-center justify-center gap-1.5 w-full min-h-[2.5rem] py-2.5 rounded-lg text-xs font-bold text-white border border-red-200/35 bg-red-500/25 backdrop-blur-sm group-hover:bg-red-500/40 transition-all">
+                {p.fileReport}
+                <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+              </span>
+            </button>
+
+            {/* Brgy Assistance */}
+            <button
+              type="button"
+              onClick={() => openAssistance("assistance")}
+              className="group help-desk-card text-left h-full min-h-[15.5rem] md:min-h-[16.75rem] rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_8px_24px_-6px_rgba(0,0,0,0.4)] hover:bg-white/[0.16] hover:border-white/35 transition-all duration-300 p-5 md:p-6 flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent overflow-hidden relative"
+            >
+              <div
+                className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"
+                aria-hidden
+              />
+              <span className="text-[9px] font-black uppercase tracking-widest mb-3 min-h-[1.125rem] text-emerald-100/90">
+                {p.brgyAssistGeneral}
+              </span>
+              <div className="flex items-center gap-3 mb-3 min-h-[2.75rem]">
+                <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center bg-white/15 border border-white/20 group-hover:bg-white/20 transition-colors">
+                  <HeadphonesIcon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-black text-white leading-tight line-clamp-2">{p.brgyAssist}</h3>
+              </div>
+              <p className="text-sm text-white/75 leading-snug flex-1 min-h-[4.5rem] line-clamp-4 md:line-clamp-3">
+                {p.brgyAssistDesc}
+              </p>
+              <span className="mt-4 inline-flex items-center justify-center gap-1.5 w-full min-h-[2.5rem] py-2.5 rounded-lg text-xs font-bold text-white border border-white/25 bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-all">
+                {p.sendInquiry}
+                <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Track Your Request Section */}
       <section id="track" className="py-12 md:py-16 w-full border-t border-gray-100" style={{ background: `linear-gradient(135deg, ${tenantConfig.primaryColor}08 0%, ${tenantConfig.accentColor}05 100%)` }}>
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12">
           <div className="max-w-2xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest mb-4 border" style={{ color: tenantConfig.primaryColor, borderColor: `${tenantConfig.primaryColor}30`, backgroundColor: `${tenantConfig.primaryColor}08` }}>
               <Search className="w-3.5 h-3.5" />
-              Request Tracker
+              {p.trackBadge}
             </div>
             <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight mb-3">
-              Track Your <span style={{ color: tenantConfig.accentColor }}>Request</span>
+              {p.trackTitle}{" "}
+              <span style={{ color: tenantConfig.accentColor }}>{p.trackTitleAccent}</span>
             </h2>
-            <p className="text-gray-500 text-base mb-8">Enter your reference number to check the current status of your certificate request.</p>
-            <TrackRequestWidget tenantId={tenantId} tenantConfig={tenantConfig} />
+            <p className="text-gray-500 text-base mb-8">{p.trackSubtitle}</p>
+            <TrackRequestWidget tenantId={tenantId} tenantConfig={tenantConfig} labels={p} />
           </div>
         </div>
       </section>
 
-      {/* Programs Section — Featured Spotlight & Interactive Catalog (Dark Green Government Theme) */}
-      {!isFeatureLocked('programs') && (
-        <section id="programs" className="py-16 md:py-24 bg-gradient-to-b from-white via-slate-50/70 to-emerald-50/30 w-full border-t border-gray-200/80 relative overflow-hidden">
-          {/* Subtle Government Geometric Watermark */}
+      {/* Programs, Facilities & Legacy — one shared community background */}
+      {(!isFeatureLocked("programs") ||
+        !isFeatureLocked("facilities") ||
+        !isFeatureLocked("achievements")) && (
+        <section className="py-12 md:py-16 w-full border-t border-gray-200 relative overflow-hidden">
           <div
-            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
+            style={{ backgroundImage: "url(/images/community.jpg)" }}
+            aria-hidden
+          />
+          <div
+            className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: "radial-gradient(circle at 20px 20px, #064e3b 2%, transparent 0%), radial-gradient(circle at 60px 60px, #064e3b 2%, transparent 0%)",
-              backgroundSize: "80px 80px",
+              background: `linear-gradient(135deg, ${tenantConfig.primaryColor}e6 0%, rgba(15, 23, 42, 0.88) 55%, rgba(0, 0, 0, 0.75) 100%)`,
             }}
+            aria-hidden
           />
 
-          <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 relative z-10">
-            {/* Section Header — Official Republic Style */}
-            <div className="mb-10 pb-6 border-b border-gray-200/90 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-              <div className="space-y-3 max-w-3xl">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 text-[#064e3b] border border-emerald-200/80 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-2xs">
-                  <Shield className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Republic of the Philippines • Sangguniang Barangay Initiatives</span>
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 relative z-10">
+            {!isFeatureLocked("programs") && (
+              <div
+                id="programs"
+                className={`scroll-mt-[3.5rem] md:scroll-mt-0 ${!isFeatureLocked("facilities") ? "pb-10 md:pb-12" : ""}`}
+              >
+            {/* Section Header — Programs */}
+            <div className="mb-6 md:mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between max-w-3xl md:max-w-none">
+              <div className="space-y-2.5 md:space-y-3 min-w-0 md:max-w-3xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.14em] md:tracking-[0.18em] border border-white/30 bg-white/15 text-white backdrop-blur-md max-w-full">
+                  <Shield className="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0" />
+                  <span className="truncate">{p.programsBadge}</span>
                 </div>
 
                 <div>
-                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-950 tracking-tight uppercase">
-                    Community Programs &amp; Development Initiatives
+                  <h2 className="text-xl sm:text-2xl md:text-4xl font-black text-white tracking-tight leading-[1.15]">
+                    {p.programsTitle}{" "}
+                    <span
+                      className="text-transparent bg-clip-text"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, #ffffff, ${tenantConfig.accentColor})`,
+                      }}
+                    >
+                      {p.programsTitleAccent}
+                    </span>
                   </h2>
-                  <p className="text-gray-600 text-xs sm:text-sm md:text-base mt-2 leading-relaxed font-medium">
-                    Authorized public services, health missions, educational grants, and sustainable infrastructure programs implemented by the Barangay Council for the welfare and empowerment of all constituents.
+                  <p className="text-white/80 text-sm md:text-base mt-2 leading-relaxed font-medium max-w-2xl line-clamp-3 md:line-clamp-none">
+                    {p.programsSubtitle}
                   </p>
                 </div>
               </div>
 
-              {/* Navigation Arrows for Featured Item */}
+              {/* Navigation — full-width row on mobile for easier tapping */}
               {portalDataLoaded && programs.length > 1 && (
-                <div className="flex items-center gap-2 self-start md:self-end">
-                  <span className="text-xs font-mono font-bold text-gray-400 mr-2">
+                <div className="flex items-center justify-between gap-3 w-full md:w-auto md:justify-end shrink-0">
+                  <span className="text-xs font-mono font-bold text-white/70 tabular-nums">
                     {String(activeProgramIdx + 1).padStart(2, "0")} / {String(programs.length).padStart(2, "0")}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveProgramIdx((prev) => (prev > 0 ? prev - 1 : programs.length - 1))}
-                    aria-label="Previous Program"
-                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#064e3b] hover:bg-[#064e3b] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveProgramIdx((prev) => (prev < programs.length - 1 ? prev + 1 : 0))}
-                    aria-label="Next Program"
-                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#064e3b] hover:bg-[#064e3b] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveProgramIdx((prev) => (prev > 0 ? prev - 1 : programs.length - 1))}
+                      aria-label={p.prevProgram}
+                      className="min-h-[44px] min-w-[44px] rounded-xl border border-white/25 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 touch-manipulation"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveProgramIdx((prev) => (prev < programs.length - 1 ? prev + 1 : 0))}
+                      aria-label={p.nextProgram}
+                      className="min-h-[44px] min-w-[44px] rounded-xl border border-white/25 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 touch-manipulation"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Loading Skeleton */}
             {!portalDataLoaded && (
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-xs grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-7 skeleton aspect-[16/10] rounded-2xl" />
-                <div className="lg:col-span-5 space-y-4">
-                  <div className="skeleton h-5 w-1/3 rounded" />
-                  <div className="skeleton h-8 w-3/4 rounded-lg" />
-                  <div className="skeleton h-24 w-full rounded-xl" />
-                  <div className="skeleton h-12 w-full rounded-xl mt-6" />
+              <>
+                <div className="md:hidden max-w-6xl mx-auto rounded-xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-xl">
+                  <div className="skeleton w-full aspect-[16/9] opacity-40" />
+                  <div className="p-4 space-y-2">
+                    <div className="skeleton h-2.5 w-1/4 rounded opacity-40" />
+                    <div className="skeleton h-4 w-3/4 rounded opacity-40" />
+                  </div>
                 </div>
-              </div>
+                <div className="hidden md:block rounded-2xl p-5 sm:p-6 border border-white/20 bg-white/10 backdrop-blur-xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-6 skeleton aspect-[16/10] rounded-xl opacity-40" />
+                  <div className="lg:col-span-6 space-y-4">
+                    <div className="skeleton h-4 w-1/3 rounded opacity-40" />
+                    <div className="skeleton h-7 w-3/4 rounded-lg opacity-40" />
+                    <div className="skeleton h-20 w-full rounded-xl opacity-40" />
+                    <div className="skeleton h-10 w-full rounded-lg opacity-40 mt-4" />
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Empty State */}
             {portalDataLoaded && programs.length === 0 && (
-              <div className="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-gray-300">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-[#064e3b] flex items-center justify-center mx-auto mb-4 border border-emerald-100">
-                  <Target className="w-8 h-8 text-[#064e3b]" />
+              <div className="text-center py-12 px-6 rounded-2xl border border-dashed border-white/30 bg-white/10 backdrop-blur-xl">
+                <div className="w-14 h-14 rounded-xl bg-white/15 text-white flex items-center justify-center mx-auto mb-4 border border-white/20">
+                  <Target className="w-7 h-7" />
                 </div>
-                <h4 className="text-lg font-black text-gray-900 uppercase">
-                  No Programs Published Yet
+                <h4 className="text-lg font-black text-white uppercase">
+                  {p.noProgramsTitle}
                 </h4>
-                <p className="text-gray-500 text-xs sm:text-sm mt-1 max-w-md mx-auto leading-relaxed">
-                  Official community initiatives are currently being updated by the Barangay Secretariat and Council.
+                <p className="text-white/70 text-sm mt-1 max-w-md mx-auto leading-relaxed">
+                  {p.noProgramsDesc}
                 </p>
               </div>
             )}
@@ -2079,12 +2227,151 @@ export default function PortalPageContent({ initialTenantId }) {
 
               const CategoryIcon = getCategoryIcon(activeProg.category);
 
+              const renderProgramCard = (prog, idx) => {
+                const ProgIcon = getCategoryIcon(prog.category);
+                return (
+                  <button
+                    key={prog.id || idx}
+                    type="button"
+                    onClick={() => {
+                      setActiveProgramIdx(idx);
+                      setSelectedProgram(prog);
+                    }}
+                    className="group text-left flex flex-col rounded-xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_8px_24px_-6px_rgba(0,0,0,0.35)] hover:bg-white/[0.16] hover:border-white/35 transition-all duration-300 w-full touch-manipulation"
+                  >
+                    <div className="relative aspect-[16/9] overflow-hidden bg-black/30">
+                      <img
+                        loading="lazy"
+                        src={
+                          prog.image ||
+                          "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800"
+                        }
+                        alt={prog.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold text-white bg-white/15 backdrop-blur-md border border-white/25">
+                        <ProgIcon className="w-3 h-3 shrink-0" />
+                        <span className="truncate max-w-[10rem]">
+                          {prog.category || p.communityInitiative}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col flex-1 p-4">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-white/60 mb-1">
+                        {p.active} · {p.initiative} {String(idx + 1).padStart(2, "0")}
+                      </p>
+                      <h3 className="text-sm font-bold text-white leading-snug mb-1.5 line-clamp-2">
+                        {prog.title}
+                      </h3>
+                      <p className="text-white/70 text-xs leading-relaxed line-clamp-3 flex-1">
+                        {prog.description || p.defaultProgramDesc}
+                      </p>
+                      <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white/80 pt-3 mt-2 border-t border-white/15 group-hover:text-white min-h-[44px]">
+                        {p.viewProgram}
+                        <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      </span>
+                    </div>
+                  </button>
+                );
+              };
+
+              const goPrevProgramSlide = () =>
+                setActiveProgramIdx((prev) => (prev > 0 ? prev - 1 : programs.length - 1));
+              const goNextProgramSlide = () =>
+                setActiveProgramIdx((prev) => (prev < programs.length - 1 ? prev + 1 : 0));
+
               return (
-                <div className="space-y-8">
-                  {/* Main Featured Showcase Card (Left Photo, Right Dark Green Details) — Fixed Height for all programs */}
-                  <div className="bg-[#022c22] rounded-3xl border border-emerald-900/50 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300 lg:min-h-[480px] lg:max-h-[500px]">
-                    {/* Left: Strictly Constrained Photo Container (6 Cols on lg) */}
-                    <div className="lg:col-span-6 relative w-full h-[280px] sm:h-[340px] lg:h-full min-h-[280px] lg:min-h-[480px] bg-slate-900 overflow-hidden group">
+                <div className="max-w-6xl mx-auto">
+                  {/* Mobile — Parangal-style card carousel */}
+                  <div className="md:hidden">
+                    {programs.length > 1 ? (
+                      <>
+                        <div
+                          className="overflow-hidden rounded-xl"
+                          onTouchStart={(e) => {
+                            programSlideTouchStart.current = e.touches[0]?.clientX ?? null;
+                          }}
+                          onTouchEnd={(e) => {
+                            const start = programSlideTouchStart.current;
+                            programSlideTouchStart.current = null;
+                            if (start == null) return;
+                            const end = e.changedTouches[0]?.clientX ?? start;
+                            const dx = end - start;
+                            if (Math.abs(dx) < 40) return;
+                            if (dx < 0) goNextProgramSlide();
+                            else goPrevProgramSlide();
+                          }}
+                        >
+                          <div
+                            className="flex transition-transform duration-300 ease-out"
+                            style={{ transform: `translateX(-${activeProgramIdx * 100}%)` }}
+                          >
+                            {programs.map((prog, idx) => (
+                              <div key={prog.id || idx} className="w-full shrink-0 px-0.5">
+                                {renderProgramCard(prog, idx)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-center gap-3 pt-3">
+                          <button
+                            type="button"
+                            onClick={goPrevProgramSlide}
+                            aria-label={p.prevProgram}
+                            className="min-h-[40px] min-w-[40px] rounded-lg border border-white/25 bg-white/10 text-white flex items-center justify-center active:scale-95 touch-manipulation"
+                          >
+                            <ChevronLeft className="w-5 h-5" />
+                          </button>
+                          <div
+                            className="flex flex-wrap items-center justify-center gap-1.5 max-w-[12rem]"
+                            role="tablist"
+                            aria-label={p.programsTitle}
+                          >
+                            {programs.map((prog, idx) => (
+                              <button
+                                key={prog.id || idx}
+                                type="button"
+                                role="tab"
+                                aria-selected={activeProgramIdx === idx}
+                                aria-label={`${p.initiative} ${idx + 1}: ${prog.title}`}
+                                onClick={() => setActiveProgramIdx(idx)}
+                                className={`h-2 rounded-full transition-all touch-manipulation ${
+                                  activeProgramIdx === idx
+                                    ? "w-6 bg-emerald-400"
+                                    : "w-2 bg-white/35 hover:bg-white/55"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={goNextProgramSlide}
+                            aria-label={p.nextProgram}
+                            className="min-h-[40px] min-w-[40px] rounded-lg border border-white/25 bg-white/10 text-white flex items-center justify-center active:scale-95 touch-manipulation"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-white/45 font-medium text-center pt-1">
+                          {p.programsSlideHint}
+                        </p>
+                      </>
+                    ) : (
+                      renderProgramCard(programs[0], 0)
+                    )}
+                  </div>
+
+                  {/* Desktop — featured showcase + picker grid */}
+                  <div className="hidden md:block space-y-6 max-w-5xl mx-auto">
+                  <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_12px_40px_-8px_rgba(0,0,0,0.45)] overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300 relative">
+                    <div
+                      className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent z-20 pointer-events-none"
+                      aria-hidden
+                    />
+
+                    {/* Photo */}
+                    <div className="lg:col-span-5 relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[240px] sm:max-h-[280px] lg:max-h-none lg:aspect-auto lg:h-auto lg:min-h-[320px] bg-slate-900/50 overflow-hidden group">
                       <img
                         key={activeProg.id || activeProgramIdx}
                         src={
@@ -2094,140 +2381,141 @@ export default function PortalPageContent({ initialTenantId }) {
                         alt={activeProg.title}
                         className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-105 animate-in fade-in"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/20 to-transparent opacity-85 lg:opacity-70 pointer-events-none" />
+                      <div
+                        className="absolute inset-0 pointer-events-none hidden lg:block"
+                        style={{
+                          background: `linear-gradient(135deg, ${tenantConfig.primaryColor}99 0%, rgba(15, 23, 42, 0.55) 50%, rgba(0, 0, 0, 0.65) 100%)`,
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none lg:hidden" />
 
-                      {/* Top-Left Category Badge */}
-                      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-emerald-400/30 shadow-lg">
-                        <CategoryIcon className="w-4 h-4 text-emerald-300" />
-                        <span>{activeProg.category || "Community Initiative"}</span>
+                      <div className="absolute top-2.5 left-2.5 z-10 hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white bg-white/15 backdrop-blur-md border border-white/25 max-w-[calc(100%-1rem)]">
+                        <CategoryIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{activeProg.category || p.communityInitiative}</span>
                       </div>
 
-                      {/* Bottom Image Seal */}
-                      <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between text-white text-xs font-bold">
-                        <span className="inline-flex items-center gap-1.5 text-emerald-200 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15">
-                          <Shield className="w-4 h-4 text-amber-300" />
-                          Barangay {tenantConfig.shortName || "Iba O' Este"}
-                        </span>
-                        <span className="bg-emerald-500 text-white px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-emerald-300/40 shadow-sm flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                          <span>Active Mandate</span>
+                      <div className="absolute bottom-2.5 right-2.5 z-10 hidden md:flex">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/90 border border-emerald-300/40 text-[9px] font-black uppercase tracking-wider text-white">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          {p.active}
                         </span>
                       </div>
                     </div>
 
-                    {/* Right: Detailed Content — Deep Dark Green Executive Theme (6 Cols on lg) */}
-                    <div className="lg:col-span-6 p-6 sm:p-8 lg:p-9 flex flex-col justify-between h-full bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white relative overflow-hidden border-t lg:border-t-0 lg:border-l border-emerald-800/40 space-y-6">
-                      {/* Ambient Emerald Radial Light */}
-                      <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-
-                      <div className="space-y-4 relative z-10">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-mono font-black uppercase tracking-widest text-emerald-300 bg-emerald-950/70 px-3 py-1 rounded-full border border-emerald-400/30 shadow-xs">
-                            Initiative {String(activeProgramIdx + 1).padStart(2, "0")} of {String(programs.length).padStart(2, "0")}
+                    {/* Details */}
+                    <div className="lg:col-span-7 p-4 sm:p-6 lg:p-7 flex flex-col justify-between text-white relative">
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white bg-white/15 border border-white/25 md:hidden">
+                            <CategoryIcon className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate max-w-[12rem]">{activeProg.category || p.communityInitiative}</span>
                           </span>
-                          <span className="text-[11px] text-emerald-200/80 font-bold uppercase tracking-wider hidden sm:inline">
-                            Sangguniang Barangay
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/90 border border-emerald-300/40 text-[9px] font-black uppercase tracking-wider md:hidden">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            {p.active}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-white/70 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/20 hidden md:inline-flex">
+                            {p.initiative} {String(activeProgramIdx + 1).padStart(2, "0")} / {String(programs.length).padStart(2, "0")}
+                          </span>
+                          <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider hidden lg:inline ml-auto">
+                            {p.sangguniangBarangay}
                           </span>
                         </div>
 
-                        <h3 className="text-white text-xl sm:text-2xl font-black leading-tight uppercase tracking-tight drop-shadow-sm line-clamp-2">
+                        <h3 className="text-base sm:text-lg md:text-xl font-black leading-snug tracking-tight line-clamp-3 md:line-clamp-2">
                           {activeProg.title}
                         </h3>
 
-                        <p className="text-emerald-100/90 text-xs sm:text-sm md:text-base leading-relaxed font-normal line-clamp-3 sm:line-clamp-4">
-                          {activeProg.description ||
-                            "Comprehensive public welfare program delivered directly to residents across the barangay to foster health, education, and community resilience."}
+                        <p className="text-sm text-white/80 leading-relaxed line-clamp-4 md:line-clamp-3">
+                          {activeProg.description || p.defaultProgramDesc}
                         </p>
 
-                        {/* Official Program Scope Matrix */}
-                        <div className="grid grid-cols-2 gap-2.5 pt-2 text-[11px]">
-                          <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 border border-white/10 space-y-0.5">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 block">
-                              Jurisdiction
+                        <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 pt-1">
+                          <div className="rounded-lg p-2.5 border border-white/15 bg-white/10 backdrop-blur-sm">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-white/60 block mb-0.5">
+                              {p.jurisdiction}
                             </span>
-                            <span className="font-bold text-white block truncate">
-                              Barangay {tenantConfig.shortName || "Iba O' Este"}
+                            <span className="text-xs font-bold text-white truncate block">
+                              {p.barangayWord} {tenantConfig.shortName || "Iba O' Este"}
                             </span>
                           </div>
-                          <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 border border-white/10 space-y-0.5">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 block">
-                              Beneficiaries
+                          <div className="rounded-lg p-2.5 border border-white/15 bg-white/10 backdrop-blur-sm">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-white/60 block mb-0.5">
+                              {p.beneficiaries}
                             </span>
-                            <span className="font-bold text-white block truncate">
-                              All Qualified Residents
+                            <span className="text-xs font-bold text-white truncate block">
+                              {p.allQualifiedResidents}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Action Button */}
-                      <div className="pt-4 border-t border-emerald-800/60 relative z-10">
+                      <div className="pt-4 mt-3 md:mt-4 border-t border-white/15">
                         <button
                           type="button"
                           onClick={() => setSelectedProgram(activeProg)}
-                          className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-emerald-950/60 hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-98"
+                          className="w-full min-h-[44px] py-3 md:py-2.5 px-4 rounded-lg text-sm md:text-xs font-bold text-white border border-white/30 bg-white/15 backdrop-blur-sm hover:bg-white/25 hover:border-white/45 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] touch-manipulation"
+                          style={{
+                            boxShadow: `0 4px 20px -4px ${tenantConfig.primaryColor}80`,
+                          }}
                         >
-                          <span>View Program</span>
-                          <ArrowRight className="w-4 h-4 text-emerald-100" />
+                          {p.viewProgram}
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* Bottom: Interactive Thumbnails Selector */}
                   {programs.length > 1 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-gray-600 flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                          <span>Select an Initiative to View</span>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between px-0.5 gap-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-white/80 flex items-center gap-1.5 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                          <span className="truncate">{p.selectInitiative}</span>
                         </h4>
-                        <span className="text-[11px] text-gray-500 font-bold">
-                          {programs.length} Active Programs
+                        <span className="text-[10px] text-white/50 font-bold shrink-0 tabular-nums">
+                          {programs.length} {p.programsCount}
                         </span>
                       </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                      <div className="grid grid-cols-4 lg:grid-cols-7 gap-2.5">
                         {programs.map((prog, idx) => {
                           const isActive = activeProgramIdx === idx;
                           const ProgIcon = getCategoryIcon(prog.category);
-
                           return (
                             <button
                               key={prog.id || idx}
                               type="button"
                               onClick={() => setActiveProgramIdx(idx)}
-                              className={`group text-left p-2.5 rounded-2xl transition-all duration-200 flex flex-col justify-between border cursor-pointer ${
+                              aria-current={isActive ? "true" : undefined}
+                              className={`group text-left p-2.5 rounded-xl transition-all duration-200 flex flex-col border cursor-pointer backdrop-blur-md w-full ${
                                 isActive
-                                  ? "bg-emerald-50/90 border-[#064e3b] ring-2 ring-[#064e3b]/30 shadow-md scale-102"
-                                  : "bg-white/90 hover:bg-white border-gray-200 hover:border-emerald-300 shadow-2xs hover:shadow-xs"
+                                  ? "bg-white/20 border-white/40 ring-1 ring-white/30 shadow-md"
+                                  : "bg-white/10 border-white/15 hover:bg-white/15 hover:border-white/25"
                               }`}
                             >
-                              <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-slate-100 mb-2">
+                              <div className="relative aspect-[16/10] w-full rounded-lg overflow-hidden bg-black/30 mb-2">
                                 <img
                                   src={
                                     prog.image ||
                                     "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=400"
                                   }
-                                  alt={prog.title}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                  alt=""
+                                  aria-hidden
+                                  className="w-full h-full object-cover"
                                 />
                                 {isActive && (
-                                  <div className="absolute inset-0 bg-[#064e3b]/40 backdrop-blur-[1px] flex items-center justify-center">
-                                    <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm animate-pulse border-2 border-white" />
+                                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
                                   </div>
                                 )}
                               </div>
-
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-800 truncate">
-                                  <ProgIcon className="w-3 h-3 text-emerald-600 flex-shrink-0" />
-                                  <span className="truncate">{prog.category || "Initiative"}</span>
+                              <div className="space-y-0.5 min-w-0">
+                                <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-white/70">
+                                  <ProgIcon className="w-2.5 h-2.5 flex-shrink-0" />
+                                  <span className="truncate">{prog.category || p.initiative}</span>
                                 </div>
                                 <h5
-                                  className={`text-[11px] font-bold line-clamp-2 leading-tight transition-colors ${
-                                    isActive ? "text-[#064e3b] font-black" : "text-gray-800 group-hover:text-gray-950"
-                                  }`}
+                                  className={`text-xs font-bold line-clamp-2 leading-tight ${isActive ? "text-white" : "text-white/85"}`}
                                 >
                                   {prog.title}
                                 </h5>
@@ -2238,94 +2526,104 @@ export default function PortalPageContent({ initialTenantId }) {
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               );
             })()}
-          </div>
-        </section>
-      )}
+              </div>
+            )}
 
-      {/* Facilities Section — Featured Spotlight & Interactive Catalog (Dark Green Government Theme) */}
-      {!isFeatureLocked('facilities') && (
-        <section id="directory" className="py-16 md:py-24 bg-gradient-to-b from-white via-slate-50/70 to-emerald-50/30 w-full border-t border-gray-200/80 relative overflow-hidden">
-          {/* Subtle Government Geometric Watermark */}
-          <div
-            className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{
-              backgroundImage: "radial-gradient(circle at 20px 20px, #064e3b 2%, transparent 0%), radial-gradient(circle at 60px 60px, #064e3b 2%, transparent 0%)",
-              backgroundSize: "80px 80px",
-            }}
-          />
-
-          <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 relative z-10">
-            {/* Section Header — Official Republic Style */}
-            <div className="mb-10 pb-6 border-b border-gray-200/90 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-              <div className="space-y-3 max-w-3xl">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 text-[#064e3b] border border-emerald-200/80 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-2xs">
-                  <Building2 className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Republic of the Philippines • Public Infrastructure &amp; Facilities</span>
+            {!isFeatureLocked("facilities") && (
+              <div
+                id="directory"
+                className={!isFeatureLocked("programs") ? "pt-10 md:pt-12 border-t border-white/15" : undefined}
+              >
+            {/* Section Header — Facilities */}
+            <div className="mb-6 md:mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between max-w-3xl md:max-w-none">
+              <div className="space-y-2.5 md:space-y-3 min-w-0 md:max-w-3xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.14em] md:tracking-[0.18em] border border-white/30 bg-white/15 text-white backdrop-blur-md max-w-full">
+                  <Building2 className="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0" />
+                  <span className="truncate">{p.facilitiesBadge}</span>
                 </div>
 
                 <div>
-                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-950 tracking-tight uppercase">
-                    Community Facilities Directory
+                  <h2 className="text-xl sm:text-2xl md:text-4xl font-black text-white tracking-tight leading-[1.15]">
+                    {p.facilitiesTitle}{" "}
+                    <span
+                      className="text-transparent bg-clip-text"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, #ffffff, ${tenantConfig.accentColor})`,
+                      }}
+                    >
+                      {p.facilitiesTitleAccent}
+                    </span>
                   </h2>
-                  <p className="text-gray-600 text-xs sm:text-sm md:text-base mt-2 leading-relaxed font-medium">
-                    A directory of public infrastructure and facilities maintained by the Barangay government, available for the use and benefit of all constituents.
+                  <p className="text-white/80 text-sm md:text-base mt-2 leading-relaxed font-medium max-w-2xl line-clamp-3 md:line-clamp-none">
+                    {p.facilitiesSubtitle}
                   </p>
                 </div>
               </div>
 
-              {/* Navigation Arrows for Featured Facility */}
               {portalDataLoaded && facilities.length > 1 && (
-                <div className="flex items-center gap-2 self-start md:self-end">
-                  <span className="text-xs font-mono font-bold text-gray-400 mr-2">
+                <div className="flex items-center justify-between gap-3 w-full md:w-auto md:justify-end shrink-0">
+                  <span className="text-xs font-mono font-bold text-white/70 tabular-nums">
                     {String(activeFacilityIdx + 1).padStart(2, "0")} / {String(facilities.length).padStart(2, "0")}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveFacilityIdx((prev) => (prev > 0 ? prev - 1 : facilities.length - 1))}
-                    aria-label="Previous Facility"
-                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#064e3b] hover:bg-[#064e3b] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveFacilityIdx((prev) => (prev < facilities.length - 1 ? prev + 1 : 0))}
-                    aria-label="Next Facility"
-                    className="w-10 h-10 rounded-xl bg-white border border-gray-200 hover:border-[#064e3b] hover:bg-[#064e3b] hover:text-white text-gray-700 shadow-xs flex items-center justify-center transition-all cursor-pointer active:scale-95"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveFacilityIdx((prev) => (prev > 0 ? prev - 1 : facilities.length - 1))}
+                      aria-label={p.prevFacility}
+                      className="min-h-[44px] min-w-[44px] rounded-xl border border-white/25 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 touch-manipulation"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFacilityIdx((prev) => (prev < facilities.length - 1 ? prev + 1 : 0))}
+                      aria-label={p.nextFacility}
+                      className="min-h-[44px] min-w-[44px] rounded-xl border border-white/25 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 touch-manipulation"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Loading Skeleton */}
             {!portalDataLoaded && (
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-xs grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-7 skeleton aspect-[16/10] rounded-2xl" />
-                <div className="lg:col-span-5 space-y-4">
-                  <div className="skeleton h-5 w-1/3 rounded" />
-                  <div className="skeleton h-8 w-3/4 rounded-lg" />
-                  <div className="skeleton h-24 w-full rounded-xl" />
-                  <div className="skeleton h-12 w-full rounded-xl mt-6" />
+              <>
+                <div className="md:hidden max-w-6xl mx-auto rounded-xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-xl">
+                  <div className="skeleton w-full aspect-[16/9] opacity-40" />
+                  <div className="p-4 space-y-2">
+                    <div className="skeleton h-2.5 w-1/4 rounded opacity-40" />
+                    <div className="skeleton h-4 w-3/4 rounded opacity-40" />
+                  </div>
                 </div>
-              </div>
+                <div className="hidden md:block rounded-2xl p-5 sm:p-6 border border-white/20 bg-white/10 backdrop-blur-xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-6 skeleton aspect-[16/10] rounded-xl opacity-40" />
+                  <div className="lg:col-span-6 space-y-4">
+                    <div className="skeleton h-4 w-1/3 rounded opacity-40" />
+                    <div className="skeleton h-7 w-3/4 rounded-lg opacity-40" />
+                    <div className="skeleton h-20 w-full rounded-xl opacity-40" />
+                    <div className="skeleton h-10 w-full rounded-lg opacity-40 mt-4" />
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Empty State */}
             {portalDataLoaded && facilities.length === 0 && (
-              <div className="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-gray-300">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-[#064e3b] flex items-center justify-center mx-auto mb-4 border border-emerald-100">
-                  <Building2 className="w-8 h-8 text-[#064e3b]" />
+              <div className="text-center py-12 px-6 rounded-2xl border border-dashed border-white/30 bg-white/10 backdrop-blur-xl">
+                <div className="w-14 h-14 rounded-xl bg-white/15 text-white flex items-center justify-center mx-auto mb-4 border border-white/20">
+                  <Building2 className="w-7 h-7" />
                 </div>
-                <h4 className="text-lg font-black text-gray-900 uppercase">
-                  No Facilities Listed Yet
+                <h4 className="text-lg font-black text-white uppercase">
+                  {p.noFacilitiesTitle}
                 </h4>
-                <p className="text-gray-500 text-xs sm:text-sm mt-1 max-w-md mx-auto leading-relaxed">
-                  Official community facility information is currently being updated by the Barangay Administration.
+                <p className="text-white/70 text-sm mt-1 max-w-md mx-auto leading-relaxed">
+                  {p.noFacilitiesDesc}
                 </p>
               </div>
             )}
@@ -2337,158 +2635,298 @@ export default function PortalPageContent({ initialTenantId }) {
               const photoCount = (activeFac.images || []).length;
               const mainImage = activeFac.images?.[0] || "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&q=80&w=1200";
 
+              const renderFacilityCard = (fac, idx) => {
+                const FacIcon = fac.icon || Building2;
+                const thumbImg =
+                  fac.images?.[0] ||
+                  "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&q=80&w=800";
+                const photos = (fac.images || []).length;
+                return (
+                  <button
+                    key={fac.id || idx}
+                    type="button"
+                    onClick={() => {
+                      setActiveFacilityIdx(idx);
+                      setFacilityImageIndex(0);
+                      setSelectedFacility(fac);
+                    }}
+                    className="group text-left flex flex-col rounded-xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_8px_24px_-6px_rgba(0,0,0,0.35)] hover:bg-white/[0.16] hover:border-white/35 transition-all duration-300 w-full touch-manipulation"
+                  >
+                    <div className="relative aspect-[16/9] overflow-hidden bg-black/30">
+                      <img
+                        loading="lazy"
+                        src={thumbImg}
+                        alt={fac.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold text-white bg-white/15 backdrop-blur-md border border-white/25">
+                        <FacIcon className="w-3 h-3 shrink-0" />
+                        {p.publicFacility}
+                      </div>
+                      {photos > 0 && (
+                        <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold text-white bg-white/15 backdrop-blur-md border border-white/25">
+                          <ImageIcon className="w-3 h-3" />
+                          {photos}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col flex-1 p-4">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-white/60 mb-1">
+                        {p.publicService} · {p.facilityLabel} {String(idx + 1).padStart(2, "0")}
+                      </p>
+                      <h3 className="text-sm font-bold text-white leading-snug mb-1.5 line-clamp-2">
+                        {fac.name}
+                      </h3>
+                      <p className="text-white/70 text-xs leading-relaxed line-clamp-3 flex-1">
+                        {fac.description || p.defaultFacilityDesc}
+                      </p>
+                      <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white/80 pt-3 mt-2 border-t border-white/15 group-hover:text-white min-h-[44px]">
+                        {photos > 1 ? p.viewFacilityGallery : p.viewFacilityDetails}
+                        <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      </span>
+                    </div>
+                  </button>
+                );
+              };
+
+              const goPrevFacilitySlide = () =>
+                setActiveFacilityIdx((prev) => (prev > 0 ? prev - 1 : facilities.length - 1));
+              const goNextFacilitySlide = () =>
+                setActiveFacilityIdx((prev) => (prev < facilities.length - 1 ? prev + 1 : 0));
+
               return (
-                <div className="space-y-8">
-                  {/* Main Featured Showcase Card — Locked Fixed Dimensions */}
-                  <div className="bg-[#022c22] rounded-3xl border border-emerald-900/50 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300 lg:min-h-[480px] lg:max-h-[500px]">
-                    {/* Left: Strictly Constrained Photo Container (6 Cols on lg) */}
-                    <div className="lg:col-span-6 relative w-full h-[280px] sm:h-[340px] lg:h-full min-h-[280px] lg:min-h-[480px] bg-slate-900 overflow-hidden group">
+                <div className="max-w-6xl mx-auto">
+                  <div className="md:hidden">
+                    {facilities.length > 1 ? (
+                      <>
+                        <div
+                          className="overflow-hidden rounded-xl"
+                          onTouchStart={(e) => {
+                            facilitySlideTouchStart.current = e.touches[0]?.clientX ?? null;
+                          }}
+                          onTouchEnd={(e) => {
+                            const start = facilitySlideTouchStart.current;
+                            facilitySlideTouchStart.current = null;
+                            if (start == null) return;
+                            const end = e.changedTouches[0]?.clientX ?? start;
+                            const dx = end - start;
+                            if (Math.abs(dx) < 40) return;
+                            if (dx < 0) goNextFacilitySlide();
+                            else goPrevFacilitySlide();
+                          }}
+                        >
+                          <div
+                            className="flex transition-transform duration-300 ease-out"
+                            style={{ transform: `translateX(-${activeFacilityIdx * 100}%)` }}
+                          >
+                            {facilities.map((fac, idx) => (
+                              <div key={fac.id || idx} className="w-full shrink-0 px-0.5">
+                                {renderFacilityCard(fac, idx)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-center gap-3 pt-3">
+                          <button
+                            type="button"
+                            onClick={goPrevFacilitySlide}
+                            aria-label={p.prevFacility}
+                            className="min-h-[40px] min-w-[40px] rounded-lg border border-white/25 bg-white/10 text-white flex items-center justify-center active:scale-95 touch-manipulation"
+                          >
+                            <ChevronLeft className="w-5 h-5" />
+                          </button>
+                          <div
+                            className="flex flex-wrap items-center justify-center gap-1.5 max-w-[12rem]"
+                            role="tablist"
+                            aria-label={p.facilitiesTitle}
+                          >
+                            {facilities.map((fac, idx) => (
+                              <button
+                                key={fac.id || idx}
+                                type="button"
+                                role="tab"
+                                aria-selected={activeFacilityIdx === idx}
+                                aria-label={`${p.facilityLabel} ${idx + 1}: ${fac.name}`}
+                                onClick={() => setActiveFacilityIdx(idx)}
+                                className={`h-2 rounded-full transition-all touch-manipulation ${
+                                  activeFacilityIdx === idx
+                                    ? "w-6 bg-emerald-400"
+                                    : "w-2 bg-white/35 hover:bg-white/55"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={goNextFacilitySlide}
+                            aria-label={p.nextFacility}
+                            className="min-h-[40px] min-w-[40px] rounded-lg border border-white/25 bg-white/10 text-white flex items-center justify-center active:scale-95 touch-manipulation"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-white/45 font-medium text-center pt-1">
+                          {p.facilitiesSlideHint}
+                        </p>
+                      </>
+                    ) : (
+                      renderFacilityCard(facilities[0], 0)
+                    )}
+                  </div>
+
+                  <div className="hidden md:block space-y-6 max-w-5xl mx-auto">
+                  <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_12px_40px_-8px_rgba(0,0,0,0.45)] overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300 relative">
+                    <div
+                      className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent z-20 pointer-events-none"
+                      aria-hidden
+                    />
+
+                    <div className="lg:col-span-5 relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[240px] sm:max-h-[280px] lg:max-h-none lg:aspect-auto lg:h-auto lg:min-h-[320px] bg-slate-900/50 overflow-hidden group">
                       <img
                         key={activeFac.id || activeFacilityIdx}
                         src={mainImage}
                         alt={activeFac.name}
                         className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-105 animate-in fade-in"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/20 to-transparent opacity-85 lg:opacity-70 pointer-events-none" />
+                      <div
+                        className="absolute inset-0 pointer-events-none hidden lg:block"
+                        style={{
+                          background: `linear-gradient(135deg, ${tenantConfig.primaryColor}99 0%, rgba(15, 23, 42, 0.55) 50%, rgba(0, 0, 0, 0.65) 100%)`,
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none lg:hidden" />
 
-                      {/* Top-Left Category Badge */}
-                      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md border border-emerald-400/30 shadow-lg">
-                        <FacilityIcon className="w-4 h-4 text-emerald-300" />
-                        <span>Barangay Public Facility</span>
+                      <div className="absolute top-2.5 left-2.5 z-10 hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white bg-white/15 backdrop-blur-md border border-white/25">
+                        <FacilityIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span>{p.publicFacility}</span>
                       </div>
 
-                      {/* Top-Right Photos Count Badge */}
                       {photoCount > 0 && (
-                        <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-black/60 backdrop-blur-md border border-white/20 shadow-lg">
-                          <ImageIcon className="w-3.5 h-3.5 text-cyan-300" />
-                          <span>{photoCount} {photoCount === 1 ? "Photo" : "Photos"}</span>
+                        <div className="absolute top-2.5 right-2.5 z-10 hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-white bg-white/15 backdrop-blur-md border border-white/25">
+                          <ImageIcon className="w-3 h-3" />
+                          <span>{photoCount} {photoCount === 1 ? p.photo : p.photos}</span>
                         </div>
                       )}
-
-                      {/* Bottom Image Seal */}
-                      <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between text-white text-xs font-bold">
-                        <span className="inline-flex items-center gap-1.5 text-emerald-200 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15">
-                          <Shield className="w-4 h-4 text-amber-300" />
-                          Barangay {tenantConfig.shortName || "Iba O' Este"}
-                        </span>
-                        <span className="bg-emerald-500 text-white px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-emerald-300/40 shadow-sm flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                          <span>Public Service</span>
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Right: Detailed Content — Deep Dark Green Executive Theme (6 Cols on lg) */}
-                    <div className="lg:col-span-6 p-6 sm:p-8 lg:p-9 flex flex-col justify-between h-full bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white relative overflow-hidden border-t lg:border-t-0 lg:border-l border-emerald-800/40 space-y-6">
-                      {/* Ambient Emerald Radial Light */}
-                      <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-
-                      <div className="space-y-4 relative z-10">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-mono font-black uppercase tracking-widest text-emerald-300 bg-emerald-950/70 px-3 py-1 rounded-full border border-emerald-400/30 shadow-xs">
-                            Facility {String(activeFacilityIdx + 1).padStart(2, "0")} of {String(facilities.length).padStart(2, "0")}
+                    <div className="lg:col-span-7 p-4 sm:p-6 lg:p-7 flex flex-col justify-between text-white relative">
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white bg-white/15 border border-white/25 md:hidden">
+                            <FacilityIcon className="w-3.5 h-3.5 shrink-0" />
+                            <span>{p.publicFacility}</span>
                           </span>
-                          <span className="text-[11px] text-emerald-200/80 font-bold uppercase tracking-wider hidden sm:inline">
-                            Public Infrastructure
+                          {photoCount > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-white bg-white/15 border border-white/25 md:hidden">
+                              <ImageIcon className="w-3 h-3" />
+                              <span>{photoCount} {photoCount === 1 ? p.photo : p.photos}</span>
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/90 border border-emerald-300/40 text-[9px] font-black uppercase tracking-wider md:hidden">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            {p.publicService}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-white/70 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/20 hidden md:inline-flex">
+                            {p.facilityLabel} {String(activeFacilityIdx + 1).padStart(2, "0")} / {String(facilities.length).padStart(2, "0")}
+                          </span>
+                          <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider hidden lg:inline ml-auto">
+                            {p.publicInfrastructure}
                           </span>
                         </div>
 
-                        <h3 className="text-white text-xl sm:text-2xl font-black leading-tight uppercase tracking-tight drop-shadow-sm line-clamp-2">
+                        <h3 className="text-base sm:text-lg md:text-xl font-black leading-snug tracking-tight line-clamp-3 md:line-clamp-2">
                           {activeFac.name}
                         </h3>
 
-                        <p className="text-emerald-100/90 text-xs sm:text-sm md:text-base leading-relaxed font-normal line-clamp-3 sm:line-clamp-4">
-                          {activeFac.description ||
-                            "Modern public facility maintained and operated by the Barangay Government for events, public wellness, and constituent service delivery."}
+                        <p className="text-sm text-white/80 leading-relaxed line-clamp-4 md:line-clamp-3">
+                          {activeFac.description || p.defaultFacilityDesc}
                         </p>
 
-                        {/* Official Facility Scope Matrix */}
-                        <div className="grid grid-cols-2 gap-2.5 pt-2 text-[11px]">
-                          <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 border border-white/10 space-y-0.5">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 block">
-                              Jurisdiction
+                        <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 pt-1">
+                          <div className="rounded-lg p-2.5 border border-white/15 bg-white/10 backdrop-blur-sm">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-white/60 block mb-0.5">
+                              {p.jurisdiction}
                             </span>
-                            <span className="font-bold text-white block truncate">
-                              Barangay {tenantConfig.shortName || "Iba O' Este"}
+                            <span className="text-xs font-bold text-white truncate block">
+                              {p.barangayWord} {tenantConfig.shortName || "Iba O' Este"}
                             </span>
                           </div>
-                          <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 border border-white/10 space-y-0.5">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 block">
-                              Access &amp; Usage
+                          <div className="rounded-lg p-2.5 border border-white/15 bg-white/10 backdrop-blur-sm">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-white/60 block mb-0.5">
+                              {p.accessUsage}
                             </span>
-                            <span className="font-bold text-white block truncate">
-                              Constituent Use / Public
+                            <span className="text-xs font-bold text-white truncate block">
+                              {p.constituentAccess}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Action Button */}
-                      <div className="pt-4 border-t border-emerald-800/60 relative z-10">
+                      <div className="pt-4 mt-3 md:mt-4 border-t border-white/15">
                         <button
                           type="button"
-                          onClick={() => setSelectedFacility(activeFac)}
-                          className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-emerald-950/60 hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-98"
+                          onClick={() => {
+                            setFacilityImageIndex(0);
+                            setSelectedFacility(activeFac);
+                          }}
+                          className="w-full min-h-[44px] py-3 md:py-2.5 px-4 rounded-lg text-sm md:text-xs font-bold text-white border border-white/30 bg-white/15 backdrop-blur-sm hover:bg-white/25 hover:border-white/45 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] touch-manipulation"
+                          style={{
+                            boxShadow: `0 4px 20px -4px ${tenantConfig.primaryColor}80`,
+                          }}
                         >
-                          <span>{photoCount > 1 ? "View Photo Gallery & Details" : "View Facility Details"}</span>
-                          <ArrowRight className="w-4 h-4 text-emerald-100" />
+                          {photoCount > 1 ? p.viewFacilityGallery : p.viewFacilityDetails}
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* Bottom: Interactive Thumbnails Selector */}
                   {facilities.length > 1 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-gray-600 flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                          <span>Select a Facility to View</span>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between px-0.5 gap-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-white/80 flex items-center gap-1.5 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                          <span className="truncate">{p.selectFacility}</span>
                         </h4>
-                        <span className="text-[11px] text-gray-500 font-bold">
-                          {facilities.length} Public Facilities
+                        <span className="text-[10px] text-white/50 font-bold shrink-0 tabular-nums">
+                          {facilities.length} {p.facilitiesCount}
                         </span>
                       </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      <div className="grid grid-cols-4 lg:grid-cols-6 gap-2.5">
                         {facilities.map((fac, idx) => {
                           const isActive = activeFacilityIdx === idx;
                           const FacIcon = fac.icon || Building2;
-                          const thumbImg = fac.images?.[0] || "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&q=80&w=400";
-
+                          const thumbImg =
+                            fac.images?.[0] ||
+                            "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&q=80&w=400";
                           return (
                             <button
                               key={fac.id || idx}
                               type="button"
                               onClick={() => setActiveFacilityIdx(idx)}
-                              className={`group text-left p-2.5 rounded-2xl transition-all duration-200 flex flex-col justify-between border cursor-pointer ${
+                              aria-current={isActive ? "true" : undefined}
+                              className={`group text-left p-2.5 rounded-xl transition-all duration-200 flex flex-col border cursor-pointer backdrop-blur-md w-full ${
                                 isActive
-                                  ? "bg-emerald-50/90 border-[#064e3b] ring-2 ring-[#064e3b]/30 shadow-md scale-102"
-                                  : "bg-white/90 hover:bg-white border-gray-200 hover:border-emerald-300 shadow-2xs hover:shadow-xs"
+                                  ? "bg-white/20 border-white/40 ring-1 ring-white/30 shadow-md"
+                                  : "bg-white/10 border-white/15 hover:bg-white/15 hover:border-white/25"
                               }`}
                             >
-                              <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-slate-100 mb-2">
-                                <img
-                                  src={thumbImg}
-                                  alt={fac.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                />
+                              <div className="relative aspect-[16/10] w-full rounded-lg overflow-hidden bg-black/30 mb-2">
+                                <img src={thumbImg} alt="" aria-hidden className="w-full h-full object-cover" />
                                 {isActive && (
-                                  <div className="absolute inset-0 bg-[#064e3b]/40 backdrop-blur-[1px] flex items-center justify-center">
-                                    <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm animate-pulse border-2 border-white" />
+                                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
                                   </div>
                                 )}
                               </div>
-
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-800 truncate">
-                                  <FacIcon className="w-3 h-3 text-emerald-600 flex-shrink-0" />
-                                  <span className="truncate">Public Facility</span>
+                              <div className="space-y-0.5 min-w-0">
+                                <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-white/70">
+                                  <FacIcon className="w-2.5 h-2.5 flex-shrink-0" />
+                                  <span className="truncate">{p.publicFacility}</span>
                                 </div>
                                 <h5
-                                  className={`text-[11px] font-bold line-clamp-2 leading-tight transition-colors ${
-                                    isActive ? "text-[#064e3b] font-black" : "text-gray-800 group-hover:text-gray-950"
-                                  }`}
+                                  className={`text-xs font-bold line-clamp-2 leading-tight ${isActive ? "text-white" : "text-white/85"}`}
                                 >
                                   {fac.name}
                                 </h5>
@@ -2499,47 +2937,346 @@ export default function PortalPageContent({ initialTenantId }) {
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               );
             })()}
+              </div>
+            )}
+
+            {!isFeatureLocked("achievements") && (
+              <div
+                id="achievements"
+                className={
+                  !isFeatureLocked("programs") || !isFeatureLocked("facilities")
+                    ? "pt-10 md:pt-12 border-t border-white/15"
+                    : undefined
+                }
+              >
+                <div className="mb-6 md:mb-10 flex flex-col gap-4 md:gap-0 max-w-3xl">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.14em] md:tracking-[0.18em] border border-white/30 bg-white/15 text-white backdrop-blur-md mb-3 md:mb-4">
+                      <Award className="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0" />
+                      {p.achievementsBadge}
+                    </div>
+                    <h2 className="text-xl sm:text-2xl md:text-4xl font-black text-white tracking-tight leading-[1.15]">
+                      {p.achievementsTitle}
+                      {p.achievementsTitleAccent ? (
+                        <>
+                          {" "}
+                          <span
+                            className="text-transparent bg-clip-text"
+                            style={{
+                              backgroundImage: `linear-gradient(to right, #ffffff, ${tenantConfig.accentColor})`,
+                            }}
+                          >
+                            {p.achievementsTitleAccent}
+                          </span>
+                        </>
+                      ) : null}
+                    </h2>
+                    <p className="text-white/80 text-sm md:text-base mt-2 leading-relaxed font-medium max-w-2xl line-clamp-3 md:line-clamp-none">
+                      {p.achievementsSubtitle}
+                    </p>
+                  </div>
+
+                  {portalDataLoaded && achievements.length > 1 && (
+                    <div className="flex items-center justify-between gap-3 w-full md:w-auto md:justify-end shrink-0">
+                      <span className="text-xs font-mono font-bold text-white/70 tabular-nums">
+                        {String(activeAchievementIdx + 1).padStart(2, "0")} /{" "}
+                        {String(achievements.length).padStart(2, "0")}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActiveAchievementIdx((prev) =>
+                              prev > 0 ? prev - 1 : achievements.length - 1,
+                            )
+                          }
+                          aria-label={p.prevAchievement}
+                          className="min-h-[44px] min-w-[44px] rounded-xl border border-white/25 bg-white/10 backdrop-blur-md text-white flex items-center justify-center active:scale-95 touch-manipulation md:min-h-[36px] md:min-w-[36px] md:rounded-lg"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActiveAchievementIdx((prev) =>
+                              prev < achievements.length - 1 ? prev + 1 : 0,
+                            )
+                          }
+                          aria-label={p.nextAchievement}
+                          className="min-h-[44px] min-w-[44px] rounded-xl border border-white/25 bg-white/10 backdrop-blur-md text-white flex items-center justify-center active:scale-95 touch-manipulation md:min-h-[36px] md:min-w-[36px] md:rounded-lg"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="max-w-6xl mx-auto">
+                  {!portalDataLoaded && (
+                    <>
+                      <div className="md:hidden rounded-2xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-xl">
+                        <div className="skeleton w-full aspect-[16/9] opacity-40" />
+                        <div className="p-4 space-y-2">
+                          <div className="skeleton h-2.5 w-1/4 rounded opacity-40" />
+                          <div className="skeleton h-4 w-3/4 rounded opacity-40" />
+                        </div>
+                      </div>
+                      <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                        {[0, 1, 2].map((i) => (
+                          <div
+                            key={i}
+                            className="rounded-2xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-xl"
+                          >
+                            <div className="skeleton w-full aspect-[16/9] opacity-40" />
+                            <div className="p-4 space-y-2">
+                              <div className="skeleton h-2.5 w-1/4 rounded opacity-40" />
+                              <div className="skeleton h-4 w-3/4 rounded opacity-40" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {portalDataLoaded && achievements.length === 0 && (
+                    <div className="text-center py-10 rounded-2xl border border-dashed border-white/30 bg-white/10 backdrop-blur-xl">
+                      <Award className="w-10 h-10 text-white/50 mx-auto mb-3" />
+                      <p className="text-white/70 text-sm">{p.achievementsEmpty}</p>
+                    </div>
+                  )}
+                  {portalDataLoaded &&
+                    achievements.length > 0 &&
+                    (() => {
+                      const renderAchievementCard = (achievement, idx) => (
+                        <button
+                          key={achievement.id || idx}
+                          type="button"
+                          onClick={() => {
+                            setActiveAchievementIdx(idx);
+                            setSelectedAchievement(achievement);
+                          }}
+                          className="group text-left flex flex-col rounded-xl md:rounded-2xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_8px_24px_-6px_rgba(0,0,0,0.35)] hover:bg-white/[0.16] hover:border-white/35 transition-all duration-300 w-full touch-manipulation"
+                        >
+                          <div className="relative aspect-[16/9] overflow-hidden bg-black/30">
+                            <img
+                              loading="lazy"
+                              src={
+                                achievement.image ||
+                                "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800"
+                              }
+                              alt={achievement.title}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent md:from-black/70" />
+                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold text-white bg-white/15 backdrop-blur-md border border-white/25">
+                              <Award className="w-3 h-3" />
+                              {achievement.year}
+                            </div>
+                          </div>
+                          <div className="flex flex-col flex-1 p-4">
+                            <p className="text-[9px] font-black uppercase tracking-wider text-white/60 mb-1">
+                              {achievement.category || p.award}
+                            </p>
+                            <h3 className="text-sm font-bold text-white leading-snug mb-1.5 line-clamp-2">
+                              {achievement.title}
+                            </h3>
+                            {achievement.description && (
+                              <p className="text-white/70 text-xs leading-relaxed line-clamp-3 md:line-clamp-2 flex-1">
+                                {achievement.description}
+                              </p>
+                            )}
+                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white/80 pt-3 mt-2 border-t border-white/15 group-hover:text-white min-h-[44px] md:min-h-0">
+                              {p.viewDetails}
+                              <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                            </span>
+                          </div>
+                        </button>
+                      );
+
+                      const goPrevAchievement = () =>
+                        setActiveAchievementIdx((prev) =>
+                          prev > 0 ? prev - 1 : achievements.length - 1,
+                        );
+                      const goNextAchievement = () =>
+                        setActiveAchievementIdx((prev) =>
+                          prev < achievements.length - 1 ? prev + 1 : 0,
+                        );
+
+                      return (
+                        <>
+                          {achievements.length > 1 && (
+                            <div
+                              className="md:hidden overflow-hidden rounded-xl"
+                              onTouchStart={(e) => {
+                                achievementSlideTouchStart.current =
+                                  e.touches[0]?.clientX ?? null;
+                              }}
+                              onTouchEnd={(e) => {
+                                const start = achievementSlideTouchStart.current;
+                                achievementSlideTouchStart.current = null;
+                                if (start == null) return;
+                                const end = e.changedTouches[0]?.clientX ?? start;
+                                const dx = end - start;
+                                if (Math.abs(dx) < 40) return;
+                                if (dx < 0) goNextAchievement();
+                                else goPrevAchievement();
+                              }}
+                            >
+                              <div
+                                className="flex transition-transform duration-300 ease-out"
+                                style={{
+                                  transform: `translateX(-${activeAchievementIdx * 100}%)`,
+                                }}
+                              >
+                                {achievements.map((achievement, idx) => (
+                                  <div key={achievement.id || idx} className="w-full shrink-0 px-0.5">
+                                    {renderAchievementCard(achievement, idx)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {achievements.length === 1 && (
+                            <div className="md:hidden">{renderAchievementCard(achievements[0], 0)}</div>
+                          )}
+
+                          {achievements.length > 1 && (
+                            <div className="md:hidden flex items-center justify-center gap-3 pt-3">
+                              <button
+                                type="button"
+                                onClick={goPrevAchievement}
+                                aria-label={p.prevAchievement}
+                                className="min-h-[40px] min-w-[40px] rounded-lg border border-white/25 bg-white/10 text-white flex items-center justify-center active:scale-95 touch-manipulation"
+                              >
+                                <ChevronLeft className="w-5 h-5" />
+                              </button>
+                              <div
+                                className="flex flex-wrap items-center justify-center gap-1.5 max-w-[12rem]"
+                                role="tablist"
+                                aria-label={p.achievementsTitle}
+                              >
+                                {achievements.map((achievement, idx) => (
+                                  <button
+                                    key={achievement.id || idx}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={activeAchievementIdx === idx}
+                                    aria-label={`${p.award} ${idx + 1}: ${achievement.title}`}
+                                    onClick={() => setActiveAchievementIdx(idx)}
+                                    className={`h-2 rounded-full transition-all touch-manipulation ${
+                                      activeAchievementIdx === idx
+                                        ? "w-6 bg-emerald-400"
+                                        : "w-2 bg-white/35 hover:bg-white/55"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={goNextAchievement}
+                                aria-label={p.nextAchievement}
+                                className="min-h-[40px] min-w-[40px] rounded-lg border border-white/25 bg-white/10 text-white flex items-center justify-center active:scale-95 touch-manipulation"
+                              >
+                                <ChevronRight className="w-5 h-5" />
+                              </button>
+                            </div>
+                          )}
+
+                          {achievements.length > 1 && (
+                            <p className="text-[10px] text-white/45 font-medium text-center md:hidden pt-1">
+                              {p.achievementsSlideHint}
+                            </p>
+                          )}
+
+                          <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                            {achievements.map((achievement, idx) =>
+                              renderAchievementCard(achievement, idx),
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}
 
       {/* Tourism and Lifestyle Section — Government Directory */}
       {tourismDestinations.length > 0 && (
-      <section id="tourism" className="bg-white border-t border-gray-100">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 py-12 md:py-16">
-          {/* Section Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="w-1 h-8 rounded-full"
-                style={{ backgroundColor: tenantConfig.primaryColor }}
-              ></div>
-              <div>
-                <p
-                  className="text-xs font-bold uppercase tracking-widest"
-                  style={{ color: tenantConfig.primaryColor }}
-                >
-                  Local Tourism &amp; Destinations
-                </p>
-                <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight mt-1">
-                  Tourism and Lifestyle
-                </h2>
+      <section id="tourism" className="bg-white border-t border-gray-100 scroll-mt-[3.5rem] md:scroll-mt-0">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 py-10 md:py-16">
+          <div className="mb-6 md:mb-8 flex flex-col gap-4">
+            <div>
+              <div className="flex items-start gap-3 mb-3">
+                <div
+                  className="w-1 h-8 rounded-full shrink-0 mt-0.5"
+                  style={{ backgroundColor: tenantConfig.primaryColor }}
+                />
+                <div className="min-w-0">
+                  <p
+                    className="text-[10px] md:text-xs font-bold uppercase tracking-widest line-clamp-2"
+                    style={{ color: tenantConfig.primaryColor }}
+                  >
+                    {p.tourismBadge}
+                  </p>
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight mt-1">
+                    {p.tourismTitle}
+                  </h2>
+                </div>
               </div>
+              <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-gray-200 line-clamp-4 md:line-clamp-none">
+                {p.tourismSubtitle}
+              </p>
             </div>
-            <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-gray-200">
-              Explore notable destinations and landmarks within our barangay. Location details and directions are available for each site.
-            </p>
+
+            {tourismDestinations.length > 1 && (
+              <div className="flex items-center justify-between gap-3 md:hidden">
+                <span className="text-xs font-mono font-bold text-gray-500 tabular-nums">
+                  {String(activeTourismIdx + 1).padStart(2, "0")} /{" "}
+                  {String(tourismDestinations.length).padStart(2, "0")}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveTourismIdx((prev) =>
+                        prev > 0 ? prev - 1 : tourismDestinations.length - 1,
+                      )
+                    }
+                    aria-label={p.prevTourism}
+                    className="min-h-[44px] min-w-[44px] rounded-xl border border-gray-200 bg-gray-50 text-gray-800 flex items-center justify-center active:scale-95 touch-manipulation"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveTourismIdx((prev) =>
+                        prev < tourismDestinations.length - 1 ? prev + 1 : 0,
+                      )
+                    }
+                    aria-label={p.nextTourism}
+                    className="min-h-[44px] min-w-[44px] rounded-xl border border-gray-200 bg-gray-50 text-gray-800 flex items-center justify-center active:scale-95 touch-manipulation"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {tourismDestinations.map((destination, idx) => (
+          {(() => {
+            const renderTourismCard = (destination, idx) => (
               <div
-                key={destination.id}
-                className="group flex flex-col bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200 fade-in-up"
-                style={{ animationDelay: `${idx * 80}ms` }}
+                key={destination.id || idx}
+                className="group flex flex-col bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200 w-full"
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
                   <img
@@ -2552,23 +3289,23 @@ export default function PortalPageContent({ initialTenantId }) {
                     href={destination.directions}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="absolute top-3 right-3 w-9 h-9 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm hover:bg-white transition-all"
-                    aria-label={`Get directions to ${destination.name}`}
+                    className="absolute top-3 right-3 min-h-[44px] min-w-[44px] rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm hover:bg-white transition-all touch-manipulation"
+                    aria-label={`${p.getDirections}: ${destination.name}`}
                   >
                     <Navigation className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
                   </a>
                 </div>
-                <div className="flex flex-col flex-1 p-5">
-                  <h3 className="text-base font-bold text-gray-900 mb-2 leading-snug">
+                <div className="flex flex-col flex-1 p-4 md:p-5">
+                  <h3 className="text-base font-bold text-gray-900 mb-2 leading-snug line-clamp-2">
                     {destination.name}
                   </h3>
                   {destination.description && (
-                    <p className="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-2 flex-1">
+                    <p className="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-3 md:line-clamp-2 flex-1">
                       {destination.description}
                     </p>
                   )}
                   {destination.hasCoords && (
-                    <p className="text-xs text-gray-400 mb-3 font-mono">
+                    <p className="text-xs text-gray-400 mb-3 font-mono hidden sm:block">
                       {destination.latitude.toFixed(6)}, {destination.longitude.toFixed(6)}
                     </p>
                   )}
@@ -2576,323 +3313,300 @@ export default function PortalPageContent({ initialTenantId }) {
                     href={destination.directions}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pt-3 border-t border-gray-100"
+                    className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pt-3 border-t border-gray-100 min-h-[44px] touch-manipulation"
                     style={{ color: tenantConfig.primaryColor }}
                   >
-                    <MapPin className="w-3.5 h-3.5" />
-                    {destination.hasCoords ? "View on Google Maps" : "Get Directions"}
+                    <MapPin className="w-3.5 h-3.5 shrink-0" />
+                    {destination.hasCoords ? p.viewOnMaps : p.getDirections}
                   </a>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+
+            const goPrevTourism = () =>
+              setActiveTourismIdx((prev) =>
+                prev > 0 ? prev - 1 : tourismDestinations.length - 1,
+              );
+            const goNextTourism = () =>
+              setActiveTourismIdx((prev) =>
+                prev < tourismDestinations.length - 1 ? prev + 1 : 0,
+              );
+
+            return (
+              <>
+                {tourismDestinations.length > 1 && (
+                  <div
+                    className="md:hidden overflow-hidden"
+                    onTouchStart={(e) => {
+                      tourismSlideTouchStart.current = e.touches[0]?.clientX ?? null;
+                    }}
+                    onTouchEnd={(e) => {
+                      const start = tourismSlideTouchStart.current;
+                      tourismSlideTouchStart.current = null;
+                      if (start == null) return;
+                      const end = e.changedTouches[0]?.clientX ?? start;
+                      const dx = end - start;
+                      if (Math.abs(dx) < 40) return;
+                      if (dx < 0) goNextTourism();
+                      else goPrevTourism();
+                    }}
+                  >
+                    <div
+                      className="flex transition-transform duration-300 ease-out"
+                      style={{ transform: `translateX(-${activeTourismIdx * 100}%)` }}
+                    >
+                      {tourismDestinations.map((destination, idx) => (
+                        <div key={destination.id || idx} className="w-full shrink-0 px-0.5">
+                          {renderTourismCard(destination, idx)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {tourismDestinations.length === 1 && (
+                  <div className="md:hidden">{renderTourismCard(tourismDestinations[0], 0)}</div>
+                )}
+
+                {tourismDestinations.length > 1 && (
+                  <div className="md:hidden flex items-center justify-center gap-3 pt-3">
+                    <button
+                      type="button"
+                      onClick={goPrevTourism}
+                      aria-label={p.prevTourism}
+                      className="min-h-[40px] min-w-[40px] rounded-lg border border-gray-200 bg-gray-50 text-gray-800 flex items-center justify-center active:scale-95 touch-manipulation"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div
+                      className="flex flex-wrap items-center justify-center gap-1.5 max-w-[12rem]"
+                      role="tablist"
+                      aria-label={p.tourismTitle}
+                    >
+                      {tourismDestinations.map((destination, idx) => (
+                        <button
+                          key={destination.id || idx}
+                          type="button"
+                          role="tab"
+                          aria-selected={activeTourismIdx === idx}
+                          aria-label={`${idx + 1}: ${destination.name}`}
+                          onClick={() => setActiveTourismIdx(idx)}
+                          className={`h-2 rounded-full transition-all touch-manipulation ${
+                            activeTourismIdx === idx
+                              ? "w-6 bg-emerald-500"
+                              : "w-2 bg-gray-300 hover:bg-gray-400"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={goNextTourism}
+                      aria-label={p.nextTourism}
+                      className="min-h-[40px] min-w-[40px] rounded-lg border border-gray-200 bg-gray-50 text-gray-800 flex items-center justify-center active:scale-95 touch-manipulation"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+
+                {tourismDestinations.length > 1 && (
+                  <p className="text-[10px] text-gray-400 font-medium text-center md:hidden pt-1">
+                    {p.tourismSlideHint}
+                  </p>
+                )}
+
+                <div className="hidden md:grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {tourismDestinations.map((destination, idx) => renderTourismCard(destination, idx))}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </section>
       )}
 
-      {/* Barangay Achievement and Awards Section — Government Records */}
-      {!isFeatureLocked('achievements') && (
-        <section
-          id="achievements"
-          className="bg-gray-50 border-t border-gray-200"
-        >
-          <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 py-12 md:py-16">
-            {/* Section Header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-3">
-                <div
-                  className="w-1 h-8 rounded-full"
-                  style={{ backgroundColor: tenantConfig.primaryColor }}
-                ></div>
-                <div>
-                  <p
-                    className="text-xs font-bold uppercase tracking-widest"
-                    style={{ color: tenantConfig.primaryColor }}
-                  >
-                    Awards &amp; Recognitions
-                  </p>
-                  <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight mt-1">
-                    Our Legacy of Excellence
-                  </h2>
-                </div>
-              </div>
-              <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-gray-200">
-                A record of awards and recognitions received by the Barangay and its constituents, reflecting our commitment to public service excellence.
-              </p>
-            </div>
+      {/* Achievement Modal — portaled, centered on all viewports */}
+      {achievementModalMounted &&
+        selectedAchievement &&
+        createPortal(
+          (() => {
+          const foundAchievementIdx = achievements.findIndex(
+            (a) =>
+              (a.id != null && a.id === selectedAchievement.id) ||
+              a.title === selectedAchievement.title,
+          );
+          const modalIndex =
+            foundAchievementIdx >= 0 ? foundAchievementIdx : activeAchievementIdx;
+          const modalAchievement = achievements[modalIndex] || selectedAchievement;
+          const hasMultipleAchievements = achievements.length > 1;
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {!portalDataLoaded && (
-                <>
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-200">
-                      <div className="skeleton w-full aspect-[16/9]" />
-                      <div className="p-5 space-y-3">
-                        <div className="skeleton h-2.5 w-1/4 rounded" />
-                        <div className="skeleton h-4 w-3/4 rounded" />
-                        <div className="skeleton h-3 w-full rounded" />
-                        <div className="skeleton h-3 w-2/3 rounded" />
-                        <div className="skeleton h-3 w-1/3 rounded mt-3" />
-                      </div>
+          const goModalAchievement = (nextIdx) => {
+            const idx =
+              ((nextIdx % achievements.length) + achievements.length) % achievements.length;
+            setActiveAchievementIdx(idx);
+            setSelectedAchievement(achievements[idx]);
+          };
+
+          return (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-default"
+                aria-label={p.close}
+                onClick={() => setSelectedAchievement(null)}
+              />
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="achievement-modal-title"
+                className="relative z-[201] flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl h-auto max-h-[min(calc(100vh-2rem),720px)]"
+                style={{
+                  maxHeight:
+                    "min(720px, calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem))",
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onTouchStart={(e) => {
+                  if (!hasMultipleAchievements) return;
+                  achievementSlideTouchStart.current = e.touches[0]?.clientX ?? null;
+                }}
+                onTouchEnd={(e) => {
+                  if (!hasMultipleAchievements) return;
+                  const start = achievementSlideTouchStart.current;
+                  achievementSlideTouchStart.current = null;
+                  if (start == null) return;
+                  const end = e.changedTouches[0]?.clientX ?? start;
+                  const dx = end - start;
+                  if (Math.abs(dx) < 50) return;
+                  if (dx < 0) goModalAchievement(modalIndex + 1);
+                  else goModalAchievement(modalIndex - 1);
+                }}
+              >
+                <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3 sm:px-5 sm:py-4 border-b border-gray-100 bg-white shrink-0">
+                  <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+                    <div
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                      style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
+                    >
+                      <Award className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: tenantConfig.primaryColor }} />
                     </div>
-                  ))}
-                </>
-              )}
-              {portalDataLoaded && achievements.length === 0 && (
-                <div className="col-span-full text-center py-12">
-                  <Award className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-400 text-sm">Achievement records will be available soon.</p>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-1 leading-snug"
+                        style={{ color: tenantConfig.primaryColor }}
+                      >
+                        {modalAchievement.year} · {modalAchievement.category || p.award}
+                      </p>
+                      <h3
+                        id="achievement-modal-title"
+                        className="text-base sm:text-lg font-bold text-gray-900 leading-snug break-words"
+                      >
+                        {modalAchievement.title}
+                      </h3>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAchievement(null)}
+                    aria-label={p.close}
+                    className="min-h-[44px] min-w-[44px] bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 rounded-xl flex items-center justify-center transition-colors border border-gray-200 shrink-0 touch-manipulation"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-              )}
-              {portalDataLoaded && achievements.map((achievement, idx) => (
-                <div
-                  key={achievement.id || idx}
-                  onClick={() => setSelectedAchievement(achievement)}
-                  className="group flex flex-col cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200 fade-in-up"
-                  style={{ animationDelay: `${idx * 80}ms` }}
-                >
-                  <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
+
+                <div className="overflow-y-auto overscroll-contain max-h-[min(50vh,360px)] sm:max-h-[420px]">
+                  <div className="relative w-full aspect-[16/10] max-h-[36vh] sm:max-h-[240px] overflow-hidden bg-gray-100 shrink-0">
                     <img
                       loading="lazy"
                       src={
-                        achievement.image ||
-                        "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800"
+                        modalAchievement.image ||
+                        "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=1200"
                       }
-                      alt={achievement.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      alt={modalAchievement.title}
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div
-                      className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold text-white backdrop-blur-sm border border-white/20"
-                      style={{ backgroundColor: `${tenantConfig.primaryColor}cc` }}
-                    >
-                      <Award className="w-3 h-3" />
-                      {achievement.year}
-                    </div>
-                  </div>
-                  <div className="flex flex-col flex-1 p-5">
-                    <p
-                      className="text-[10px] font-bold uppercase tracking-wider mb-1.5"
-                      style={{ color: tenantConfig.primaryColor }}
-                    >
-                      {achievement.category || "Award"}
-                    </p>
-                    <h3 className="text-base font-bold text-gray-900 leading-snug mb-2">
-                      {achievement.title}
-                    </h3>
-                    {achievement.description && (
-                      <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 flex-1">
-                        {achievement.description}
-                      </p>
-                    )}
-                    <div
-                      className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pt-3 mt-3 border-t border-gray-100"
-                      style={{ color: tenantConfig.primaryColor }}
-                    >
-                      View Details
-                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Achievement Modal */}
-      {selectedAchievement && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
-          onClick={() => setSelectedAchievement(null)}
-          onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden relative transform transition-all"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header Bar */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
-                >
-                  <Award className="w-5 h-5" style={{ color: tenantConfig.primaryColor }} />
-                </div>
-                <div className="min-w-0">
-                  <p
-                    className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
-                    style={{ color: tenantConfig.primaryColor }}
-                  >
-                    {selectedAchievement.year} · {selectedAchievement.category || "Award"}
-                  </p>
-                  <h3 className="text-base md:text-lg font-bold text-gray-900 truncate">
-                    {selectedAchievement.title}
-                  </h3>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedAchievement(null)}
-                className="w-9 h-9 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 rounded-xl flex items-center justify-center transition-colors border border-gray-200 shrink-0 ml-4"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Image */}
-            <div className="relative h-48 sm:h-56 lg:h-64 w-full overflow-hidden bg-gray-100">
-              <img
-                loading="lazy"
-                src={selectedAchievement.image}
-                alt={selectedAchievement.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Content */}
-            <div className="p-6 md:p-8">
-              <p className="text-gray-600 leading-relaxed text-sm md:text-base">
-                {selectedAchievement.description}
-              </p>
-            </div>
-
-            {/* Footer */}
-            <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-              <button
-                onClick={() => setSelectedAchievement(null)}
-                className="px-5 py-2.5 text-white rounded-xl font-bold transition-all text-sm flex items-center gap-2 group"
-                style={{ backgroundColor: tenantConfig.primaryColor }}
-              >
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                Back to Awards
-              </button>
-              <div className="flex items-center gap-2">
-                <Shield
-                  className="w-4 h-4"
-                  style={{ color: tenantConfig.primaryColor }}
-                />
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Official Record
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Program Detail Modal */}
-      {selectedProgram && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
-          onClick={() => setSelectedProgram(null)}
-          onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden relative transform transition-all flex flex-col md:flex-row h-full max-h-[90vh] md:max-h-[80vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Left Column: Fixed Image on Desktop */}
-            <div className="relative w-full md:w-[45%] h-56 md:h-full group overflow-hidden shrink-0">
-              <img
-                loading="lazy"
-                src={selectedProgram.image}
-                alt={selectedProgram.title}
-                className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-
-              {/* Category Badge */}
-              <div
-                className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm border border-white/20"
-                style={{ backgroundColor: `${tenantConfig.primaryColor}cc` }}
-              >
-                {selectedProgram.category}
-              </div>
-
-              {/* Mobile Close Button */}
-              <button
-                onClick={() => setSelectedProgram(null)}
-                className="md:hidden absolute top-4 right-4 z-30 w-9 h-9 bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Right Column: Scrollable Content */}
-            <div className="flex-1 flex flex-col overflow-hidden bg-white text-left">
-              {/* Desktop Close Button */}
-              <button
-                onClick={() => setSelectedProgram(null)}
-                className="hidden md:flex absolute top-5 right-5 z-30 w-10 h-10 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-red-500 rounded-xl items-center justify-center transition-all shadow-sm border border-gray-200"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex-1 overflow-y-auto p-6 md:p-8">
-                <div className="space-y-6">
-                  {/* Header */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div
-                        className="w-6 h-0.5 rounded-full"
-                        style={{ backgroundColor: tenantConfig.primaryColor }}
-                      ></div>
-                      <p
-                        className="font-bold text-[10px] tracking-widest uppercase"
-                        style={{ color: tenantConfig.primaryColor }}
-                      >
-                        Barangay Program
-                      </p>
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-black text-gray-900 leading-[1.2] tracking-tight">
-                      {selectedProgram.title}
-                    </h2>
                   </div>
 
-                  {/* Body Text */}
-                  <div className="max-w-none">
-                    <p className="text-gray-600 leading-relaxed text-sm md:text-base">
-                      {selectedProgram.description}
+                  <div className="px-4 py-4 sm:p-6 md:p-8">
+                    <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
+                      {modalAchievement.description}
                     </p>
                   </div>
+                </div>
 
-                  {/* Action Footer */}
-                  <div className="pt-6 flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 gap-4">
+                {hasMultipleAchievements && (
+                  <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-gray-100 bg-white shrink-0 sm:hidden">
                     <button
-                      onClick={() => setSelectedProgram(null)}
-                      className="w-full sm:w-auto px-6 py-3 text-white rounded-xl font-bold transition-all shadow-sm text-sm flex items-center justify-center gap-2 group"
-                      style={{ backgroundColor: tenantConfig.primaryColor }}
+                      type="button"
+                      onClick={() => goModalAchievement(modalIndex - 1)}
+                      aria-label={p.prevAchievement}
+                      className="min-h-[44px] min-w-[44px] rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center touch-manipulation"
                     >
-                      <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                      Back to Programs
+                      <ChevronLeft className="w-5 h-5 text-gray-800" />
                     </button>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
-                          Implemented by
-                        </p>
-                        <p className="text-xs font-bold text-gray-700 uppercase">
-                          {tenantConfig.shortName} Council
-                        </p>
-                      </div>
-                      <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: `${tenantConfig.primaryColor}15` }}
-                      >
-                        <Shield
-                          className="w-4 h-4"
-                          style={{ color: tenantConfig.primaryColor }}
-                        />
-                      </div>
-                    </div>
+                    <span className="text-xs font-mono font-bold text-gray-500 tabular-nums">
+                      {String(modalIndex + 1).padStart(2, "0")} /{" "}
+                      {String(achievements.length).padStart(2, "0")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => goModalAchievement(modalIndex + 1)}
+                      aria-label={p.nextAchievement}
+                      className="min-h-[44px] min-w-[44px] rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center touch-manipulation"
+                    >
+                      <ChevronRight className="w-5 h-5 text-gray-800" />
+                    </button>
                   </div>
+                )}
+
+                <div className="px-4 py-3 sm:px-5 sm:py-4 border-t border-gray-100 bg-gray-50 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:pb-4">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAchievement(null)}
+                    className="w-full sm:w-auto min-h-[48px] px-5 py-3 sm:py-2.5 text-white rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 touch-manipulation"
+                    style={{ backgroundColor: tenantConfig.primaryColor }}
+                  >
+                    <ChevronLeft className="w-4 h-4 shrink-0" />
+                    {p.backToAwards}
+                  </button>
+                  <div className="flex items-center justify-center gap-2 py-1 sm:py-0">
+                    <Shield className="w-4 h-4 shrink-0" style={{ color: tenantConfig.primaryColor }} />
+                    <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider text-center">
+                      {p.officialRecord}
+                    </span>
+                  </div>
+                  {hasMultipleAchievements && (
+                    <div className="hidden sm:flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => goModalAchievement(modalIndex - 1)}
+                        aria-label={p.prevAchievement}
+                        className="min-h-[40px] min-w-[40px] rounded-lg border border-gray-200 bg-white flex items-center justify-center"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <span className="text-xs font-mono font-bold text-gray-500 tabular-nums min-w-[3.5rem] text-center">
+                        {String(modalIndex + 1).padStart(2, "0")} /{" "}
+                        {String(achievements.length).padStart(2, "0")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => goModalAchievement(modalIndex + 1)}
+                        aria-label={p.nextAchievement}
+                        className="min-h-[40px] min-w-[40px] rounded-lg border border-gray-200 bg-white flex items-center justify-center"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          );
+        })(),
+          document.body,
+        )}
 
       {/* Barangay Clearance Modal */}
       <BarangayClearanceModal
@@ -2979,24 +3693,25 @@ export default function PortalPageContent({ initialTenantId }) {
           id="officials"
           className={`relative overflow-hidden transition-colors duration-500 bg-gradient-to-br ${tenantId === "demo" ? "from-black via-gray-950 to-black" : "from-[#112e1f] via-[#1a3d29] to-[#0d1f14]"}`}
         >
-          {/* Photo - Full visibility without overlay */}
+          {/* Leadership group photo */}
           <div className="relative">
             <img
               loading="eager"
+              decoding="async"
+              fetchpriority="high"
               src={heroSettings?.image || ""}
               alt={heroSettings?.title || "Barangay Officials"}
-              className="w-full h-auto md:h-[320px] lg:h-[400px] xl:h-[480px] md:object-cover bg-gray-800"
+              className="w-full h-auto md:h-[320px] lg:h-[400px] xl:h-[480px] md:object-cover object-center bg-gray-800"
               onError={(e) => {
                 e.target.src = "";
               }}
             />
-            {/* Edge Shadow Overlay */}
             <div
               className="absolute inset-0 pointer-events-none z-10 hidden md:block"
               style={{
                 boxShadow: `inset 0 0 150px 60px ${tenantId === "demo" ? "#000000" : "#112e1f"}`,
               }}
-            ></div>
+            />
           </div>
 
           {/* Text Section - Professional Leadership Introduction */}
@@ -3012,7 +3727,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     style={{ backgroundColor: tenantConfig.accentColor }}
                   ></div>
                   <span className="text-white font-semibold text-[10px] tracking-wide uppercase">
-                    Leadership Team
+                    {p.leadershipTeam}
                   </span>
                   <div
                     className="w-1.5 h-1.5 rounded-full"
@@ -3028,7 +3743,7 @@ export default function PortalPageContent({ initialTenantId }) {
                       backgroundImage: `linear-gradient(to right, ${tenantConfig.accentColor}, #ebd78c, ${tenantConfig.accentColor})`,
                     }}
                   >
-                    Leadership Team
+                    {p.leadershipTeam}
                   </span>
                 </h4>
 
@@ -3040,31 +3755,30 @@ export default function PortalPageContent({ initialTenantId }) {
                 ></div>
 
                 <p className="text-lg md:text-xl text-white/90 font-light leading-relaxed max-w-2xl mx-auto">
-                  Working together for our community's progress and development
+                  {p.officialsHeroTagline}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-50 py-16 md:py-24 px-6 lg:px-12">
+          <div className="bg-gray-50 py-10 md:py-24 px-4 sm:px-6 lg:px-12 scroll-mt-[3.5rem] md:scroll-mt-0">
             <div className="max-w-[1400px] mx-auto text-center">
               {/* Section Header */}
-              <div className="mb-12">
-                <div className="h-1 w-12 bg-gray-900 mb-8 mx-auto rounded-full"></div>
-                <h5 className="text-3xl md:text-5xl font-black text-gray-900 mb-5 tracking-tight leading-none uppercase">
-                  Meet Our{" "}
+              <div className="mb-8 md:mb-12">
+                <div className="h-1 w-12 bg-gray-900 mb-6 md:mb-8 mx-auto rounded-full"></div>
+                <h5 className="text-2xl sm:text-3xl md:text-5xl font-black text-gray-900 mb-3 md:mb-5 tracking-tight leading-tight uppercase">
+                  {p.meetCouncil}{" "}
                   <span
                     className="text-transparent bg-clip-text"
                     style={{
                       backgroundImage: `linear-gradient(to right, ${tenantId === "demo" ? "#111" : "#064e3b"}, ${tenantConfig.accentColor})`,
                     }}
                   >
-                    Council
+                    {p.council}
                   </span>
                 </h5>
-                <p className="text-gray-400 text-xs md:text-sm font-black max-w-2xl mx-auto uppercase tracking-[0.3em] leading-relaxed">
-                  Empowered leaders serving {tenantConfig.shortName} with vision
-                  and integrity.
+                <p className="text-gray-400 text-[10px] sm:text-xs md:text-sm font-black max-w-2xl mx-auto uppercase tracking-[0.2em] md:tracking-[0.3em] leading-relaxed px-2">
+                  {p.councilTagline.replace("{shortName}", tenantConfig.shortName)}
                 </p>
               </div>
 
@@ -3244,17 +3958,19 @@ export default function PortalPageContent({ initialTenantId }) {
 
                       return (
                         <div key={section.key} className="mb-10">
-                          {section.key === "staff" && (
-                            <div className="text-center mb-6">
+                          {(section.key === "staff" ||
+                            section.key === "kagawad" ||
+                            section.key === "sk_kagawad") && (
+                            <div className="text-center mb-5 md:mb-6">
                               <div
-                                className={`inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r ${section.bgColor} text-white rounded-full mb-4 shadow-lg`}
+                                className={`inline-flex items-center gap-2 md:gap-3 px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r ${section.bgColor} text-white rounded-full mb-2 md:mb-4 shadow-lg max-w-full`}
                               >
-                                <span className="text-2xl">{section.icon}</span>
-                                <span className="font-bold text-lg tracking-wide">
+                                <span className="text-lg md:text-2xl shrink-0">{section.icon}</span>
+                                <span className="font-bold text-xs sm:text-sm md:text-lg tracking-wide truncate">
                                   {section.title.toUpperCase()}
                                 </span>
                               </div>
-                              <p className="text-gray-600 text-lg font-medium">
+                              <p className="text-gray-600 text-sm md:text-lg font-medium px-2 leading-snug">
                                 {section.subtitle}
                               </p>
                             </div>
@@ -3265,8 +3981,12 @@ export default function PortalPageContent({ initialTenantId }) {
                             className={
                               section.key === "captain" ||
                               section.key === "sk_chairman"
-                                ? "max-w-5xl mx-auto flex flex-col lg:flex-row items-center gap-8 px-4 mb-10"
-                                : "grid grid-cols-2 lg:flex lg:flex-wrap gap-4 lg:gap-5 justify-center"
+                                ? "max-w-5xl mx-auto flex flex-col lg:flex-row items-center gap-8 px-2 sm:px-4 mb-10"
+                                : section.key === "kagawad" ||
+                                    section.key === "sk_kagawad" ||
+                                    section.key === "staff"
+                                  ? "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:flex lg:flex-wrap lg:gap-5 justify-center w-full"
+                                  : "grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-4 lg:gap-5 justify-center"
                             }
                           >
                             {section.key === "captain" ? (
@@ -3511,81 +4231,83 @@ export default function PortalPageContent({ initialTenantId }) {
                                   .map((n) => n[0])
                                   .join("");
                                 const widthClass =
-                                  "w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.75rem)] lg:w-[calc(20%-1rem)]";
+                                  section.key === "kagawad" ||
+                                  section.key === "sk_kagawad" ||
+                                  section.key === "staff"
+                                    ? "w-full lg:w-[calc(20%-1rem)]"
+                                    : "w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.75rem)] lg:w-[calc(20%-1rem)]";
+                                const roleLabel = (() => {
+                                  const pos = official.position || "";
+                                  if (pos.includes("SK Kagawad")) return "SK Kagawad";
+                                  if (pos.includes("Kagawad")) return "Brgy. Kagawad";
+                                  if (
+                                    [
+                                      "Secretary",
+                                      "Treasurer",
+                                      "Administrator",
+                                      "Clerk",
+                                      "Record Keeper",
+                                    ].includes(pos)
+                                  )
+                                    return `Brgy. ${pos}`;
+                                  if (pos === "Barangay Keeper") return "Brgy. Record Keeper";
+                                  if (
+                                    ["Assistant Secretary", "Assistant Administrator"].includes(
+                                      pos,
+                                    )
+                                  )
+                                    return pos.replace("Assistant", "Asst. Brgy.");
+                                  return pos;
+                                })();
                                 return (
                                   <div
                                     key={official.id || index}
-                                    className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group ${widthClass}`}
+                                    className={`bg-white rounded-lg sm:rounded-xl md:rounded-2xl shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group ${widthClass}`}
                                   >
-                                    <div className="relative aspect-square overflow-hidden group bg-white">
+                                    <div className="relative aspect-[3/4] sm:aspect-square overflow-hidden bg-white">
                                       {official.image_url ? (
-                                        <img loading="lazy" src={official.image_url}
+                                        <img
+                                          loading="lazy"
+                                          src={official.image_url}
                                           alt={official.name}
-                                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 relative z-10"
+                                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 relative z-10"
                                         />
                                       ) : (
                                         <div
                                           className={`w-full h-full bg-gradient-to-br ${colorClass} flex items-center justify-center`}
                                         >
-                                          <span className="text-5xl font-bold text-white tracking-widest opacity-30 group-hover:opacity-50 transition-opacity">
+                                          <span className="text-4xl sm:text-5xl font-bold text-white tracking-widest opacity-30 group-hover:opacity-50 transition-opacity">
                                             {initials}
                                           </span>
                                         </div>
                                       )}
                                       <div
-                                        className="absolute inset-0 bg-gradient-to-t flex flex-col justify-end p-6 text-center z-20"
+                                        className="absolute inset-0 bg-gradient-to-t flex flex-col justify-end p-2 sm:p-6 text-center z-20"
                                         style={{
                                           backgroundImage: `linear-gradient(to top, ${tenantId === "demo" ? "#000000E6" : "#112e1fE6"}, ${tenantId === "demo" ? "#00000066" : "#112e1f66"}, transparent)`,
                                         }}
                                       >
-                                        <h3 className="text-white font-bold text-xl mb-1 drop-shadow-lg">
-                                          {(() => {
-                                            const pos = official.position || "";
-                                            if (pos.includes("SK Kagawad"))
-                                              return "SK Kagawad";
-                                            if (pos.includes("Kagawad"))
-                                              return "Brgy. Kagawad";
-                                            if (
-                                              [
-                                                "Secretary",
-                                                "Treasurer",
-                                                "Administrator",
-                                                "Clerk",
-                                                "Record Keeper",
-                                              ].includes(pos)
-                                            )
-                                              return `Brgy. ${pos}`;
-                                            if (pos === "Barangay Keeper")
-                                              return "Brgy. Record Keeper";
-                                            if (
-                                              [
-                                                "Assistant Secretary",
-                                                "Assistant Administrator",
-                                              ].includes(pos)
-                                            )
-                                              return pos.replace(
-                                                "Assistant",
-                                                "Asst. Brgy.",
-                                              );
-                                            return pos;
-                                          })()}
+                                        <h3 className="text-white font-bold text-[10px] sm:text-xl mb-0.5 drop-shadow-lg leading-tight">
+                                          {roleLabel}
                                         </h3>
                                         {official.committee && (
                                           <p
-                                            className={`text-sm font-medium drop-shadow-md ${tenantId === "demo" ? "text-gray-300" : "text-green-300"}`}
+                                            className={`text-[9px] sm:text-sm font-medium drop-shadow-md line-clamp-2 leading-tight ${tenantId === "demo" ? "text-gray-300" : "text-green-300"}`}
                                           >
                                             {official.committee}
                                           </p>
                                         )}
                                       </div>
                                     </div>
-                                    <div className="p-6">
-                                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                                    <div className="p-2.5 sm:p-6 text-center">
+                                      <h4 className="text-[11px] sm:text-lg font-black text-gray-900 mb-1 sm:mb-2 uppercase tracking-tight leading-snug">
                                         {official.name}
                                       </h4>
-                                      <p className="text-gray-600 text-sm leading-relaxed">
-                                        {official.description}
-                                      </p>
+                                      {official.description && (
+                                        <p className="text-gray-600 text-[10px] sm:text-sm leading-snug line-clamp-3 sm:line-clamp-none">
+                                          {official.description}
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                 );
@@ -3623,7 +4345,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     </div>
                   </div>
                   {/* Kagawad Skeletons */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4 w-full">
                     {[0, 1, 2, 3, 4, 5, 6].map((i) => (
                       <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-100">
                         <div className="skeleton w-full aspect-[4/5]" />
@@ -3643,39 +4365,52 @@ export default function PortalPageContent({ initialTenantId }) {
 
       <section
         id="contact"
-        className={`py-12 md:py-16 bg-gradient-to-br ${tenantConfig.darkBackground}`}
+        className="py-12 md:py-16 w-full border-t border-gray-200 relative overflow-hidden"
       >
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
+          style={{ backgroundImage: "url(/images/community.jpg)" }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `linear-gradient(135deg, ${tenantConfig.primaryColor}e6 0%, rgba(15, 23, 42, 0.88) 55%, rgba(0, 0, 0, 0.75) 100%)`,
+          }}
+          aria-hidden
+        />
+
+        <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12 relative z-10">
           {/* Section Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="w-1 h-8 rounded-full bg-white/80"
-              ></div>
-              <div>
-                <p
-                  className="text-xs font-bold uppercase tracking-widest text-white/60"
-                >
-                  Get in Touch
-                </p>
-                <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight mt-1">
-                  Contact the Barangay Office
-                </h2>
-              </div>
+          <div className="mb-8 md:mb-10 max-w-3xl">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.18em] mb-4 border border-white/30 bg-white/15 text-white backdrop-blur-md">
+              <Mail className="w-3.5 h-3.5" />
+              {p.contactBadge}
             </div>
-            <p className="text-white/60 text-sm md:text-base max-w-2xl leading-relaxed pl-4 border-l-2 border-white/20">
-              For inquiries, service requests, and other concerns, please reach out to our office during business hours or send us a message below.
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+              {p.contactTitle}{" "}
+              <span
+                className="text-transparent bg-clip-text"
+                style={{
+                  backgroundImage: `linear-gradient(to right, #ffffff, ${tenantConfig.accentColor})`,
+                }}
+              >
+                {p.contactTitleAccent}
+              </span>
+            </h2>
+            <p className="text-white/80 text-sm md:text-base mt-2 leading-relaxed font-medium">
+              {p.contactSubtitle}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {/* Contact Form */}
-            <div className="bg-white rounded-xl p-5 shadow-lg h-full">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-5 md:p-6 shadow-lg border border-white/20 h-full">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="contact-firstName" className="block text-sm font-medium text-gray-700 mb-1.5">
-                      First Name
+                      {p.firstName}
                     </label>
                     <input
                       id="contact-firstName"
@@ -3692,7 +4427,7 @@ export default function PortalPageContent({ initialTenantId }) {
                   </div>
                   <div>
                     <label htmlFor="contact-lastName" className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Last Name
+                      {p.lastName}
                     </label>
                     <input
                       id="contact-lastName"
@@ -3711,7 +4446,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
                 <div>
                   <label htmlFor="contact-email" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Email Address
+                    {p.email}
                   </label>
                   <input
                     id="contact-email"
@@ -3729,7 +4464,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
                 <div>
                   <label htmlFor="contact-phone" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Phone Number
+                    {p.phone}
                   </label>
                   <input
                     id="contact-phone"
@@ -3746,7 +4481,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
                 <div>
                   <label htmlFor="contact-message" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Message
+                    {p.message}
                   </label>
                   <textarea
                     id="contact-message"
@@ -3768,7 +4503,7 @@ export default function PortalPageContent({ initialTenantId }) {
                   style={{ backgroundColor: tenantConfig.primaryColor }}
                 >
                   <Send className="w-4 h-4" />
-                  Send Message
+                  {p.sendMessage}
                 </button>
               </form>
             </div>
@@ -3776,9 +4511,9 @@ export default function PortalPageContent({ initialTenantId }) {
             {/* Contact Info & Office Hours */}
             <div className="space-y-6 h-full flex flex-col">
               {/* Contact Information */}
-              <div className="bg-white/10 rounded-xl p-5 border border-white/15 flex-1">
+              <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-5 md:p-6 border border-white/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] flex-1">
                 <h3 className="text-base font-bold text-white mb-4">
-                  Contact Information
+                  {p.contactInfo}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
@@ -3789,7 +4524,7 @@ export default function PortalPageContent({ initialTenantId }) {
                       <MapPin className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white/90 text-sm font-medium">Address</p>
+                      <p className="text-white/90 text-sm font-medium">{p.address}</p>
                       <p className="text-white/60 text-sm leading-relaxed">
                         {tenantConfig.subtitle}
                       </p>
@@ -3803,7 +4538,7 @@ export default function PortalPageContent({ initialTenantId }) {
                       <Phone className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white/90 text-sm font-medium">Phone</p>
+                      <p className="text-white/90 text-sm font-medium">{p.phone}</p>
                       <p className="text-white/60 text-sm">
                         (044) 123-4567
                       </p>
@@ -3817,7 +4552,7 @@ export default function PortalPageContent({ initialTenantId }) {
                       <Mail className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white/90 text-sm font-medium">Email</p>
+                      <p className="text-white/90 text-sm font-medium">{p.email}</p>
                       <p className="text-white/60 text-sm">
                         {tenantId === "demo"
                           ? "contact@brgydesk.com"
@@ -3829,10 +4564,10 @@ export default function PortalPageContent({ initialTenantId }) {
               </div>
 
               {/* Office Hours */}
-              <div className="bg-white/10 rounded-xl p-5 border border-white/15">
+              <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-5 md:p-6 border border-white/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
                 <h3 className="text-base font-bold text-white mb-3 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-white/60" />
-                  Office Hours
+                  {p.officeHours}
                 </h3>
                 <div className="space-y-1.5 text-sm text-white/60">
                   <div className="flex justify-between">
@@ -3852,10 +4587,10 @@ export default function PortalPageContent({ initialTenantId }) {
             </div>
 
             {/* Emergency Hotlines */}
-            <div className="bg-white/10 rounded-xl p-5 border border-white/15 h-full">
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-5 md:p-6 border border-white/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] h-full">
               <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-400" />
-                Emergency Hotlines
+                {p.emergencyHotlines}
               </h3>
               <div className="space-y-3">
                 {hotlines.map((hotline, index) => (
@@ -3880,7 +4615,7 @@ export default function PortalPageContent({ initialTenantId }) {
               </div>
               <div className="mt-4 pt-4 border-t border-white/10 text-center">
                 <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider">
-                  Available 24/7 for Emergencies
+                  {p.emergency247}
                 </p>
               </div>
             </div>
@@ -3907,49 +4642,75 @@ export default function PortalPageContent({ initialTenantId }) {
                 </div>
               </div>
               <p className="text-xs text-white/40 leading-relaxed text-center md:text-left max-w-xs">
-                An official digital portal of the Barangay Government, providing transparent and accessible public services to our constituents.
+                {p.footerBlurb}
               </p>
             </div>
 
             {/* Quick Links */}
             <div className="flex flex-col items-center md:items-start gap-2">
-              <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">Services</h4>
-              <a href="#forms" className="text-xs text-white/50 hover:text-white transition-colors">Barangay Forms & Certificates</a>
-              <a href="#track" className="text-xs text-white/50 hover:text-white transition-colors">Track Your Request</a>
-              <a href="#directory" className="text-xs text-white/50 hover:text-white transition-colors">Facilities & Infrastructure</a>
-              <a href="#tourism" className="text-xs text-white/50 hover:text-white transition-colors">Tourism & Lifestyle</a>
-              <a href="#officials" className="text-xs text-white/50 hover:text-white transition-colors">Barangay Officials</a>
-              <a href="#contact" className="text-xs text-white/50 hover:text-white transition-colors">Contact Us</a>
+              <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">{p.footerServices}</h4>
+              <a href="#forms" className="text-xs text-white/50 hover:text-white transition-colors">{p.footerFormsLink}</a>
+              <a href="#citizen-help" className="text-xs text-white/50 hover:text-white transition-colors">{p.footerHelpLink}</a>
+              <a href="#track" className="text-xs text-white/50 hover:text-white transition-colors">{p.footerTrackLink}</a>
+              <a href="#directory" className="text-xs text-white/50 hover:text-white transition-colors">{p.footerFacilitiesLink}</a>
+              <a href="#tourism" className="text-xs text-white/50 hover:text-white transition-colors">{p.footerTourismLink}</a>
+              <a href="#officials" className="text-xs text-white/50 hover:text-white transition-colors">{p.footerOfficialsLink}</a>
+              <a href="#contact" className="text-xs text-white/50 hover:text-white transition-colors">{p.footerContactLink}</a>
             </div>
 
             {/* Privacy & Compliance */}
             <div className="flex flex-col items-center md:items-start gap-2">
-              <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">Privacy & Compliance</h4>
+              <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">{p.footerPrivacy}</h4>
               <p className="text-xs text-white/40 leading-relaxed">
-                This portal collects and processes personal data in accordance with the <span className="text-white/60 font-medium">Data Privacy Act of 2012 (RA 10173)</span>. Information submitted through this platform is used solely for official barangay services and is protected under government data security standards.
+                {p.footerPrivacyText}
               </p>
               <p className="text-xs text-white/40 leading-relaxed mt-1">
-                © {new Date().getFullYear()} {tenantConfig.name}. All rights reserved. Powered by BrgyDesk.
+                © {new Date().getFullYear()} {tenantConfig.name}. {p.footerCopyright}
               </p>
             </div>
           </div>
 
+          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center sm:justify-start gap-3 pb-8 mb-2">
+            <a
+              href="#track"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-2.5 rounded-lg text-sm font-semibold text-white border border-white/25 bg-white/10 hover:bg-white/15 transition-colors"
+            >
+              <Search className="w-4 h-4 shrink-0" />
+              {p.trackRequest}
+            </a>
+            {!isInstalled && (
+              <button
+                type="button"
+                onClick={promptInstall}
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors border"
+                style={{
+                  color: tenantConfig.accentColor,
+                  borderColor: `${tenantConfig.accentColor}50`,
+                  backgroundColor: `${tenantConfig.accentColor}12`,
+                }}
+              >
+                <Smartphone className="w-4 h-4 shrink-0" />
+                {p.installApp}
+              </button>
+            )}
+          </div>
+
           <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-[10px] text-white/30 uppercase tracking-widest text-center sm:text-left">
-              Republic of the Philippines · Local Government Unit · Barangay Portal
+              {p.footerPhilippines}
             </p>
             <div className="flex items-center gap-4">
-              <span className="text-[10px] text-white/30">An LGU Digital Service</span>
+              <span className="text-[10px] text-white/30">{p.footerLguService}</span>
             </div>
           </div>
         </div>
       </footer>
 
       {/* Floating Assistance Widget — Government Style */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
+      <div className="fixed bottom-[calc(4.875rem+env(safe-area-inset-bottom,0px)+0.5rem)] right-3 left-3 md:left-auto md:bottom-4 md:right-4 z-50 flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
         {/* Expanded Panel */}
         {showAssistance && !assistanceMode && (
-          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden animate-fade-in">
+          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-[min(100%,18rem)] md:w-72 overflow-hidden animate-fade-in">
             {/* Panel Header */}
             <div
               className="px-4 py-3 border-b border-gray-100"
@@ -3959,7 +4720,7 @@ export default function PortalPageContent({ initialTenantId }) {
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: tenantConfig.primaryColor }}
               >
-                Barangay Assistance
+                {p.assistPanelTitle}
               </p>
             </div>
 
@@ -4108,17 +4869,20 @@ export default function PortalPageContent({ initialTenantId }) {
                       <MessageCircle className="w-6 h-6" />
                     </div>
                     <h4 className="text-sm font-bold text-gray-900 mb-1">
-                      Welcome to KapChat
+                      {p.kapchatWelcome}
                     </h4>
                     <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
-                      Directly connect with <strong>{captain?.full_name || "the Barangay Captain"}</strong> and desk officers for immediate inquiries & assistance.
+                      {p.kapchatWelcomeDesc.replace(
+                        "{captain}",
+                        captain?.full_name || "Kapitan ng Barangay",
+                      )}
                     </p>
                   </div>
 
                   <form onSubmit={handleStartChat} className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm">
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1">
-                        Your Full Name <span className="text-red-500">*</span>
+                        {p.kapchatFullName} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -4132,7 +4896,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1">
-                        Mobile Number <span className="text-red-500">*</span>
+                        {p.kapchatMobile} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="tel"
@@ -4150,7 +4914,7 @@ export default function PortalPageContent({ initialTenantId }) {
                       style={{ backgroundColor: tenantConfig.primaryColor }}
                     >
                       <MessageCircle className="w-4 h-4" />
-                      <span>Start Conversation</span>
+                      <span>{p.kapchatStart}</span>
                     </button>
                   </form>
                 </div>
@@ -4158,7 +4922,7 @@ export default function PortalPageContent({ initialTenantId }) {
                 <div className="pt-3 text-center border-t border-gray-200/60 mt-4">
                   <p className="text-[10px] text-gray-400 font-medium flex items-center justify-center gap-1">
                     <Shield className="w-3 h-3 text-gray-400" />
-                    Official & Confidential Barangay Messaging
+                    {p.kapchatFooterNote}
                   </p>
                 </div>
               </div>
@@ -4168,13 +4932,13 @@ export default function PortalPageContent({ initialTenantId }) {
                 {/* User Session Bar */}
                 <div className="px-3.5 py-1.5 bg-gray-100/80 border-b border-gray-200 flex items-center justify-between text-[11px] text-gray-600">
                   <span className="font-semibold truncate">
-                    Chatting as: <strong className="text-gray-900">{chatUserInfo.name}</strong> ({chatUserInfo.contact})
+                    {p.kapchatChattingAs} <strong className="text-gray-900">{chatUserInfo.name}</strong> ({chatUserInfo.contact})
                   </span>
                   <button
                     onClick={handleResetChatSession}
                     className="text-[10px] font-bold text-blue-600 hover:underline shrink-0 ml-2"
                   >
-                    Change
+                    {p.kapchatChange}
                   </button>
                 </div>
 
@@ -4209,7 +4973,7 @@ export default function PortalPageContent({ initialTenantId }) {
                         Quick Inquiries
                       </p>
                       <div className="grid grid-cols-1 gap-1.5">
-                        {KAPCHAT_QUICK_PROMPTS.map((prompt, idx) => (
+                        {kapchatQuickPrompts.map((prompt, idx) => (
                           <button
                             key={idx}
                             type="button"
@@ -4452,19 +5216,21 @@ export default function PortalPageContent({ initialTenantId }) {
 
         {/* Toggle Button */}
         <button
-          onClick={() => showAssistance ? closeAssistance() : setShowAssistance(true)}
-          className="flex items-center gap-2 text-white rounded-xl shadow-lg transition-all px-4 py-3"
+          type="button"
+          onClick={() => (showAssistance ? closeAssistance() : setShowAssistance(true))}
+          aria-label={showAssistance ? p.close : p.needHelp}
+          className="flex items-center justify-center gap-2 text-white rounded-full md:rounded-xl shadow-lg transition-all p-3.5 md:px-4 md:py-3 min-h-[48px] min-w-[48px] md:min-w-0 touch-manipulation"
           style={{ backgroundColor: tenantConfig.primaryColor }}
         >
           {showAssistance ? (
             <>
-              <X className="w-4 h-4" />
-              <span className="text-sm font-bold">Close</span>
+              <X className="w-5 h-5 md:w-4 md:h-4" />
+              <span className="hidden md:inline text-sm font-bold">{p.close}</span>
             </>
           ) : (
             <>
-              <HeadphonesIcon className="w-4 h-4" />
-              <span className="text-sm font-bold">Need Help?</span>
+              <HeadphonesIcon className="w-5 h-5 md:w-4 md:h-4" />
+              <span className="hidden md:inline text-sm font-bold">{p.needHelp}</span>
             </>
           )}
         </button>
@@ -4643,12 +5409,10 @@ export default function PortalPageContent({ initialTenantId }) {
               />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              Coming Soon!
+              {p.comingSoonTitle}
             </h3>
             <p className="text-gray-600 mb-8 leading-relaxed">
-              We are currently finalizing this online service to serve you
-              better. Please visit the Barangay Hall for manual processing in
-              the meantime.
+              {p.comingSoonBody}
             </p>
 
             <button
@@ -4656,7 +5420,7 @@ export default function PortalPageContent({ initialTenantId }) {
               className="w-full text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 group/btn"
               style={{ backgroundColor: tenantConfig.primaryColor }}
             >
-              Got it!
+              {p.comingSoonOk}
               <CheckCircle className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
             </button>
 
@@ -4669,213 +5433,188 @@ export default function PortalPageContent({ initialTenantId }) {
         </div>
       )}
 
-      {/* Facility Photo Slider & Details Modal — Executive Dark Green Government Theme */}
+      {/* Facility gallery & details modal */}
       {selectedFacility && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6"
           onClick={() => setSelectedFacility(null)}
         >
-          <div className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity animate-in fade-in duration-200" />
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" />
 
           <div
-            className="relative z-10 w-full max-w-4xl max-h-[94vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 animate-in zoom-in-95 duration-200"
+            className="relative z-10 w-full sm:max-w-6xl lg:max-w-7xl h-[96vh] sm:h-[90vh] max-h-[96vh] bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Republic Header */}
-            <div className="bg-gradient-to-r from-[#064e3b] via-[#044a36] to-[#022c22] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-md flex-shrink-0">
+            <div
+              className="px-4 py-3 sm:px-5 sm:py-4 text-white flex items-start sm:items-center justify-between gap-3 flex-shrink-0 border-b border-white/10"
+              style={{
+                background: `linear-gradient(135deg, ${tenantConfig.primaryColor} 0%, #022c22 100%)`,
+              }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center flex-shrink-0">
                   {(() => {
                     const FacilityIcon = selectedFacility.icon || Building2;
-                    return <FacilityIcon className="w-5 h-5 text-emerald-300" />;
+                    return <FacilityIcon className="w-4 h-4" />;
                   })()}
                 </div>
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-0.5">
-                    <Building2 className="w-3 h-3 text-amber-300" />
-                    Republic of the Philippines • Barangay {tenantConfig.shortName || "Iba O' Este"}
-                  </div>
-                  <h3 className="text-base sm:text-lg font-black tracking-tight text-white uppercase truncate max-w-md sm:max-w-xl">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/70 truncate">
+                    {p.barangayWord} {tenantConfig.shortName || "Iba O' Este"} · {p.publicFacility}
+                  </p>
+                  <h3 className="text-base sm:text-lg font-black tracking-tight truncate">
                     {selectedFacility.name}
                   </h3>
                 </div>
               </div>
-
               <button
                 type="button"
                 onClick={() => setSelectedFacility(null)}
-                className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-all cursor-pointer flex items-center justify-center"
+                aria-label="Close"
+                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Scrollable Modal Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-7 space-y-6 bg-slate-50/60">
-              {/* Main Photo Showcase with Blurred Backdrop to eliminate letterboxing */}
+            <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
               {(() => {
                 const images = selectedFacility.images || ["/background.jpg"];
                 const activeImg = images[facilityImageIndex] || images[0];
 
                 return (
-                  <div className="space-y-3">
-                    <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[50vh] rounded-2xl overflow-hidden bg-slate-950 shadow-lg flex items-center justify-center group">
-                      {/* Ambient Blurred Backdrop */}
-                      <img
-                        src={activeImg}
-                        alt="Backdrop"
-                        className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-125 pointer-events-none"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
+                  <>
+                    <div className="flex-1 lg:flex-[1.75] min-h-[52vh] sm:min-h-0 flex flex-col bg-neutral-950 min-w-0">
+                      <div className="relative flex-1 w-full min-h-0 overflow-hidden">
+                        <img
+                          src={activeImg}
+                          alt=""
+                          aria-hidden
+                          className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 saturate-125"
+                        />
+                        <div className="absolute inset-0 bg-black/20" />
+                        <img
+                          key={facilityImageIndex}
+                          src={activeImg}
+                          alt={`${selectedFacility.name} — photo ${facilityImageIndex + 1}`}
+                          className="absolute inset-0 z-10 w-full h-full object-contain"
+                        />
 
-                      {/* Foreground Clear Image */}
-                      <img
-                        key={facilityImageIndex}
-                        src={activeImg}
-                        alt={`${selectedFacility.name} photo ${facilityImageIndex + 1}`}
-                        className="relative z-10 w-full h-full object-contain max-h-[50vh] transition-all duration-300 animate-in fade-in"
-                      />
+                        <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white/95 bg-black/45 backdrop-blur-md border border-white/15">
+                          {facilityImageIndex + 1} / {images.length}
+                        </div>
 
-                      {/* Photo Badge */}
-                      <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-white bg-black/60 backdrop-blur-md border border-white/20 shadow-md">
-                        <ImageIcon className="w-3.5 h-3.5 text-emerald-300" />
-                        <span>Photo {facilityImageIndex + 1} of {images.length}</span>
+                        {images.length > 1 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFacilityImageIndex((prev) =>
+                                  prev === 0 ? images.length - 1 : prev - 1,
+                                );
+                              }}
+                              aria-label="Previous photo"
+                              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/50 hover:bg-black/70 text-white border border-white/20 flex items-center justify-center transition-colors"
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFacilityImageIndex((prev) =>
+                                  prev === images.length - 1 ? 0 : prev + 1,
+                                );
+                              }}
+                              aria-label="Next photo"
+                              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/50 hover:bg-black/70 text-white border border-white/20 flex items-center justify-center transition-colors"
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                            <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-3 pt-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                              <div className="flex justify-center gap-2 overflow-x-auto snap-x snap-mandatory max-w-full">
+                                {images.map((img, idx) => {
+                                  const isCurrent = facilityImageIndex === idx;
+                                  return (
+                                    <button
+                                      key={idx}
+                                      type="button"
+                                      onClick={() => setFacilityImageIndex(idx)}
+                                      className={`snap-center relative w-[4.25rem] h-14 sm:w-20 sm:h-[4.5rem] rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all shadow-lg ${
+                                        isCurrent
+                                          ? "border-emerald-400 opacity-100 ring-2 ring-emerald-400/40 scale-105"
+                                          : "border-white/20 opacity-70 hover:opacity-100"
+                                      }`}
+                                    >
+                                      <img
+                                        src={img}
+                                        alt={`Thumbnail ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
-
-                      {/* Navigation Arrows (if multiple photos) */}
-                      {images.length > 1 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFacilityImageIndex((prev) =>
-                                prev === 0 ? images.length - 1 : prev - 1
-                              );
-                            }}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/90 flex items-center justify-center text-white rounded-full backdrop-blur-md transition-all border border-white/20 z-20 cursor-pointer shadow-lg active:scale-95"
-                          >
-                            <ChevronLeft className="w-5 h-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFacilityImageIndex((prev) =>
-                                prev === images.length - 1 ? 0 : prev + 1
-                              );
-                            }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/90 flex items-center justify-center text-white rounded-full backdrop-blur-md transition-all border border-white/20 z-20 cursor-pointer shadow-lg active:scale-95"
-                          >
-                            <ChevronRight className="w-5 h-5" />
-                          </button>
-                        </>
-                      )}
                     </div>
 
-                    {/* Interactive Thumbnail Bar for Multi-Photo Gallery */}
-                    {images.length > 1 && (
-                      <div className="flex items-center gap-2.5 overflow-x-auto pb-1 pt-0.5">
-                        {images.map((img, idx) => {
-                          const isCurrent = facilityImageIndex === idx;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setFacilityImageIndex(idx)}
-                              className={`relative w-20 sm:w-24 aspect-[16/10] rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all cursor-pointer ${
-                                isCurrent
-                                  ? "border-[#064e3b] ring-2 ring-emerald-500/50 shadow-md scale-102"
-                                  : "border-gray-200 opacity-60 hover:opacity-100 hover:border-gray-400"
-                              }`}
-                            >
-                              <img
-                                src={img}
-                                alt={`Thumbnail ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </button>
-                          );
-                        })}
+                    <div className="lg:w-[min(100%,22rem)] xl:w-80 flex flex-col min-h-0 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-gray-200">
+                      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+                        <div>
+                          <h4 className="text-[11px] font-black uppercase tracking-wider text-emerald-800 mb-2">
+                            {p.aboutFacility}
+                          </h4>
+                          <p className="text-sm text-gray-700 leading-relaxed">
+                            {selectedFacility.description || p.defaultFacilityModalDesc}
+                          </p>
+                        </div>
+
+                        <ul className="space-y-2 text-xs text-gray-600">
+                          <li className="flex gap-2">
+                            <Shield className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <span>
+                              <span className="font-bold text-gray-900">{p.jurisdictionLabel}</span>{" "}
+                              {p.barangayWord} {tenantConfig.shortName || "Iba O' Este"}
+                            </span>
+                          </li>
+                          <li className="flex gap-2">
+                            <Building2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <span>
+                              <span className="font-bold text-gray-900">{p.accessLabel}</span> {p.facilityAccessNote}
+                            </span>
+                          </li>
+                        </ul>
                       </div>
-                    )}
-                  </div>
+
+                      <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50/80 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFacility(null)}
+                          className="w-full sm:w-auto px-4 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          {p.close}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedFacility(null);
+                            openAssistance("assistance");
+                          }}
+                          className="w-full sm:w-auto px-4 py-2.5 text-sm font-bold text-white rounded-lg transition-opacity hover:opacity-95 inline-flex items-center justify-center gap-2"
+                          style={{ backgroundColor: tenantConfig.primaryColor }}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          {p.requestFacilityUse}
+                        </button>
+                      </div>
+                    </div>
+                  </>
                 );
               })()}
-
-              {/* Facility Information Card */}
-              <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-200/90 shadow-xs space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-[#064e3b] pb-2 border-b border-gray-100 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-emerald-600" />
-                  Facility Overview &amp; Public Function
-                </h4>
-                <p className="text-sm text-gray-700 leading-relaxed font-medium">
-                  {selectedFacility.description ||
-                    "Modern public facility maintained and operated by the Barangay Government for community events, health services, and constituent assistance."}
-                </p>
-              </div>
-
-              {/* Facility Metadata Matrix */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
-                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
-                    Jurisdiction
-                  </span>
-                  <span className="font-black text-[#064e3b] uppercase truncate block">
-                    Barangay {tenantConfig.shortName || "Iba O' Este"}
-                  </span>
-                  <p className="text-[11px] text-gray-500 font-medium">
-                    Maintained by LGU
-                  </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
-                    Access &amp; Availability
-                  </span>
-                  <span className="font-black text-gray-900 uppercase truncate block">
-                    Constituent Public Use
-                  </span>
-                  <p className="text-[11px] text-emerald-700 font-medium">
-                    Regular Operating Hours
-                  </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
-                    Service Standard
-                  </span>
-                  <span className="font-black text-emerald-600 uppercase truncate block">
-                    100% Public Facility
-                  </span>
-                  <p className="text-[11px] text-gray-500 font-medium">
-                    Open for Constituent Requests
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 sm:p-5 bg-white border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setSelectedFacility(null)}
-                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
-              >
-                Close
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedFacility(null);
-                  setShowESumbong(true);
-                }}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#064e3b] via-[#059669] to-emerald-600 hover:from-[#022c22] hover:to-[#059669] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
-              >
-                <MessageCircle className="w-4 h-4 text-emerald-200" />
-                <span>Inquire / Request Facility Use</span>
-              </button>
             </div>
           </div>
         </div>
@@ -4926,7 +5665,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     style={{ color: tenantConfig.accentColor }}
                   />
                   <span>
-                    Barangay {tenantConfig.shortName} — Official Announcement
+                    {p.barangayWord} {tenantConfig.shortName} — {p.officialAnnouncement}
                   </span>
                 </div>
                 <button
@@ -4934,7 +5673,7 @@ export default function PortalPageContent({ initialTenantId }) {
                   className="px-5 py-2 text-white rounded-lg font-semibold text-sm transition-all shadow-md"
                   style={{ backgroundColor: tenantConfig.primaryColor }}
                 >
-                  Close
+                  {p.close}
                 </button>
               </div>
             </div>
@@ -4942,142 +5681,141 @@ export default function PortalPageContent({ initialTenantId }) {
         </div>
       )}
 
-      {/* Official Program Modal */}
+      {/* Program details modal */}
       {selectedProgram && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6"
           onClick={() => setSelectedProgram(null)}
         >
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200" />
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" />
 
           <div
-            className="relative z-10 w-full max-w-4xl max-h-[92vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 animate-in zoom-in-95 duration-200"
+            className="relative z-10 w-full sm:max-w-6xl lg:max-w-7xl h-[96vh] sm:h-[90vh] max-h-[96vh] bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Republic Header */}
-            <div className="bg-gradient-to-r from-[#064e3b] via-[#044a36] to-[#022c22] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-md flex-shrink-0">
-                  <Shield className="w-5 h-5 text-emerald-300" />
+            <div
+              className="px-4 py-3 sm:px-5 sm:py-4 text-white flex items-start sm:items-center justify-between gap-3 flex-shrink-0 border-b border-white/10"
+              style={{
+                background: `linear-gradient(135deg, ${tenantConfig.primaryColor} 0%, #022c22 100%)`,
+              }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center flex-shrink-0">
+                  <Target className="w-4 h-4" />
                 </div>
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-0.5">
-                    <Building2 className="w-3 h-3 text-amber-300" />
-                    Republic of the Philippines • Barangay {tenantConfig.shortName || "Iba O' Este"}
-                  </div>
-                  <h3 className="text-base sm:text-lg font-black tracking-tight text-white uppercase truncate max-w-md sm:max-w-xl">
-                    Official Program Details
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/70 truncate">
+                    {p.barangayWord} {tenantConfig.shortName || "Iba O' Este"} · {p.communityProgram}
+                  </p>
+                  <h3 className="text-base sm:text-lg font-black tracking-tight truncate">
+                    {selectedProgram.title}
                   </h3>
                 </div>
               </div>
-
               <button
                 type="button"
                 onClick={() => setSelectedProgram(null)}
-                className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-all cursor-pointer flex items-center justify-center"
+                aria-label="Close"
+                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Scrollable Body */}
-            <div className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-6 bg-slate-50/50">
-              {/* Program Banner */}
-              <div className="relative w-full aspect-[21/9] sm:aspect-[2.4/1] rounded-2xl overflow-hidden bg-slate-900 shadow-md">
-                <img
-                  src={selectedProgram.image || "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=800"}
-                  alt={selectedProgram.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#022c22] via-[#022c22]/40 to-transparent" />
-                
-                <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-end justify-between gap-3 text-white">
-                  <div className="space-y-1">
-                    <span className="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/20 text-emerald-300 inline-block">
-                      {selectedProgram.category || "Public Initiative"}
-                    </span>
-                    <h2 className="text-lg sm:text-2xl font-black uppercase text-white tracking-tight drop-shadow-sm">
-                      {selectedProgram.title}
-                    </h2>
-                  </div>
-                  <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-white border border-emerald-300/40">
-                    ● Active Mandate
-                  </span>
-                </div>
-              </div>
+            <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
+              {(() => {
+                const programImage =
+                  selectedProgram.image ||
+                  "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=1200";
 
-              {/* Program Details Overview */}
-              <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-200/90 shadow-xs space-y-4">
-                <h4 className="text-xs font-black uppercase tracking-wider text-[#064e3b] pb-2 border-b border-gray-100 flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-emerald-600" />
-                  Program Description &amp; Objectives
-                </h4>
-                <p className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-line">
-                  {selectedProgram.description || "Comprehensive community assistance and development initiative enacted by the Barangay Local Government Unit."}
-                </p>
-              </div>
+                return (
+                  <>
+                    <div className="flex-1 lg:flex-[1.75] min-h-[48vh] sm:min-h-0 flex flex-col bg-neutral-950 min-w-0 relative">
+                      <div className="relative flex-1 w-full min-h-0 overflow-hidden">
+                        <img
+                          src={programImage}
+                          alt=""
+                          aria-hidden
+                          className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 saturate-125"
+                        />
+                        <div className="absolute inset-0 bg-black/20" />
+                        <img
+                          src={programImage}
+                          alt={selectedProgram.title}
+                          className="absolute inset-0 z-10 w-full h-full object-contain"
+                        />
+                        <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-2">
+                          <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-white/15 backdrop-blur-md border border-white/25">
+                            {selectedProgram.category || p.publicInitiative}
+                          </span>
+                          <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-white bg-emerald-500/90 border border-emerald-300/40 inline-flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                            {p.active}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-              {/* Program Metadata Matrix */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
-                    Target Beneficiaries
-                  </span>
-                  <span className="font-black text-gray-900 uppercase">
-                    All Qualified Residents
-                  </span>
-                  <p className="text-[11px] text-gray-500 font-medium">
-                    Verified through Master Census
-                  </p>
-                </div>
+                    <div className="lg:w-[min(100%,22rem)] xl:w-80 flex flex-col min-h-0 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-gray-200">
+                      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+                        <div>
+                          <h4 className="text-[11px] font-black uppercase tracking-wider text-emerald-800 mb-2 flex items-center gap-1.5">
+                            <BookOpen className="w-3.5 h-3.5" />
+                            {p.programDescTitle}
+                          </h4>
+                          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                            {selectedProgram.description || p.defaultProgramModalDesc}
+                          </p>
+                        </div>
 
-                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
-                    Coverage &amp; Jurisdiction
-                  </span>
-                  <span className="font-black text-[#064e3b] uppercase">
-                    Purok 1 — 7 (Full Barangay)
-                  </span>
-                  <p className="text-[11px] text-gray-500 font-medium">
-                    {tenantConfig.name || "Barangay Iba O' Este"}
-                  </p>
-                </div>
+                        <ul className="space-y-2 text-xs text-gray-600">
+                          <li className="flex gap-2">
+                            <Users className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <span>
+                              <span className="font-bold text-gray-900">{p.programBeneficiaries}</span> {p.allQualifiedResidents}
+                            </span>
+                          </li>
+                          <li className="flex gap-2">
+                            <Shield className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <span>
+                              <span className="font-bold text-gray-900">{p.programCoverage}</span> {p.programCoverageFull}{" "}
+                              {tenantConfig.shortName || "Iba O' Este"}
+                            </span>
+                          </li>
+                          <li className="flex gap-2">
+                            <Award className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <span>
+                              <span className="font-bold text-gray-900">{p.programFee}</span> {p.programFeeFree}
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
 
-                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
-                    Service Fee
-                  </span>
-                  <span className="font-black text-emerald-600 uppercase">
-                    100% Free / Subsidized
-                  </span>
-                  <p className="text-[11px] text-emerald-700 font-medium">
-                    Funded via Sangguniang Barangay
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer Actions */}
-            <div className="p-4 sm:p-5 bg-white border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setSelectedProgram(null)}
-                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
-              >
-                Close
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProgram(null);
-                  setShowESumbong(true);
-                }}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#064e3b] via-[#059669] to-emerald-600 hover:from-[#022c22] hover:to-[#059669] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
-              >
-                <MessageCircle className="w-4 h-4 text-emerald-200" />
-                <span>Inquire / Submit Concern</span>
-              </button>
+                      <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50/80 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProgram(null)}
+                          className="w-full sm:w-auto px-4 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          {p.close}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedProgram(null);
+                            openAssistance("assistance");
+                          }}
+                          className="w-full sm:w-auto px-4 py-2.5 text-sm font-bold text-white rounded-lg transition-opacity hover:opacity-95 inline-flex items-center justify-center gap-2"
+                          style={{ backgroundColor: tenantConfig.primaryColor }}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          {p.askAboutProgram}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -5138,29 +5876,38 @@ export default function PortalPageContent({ initialTenantId }) {
 
 
 // Track Request Widget Component
-function TrackRequestWidget({ tenantId, tenantConfig }) {
+function TrackRequestWidget({ tenantId, tenantConfig, labels: labelsProp }) {
+  const labels = labelsProp || getPortalStrings();
   const [refNumber, setRefNumber] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState(null);
   const [error, setError] = React.useState('');
 
   const statusConfig = {
-    pending:          { label: 'Submitted',            color: 'bg-blue-100 text-blue-700',   step: 1 },
-    submitted:        { label: 'Submitted',            color: 'bg-blue-100 text-blue-700',   step: 1 },
-    staff_review:     { label: 'Under Review',         color: 'bg-blue-100 text-blue-700',   step: 2 },
-    processing:       { label: 'Secretary Approval',   color: 'bg-purple-100 text-purple-700', step: 3 },
-    secretary_approval: { label: 'Secretary Approval', color: 'bg-purple-100 text-purple-700', step: 3 },
-    captain_approval: { label: 'Captain Approval',     color: 'bg-violet-100 text-violet-700', step: 4 },
-    oic_review:       { label: 'Releasing Team',       color: 'bg-indigo-100 text-indigo-700', step: 5 },
-    ready:            { label: 'Ready for Pickup',     color: 'bg-green-100 text-green-700', step: 6 },
-    ready_for_pickup: { label: 'Ready for Pickup',     color: 'bg-green-100 text-green-700', step: 6 },
-    released:         { label: 'Released / Claimed',   color: 'bg-gray-100 text-gray-600',   step: 7 },
-    rejected:         { label: 'Rejected',             color: 'bg-red-100 text-red-700',     step: 0 },
-    returned:         { label: 'Returned for Revision', color: 'bg-orange-100 text-orange-700', step: 2 },
-    cancelled:        { label: 'Cancelled',            color: 'bg-gray-100 text-gray-500',   step: 0 },
+    pending:          { label: labels.statusSubmitted, color: 'bg-blue-100 text-blue-700',   step: 1 },
+    submitted:        { label: labels.statusSubmitted, color: 'bg-blue-100 text-blue-700',   step: 1 },
+    staff_review:     { label: labels.statusUnderReview, color: 'bg-blue-100 text-blue-700',   step: 2 },
+    processing:       { label: labels.statusSecretaryApproval, color: 'bg-purple-100 text-purple-700', step: 3 },
+    secretary_approval: { label: labels.statusSecretaryApproval, color: 'bg-purple-100 text-purple-700', step: 3 },
+    captain_approval: { label: labels.statusCaptainApproval, color: 'bg-violet-100 text-violet-700', step: 4 },
+    oic_review:       { label: labels.statusReleasingTeam, color: 'bg-indigo-100 text-indigo-700', step: 5 },
+    ready:            { label: labels.statusReadyForPickup, color: 'bg-green-100 text-green-700', step: 6 },
+    ready_for_pickup: { label: labels.statusReadyForPickup, color: 'bg-green-100 text-green-700', step: 6 },
+    released:         { label: labels.statusReleased, color: 'bg-gray-100 text-gray-600',   step: 7 },
+    rejected:         { label: labels.statusRejected, color: 'bg-red-100 text-red-700',     step: 0 },
+    returned:         { label: labels.statusReturned, color: 'bg-orange-100 text-orange-700', step: 2 },
+    cancelled:        { label: labels.statusCancelled, color: 'bg-gray-100 text-gray-500',   step: 0 },
   };
 
-  const steps = ['Submitted', 'Review', 'Secretary', 'Captain', 'Releasing', 'Ready', 'Released'];
+  const steps = [
+    labels.trackStepSubmitted,
+    labels.trackStepReview,
+    labels.trackStepSecretary,
+    labels.trackStepCaptain,
+    labels.trackStepReleasing,
+    labels.trackStepReady,
+    labels.trackStepReleased,
+  ];
 
   const handleTrack = async (e) => {
     e.preventDefault();
@@ -5176,10 +5923,10 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
       if (data.success && data.data) {
         setResult(data.data);
       } else {
-        setError('Reference number not found. Please check and try again.');
+        setError(labels.trackNotFound);
       }
     } catch {
-      setError('Unable to check status. Please try again.');
+      setError(labels.trackError);
     } finally {
       setLoading(false);
     }
@@ -5196,7 +5943,7 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
             type="text"
             value={refNumber}
             onChange={e => { setRefNumber(e.target.value); setError(''); setResult(null); }}
-            placeholder="e.g. BC-2026-00001"
+            placeholder={labels.trackPlaceholder}
             className="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:border-transparent shadow-sm"
             style={{ '--tw-ring-color': tenantConfig.primaryColor }}
           />
@@ -5208,7 +5955,7 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
           style={{ backgroundColor: tenantConfig.primaryColor }}
         >
           {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search className="w-4 h-4" />}
-          {loading ? 'Checking...' : 'Track'}
+          {loading ? labels.trackChecking : labels.trackButton}
         </button>
       </form>
 
@@ -5223,7 +5970,7 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
           {/* Status Header */}
           <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mb-1">Reference Number</p>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mb-1">{labels.trackRefNumber}</p>
               <p className="text-lg font-bold text-gray-900 font-mono">{result.reference_number}</p>
             </div>
             <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
@@ -5232,27 +5979,27 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
           {/* Applicant Info */}
           <div className="px-6 py-4 border-b border-gray-50 grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">Applicant</p>
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">{labels.trackApplicant}</p>
               <p className="text-sm font-semibold text-gray-800">{result.full_name || result.applicant_name || '—'}</p>
             </div>
             <div>
-              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">Certificate Type</p>
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">{labels.trackCertType}</p>
               <p className="text-sm font-semibold text-gray-800 capitalize">{result.certificate_type?.replace(/_/g, ' ')}</p>
             </div>
             <div>
-              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">Date Submitted</p>
-              <p className="text-sm font-semibold text-gray-800">{result.created_at ? new Date(result.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">{labels.trackDateSubmitted}</p>
+              <p className="text-sm font-semibold text-gray-800">{result.created_at ? new Date(result.created_at).toLocaleDateString('fil-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
             </div>
             <div>
-              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">Last Updated</p>
-              <p className="text-sm font-semibold text-gray-800">{result.updated_at ? new Date(result.updated_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-1">{labels.trackLastUpdated}</p>
+              <p className="text-sm font-semibold text-gray-800">{result.updated_at ? new Date(result.updated_at).toLocaleDateString('fil-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
             </div>
           </div>
 
           {/* Progress Steps */}
           {!['rejected', 'cancelled'].includes(result.status) && (
             <div className="px-6 py-5">
-              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-4">Progress</p>
+              <p className="text-[11px] text-gray-400 uppercase font-medium tracking-wide mb-4">{labels.trackProgress}</p>
               <div className="flex items-center gap-0">
                 {steps.map((step, i) => {
                   const stepNum = i + 1;
@@ -5281,17 +6028,17 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
 
           {result.status === 'rejected' && (
             <div className="px-6 py-4 bg-red-50 border-t border-red-100">
-              <p className="text-sm text-red-600 font-medium">Your request was not approved. Please visit the Barangay Hall for more information.</p>
+              <p className="text-sm text-red-600 font-medium">{labels.trackRejectedMsg}</p>
             </div>
           )}
           {['ready', 'ready_for_pickup'].includes(result.status) && (
             <div className="px-6 py-4 border-t border-gray-50" style={{ backgroundColor: `${tenantConfig.primaryColor}08` }}>
-              <p className="text-sm font-semibold" style={{ color: tenantConfig.primaryColor }}>🎉 Your certificate is ready! Please visit the Barangay Hall to claim it. Bring a valid ID.</p>
+              <p className="text-sm font-semibold" style={{ color: tenantConfig.primaryColor }}>🎉 {labels.trackReadyMsg}</p>
             </div>
           )}
           {result.status === 'oic_review' && (
             <div className="px-6 py-4 border-t border-gray-50" style={{ backgroundColor: `${tenantConfig.primaryColor}08` }}>
-              <p className="text-sm font-semibold" style={{ color: tenantConfig.primaryColor }}>📦 Your request is at the Releasing Team for final review before release.</p>
+              <p className="text-sm font-semibold" style={{ color: tenantConfig.primaryColor }}>📦 {labels.trackOicMsg}</p>
             </div>
           )}
         </div>
@@ -5303,6 +6050,7 @@ function TrackRequestWidget({ tenantId, tenantConfig }) {
 
 function UpgradeNeededModal({ isOpen, onClose, featureName, tenantConfig }) {
   useScrollLock(isOpen);
+  const up = getPortalStrings();
   if (!isOpen) return null;
 
   return (
@@ -5325,14 +6073,11 @@ function UpgradeNeededModal({ isOpen, onClose, featureName, tenantConfig }) {
         </div>
         
         <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-4 tracking-tight">
-          Premium Feature
+          {up.premiumFeature}
         </h2>
         
         <p className="text-gray-500 text-base md:text-lg mb-8 leading-relaxed font-medium">
-          The <span className="font-bold text-gray-900">{featureName}</span> request 
-          is currently limited to specific subscription tiers. 
-          Please contact our <span className="italic">Barangay Secretariat</span> for 
-          manual processing or eligibility inquiries.
+          <span className="font-bold text-gray-900">{featureName}</span> {up.upgradeBody}
         </p>
 
         <button
@@ -5340,7 +6085,7 @@ function UpgradeNeededModal({ isOpen, onClose, featureName, tenantConfig }) {
           className="w-full py-4 rounded-2xl font-black text-white transition-all shadow-lg hover:-translate-y-1 hover:shadow-xl active:scale-95"
           style={{ backgroundColor: tenantConfig.primaryColor }}
         >
-          I Understand
+          {up.iUnderstand}
         </button>
       </div>
     </div>

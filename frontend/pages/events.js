@@ -194,11 +194,11 @@ export default function EventsPage() {
       return;
     }
 
-    // Validate file size (max 5MB before compression)
-    if (file.size > 5 * 1024 * 1024) {
+    // Hero banners: allow larger originals (upload API keeps full resolution for events)
+    if (file.size > 10 * 1024 * 1024) {
       setNotification({
         type: "error",
-        message: "Image too large. Please use an image under 5MB.",
+        message: "Image too large. Please use an image under 10MB.",
       });
       // Clear the input
       if (e.target) e.target.value = '';

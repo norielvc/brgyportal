@@ -1,16 +1,10 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
+import { supabase } from "../../../lib/supabase";
 
 export default async function handler(req, res) {
   try {
     const userRes = await authenticateToken(req, res);
     const tenantId = userRes?.tenant_id || "ibaoeste";
-
-    const supabase = getSupabase();
 
     if (req.method === "GET") {
       const { data, error } = await supabase

@@ -65,16 +65,27 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin requests
 }));
 
-// Rate limiting - disabled temporarily for Railway compatibility
-// const limiter = rateLimit({
-//   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-//   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-//   message: 'Too many requests from this IP, please try again later.',
-//   standardHeaders: true,
-//   legacyHeaders: false,
-//   validate: { xForwardedForHeader: false }
-// });
-// app.use('/api/', limiter);
+// Rate limiting (opt out with RATE_LIMIT_DISABLED=true)
+if (process.env.RATE_LIMIT_DISABLED !== 'true') {
+  const loginLimiter = rateLimit({
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_LOGIN_MAX, 10) || 30,
+    message: { success: false, message: 'Too many login attempts. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const apiLimiter = rateLimit({
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 300,
+    message: { success: false, message: 'Too many requests from this IP, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  app.use('/api/auth/login', loginLimiter);
+  app.use('/api', apiLimiter);
+}
 
 // CORS configuration
 const allowedOrigins = [

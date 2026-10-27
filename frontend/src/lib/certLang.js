@@ -7,8 +7,8 @@
  */
 
 export const LANGUAGES = [
+  { code: "tl", label: "Tagalog", native: "Tagalog", hint: "Magpatuloy sa Tagalog (inirerekomenda)" },
   { code: "en", label: "English", native: "English", hint: "Continue in English" },
-  { code: "tl", label: "Tagalog", native: "Tagalog", hint: "Magpatuloy sa Tagalog" },
 ];
 
 const STRINGS = {
@@ -369,9 +369,9 @@ const STRINGS = {
  * Returns a translator for the given language code.
  * Falls back to English for any missing key.
  */
-export function getStrings(lang) {
+export function getStrings(lang = "tl") {
   const base = STRINGS.en;
-  const active = STRINGS[lang] || base;
+  const active = STRINGS[lang] || STRINGS.tl;
   return { ...base, ...active };
 }
 

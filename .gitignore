@@ -79,3 +79,19 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Local data & backups (keep outside git — store on OneDrive/etc.)
+backup_before_deduplication/
+Resident/
+ID/
+traced_ec_cards.json
+~$*
+
+# Dev log dumps at repo root
+server_output*.txt
+frontend_output.txt
+last_lines.txt
+query
+
+# Archive is tracked; local scratch under archive is not
+_archive/**/local/

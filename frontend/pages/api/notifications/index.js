@@ -1,9 +1,5 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
+import { supabase } from "../../../lib/supabase";
 
 /**
  * GET /api/notifications - Get user's notifications
@@ -15,8 +11,6 @@ export default async function handler(req, res) {
 
   const tenantId = user.tenant_id;
   const userId = user._id;
-  const supabase = getSupabase();
-
   if (req.method === "GET") {
     try {
       const { limit = 50, unreadOnly = false } = req.query;

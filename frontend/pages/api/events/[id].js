@@ -5,11 +5,7 @@
  * Tenant isolation: tenantId always comes from JWT (user.tenant_id).
  */
 import { authenticateToken } from "../../../src/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
+import { supabase } from "../../../lib/supabase";
 
 export default async function handler(req, res) {
   try {
@@ -26,8 +22,6 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({ success: false, message: "Event ID is required" });
     }
-
-    const supabase = getSupabase();
 
     if (req.method === "PUT") {
       const { title, date, description, body, image } = req.body;
