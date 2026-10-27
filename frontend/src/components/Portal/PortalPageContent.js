@@ -1149,9 +1149,16 @@ export default function PortalPageContent({ initialTenantId }) {
     setAssistanceSuccess(false);
   };
 
+  const mobileBottomBarClearance = isInstalled
+    ? "pb-[calc(4.875rem+env(safe-area-inset-bottom,0px))]"
+    : "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]";
+  const mobileFabBottom = isInstalled
+    ? "bottom-[calc(4.875rem+env(safe-area-inset-bottom,0px)+0.5rem)]"
+    : "bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))]";
+
   return (
     <div
-      className="min-h-screen bg-gray-50 pb-[calc(4.875rem+env(safe-area-inset-bottom,0px))] md:pb-0"
+      className={`min-h-screen bg-gray-50 md:pb-0 ${mobileBottomBarClearance}`}
       style={{ fontFamily: "'Outfit', 'Inter', sans-serif" }}
     >
       <Head>
@@ -1613,7 +1620,7 @@ export default function PortalPageContent({ initialTenantId }) {
               aria-hidden
             />
 
-            <div className="absolute inset-0 z-[2] flex flex-col justify-end max-w-[1400px] mx-auto w-full px-4 pb-[8.25rem] sm:pb-[8.75rem] md:px-12 md:pb-24 md:justify-center md:items-stretch">
+            <div className="absolute inset-0 z-[2] flex flex-col justify-end max-w-[1400px] mx-auto w-full px-4 pb-[8.25rem] sm:pb-[8.75rem] md:px-12 md:pb-[5.5rem] lg:pb-24 md:items-stretch">
               <div className="max-w-2xl text-white w-full">
                 <span
                   className="inline-flex items-center px-3 py-1 rounded text-[10px] font-bold uppercase tracking-[0.15em] mb-2 md:mb-5 text-white"
@@ -4774,7 +4781,9 @@ export default function PortalPageContent({ initialTenantId }) {
       </footer>
 
       {/* Floating Assistance Widget — Government Style */}
-      <div className="fixed bottom-[calc(4.875rem+env(safe-area-inset-bottom,0px)+0.5rem)] right-3 left-3 md:left-auto md:bottom-4 md:right-4 z-50 flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
+      <div
+        className={`fixed right-3 left-3 md:left-auto md:bottom-4 md:right-4 z-50 flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto ${mobileFabBottom}`}
+      >
         {/* Expanded Panel */}
         {showAssistance && !assistanceMode && (
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-[min(100%,18rem)] md:w-72 overflow-hidden animate-fade-in">
@@ -5906,20 +5915,22 @@ export default function PortalPageContent({ initialTenantId }) {
         }
       `}</style>
 
-      {/* Resident Mobile Bottom Action Bar */}
-      <ResidentMobileActionBar
-        onRequestDocs={() => {
-          const formsSection = document.getElementById("forms");
-          if (formsSection) formsSection.scrollIntoView({ behavior: "smooth" });
-        }}
-        onTrackStatus={() => {
-          const trackSection = document.getElementById("track");
-          if (trackSection) trackSection.scrollIntoView({ behavior: "smooth" });
-        }}
-        onESumbong={openESumbong}
-        onInstallApp={promptInstall}
-        isInstalled={isInstalled}
-      />
+      {/* Resident Mobile Bottom Action Bar — installed PWA only (hidden in mobile browser) */}
+      {isInstalled && (
+        <ResidentMobileActionBar
+          onRequestDocs={() => {
+            const formsSection = document.getElementById("forms");
+            if (formsSection) formsSection.scrollIntoView({ behavior: "smooth" });
+          }}
+          onTrackStatus={() => {
+            const trackSection = document.getElementById("track");
+            if (trackSection) trackSection.scrollIntoView({ behavior: "smooth" });
+          }}
+          onESumbong={openESumbong}
+          onInstallApp={promptInstall}
+          isInstalled={isInstalled}
+        />
+      )}
 
       {/* Global PWA Install Modal for Residents */}
       <InstallAppModal
