@@ -1,4 +1,4 @@
-import { supabase, isSupabaseServerConfigured } from "../../../lib/supabase";
+import { supabase, isSupabaseServerConfigured } from "../../lib/supabase";
 
 export default async function handler(req, res) {
   const tenantId = req.headers["x-tenant-id"];
