@@ -100,7 +100,10 @@ export default function AchievementsPage() {
   const fetchAchievements = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/achievements`);
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/achievements`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -123,10 +126,51 @@ export default function AchievementsPage() {
     }
   }, [notification]);
 
+  const uploadAchievementImageIfNeeded = async (image, token) => {
+    if (!image || !String(image).startsWith("data:")) {
+      return image || "";
+    }
+    const response = await fetch("/api/upload/image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ base64: image, folder: "achievements" }),
+    });
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || "Failed to upload achievement image");
+    }
+    return data.url;
+  };
+
   const saveAllChanges = async () => {
     try {
       setSaving(true);
       const token = getAuthToken();
+      if (!token) {
+        setNotification({
+          type: "error",
+          message: "Please log in again to save achievements.",
+        });
+        return;
+      }
+
+      setNotification({ type: "info", message: "Saving achievements..." });
+
+      const payload = await Promise.all(
+        achievements.map(async (a, index) => ({
+          title: a.title,
+          category: a.category || "",
+          description: a.description || "",
+          year: a.year || new Date().getFullYear().toString(),
+          image: await uploadAchievementImageIfNeeded(a.image, token),
+          color_class: a.color_class || "bg-blue-500",
+          text_color: a.text_color || "blue-400",
+          order_index: index,
+        })),
+      );
 
       const response = await fetch(`${API_URL}/achievements/bulk/update`, {
         method: "PUT",
@@ -134,10 +178,23 @@ export default function AchievementsPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ achievements }),
+        body: JSON.stringify({ achievements: payload }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(`Server error (${response.status}). Try smaller images or try again.`);
+      }
+
+      if (!response.ok || !data.success) {
+        setNotification({
+          type: "error",
+          message: data?.message || `Failed to save (${response.status})`,
+        });
+        return;
+      }
 
       if (data.success) {
         setHasChanges(false);
@@ -167,25 +224,59 @@ export default function AchievementsPage() {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
       setNotification({
         type: "error",
-        message: "Image size must be less than 2MB",
+        message: "Image size must be less than 5MB",
+      });
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setNotification({
+        type: "error",
+        message: "Please select an image file",
       });
       return;
     }
 
+    setNotification({ type: "info", message: "Uploading image..." });
+
+    const oldUrl = isEditing ? editingAchievement?.image : formData.image;
+
     const reader = new FileReader();
-    reader.onloadend = () => {
-      if (isEditing && editingAchievement) {
-        setEditingAchievement({ ...editingAchievement, image: reader.result });
-      } else {
-        setFormData({ ...formData, image: reader.result });
+    reader.onloadend = async () => {
+      try {
+        const token = getAuthToken();
+        const response = await fetch("/api/upload/image", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            base64: reader.result,
+            folder: "achievements",
+            oldUrl: oldUrl && !String(oldUrl).startsWith("data:") ? oldUrl : undefined,
+          }),
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || "Upload failed");
+
+        if (isEditing && editingAchievement) {
+          setEditingAchievement({ ...editingAchievement, image: data.url });
+        } else {
+          setFormData({ ...formData, image: data.url });
+        }
+        setNotification({
+          type: "success",
+          message: "Image uploaded successfully",
+        });
+      } catch (err) {
+        setNotification({
+          type: "error",
+          message: err.message || "Failed to upload image",
+        });
       }
-      setNotification({
-        type: "success",
-        message: "Image uploaded successfully",
-      });
     };
     reader.readAsDataURL(file);
   };
