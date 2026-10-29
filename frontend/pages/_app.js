@@ -2,7 +2,6 @@ import "../src/styles/globals.css";
 import { useEffect } from "react";
 import Head from "next/head";
 import OfflineBanner from "@/components/UI/OfflineBanner";
-import PushNotificationPrompt from "@/components/UI/PushNotificationPrompt";
 
 export default function App({ Component, pageProps }) {
   useEffect(() => {
@@ -112,7 +111,6 @@ export default function App({ Component, pageProps }) {
         />
       </Head>
       <OfflineBanner />
-      <PushNotificationPrompt />
       {getLayout(<Component {...pageProps} />)}
     </>
   );

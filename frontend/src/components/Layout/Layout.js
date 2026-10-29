@@ -5,6 +5,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MobileBottomNav from "./MobileBottomNav";
 import InstallAppModal from "../UI/InstallAppModal";
+import PushNotificationPrompt from "../UI/PushNotificationPrompt";
 import ESumbongModal from "../Forms/ESumbongModal";
 import { isAuthenticated } from "@/lib/auth";
 import usePwa from "@/lib/usePwa";
@@ -129,6 +130,8 @@ export default function Layout({
       ) : (
         <main className="min-h-screen">{children}</main>
       )}
+
+      {requireAuth && <PushNotificationPrompt />}
 
       {/* Global PWA Install Modal */}
       <InstallAppModal
