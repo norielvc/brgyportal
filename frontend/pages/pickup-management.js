@@ -58,6 +58,7 @@ export default function PickupManagementPage() {
       if (data.success) {
         setIsConfirmModalOpen(false);
         const refNum = confirmingCertificate?.reference_number;
+        setConfirmingCertificate(null);
         setPickupName('');
         setSelectedCertificate(null);
         handleRefresh();
@@ -607,8 +608,14 @@ export default function PickupManagementPage() {
       {isConfirmModalOpen && confirmingCertificate && (
         <ConfirmPickupModal
           certificate={confirmingCertificate}
-          onClose={() => setIsConfirmModalOpen(false)}
-          onConfirm={handleManualRelease}
+          onClose={() => {
+            setIsConfirmModalOpen(false);
+            setConfirmingCertificate(null);
+            setPickupName('');
+          }}
+          onConfirm={() =>
+            handleManualRelease(confirmingCertificate.id, pickupName)
+          }
           pickupName={pickupName}
           setPickupName={setPickupName}
           confirming={confirmingPickup}

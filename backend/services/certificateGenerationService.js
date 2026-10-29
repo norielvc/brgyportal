@@ -132,19 +132,25 @@ class CertificateGenerationService {
             const uniqueProcessorCodes = [...new Set(previousProcessors)].join(' / ');
 
             // 1. Get Chairman's Signature specifically for rendering in the PDF
-            const captainSigRecord = (history || []).find(h =>
-                (h.action === 'approve' || h.action === 'forward' || h.action === 'create') &&
-                h.signature_data &&
-                new Date(h.created_at).getTime() > lastReturnTime &&
-                (
-                    h.step_name?.toLowerCase().includes('captain') ||
-                    h.step_name?.toLowerCase().includes('chairman') ||
-                    h.step_name?.toLowerCase().includes('punong') ||
-                    h.official_role?.toLowerCase().includes('captain') ||
-                    h.official_role?.toLowerCase().includes('chairman') ||
-                    h.official_role?.toLowerCase().includes('punong')
-                )
-            );
+            const captainSigRecord = (history || []).find(h => {
+                if (!(h.action === 'approve' || h.action === 'forward' || h.action === 'create')) return false;
+                if (!h.signature_data) return false;
+                if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+
+                const prevStatus = (h.previous_status || '').toLowerCase();
+                if (prevStatus === 'captain_approval') return true;
+
+                const step = (h.step_name || '').toLowerCase();
+                const role = (h.official_role || '').toLowerCase();
+                return (
+                    step.includes('captain') ||
+                    step.includes('chairman') ||
+                    step.includes('punong') ||
+                    role.includes('captain') ||
+                    role.includes('chairman') ||
+                    role.includes('punong')
+                );
+            });
             const captainSignature = captainSigRecord?.signature_data;
 
             // 1b. Get Secretary's Signature specifically

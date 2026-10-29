@@ -62,15 +62,16 @@ export default function Layout({
 
   useEffect(() => {
     setIsMounted(true);
-    if (requireAuth) {
-      if (!isAuthenticated()) {
-        router.replace("/login");
-      } else {
-        setIsLoading(false);
-      }
-    } else {
+    if (!requireAuth) {
       setIsLoading(false);
+      return;
     }
+    if (!isAuthenticated()) {
+      setIsLoading(false);
+      router.replace("/login");
+      return;
+    }
+    setIsLoading(false);
   }, [requireAuth, router]);
 
   if (requireAuth && (!isMounted || isLoading)) {

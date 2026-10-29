@@ -29,9 +29,11 @@ export default async function handler(req, res) {
   const resendFrom =
     process.env.RESEND_FROM || "BrgyDesk <noreply@brgydesk.app>";
   if (!resendApiKey) {
-    return res.status(500).json({
+    return res.status(503).json({
       success: false,
-      message: "Email service not configured. Set RESEND_API_KEY in env.",
+      code: "EMAIL_NOT_CONFIGURED",
+      message:
+        "Email is not configured on this server (missing RESEND_API_KEY). Pickup/release still works; add the key in frontend .env.local to enable sending.",
     });
   }
 

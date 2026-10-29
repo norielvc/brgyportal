@@ -1,6 +1,76 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
 
+function shouldPersistCaptainSignature({
+  certStatus,
+  stepName,
+  officialRole,
+  signatureData,
+}) {
+  if (!signatureData) return false;
+  if (certStatus === "captain_approval") return true;
+  const step = (stepName || "").toLowerCase();
+  const role = (officialRole || "").toLowerCase();
+  return (
+    step.includes("captain") ||
+    step.includes("chairman") ||
+    step.includes("punong") ||
+    role.includes("captain") ||
+    role.includes("chairman") ||
+    role.includes("punong")
+  );
+}
+
+function mergeCaptainSignatureDetails(
+  existingDetails,
+  signatureData,
+  certStatus,
+  stepName,
+  officialRole,
+) {
+  if (
+    !shouldPersistCaptainSignature({
+      certStatus,
+      stepName,
+      officialRole,
+      signatureData,
+    })
+  ) {
+    return null;
+  }
+  let details = existingDetails;
+  if (typeof details === "string") {
+    try {
+      details = JSON.parse(details);
+    } catch {
+      details = {};
+    }
+  }
+  if (!details || typeof details !== "object") details = {};
+  return {
+    ...details,
+    captain_signature: signatureData,
+    captain_signed_at: new Date().toISOString(),
+  };
+}
+
+function clearCaptainSignatureDetails(existingDetails) {
+  let details = existingDetails;
+  if (typeof details === "string") {
+    try {
+      details = JSON.parse(details);
+    } catch {
+      details = {};
+    }
+  }
+  if (!details || typeof details !== "object") details = {};
+  const next = { ...details };
+  delete next.captain_signature;
+  delete next.captainSignature;
+  delete next.captain_signed_at;
+  return next;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "PUT")
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -113,6 +183,27 @@ export default async function handler(req, res) {
     previous_status: cert.status,
     new_status: newCertStatus,
   }]);
+
+  let detailsPatch = null;
+  if (action === "return" || action === "send_back_to_start") {
+    detailsPatch = clearCaptainSignatureDetails(cert.details);
+  } else {
+    const mergedCaptainDetails = mergeCaptainSignatureDetails(
+      cert.details,
+      signatureData,
+      cert.status,
+      assignment.step_name,
+      activeStep?.officialRole,
+    );
+    if (mergedCaptainDetails) detailsPatch = mergedCaptainDetails;
+  }
+  if (detailsPatch) {
+    await supabase
+      .from("certificate_requests")
+      .update({ details: detailsPatch, updated_at: new Date().toISOString() })
+      .eq("id", requestId)
+      .eq("tenant_id", tenantId);
+  }
 
   // 7. If approved, create next-step assignments from workflow config
   if (action === "approve" && !["released", "rejected", "cancelled"].includes(newCertStatus)) {

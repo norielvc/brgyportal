@@ -336,6 +336,7 @@ export default function RequestsPage() {
 
   const [userSignature, setUserSignature] = useState(null);
   const [requestHistory, setRequestHistory] = useState([]);
+  const [pendingActionCount, setPendingActionCount] = useState(0);
 
   // Handle clicking outside of dropdowns
   useEffect(() => {
@@ -400,41 +401,56 @@ export default function RequestsPage() {
     setCurrentUser(user);
 
     const initializeData = async () => {
-      // 1. Load workflows first so isUserAssignedToRequest has the data it needs to perform Smart Merge
-      let loadedWorkflows = null;
+      let loadedWorkflows = {};
       try {
         const token = getAuthToken();
-        const response = await fetch(`${API_URL}/workflows`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        const data = await response.json();
-        if (data.success && data.data && Object.keys(data.data).length > 0) {
-          loadedWorkflows = data.data;
-          setWorkflows(data.data);
+        if (!token) {
+          setLoading(false);
+          return;
         }
-      } catch (error) {
-        console.log("Could not load workflows from API:", error);
-      }
 
-      // Fallback to localStorage if API fails
-      if (!loadedWorkflows) {
-        const savedWorkflows = localStorage.getItem("certificateWorkflows");
-        if (savedWorkflows) {
-          loadedWorkflows = JSON.parse(savedWorkflows);
-          setWorkflows(loadedWorkflows);
-        } else {
-          loadedWorkflows = {}; // prevent crash
+        // 1. Load workflows first so isUserAssignedToRequest has the data it needs to perform Smart Merge
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 20000);
+          const response = await fetch(`${API_URL}/workflows`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+          const data = await response.json();
+          if (data.success && data.data && Object.keys(data.data).length > 0) {
+            loadedWorkflows = data.data;
+            setWorkflows(data.data);
+          }
+        } catch (error) {
+          console.log("Could not load workflows from API:", error);
         }
+
+        // Fallback to localStorage if API fails
+        if (!loadedWorkflows || Object.keys(loadedWorkflows).length === 0) {
+          const savedWorkflows = localStorage.getItem("certificateWorkflows");
+          if (savedWorkflows) {
+            try {
+              loadedWorkflows = JSON.parse(savedWorkflows);
+              setWorkflows(loadedWorkflows);
+            } catch {
+              loadedWorkflows = {};
+            }
+          }
+        }
+
+        // 2. Fetch User Signatures
+        fetchUserSignature();
+
+        // 3. Now fetch requests (passing the loaded workflows so the Smart Merge works immediately)
+        await fetchRequests(loadedWorkflows, user);
+      } finally {
+        setLoading(false);
       }
-
-      // 2. Fetch User Signatures
-      fetchUserSignature();
-
-      // 3. Now fetch requests (passing the loaded workflows so the Smart Merge works immediately)
-      await fetchRequests(loadedWorkflows, user);
     };
 
     initializeData();
@@ -472,6 +488,16 @@ export default function RequestsPage() {
     }
   }, [viewMode]);
 
+  const fetchWithTimeout = async (url, options = {}, ms = 20000) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
   const fetchRequests = async (
     activeWorkflows = workflows,
     activeUser = currentUser,
@@ -479,10 +505,13 @@ export default function RequestsPage() {
     setLoading(true);
     try {
       const token = getAuthToken();
+      if (!token) {
+        return;
+      }
 
       // Always fetch BOTH or at least counts to keep badges accurate
       // 1. Fetch My Assignments
-      const assignedRes = await fetch(
+      const assignedRes = await fetchWithTimeout(
         `${API_URL}/workflow-assignments/my-assignments`,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -494,7 +523,7 @@ export default function RequestsPage() {
         : [];
 
       // 2. Fetch All Requests
-      const allRes = await fetch(`${API_URL}/certificates`, {
+      const allRes = await fetchWithTimeout(`${API_URL}/certificates`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const allData = await allRes.json();
@@ -1213,9 +1242,6 @@ export default function RequestsPage() {
       // Remove duplicates based on ID
       return arr.findIndex((r) => r.id === req.id) === index;
     });
-
-  // Count requests assigned to current user
-  const [pendingActionCount, setPendingActionCount] = useState(0);
 
   // Fetch assignment counts for the floating orange badge
   useEffect(() => {
@@ -5674,13 +5700,301 @@ const defaultOfficials = {
 };
 
 // Certificate Preview Modal Component
+/** Wait for certificate images (signatures, logos) before html2canvas capture. */
+function waitForDocumentImages(root, timeoutMs = 8000) {
+  if (!root) return Promise.resolve();
+  const imgs = Array.from(root.querySelectorAll("img"));
+  return Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise((resolve) => {
+          if (img.complete && img.naturalWidth > 0) return resolve();
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+          setTimeout(done, timeoutMs);
+        }),
+    ),
+  );
+}
+
+/** Inline live img sources so print/PDF windows keep signatures (data URLs). */
+async function cloneCertificateWithEmbeddedImages(sourceEl) {
+  const clone = sourceEl.cloneNode(true);
+  const liveImgs = sourceEl.querySelectorAll("img");
+  const cloneImgs = clone.querySelectorAll("img");
+
+  await Promise.all(
+    Array.from(cloneImgs).map(async (img, idx) => {
+      const live = liveImgs[idx];
+      if (!live) return;
+      const src = live.currentSrc || live.src;
+      if (!src) return;
+
+      if (src.startsWith("data:")) {
+        img.setAttribute("src", src);
+        return;
+      }
+
+      try {
+        if (live.complete && live.naturalWidth > 0) {
+          const canvas = document.createElement("canvas");
+          canvas.width = live.naturalWidth;
+          canvas.height = live.naturalHeight;
+          canvas.getContext("2d").drawImage(live, 0, 0);
+          img.setAttribute("src", canvas.toDataURL("image/png"));
+          return;
+        }
+        const resp = await fetch(src);
+        const blob = await resp.blob();
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        img.setAttribute("src", dataUrl);
+      } catch {
+        img.setAttribute("src", src);
+      }
+    }),
+  );
+
+  return clone;
+}
+
+/** html2canvas often drops mix-blend-mode signatures on white backgrounds. */
+function normalizeCloneForCanvasCapture(clonedDoc) {
+  if (!clonedDoc) return;
+  clonedDoc.querySelectorAll(".mix-blend-multiply, [style*='mix-blend-mode']").forEach((el) => {
+    el.classList.remove("mix-blend-multiply");
+    el.style.mixBlendMode = "normal";
+  });
+  clonedDoc.querySelectorAll(".certificate-container, html, body").forEach((el) => {
+    el.style.overflow = "visible";
+  });
+}
+
+const CAPTAIN_SIGNATURE_ROLES = [
+  "BRGY. CAPTAIN",
+  "CHAIRMAN",
+  "BARANGAY CHAIRMAN",
+  "PUNONG BARANGAY",
+  "CAPTAIN",
+  "PUNONG",
+];
+
+function computeLastReturnTimeFromHistory(history) {
+  const PROGRESS_ACTIONS = [
+    "create",
+    "submitted",
+    "submit",
+    "approve",
+    "forward",
+    "physical_inspection",
+  ];
+  const returnEvents = (history || []).filter((h) => {
+    const action = (h.action || "").toLowerCase();
+    const newStatus = (h.new_status || "").toLowerCase();
+    if (PROGRESS_ACTIONS.includes(action)) return false;
+    if (
+      [
+        "reject",
+        "return",
+        "send_back_to_start",
+        "send_back",
+        "sent_back",
+        "cancel",
+        "reset",
+      ].some((a) => action.includes(a))
+    ) {
+      return true;
+    }
+    if (["rejected", "returned", "cancelled"].includes(newStatus)) return true;
+    return false;
+  });
+  return returnEvents.length > 0
+    ? Math.max(...returnEvents.map((h) => new Date(h.created_at).getTime()))
+    : 0;
+}
+
+/** Build A4 PDF from certificate DOM (shared by Download + Print). */
+async function buildCertificatePdfFromElement(certificateEl) {
+  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+    import("html2canvas"),
+    import("jspdf"),
+  ]);
+
+  const element = await cloneCertificateWithEmbeddedImages(certificateEl);
+
+  let allCSS = "";
+  Array.from(document.styleSheets).forEach((sheet) => {
+    try {
+      Array.from(sheet.cssRules || []).forEach((rule) => {
+        allCSS += rule.cssText + "\n";
+      });
+    } catch (_e) {}
+  });
+
+  const linkHrefs = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+    .map((l) => l.href)
+    .filter(Boolean);
+
+  const iframe = document.createElement("iframe");
+  iframe.style.visibility = "hidden";
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "210mm";
+  iframe.style.height = "297mm";
+  iframe.style.border = "none";
+  iframe.style.zIndex = "-9999";
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentWindow.document;
+
+  iframeDoc.write(`<!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          ${linkHrefs.map((href) => `<link rel="stylesheet" href="${href}" />`).join("\n")}
+          <style>
+            ${allCSS}
+            html, body {
+              margin: 0;
+              padding: 0;
+              width: 210mm;
+              min-height: 297mm;
+              background: white;
+              overflow: visible;
+            }
+            .certificate-container {
+              width: 210mm !important;
+              min-height: 0 !important;
+              height: auto !important;
+              box-sizing: border-box !important;
+              margin: 0 !important;
+              box-shadow: none !important;
+              overflow: visible !important;
+            }
+            .cert-header-section {
+              border-bottom: 2px solid #111827 !important;
+            }
+            @page { size: 210mm 297mm; margin: 0; }
+            .mix-blend-multiply {
+              mix-blend-mode: normal !important;
+            }
+            * {
+              letter-spacing: normal !important;
+            }
+          </style>
+        </head>
+        <body>
+          ${element.outerHTML}
+        </body>
+      </html>`);
+  iframeDoc.close();
+
+  await new Promise((resolve) => {
+    iframe.onload = () => setTimeout(resolve, 800);
+    setTimeout(resolve, 1500);
+  });
+
+  const captureTarget =
+    iframeDoc.querySelector(".certificate-container") || iframeDoc.body;
+
+  await waitForDocumentImages(captureTarget);
+
+  const canvas = await html2canvas(captureTarget, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: "#ffffff",
+    logging: false,
+    windowWidth: iframe.offsetWidth,
+    windowHeight: iframe.offsetHeight,
+    onclone: (_el, clonedDoc) => normalizeCloneForCanvasCapture(clonedDoc),
+  });
+
+  document.body.removeChild(iframe);
+
+  const imgData = canvas.toDataURL("image/png", 1.0);
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+    compress: true,
+  });
+
+  const pdfW = 210;
+  const pdfH = 297;
+  const imgWidthMm = pdfW;
+  const imgHeightMm = (canvas.height * pdfW) / canvas.width;
+
+  if (imgHeightMm <= pdfH) {
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
+  } else {
+    const scale = pdfH / imgHeightMm;
+    const scaledWidth = imgWidthMm * scale;
+    const xOffset = (pdfW - scaledWidth) / 2;
+    pdf.addImage(imgData, "PNG", xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
+  }
+
+  return pdf;
+}
+
+function pickCaptainSignatureFromHistory(history, lastReturnTime = 0) {
+  if (!history?.length) return null;
+  const entry = [...history]
+    .filter((h) => {
+      if (!h.signature_data) return false;
+      if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+      const sName = (h.step_name || "").toUpperCase();
+      const hRole = (
+        h.official_role ||
+        h.officialRole ||
+        h.privilege_role ||
+        h.privilegeRole ||
+        ""
+      ).toUpperCase();
+      const uRole = (h.users?.role || "").toUpperCase();
+      if (
+        sName.includes("SECRETARY") ||
+        hRole.includes("SECRETARY") ||
+        uRole.includes("SECRETARY")
+      ) {
+        return false;
+      }
+      if ((h.previous_status || "").toLowerCase() === "captain_approval") {
+        return true;
+      }
+      if (
+        sName.includes("CAPTAIN") ||
+        sName.includes("CHAIRMAN") ||
+        sName.includes("PUNONG")
+      ) {
+        return true;
+      }
+      return CAPTAIN_SIGNATURE_ROLES.some(
+        (r) => hRole.includes(r) || uRole.includes(r),
+      );
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )[0];
+  return entry?.signature_data || null;
+}
+
 function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, currentUser, userSignature }) {
   useScrollLock(true);
   const certificateRef = useRef(null);
   const containerRef = useRef(null);
   const [officials, setOfficials] = useState(null); // null = loading, prevents flash of wrong data
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [history, setHistory] = useState([]);
+  const [previewRequest, setPreviewRequest] = useState(request);
   const [currentDate, setCurrentDate] = useState("");
   const [inspectionData, setInspectionData] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState("old"); // 'new' or 'old'
@@ -5745,6 +6059,25 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
     setZoom(parseFloat(prev.toFixed(2)));
   };
 
+  const fetchPreviewRequest = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/certificates/${request.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.success && data.data) {
+        setPreviewRequest({ ...request, ...data.data });
+      }
+    } catch (error) {
+      console.error("Error refreshing certificate for preview:", error);
+    }
+  };
+
   const fetchHistory = async () => {
     try {
       const token = getAuthToken();
@@ -5760,10 +6093,72 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
       if (!response.ok) return;
       const data = await response.json();
       if (data.success) {
-        setHistory(data.history || []);
+        const rows = data.history || [];
+        setHistory(rows);
+        await healCaptainSignatureOnRequest(rows);
       }
     } catch (error) {
       console.error("Error fetching history:", error);
+    }
+  };
+
+  const healCaptainSignatureOnRequest = async (historyRows) => {
+    const lastReturnTime = computeLastReturnTimeFromHistory(historyRows);
+    const sig = pickCaptainSignatureFromHistory(historyRows, lastReturnTime);
+    if (!sig) return;
+
+    let details = previewRequest?.details ?? request?.details;
+    if (typeof details === "string") {
+      try {
+        details = JSON.parse(details);
+      } catch {
+        details = {};
+      }
+    }
+    if (!details || typeof details !== "object") details = {};
+    const storedAt = details.captain_signed_at
+      ? new Date(details.captain_signed_at).getTime()
+      : 0;
+    if (
+      details.captain_signature === sig &&
+      storedAt > lastReturnTime
+    ) {
+      return;
+    }
+
+    try {
+      const token = getAuthToken();
+      const captainEntry = [...historyRows]
+        .filter(
+          (h) =>
+            h.signature_data === sig ||
+            (h.previous_status || "").toLowerCase() === "captain_approval",
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )[0];
+      const merged = {
+        ...details,
+        captain_signature: sig,
+        captain_signed_at:
+          captainEntry?.created_at || new Date().toISOString(),
+      };
+      const response = await fetch(`${API_URL}/certificates/${request.id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ details: merged }),
+      });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (payload.success && payload.data) {
+        setPreviewRequest((prev) => ({ ...prev, ...payload.data }));
+      }
+    } catch (error) {
+      console.error("Could not backfill captain signature on request:", error);
     }
   };
 
@@ -5863,6 +6258,7 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
     };
 
     fetchOfficials();
+    fetchPreviewRequest();
     fetchHistory();
     fetchInspectionData();
     fetchORData();
@@ -5878,203 +6274,45 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
     );
   }, []);
 
-  // ── Print: opens a new window with auto-scale and browser print dialog ──
-  const handlePrintPDF = () => {
-    if (!certificateRef.current) return;
-
-    const element = certificateRef.current;
-
-    // Collect inline CSS from loaded stylesheets
-    let allCSS = "";
-    Array.from(document.styleSheets).forEach((sheet) => {
-      try {
-        Array.from(sheet.cssRules || []).forEach((rule) => {
-          allCSS += rule.cssText + "\n";
-        });
-      } catch (_e) {}
-    });
-
-    const linkHrefs = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-      .map((l) => l.href)
-      .filter(Boolean);
-
-    const printWindow = window.open("", "_blank", "width=900,height=1200");
-    if (!printWindow) {
-      alert("Pop-up blocked. Please allow pop-ups for this site and try again.");
-      return;
+  // ── Print: same A4 PDF as Download, then browser print on that PDF ──
+  const handlePrintPDF = async () => {
+    if (!certificateRef.current || isPrinting || isDownloading) return;
+    setIsPrinting(true);
+    try {
+      const pdf = await buildCertificatePdfFromElement(certificateRef.current);
+      pdf.autoPrint();
+      const blobUrl = pdf.output("bloburl");
+      const printWindow = window.open(blobUrl, "_blank");
+      if (!printWindow) {
+        alert("Pop-up blocked. Allow pop-ups to print, or use Download PDF.");
+        return;
+      }
+      const triggerPrint = () => {
+        try {
+          printWindow.focus();
+          printWindow.print();
+        } catch (_e) {}
+      };
+      printWindow.onload = triggerPrint;
+      setTimeout(triggerPrint, 1200);
+    } catch (error) {
+      console.error("PDF print error:", error);
+      alert("Could not prepare print. Try Download PDF, then print that file.");
+    } finally {
+      setIsPrinting(false);
     }
-
-    printWindow.document.write(`<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>${request.reference_number}</title>
-    ${linkHrefs.map((href) => `<link rel="stylesheet" href="${href}" />`).join("\n")}
-    <style>
-      ${allCSS}
-      @page { size: A4 portrait; margin: 0; }
-      html, body { margin: 0; padding: 0; width: 210mm; height: 297mm; overflow: hidden; background: white; }
-      .cert-print-wrapper { width: 210mm; transform-origin: top left; }
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    </style>
-  </head>
-  <body>
-    <div class="cert-print-wrapper" id="certWrap">${element.outerHTML}</div>
-    <script>
-      function scaleAndPrint() {
-        var wrap = document.getElementById('certWrap');
-        if (!wrap) { window.print(); window.close(); return; }
-        var A4_H = 1122;
-        var contentH = wrap.scrollHeight;
-        if (contentH > A4_H) {
-          var scale = A4_H / contentH;
-          wrap.style.transform = 'scale(' + scale + ')';
-          document.body.style.height = (contentH * scale) + 'px';
-        }
-        setTimeout(function() { window.print(); window.close(); }, 300);
-      }
-      if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(function() { setTimeout(scaleAndPrint, 300); });
-      } else {
-        window.addEventListener('load', function() { setTimeout(scaleAndPrint, 500); });
-      }
-    <\/script>
-  </body>
-</html>`);
-    printWindow.document.close();
   };
 
-  // ── Download PDF: Hidden iFrame strategy for Perfect Fidelity ──
   const handleDownloadPDF = async () => {
-    if (!certificateRef.current) return;
+    if (!certificateRef.current || isDownloading || isPrinting) return;
     setIsDownloading(true);
 
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
-
-      const element = certificateRef.current;
-      
-      // Collect inline CSS from loaded stylesheets (same as Print)
-      let allCSS = "";
-      Array.from(document.styleSheets).forEach((sheet) => {
-        try {
-          Array.from(sheet.cssRules || []).forEach((rule) => {
-            allCSS += rule.cssText + "\n";
-          });
-        } catch (_e) {}
-      });
-
-      const linkHrefs = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-        .map((l) => l.href)
-        .filter(Boolean);
-
-      // Create a hidden iframe
-      const iframe = document.createElement('iframe');
-      iframe.style.visibility = 'hidden';
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '210mm';   // Exact A4 width
-      iframe.style.height = '297mm';  // Exact A4 height
-      iframe.style.border = 'none';
-      iframe.style.zIndex = '-9999';
-      document.body.appendChild(iframe);
-
-      const iframeDoc = iframe.contentWindow.document;
-
-      // Inject HTML and CSS
-      iframeDoc.write(`<!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8" />
-          ${linkHrefs.map((href) => `<link rel="stylesheet" href="${href}" />`).join("\n")}
-          <style>
-            ${allCSS}
-            html, body {
-              margin: 0;
-              padding: 0;
-              width: 210mm;
-              height: 297mm;
-              background: white;
-              overflow: hidden;
-            }
-            .certificate-container {
-              width: 210mm !important;
-              min-height: 297mm !important;
-              box-sizing: border-box !important;
-              margin: 0 !important;
-              box-shadow: none !important;
-            }
-            /* Clean up any tracking/spacing issues specific to html2canvas rendering */
-            * {
-              letter-spacing: normal !important;
-            }
-          </style>
-        </head>
-        <body>
-          ${element.outerHTML}
-        </body>
-      </html>`);
-      iframeDoc.close();
-
-      // Ensure iframe content is fully loaded
-      await new Promise((resolve) => {
-        iframe.onload = () => {
-          setTimeout(resolve, 800); // Buffer for font rendering
-        };
-        // Fallback timeout in case onload doesn't fire
-        setTimeout(resolve, 1500);
-      });
-
-      const captureTarget = iframeDoc.querySelector('.certificate-container') || iframeDoc.body;
-
-      // Capture the pristine layout
-      const canvas = await html2canvas(captureTarget, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: iframe.offsetWidth,
-        windowHeight: iframe.offsetHeight
-      });
-
-      // Cleanup
-      document.body.removeChild(iframe);
-
-      const imgData = canvas.toDataURL("image/png", 1.0);
-      const pdf = new jsPDF({
-        orientation: "portrait", 
-        unit: "mm", 
-        format: "a4", 
-        compress: true 
-      });
-
-      const pdfW = 210;
-      const pdfH = 297;
-      
-      // Calculate how to fit the width perfectly on the page
-      const imgWidthMm = pdfW;
-      const imgHeightMm = (canvas.height * pdfW) / canvas.width;
-
-      if (imgHeightMm <= pdfH) {
-        // Fits vertically - align to top
-        pdf.addImage(imgData, "PNG", 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
-      } else {
-        // Too tall - Scale to fit exactly one A4 page
-        const scale = pdfH / imgHeightMm;
-        const scaledWidth = imgWidthMm * scale;
-        const xOffset = (pdfW - scaledWidth) / 2;
-        pdf.addImage(imgData, "PNG", xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
-      }
-
+      const pdf = await buildCertificatePdfFromElement(certificateRef.current);
       pdf.save(`${request.reference_number}.pdf`);
     } catch (error) {
       console.error("PDF download error:", error);
-      alert("Could not generate PDF. Please use the Print option for perfect results.");
+      alert("Could not generate PDF. Please try again.");
     } finally {
       setIsDownloading(false);
     }
@@ -6109,15 +6347,20 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
             {/* Print button — opens print window (perfect fidelity) */}
             <button
               onClick={handlePrintPDF}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-slate-800 text-slate-200 hover:text-white rounded-lg hover:bg-slate-700 transition-all font-semibold text-xs border border-slate-700"
+              disabled={isPrinting || isDownloading}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-slate-800 text-slate-200 hover:text-white rounded-lg hover:bg-slate-700 transition-all font-semibold text-xs border border-slate-700 disabled:opacity-50"
             >
-              <Printer className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden sm:inline">Print</span>
+              {isPrinting ? (
+                <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Printer className="w-3.5 h-3.5 text-blue-400" />
+              )}
+              <span className="hidden sm:inline">{isPrinting ? "Preparing…" : "Print"}</span>
             </button>
             {/* Download button — saves PDF directly */}
             <button
               onClick={handleDownloadPDF}
-              disabled={isDownloading}
+              disabled={isDownloading || isPrinting}
               className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
             >
               {isDownloading ? (
@@ -6236,7 +6479,7 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
                 }}
               >
                 <ClearancePreviewForRequests
-                  request={request}
+                  request={previewRequest}
                   currentDate={currentDate}
                   officials={officials}
                   certificateRef={certificateRef}
@@ -6414,18 +6657,7 @@ function ClearancePreviewForRequests({
 
   // Find the timestamp of the last "return", "reject", or reset event to clear signatures/initials
   const PROGRESS_ACTIONS = ['create', 'submitted', 'submit', 'approve', 'forward', 'physical_inspection'];
-  const returnEvents = (history || []).filter((h) => {
-    const action = (h.action || '').toLowerCase();
-    const newStatus = (h.new_status || '').toLowerCase();
-    if (PROGRESS_ACTIONS.includes(action)) return false;
-    if (['reject', 'return', 'send_back_to_start', 'send_back', 'sent_back', 'cancel', 'reset'].some(a => action.includes(a))) return true;
-    if (['rejected', 'returned', 'staff_review', 'cancelled'].includes(newStatus)) return true;
-    return false;
-  });
-  const lastReturnTime =
-    returnEvents.length > 0
-      ? Math.max(...returnEvents.map((h) => new Date(h.created_at).getTime()))
-      : 0;
+  const lastReturnTime = computeLastReturnTimeFromHistory(history);
 
   // Determine Issued Date (Final Approval Date or Current Date)
   const CAPTAIN_ROLES = ["BRGY. CAPTAIN", "CHAIRMAN", "BARANGAY CHAIRMAN", "PUNONG BARANGAY", "CAPTAIN", "PUNONG"];
@@ -6452,9 +6684,22 @@ function ClearancePreviewForRequests({
       // Check user role from joined users table
       if (CAPTAIN_ROLES.some(r => uRole.includes(r))) return true;
       
-      // Check Status — if previous_status was captain_approval, this was a captain action
+      // Check Status — captain approve moves request to OIC / treasury
       const prevStatus = (h.previous_status || '').toLowerCase();
+      const newStatus = (h.new_status || '').toLowerCase();
       if (prevStatus === 'captain_approval') return true;
+      if (
+        (newStatus === 'oic_review' ||
+          newStatus === 'treasury' ||
+          newStatus === 'ready' ||
+          newStatus === 'ready_for_pickup') &&
+        (CAPTAIN_ROLES.some((r) => hRole.includes(r)) ||
+          sName.includes('CAPTAIN') ||
+          sName.includes('CHAIRMAN') ||
+          sName.includes('PUNONG'))
+      ) {
+        return true;
+      }
       
       // Check name match with configured chairman
       const pName = h.users ? `${h.users.first_name || ''} ${h.users.last_name || ''}`.trim().toUpperCase() : (h.performed_by_name || '').toUpperCase();
@@ -6503,7 +6748,28 @@ function ClearancePreviewForRequests({
     (currentUserFullName.toUpperCase() === (officials.chairman).toUpperCase() ||
      (officials.chairman).toUpperCase().includes(currentUserFullName.toUpperCase()));
 
-  const effectiveSignature = effectiveCaptain?.signature_data ||
+  const storedSignedAtMs = additionalDetails.captain_signed_at
+    ? new Date(additionalDetails.captain_signed_at).getTime()
+    : 0;
+  const storedCaptainSignatureRaw =
+    additionalDetails.captain_signature ||
+    additionalDetails.captainSignature ||
+    null;
+  const storedCaptainSignature =
+    storedCaptainSignatureRaw &&
+    (!lastReturnTime || storedSignedAtMs > lastReturnTime)
+      ? storedCaptainSignatureRaw
+      : null;
+
+  const directCaptainSignature = pickCaptainSignatureFromHistory(
+    history,
+    lastReturnTime,
+  );
+
+  const effectiveSignature =
+    directCaptainSignature ||
+    effectiveCaptain?.signature_data ||
+    storedCaptainSignature ||
     (lastReturnTime === 0 && isCurrentUserCaptain ? userSignature : null) ||
     null;
 
@@ -6575,10 +6841,11 @@ function ClearancePreviewForRequests({
       >
         {/* Header Section */}
         <div
-          className={`w-full border-b flex justify-center items-center pt-4 pb-6 px-8 flex-shrink-0 ${getFontClass(headerStyle.fontFamily)}`}
+          className={`cert-header-section w-full border-b-2 flex justify-center items-center pt-4 pb-6 px-8 flex-shrink-0 ${getFontClass(headerStyle.fontFamily)}`}
           style={{
             backgroundColor: headerStyle.bgColor,
-            borderColor: headerStyle.borderColor,
+            borderColor: headerStyle.borderColor || "#111827",
+            borderBottom: "2px solid #111827",
           }}
         >
           {/* Left Logo */}
@@ -7704,13 +7971,13 @@ function ClearancePreviewForRequests({
                           </div>
                         )}
 
-                      <div className="text-left mb-4 self-start">
+                      <div className="text-left mb-4 self-start cert-captain-signature-block">
                         <p
                           className={`font-bold text-[15px] ${isSamePerson ? "mb-44" : request.certificate_type === "certificate_of_indigency" ? "mb-20" : "mb-32"}`}
                         >
                           TRULY YOURS,
                         </p>
- 
+
                         <div className="relative inline-block">
                           <div className="flex items-center gap-1 relative z-10">
                             <div className="relative">
@@ -7727,9 +7994,21 @@ function ClearancePreviewForRequests({
                                     />
                                   </div>
                                   <div className="absolute left-[70%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
-                                      <span className="font-bold text-gray-500">{captainName}</span>
-                                      <span>{new Date(effectiveCaptain?.created_at || Date.now()).toLocaleDateString("en-US")}</span>
-                                      <span>{new Date(effectiveCaptain?.created_at || Date.now()).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                                    <span className="font-bold text-gray-500">{captainName}</span>
+                                    <span>
+                                      {new Date(
+                                        effectiveCaptain?.created_at || Date.now(),
+                                      ).toLocaleDateString("en-US")}
+                                    </span>
+                                    <span>
+                                      {new Date(
+                                        effectiveCaptain?.created_at || Date.now(),
+                                      ).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      })}
+                                    </span>
                                   </div>
                                 </>
                               )}
@@ -7749,8 +8028,20 @@ function ClearancePreviewForRequests({
                                 />
                                 <div className="text-[5px] text-gray-400 whitespace-nowrap leading-tight flex flex-col self-end mb-2 opacity-70 font-medium border-l border-gray-300 pl-1">
                                   <span className="font-bold text-gray-500">{secretaryName}</span>
-                                  <span>{new Date(secretaryApproval.created_at).toLocaleDateString("en-US")}</span>
-                                  <span>{new Date(secretaryApproval.created_at).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                                  <span>
+                                    {new Date(
+                                      secretaryApproval.created_at,
+                                    ).toLocaleDateString("en-US")}
+                                  </span>
+                                  <span>
+                                    {new Date(
+                                      secretaryApproval.created_at,
+                                    ).toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })}
+                                  </span>
                                 </div>
                               </div>
                             )}
@@ -7759,7 +8050,7 @@ function ClearancePreviewForRequests({
                           <div className="relative flex items-center z-10 w-full mb-2 -mt-1.5">
                             <div className="flex flex-col">
                               <p className="text-[14px] font-bold shrink-0 leading-tight">
-                                {detectedRole || 'BARANGAY CHAIRMAN'}
+                                {detectedRole || "BARANGAY CHAIRMAN"}
                               </p>
                               {uniqueProcessorCodes && (
                                 <p className="text-[9px] font-bold text-gray-500 mt-0.5 shrink-0 leading-tight">

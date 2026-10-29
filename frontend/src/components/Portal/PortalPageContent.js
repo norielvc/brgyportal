@@ -1783,7 +1783,7 @@ export default function PortalPageContent({ initialTenantId }) {
         <div className="max-w-[1400px] mx-auto px-6 sm:px-10 relative z-10">
           {/* Section Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 px-5 py-2 bg-white premium-shadow border border-gray-100 rounded-full text-[11px] font-black tracking-[0.2em] text-gray-500 mb-6 uppercase">
+            <div className="hidden md:inline-flex items-center gap-3 px-5 py-2 bg-white premium-shadow border border-gray-100 rounded-full text-[11px] font-black tracking-[0.2em] text-gray-500 mb-6 uppercase">
               <div
                 className="flex items-center justify-center w-6 h-6 rounded-full animate-pulse shadow-lg"
                 style={{

@@ -1,6 +1,76 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
 
+function shouldPersistCaptainSignature({
+  certStatus,
+  stepName,
+  officialRole,
+  signatureData,
+}) {
+  if (!signatureData) return false;
+  if (certStatus === "captain_approval") return true;
+  const step = (stepName || "").toLowerCase();
+  const role = (officialRole || "").toLowerCase();
+  return (
+    step.includes("captain") ||
+    step.includes("chairman") ||
+    step.includes("punong") ||
+    role.includes("captain") ||
+    role.includes("chairman") ||
+    role.includes("punong")
+  );
+}
+
+function mergeCaptainSignatureDetails(
+  existingDetails,
+  signatureData,
+  certStatus,
+  stepName,
+  officialRole,
+) {
+  if (
+    !shouldPersistCaptainSignature({
+      certStatus,
+      stepName,
+      officialRole,
+      signatureData,
+    })
+  ) {
+    return null;
+  }
+  let details = existingDetails;
+  if (typeof details === "string") {
+    try {
+      details = JSON.parse(details);
+    } catch {
+      details = {};
+    }
+  }
+  if (!details || typeof details !== "object") details = {};
+  return {
+    ...details,
+    captain_signature: signatureData,
+    captain_signed_at: new Date().toISOString(),
+  };
+}
+
+function clearCaptainSignatureDetails(existingDetails) {
+  let details = existingDetails;
+  if (typeof details === "string") {
+    try {
+      details = JSON.parse(details);
+    } catch {
+      details = {};
+    }
+  }
+  if (!details || typeof details !== "object") details = {};
+  const next = { ...details };
+  delete next.captain_signature;
+  delete next.captainSignature;
+  delete next.captain_signed_at;
+  return next;
+}
+
 const statusFlow = {
   staff_review: "secretary_approval",  // After staff review, goes to secretary
   pending: "secretary_approval",
@@ -35,7 +105,7 @@ export default async function handler(req, res) {
   // Fetch current cert to know its current status before update
   const { data: currentCert } = await supabase
     .from("certificate_requests")
-    .select("status, certificate_type")
+    .select("status, certificate_type, details")
     .eq("id", id)
     .eq("tenant_id", tenantId)
     .single();
@@ -88,6 +158,33 @@ export default async function handler(req, res) {
     previous_status: currentCert?.status || null,
     new_status: status,
   }]);
+
+  const stepName =
+    current_step || currentCert?.status?.replace(/_/g, " ") || status;
+  let detailsPatch = null;
+  if (
+    action === "return" ||
+    action === "send_back_to_start" ||
+    action === "send_back"
+  ) {
+    detailsPatch = clearCaptainSignatureDetails(currentCert?.details);
+  } else {
+    const mergedCaptainDetails = mergeCaptainSignatureDetails(
+      currentCert?.details,
+      signatureData,
+      currentCert?.status,
+      stepName,
+      officialRole,
+    );
+    if (mergedCaptainDetails) detailsPatch = mergedCaptainDetails;
+  }
+  if (detailsPatch) {
+    await supabase
+      .from("certificate_requests")
+      .update({ details: detailsPatch, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("tenant_id", tenantId);
+  }
 
   // Create next-step assignments if this is an approval moving forward
   const isApproval = action === "approve" || (!["rejected", "cancelled", "returned", "staff_review"].includes(status));
