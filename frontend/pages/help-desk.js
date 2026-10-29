@@ -709,26 +709,27 @@ export default function HelpDesk() {
   return (
     <Layout
       title="Help Desk Center"
-      subtitle="Barangay Public Assistance, E-Sumbong Blotters & KapChat"
+      subtitle="E-Sumbong, assistance & KapChat"
+      mainClassName="p-2 sm:p-4 pb-24 lg:pb-4"
     >
-      <div className="max-w-7xl mx-auto space-y-3.5 sm:space-y-5 pb-12">
+      <div className="max-w-[1600px] mx-auto space-y-2.5 text-[13px] pb-6">
         {/* Top Summary Metric Cards (2x2 on mobile, 4 columns on desktop) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {/* Card 1: E-Sumbong */}
           <div
             onClick={() => setActiveTab("esumbong")}
-            className={`cursor-pointer bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border transition-all hover:shadow-md ${
-              activeTab === "esumbong" ? "border-red-400 ring-2 ring-red-100 shadow-sm" : "border-gray-200/80"
+            className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
+              activeTab === "esumbong" ? "border-red-400 ring-1 ring-red-100" : "border-gray-200/80"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider truncate">E-Sumbong</span>
-              <div className="p-1.5 sm:p-2 bg-red-50 text-red-600 rounded-lg sm:rounded-xl">
-                <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">E-Sumbong</span>
+              <div className="p-1 bg-red-50 text-red-600 rounded-md">
+                <AlertCircle className="w-3.5 h-3.5" />
               </div>
             </div>
-            <div className="mt-1.5 sm:mt-3 flex items-baseline justify-between gap-1">
-              <span className="text-xl sm:text-2xl font-black text-gray-900">{channelCounts.esumbong.total}</span>
+            <div className="mt-0.5 flex items-baseline justify-between gap-1">
+              <span className="text-lg font-black text-gray-900 tabular-nums">{channelCounts.esumbong.total}</span>
               {channelCounts.esumbong.pending > 0 && (
                 <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-red-100 text-red-800 animate-pulse truncate">
                   {channelCounts.esumbong.pending} Pend
@@ -743,18 +744,18 @@ export default function HelpDesk() {
           {/* Card 2: Assistance */}
           <div
             onClick={() => setActiveTab("assistance")}
-            className={`cursor-pointer bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border transition-all hover:shadow-md ${
-              activeTab === "assistance" ? "border-emerald-400 ring-2 ring-emerald-100 shadow-sm" : "border-gray-200/80"
+            className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
+              activeTab === "assistance" ? "border-emerald-400 ring-1 ring-emerald-100" : "border-gray-200/80"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider truncate">Assistance</span>
-              <div className="p-1.5 sm:p-2 bg-emerald-50 text-emerald-600 rounded-lg sm:rounded-xl">
-                <HeadphonesIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">Assistance</span>
+              <div className="p-1 bg-emerald-50 text-emerald-600 rounded-md">
+                <HeadphonesIcon className="w-3.5 h-3.5" />
               </div>
             </div>
-            <div className="mt-1.5 sm:mt-3 flex items-baseline justify-between gap-1">
-              <span className="text-xl sm:text-2xl font-black text-gray-900">{channelCounts.assistance.total}</span>
+            <div className="mt-0.5 flex items-baseline justify-between gap-1">
+              <span className="text-lg font-black text-gray-900 tabular-nums">{channelCounts.assistance.total}</span>
               {channelCounts.assistance.pending > 0 && (
                 <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-100 text-amber-800 truncate">
                   {channelCounts.assistance.pending} Act
@@ -769,18 +770,18 @@ export default function HelpDesk() {
           {/* Card 3: KapChat */}
           <div
             onClick={() => setActiveTab("kapchat")}
-            className={`cursor-pointer bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border transition-all hover:shadow-md ${
-              activeTab === "kapchat" ? "border-blue-400 ring-2 ring-blue-100 shadow-sm" : "border-gray-200/80"
+            className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
+              activeTab === "kapchat" ? "border-blue-400 ring-1 ring-blue-100" : "border-gray-200/80"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider truncate">KapChat</span>
-              <div className="p-1.5 sm:p-2 bg-blue-50 text-blue-600 rounded-lg sm:rounded-xl">
-                <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">KapChat</span>
+              <div className="p-1 bg-blue-50 text-blue-600 rounded-md">
+                <MessageCircle className="w-3.5 h-3.5" />
               </div>
             </div>
-            <div className="mt-1.5 sm:mt-3 flex items-baseline justify-between gap-1">
-              <span className="text-xl sm:text-2xl font-black text-gray-900">{channelCounts.kapchat.total}</span>
+            <div className="mt-0.5 flex items-baseline justify-between gap-1">
+              <span className="text-lg font-black text-gray-900 tabular-nums">{channelCounts.kapchat.total}</span>
               {channelCounts.kapchat.unread > 0 && (
                 <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-blue-100 text-blue-800 animate-pulse truncate">
                   {channelCounts.kapchat.unread} New
@@ -793,27 +794,27 @@ export default function HelpDesk() {
           </div>
 
           {/* Card 4: Quick Action & Intake */}
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm flex flex-col justify-between">
+          <div className="bg-gradient-to-br from-[#021b38] to-[#03254c] text-white rounded-lg p-2.5 flex flex-col justify-between min-h-[72px]">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-300">Intake</span>
-              <span className="text-[8px] sm:text-[10px] font-black px-1.5 py-0.5 rounded bg-white/10 text-emerald-300">LIVE</span>
+              <span className="text-[9px] font-bold uppercase tracking-wide text-slate-300">Intake</span>
+              <span className="text-[8px] font-bold px-1 py-px rounded bg-white/10 text-emerald-300">LIVE</span>
             </div>
             <button
               onClick={() => {
                 setNewEntryType(activeTab);
                 setIsNewEntryModalOpen(true);
               }}
-              className="mt-2 sm:mt-3 w-full py-1.5 sm:py-2 px-2.5 sm:px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all shadow flex items-center justify-center gap-1 active:scale-95"
+              className="mt-1.5 w-full py-1.5 px-2 bg-white/15 hover:bg-white/25 text-white rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1"
             >
-              <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span>Log Record</span>
+              <Plus className="w-3 h-3" />
+              <span>Log record</span>
             </button>
           </div>
         </div>
 
         {/* Tab Selection Row (Touch-friendly & Horizontal Scroll on Mobile) */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-1.5 sm:p-2.5">
-          <div className="flex sm:grid sm:grid-cols-3 gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
+        <div className="bg-white rounded-lg border border-gray-200 p-0.5">
+          <div className="grid grid-cols-3 gap-0.5">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
@@ -833,28 +834,17 @@ export default function HelpDesk() {
                     setSearchTerm("");
                     setMobileChatViewActive(false);
                   }}
-                  className={`flex items-center justify-between p-2.5 sm:p-3 rounded-lg sm:rounded-xl transition-all text-left shrink-0 min-w-[125px] sm:min-w-0 ${
+                  className={`flex items-center justify-between py-1.5 px-2 rounded-md transition-all text-left min-w-0 ${
                     active
                       ? tab.activeTabClass
-                      : "bg-gray-50/80 hover:bg-gray-100 text-gray-700 border border-transparent"
+                      : "bg-gray-50 hover:bg-gray-100 text-gray-700"
                   }`}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    <div
-                      className={`p-1.5 sm:p-2 rounded-lg shrink-0 ${
-                        active ? "bg-white/20 text-white" : "bg-white text-gray-600 shadow-2xs"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className={`text-xs sm:text-sm font-bold truncate ${active ? "text-white" : "text-gray-900"}`}>
-                        {tab.shortLabel}
-                      </p>
-                      <p className={`text-[10px] truncate hidden md:block ${active ? "text-white/80" : "text-gray-400"}`}>
-                        {tab.description}
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? "text-white" : "text-gray-600"}`} />
+                    <p className={`text-[11px] font-bold truncate ${active ? "text-white" : "text-gray-900"}`}>
+                      {tab.shortLabel}
+                    </p>
                   </div>
                   {pendingCount > 0 && (
                     <span
@@ -872,17 +862,17 @@ export default function HelpDesk() {
         </div>
 
         {/* Search, Filter & Quick Actions Bar */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-4 space-y-3">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="relative flex-1 min-w-0 max-w-full sm:max-w-md">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={`Search ${currentTabConfig.shortLabel} by name, details, contact...`}
-                className="w-full pl-10 pr-9 py-2 bg-gray-50/80 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium"
+                placeholder={`Search ${currentTabConfig.shortLabel}...`}
+                className="w-full pl-8 pr-8 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#03254c]/20 focus:border-[#03254c] focus:bg-white transition-all"
               />
               {searchTerm && (
                 <button
@@ -895,30 +885,30 @@ export default function HelpDesk() {
             </div>
 
             {/* Sort Dropdown, View Toggle & Refresh */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
               {activeTab === "kapchat" && (
-                <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200">
+                <div className="flex items-center bg-gray-100 p-0.5 rounded-md border border-gray-200">
                   <button
                     onClick={() => setKapchatViewMode("messenger")}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    className={`px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1 ${
                       kapchatViewMode === "messenger"
-                        ? "bg-white text-blue-600 shadow-xs"
+                        ? "bg-white text-[#03254c] shadow-xs"
                         : "text-gray-500 hover:text-gray-900"
                     }`}
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Messenger</span>
+                    <MessageSquare className="w-3 h-3" />
+                    <span className="hidden xs:inline">Chat</span>
                   </button>
                   <button
                     onClick={() => setKapchatViewMode("table")}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    className={`px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1 ${
                       kapchatViewMode === "table"
-                        ? "bg-white text-blue-600 shadow-xs"
+                        ? "bg-white text-[#03254c] shadow-xs"
                         : "text-gray-500 hover:text-gray-900"
                     }`}
                   >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                    <span>Table</span>
+                    <LayoutGrid className="w-3 h-3" />
+                    <span className="hidden xs:inline">Table</span>
                   </button>
                 </div>
               )}
@@ -927,7 +917,7 @@ export default function HelpDesk() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="py-2 px-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="py-1.5 px-2 bg-gray-50 border border-gray-200 rounded-md text-[11px] font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#03254c]/20 cursor-pointer"
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -937,10 +927,10 @@ export default function HelpDesk() {
               <button
                 onClick={fetchCurrentTabData}
                 disabled={loading}
-                className="p-2 sm:px-3 sm:py-2 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all flex items-center gap-1.5 shrink-0"
+                className="px-2.5 py-1.5 text-[11px] font-semibold text-white bg-[#03254c] hover:opacity-90 rounded-md transition-all flex items-center gap-1 shrink-0 disabled:opacity-50"
                 title="Refresh items"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : ""}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
                 <span className="hidden sm:inline">Refresh</span>
               </button>
 
@@ -949,25 +939,22 @@ export default function HelpDesk() {
                   setNewEntryType(activeTab);
                   setIsNewEntryModalOpen(true);
                 }}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center gap-1.5 shrink-0"
+                className="px-2.5 py-1.5 bg-[#03254c] hover:opacity-90 text-white rounded-md text-[11px] font-bold transition-all flex items-center gap-1 shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">New Record</span>
+                <span className="hidden sm:inline">New record</span>
                 <span className="sm:hidden">New</span>
               </button>
             </div>
           </div>
 
           {/* Status Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-gray-100">
-            <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 mr-1 shrink-0">
-              Status:
-            </span>
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-1 border-t border-gray-100">
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all shrink-0 ${
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all shrink-0 ${
                 statusFilter === "all"
-                  ? "bg-slate-900 text-white shadow-sm"
+                  ? "bg-[#03254c] text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
@@ -980,9 +967,9 @@ export default function HelpDesk() {
                 <button
                   key={opt.value}
                   onClick={() => setStatusFilter(isSelected ? "all" : opt.value)}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all shrink-0 border flex items-center gap-1.5 ${
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all shrink-0 border flex items-center gap-1 ${
                     isSelected
-                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                      ? "bg-[#03254c] text-white border-[#03254c]"
                       : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
                   }`}
                 >
@@ -999,13 +986,13 @@ export default function HelpDesk() {
 
         {/* Main List & Records Container */}
         {loading ? (
-          <div className="bg-white rounded-2xl p-16 text-center border border-gray-200">
-            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm font-bold text-gray-600">Loading {currentTabConfig.label} records...</p>
+          <div className="bg-white rounded-lg py-10 text-center border border-gray-200">
+            <div className="w-7 h-7 border-2 border-gray-200 border-t-[#03254c] rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs font-medium text-gray-600">Loading {currentTabConfig.label}...</p>
           </div>
         ) : activeTab === "kapchat" && kapchatViewMode === "messenger" ? (
           /* Live KapChat Split Messenger Workspace (Mobile slide between threads & active chat) */
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[560px] max-h-[780px]">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[420px] max-h-[680px]">
             {/* Left Column: Conversation Threads (4 cols on lg; hidden on mobile if chat is active) */}
             <div
               className={`lg:col-span-4 border-r border-gray-200 flex flex-col bg-slate-50/50 min-h-0 ${
@@ -1251,14 +1238,14 @@ export default function HelpDesk() {
             )}
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 space-y-3">
-            <div className="w-14 h-14 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto">
-              <FileText className="w-7 h-7" />
+          <div className="bg-white rounded-lg py-10 px-4 text-center border border-gray-200 space-y-2">
+            <div className="w-9 h-9 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto">
+              <FileText className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-gray-800">
-              No {currentTabConfig.shortLabel} Records Found
+            <h3 className="text-xs font-bold text-gray-800">
+              No {currentTabConfig.shortLabel} records found
             </h3>
-            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+            <p className="text-[11px] text-gray-500 max-w-sm mx-auto">
               {searchTerm || statusFilter !== "all"
                 ? "Try clearing filters or search terms to see all records."
                 : `There are currently no submissions under ${currentTabConfig.label}.`}
@@ -1269,47 +1256,47 @@ export default function HelpDesk() {
                   setSearchTerm("");
                   setStatusFilter("all");
                 }}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors inline-block"
+                className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold rounded-md transition-colors inline-block"
               >
                 Clear Filters
               </button>
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Desktop Table */}
-            <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-              <table className="w-full text-left border-collapse">
+            <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <table className="w-full text-left border-collapse text-[11px]">
                 <thead>
-                  <tr className="bg-slate-900 text-slate-200 text-[11px] font-bold uppercase tracking-wider">
-                    <th className="py-3 px-4">Date Filed</th>
+                  <tr className="bg-gray-50 text-gray-500 text-[9px] font-bold uppercase tracking-wide border-b border-gray-200">
+                    <th className="py-2 px-2.5">Date Filed</th>
                     {activeTab === "esumbong" && (
                       <>
-                        <th className="py-3 px-4">Complainant</th>
-                        <th className="py-3 px-4">Respondent</th>
-                        <th className="py-3 px-4">Incident Details</th>
-                        <th className="py-3 px-4">Contact</th>
+                        <th className="py-2 px-2.5">Complainant</th>
+                        <th className="py-2 px-2.5">Respondent</th>
+                        <th className="py-2 px-2.5">Incident</th>
+                        <th className="py-2 px-2.5">Contact</th>
                       </>
                     )}
                     {activeTab === "assistance" && (
                       <>
-                        <th className="py-3 px-4">Resident Name</th>
-                        <th className="py-3 px-4">Contact Details</th>
-                        <th className="py-3 px-4">Inquiry / Request Details</th>
+                        <th className="py-2 px-2.5">Resident</th>
+                        <th className="py-2 px-2.5">Contact</th>
+                        <th className="py-2 px-2.5">Request</th>
                       </>
                     )}
                     {activeTab === "kapchat" && (
                       <>
-                        <th className="py-3 px-4">Sender</th>
-                        <th className="py-3 px-4">Contact</th>
-                        <th className="py-3 px-4">Message Content</th>
+                        <th className="py-2 px-2.5">Sender</th>
+                        <th className="py-2 px-2.5">Contact</th>
+                        <th className="py-2 px-2.5">Message</th>
                       </>
                     )}
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-2 px-2.5">Status</th>
+                    <th className="py-2 px-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 text-xs">
+                <tbody className="divide-y divide-gray-100">
                   {filteredItems.map((item) => {
                     const statusConfig =
                       currentStatusOptions.find((s) => s.value === item.status) || currentStatusOptions[0];
@@ -1324,25 +1311,25 @@ export default function HelpDesk() {
                         }}
                       >
                         {/* Date */}
-                        <td className="py-3.5 px-4 text-gray-500 whitespace-nowrap font-medium">
+                        <td className="py-1.5 px-2.5 text-gray-500 whitespace-nowrap font-medium text-[10px] tabular-nums">
                           {formatDate(item.created_at)}
                         </td>
 
                         {/* E-Sumbong Columns */}
                         {activeTab === "esumbong" && (
                           <>
-                            <td className="py-3.5 px-4 font-bold text-gray-900">
-                              <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-xs shrink-0">
+                            <td className="py-1.5 px-2.5 font-bold text-gray-900">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-6 h-6 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-[10px] shrink-0">
                                   {(item.complainant_name || "C")[0].toUpperCase()}
                                 </div>
                                 <span className="truncate max-w-[160px]">{item.complainant_name}</span>
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 font-bold text-slate-700">
+                            <td className="py-1.5 px-2.5 font-bold text-slate-700 text-[11px]">
                               <span className="truncate max-w-[140px] block">{item.respondent_name}</span>
                             </td>
-                            <td className="py-3.5 px-4 text-gray-600 max-w-xs">
+                            <td className="py-1.5 px-2.5 text-gray-600 max-w-xs text-[11px]">
                               <p className="truncate font-medium">{item.details}</p>
                               {item.incident_date && (
                                 <p className="text-[10px] text-gray-400 font-mono mt-0.5">
@@ -1350,7 +1337,7 @@ export default function HelpDesk() {
                                 </p>
                               )}
                             </td>
-                            <td className="py-3.5 px-4 whitespace-nowrap font-mono text-gray-600">
+                            <td className="py-1.5 px-2.5 whitespace-nowrap font-mono text-gray-600">
                               {item.contact_number && (
                                 <a
                                   href={`tel:${item.contact_number}`}
@@ -1368,7 +1355,7 @@ export default function HelpDesk() {
                         {/* Assistance Columns */}
                         {activeTab === "assistance" && (
                           <>
-                            <td className="py-3.5 px-4 font-bold text-gray-900">
+                            <td className="py-1.5 px-2.5 font-bold text-gray-900">
                               <div className="flex items-center gap-2">
                                 <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
                                   {(item.first_name || "A")[0].toUpperCase()}
@@ -1378,7 +1365,7 @@ export default function HelpDesk() {
                                 </span>
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 whitespace-nowrap text-gray-600">
+                            <td className="py-1.5 px-2.5 whitespace-nowrap text-gray-600">
                               {item.phone && (
                                 <p className="font-mono flex items-center gap-1">
                                   <Phone className="w-3 h-3 text-emerald-600" />
@@ -1391,7 +1378,7 @@ export default function HelpDesk() {
                                 </p>
                               )}
                             </td>
-                            <td className="py-3.5 px-4 text-gray-700 max-w-sm">
+                            <td className="py-1.5 px-2.5 text-gray-700 max-w-sm">
                               <p className="truncate font-medium">{item.message}</p>
                             </td>
                           </>
@@ -1400,7 +1387,7 @@ export default function HelpDesk() {
                         {/* KapChat Columns */}
                         {activeTab === "kapchat" && (
                           <>
-                            <td className="py-3.5 px-4 font-bold text-gray-900">
+                            <td className="py-1.5 px-2.5 font-bold text-gray-900">
                               <div className="flex items-center gap-2">
                                 <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
                                   {(item.sender_name || "K")[0].toUpperCase()}
@@ -1408,7 +1395,7 @@ export default function HelpDesk() {
                                 <span>{item.sender_name || "Anonymous Resident"}</span>
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 whitespace-nowrap font-mono text-gray-600">
+                            <td className="py-1.5 px-2.5 whitespace-nowrap font-mono text-gray-600">
                               {item.contact ? (
                                 <span className="flex items-center gap-1">
                                   <Phone className="w-3 h-3 text-blue-600" />
@@ -1418,14 +1405,14 @@ export default function HelpDesk() {
                                 <span className="text-gray-400 italic">No contact</span>
                               )}
                             </td>
-                            <td className="py-3.5 px-4 text-gray-700 max-w-sm">
+                            <td className="py-1.5 px-2.5 text-gray-700 max-w-sm">
                               <p className="truncate font-medium">{item.message}</p>
                             </td>
                           </>
                         )}
 
                         {/* Status Column */}
-                        <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-1.5 px-2.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           <select
                             value={item.status}
                             onChange={(e) => handleStatusChange(item.id, e.target.value)}
@@ -1443,7 +1430,7 @@ export default function HelpDesk() {
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-1.5 px-2.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
                             {activeTab === "esumbong" && (
                               <button
@@ -1495,7 +1482,7 @@ export default function HelpDesk() {
                       setSelectedItem(item);
                       setIsDetailsModalOpen(true);
                     }}
-                    className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm space-y-3 active:scale-[0.99] transition-all"
+                    className="bg-white rounded-lg p-2.5 border border-gray-200 space-y-2 active:scale-[0.99] transition-all"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">

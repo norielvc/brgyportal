@@ -8,13 +8,17 @@ export default function Modal({
   onClose,
   title,
   children,
+  footer,
   size = "md",
+  dense = false,
   showCloseButton = true,
 }) {
   const sizeClasses = {
     sm: "max-w-md",
     md: "max-w-xl",
     lg: "max-w-4xl",
+    /** Resident profile — landscape, moderate width */
+    profile: "w-[min(94vw,72rem)]",
     xl: "max-w-6xl",
     full: "max-w-screen-2xl",
   };
@@ -57,23 +61,42 @@ export default function Modal({
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 shrink-0 border-b border-gray-100">
+          <div
+            className={cn(
+              "flex items-center justify-between shrink-0 border-b border-gray-100",
+              dense ? "px-3 py-2" : "p-4 sm:p-6 pb-3 sm:pb-4",
+            )}
+          >
             {title && (
-              <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate pr-2">{title}</h3>
+              <h3
+                className={cn(
+                  "font-bold text-gray-900 truncate pr-2",
+                  dense ? "text-sm" : "text-base sm:text-lg",
+                )}
+              >
+                {title}
+              </h3>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#03254c] rounded-lg transition-colors ml-auto shrink-0"
+                className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#03254c] rounded-md transition-colors ml-auto shrink-0"
               >
-                <X className="w-5 h-5" />
+                <X className={dense ? "w-4 h-4" : "w-5 h-5"} />
               </button>
             )}
           </div>
         )}
 
         {/* Content */}
-        <div className="overflow-y-auto p-4 sm:p-6 flex-1">{children}</div>
+        <div
+          className={cn(
+            "overflow-y-auto flex-1",
+            dense ? "p-2.5 sm:p-3" : "p-4 sm:p-6",
+          )}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -8,18 +8,14 @@ import {
   Printer,
   RefreshCw,
   Trash2,
-  AlertTriangle,
   CheckCircle2,
-  Clock,
   Ban,
   Shield,
   ShieldCheck,
   LayoutGrid,
   List,
-  MapPin,
   QrCode,
   FileSpreadsheet,
-  ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
@@ -48,9 +44,7 @@ export default function IDManagement() {
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
-    expired: 0,
     revoked: 0,
-    expiringSoon: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -79,7 +73,7 @@ export default function IDManagement() {
       const token = localStorage.getItem("token");
       const queryParams = new URLSearchParams({
         page: page.toString(),
-        limit: "24",
+        limit: "48",
         search: search.trim(),
         status: statusFilter,
         printed_status: printedFilter,
@@ -94,15 +88,16 @@ export default function IDManagement() {
         const json = await res.json();
         if (json.success) {
           setIds(json.data || []);
-          setStats(
-            json.stats || {
-              total: 0,
-              active: 0,
-              expired: 0,
-              revoked: 0,
-              expiringSoon: 0,
-            }
-          );
+          setStats({
+            total: 0,
+            active: 0,
+            revoked: 0,
+            householdHead: 0,
+            familyMember: 0,
+            printed: 0,
+            notPrinted: 0,
+            ...(json.stats || {}),
+          });
           setTotalPages(json.totalPages || 1);
           setTotalCount(json.total || 0);
         }
@@ -200,32 +195,6 @@ export default function IDManagement() {
     }
   };
 
-  // Handle Renew
-  const handleRenew = async (card) => {
-    if (!confirm(`Renew Barangay ID for ${card.full_name} for another 1 year?`))
-      return;
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/api/barangay-id/${card.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action: "renew", validity_years: 1 }),
-      });
-      const json = await res.json();
-      if (res.ok && json.success) {
-        toast.success(json.message || "ID renewed successfully!");
-        fetchIDs();
-      } else {
-        toast.error(json.message || "Failed to renew ID");
-      }
-    } catch (err) {
-      toast.error("Renewal failed");
-    }
-  };
-
   // Handle Revoke
   const handleRevoke = async (card) => {
     const reason = prompt(
@@ -305,37 +274,56 @@ export default function IDManagement() {
     }
   };
 
-  const getStatusBadge = (status, expiry_date) => {
-    const isExpired = expiry_date && new Date(expiry_date) < new Date();
-    if (status === "revoked") {
+  const getGridCardAttention = (card) => {
+    if (card.status === "revoked") {
       return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
-          <Ban className="w-3 h-3 text-rose-600" /> Revoked
+        <span className="text-[9px] font-semibold text-rose-600 uppercase shrink-0">
+          Revoked
         </span>
       );
     }
-    if (status === "expired" || isExpired) {
+    if (!card.is_printed) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200">
-          <Clock className="w-3 h-3 text-amber-600" /> Expired
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleTogglePrintStatus(card);
+          }}
+          className="text-[9px] font-semibold text-amber-700 hover:text-amber-800 uppercase shrink-0 cursor-pointer"
+          title="Mark as printed"
+        >
+          Not printed
+        </button>
+      );
+    }
+    return null;
+  };
+
+  const getStatusBadge = (status) => {
+    if (status === "revoked") {
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-px rounded-full text-[9px] font-bold uppercase bg-rose-50 text-rose-700 border border-rose-200">
+          <Ban className="w-2.5 h-2.5 text-rose-600" /> Revoked
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
-        <ShieldCheck className="w-3 h-3 text-emerald-600" /> Active
+      <span className="inline-flex items-center gap-1 px-1.5 py-px rounded-full text-[9px] font-bold uppercase bg-emerald-50 text-emerald-800 border border-emerald-200">
+        <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" /> Active
       </span>
     );
   };
 
   return (
     <Layout
-      title="Barangay ID Management"
-      subtitle="OFFICIAL CITIZEN IDENTIFICATION REGISTRY & PVC CARD ISSUANCE"
+      title="EC Card"
+      subtitle="Official citizen ID registry & PVC issuance"
+      mainClassName="p-2 sm:p-4 pb-24 lg:pb-4"
     >
-      <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto pb-28 sm:pb-10">
+      <div className="space-y-2.5 max-w-[1600px] mx-auto pb-20 sm:pb-6 text-[13px]">
         {/* Official Republic Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#021b38] via-[#03254c] to-[#0d3b66] p-4 sm:p-8 text-white shadow-xl border border-blue-900/40">
+        <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-[#021b38] via-[#03254c] to-[#0d3b66] p-3 sm:p-4 text-white shadow-md border border-blue-900/40">
           <div
             className="absolute inset-0 opacity-10 pointer-events-none"
             style={{
@@ -346,101 +334,86 @@ export default function IDManagement() {
           />
           <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-blue-400/10 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
-            <div className="space-y-1.5 sm:space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-amber-300 text-[9px] sm:text-xs font-black uppercase tracking-widest">
-                <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
-                Republic of the Philippines • Official Citizen Registry
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="space-y-0.5 min-w-0">
+              <div className="inline-flex items-center gap-1 px-2 py-px rounded-full bg-white/10 border border-white/15 text-amber-300 text-[8px] font-bold uppercase tracking-wide">
+                <Shield className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                <span className="truncate">Official citizen registry</span>
               </div>
-              <h1 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight text-white uppercase">
-                Barangay Citizen Identification System
+              <h1 className="text-sm sm:text-base font-black tracking-tight text-white uppercase">
+                EC Card
               </h1>
-              <p className="hidden sm:block text-xs sm:text-sm text-blue-100/80 font-medium max-w-2xl leading-relaxed">
-                Centralized biometric & credential registry. Issuing authorized,
-                high-security CR80 PVC Barangay IDs with anti-tamper QR code
-                validation exclusively for registered master census residents.
+              <p className="hidden xl:block text-[10px] text-blue-100/75 max-w-xl leading-snug line-clamp-1">
+                CR80 PVC IDs with QR validation for master census residents.
               </p>
-
-              {/* Official Badges (Desktop/Tablet) */}
-              <div className="hidden sm:flex flex-wrap items-center gap-2.5 pt-1 text-[11px] font-bold text-blue-200">
-                <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/10">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Master Census Verified
-                </span>
-                <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/10">
-                  <QrCode className="w-3.5 h-3.5 text-cyan-300" /> 2D Dynamic QR Verification
-                </span>
-                <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/10">
-                  <CreditCard className="w-3.5 h-3.5 text-amber-300" /> CR80 Dual-Sided PVC Print
-                </span>
-              </div>
             </div>
 
             {/* Quick Master Actions */}
-            <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto pt-1 sm:pt-0">
+            <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap sm:flex-nowrap">
               <button
                 type="button"
                 onClick={() => setShowScanner(true)}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-[11px] sm:text-xs font-black rounded-xl sm:rounded-2xl backdrop-blur-md border border-emerald-500/50 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer"
+                className="flex-1 sm:flex-none px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold rounded-md backdrop-blur-md border border-emerald-500/50 transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer"
                 title="Scan Printed ID to update status"
               >
-                <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
-                <span className="whitespace-nowrap">Scan Printed ID</span>
+                <QrCode className="w-3 h-3 text-emerald-300 shrink-0" />
+                <span className="whitespace-nowrap">Scan ID</span>
               </button>
 
               <button
                 type="button"
                 disabled={isExporting}
                 onClick={handleExportExcel}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-[11px] sm:text-xs font-black rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 sm:flex-none px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold rounded-md backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer disabled:opacity-50"
                 title="Export Official ID Registry Ledger (Excel)"
               >
                 {isExporting ? (
-                  <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300 animate-spin" />
+                  <RefreshCw className="w-3 h-3 text-emerald-300 animate-spin shrink-0" />
                 ) : (
-                  <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
+                  <FileSpreadsheet className="w-3 h-3 text-emerald-300 shrink-0" />
                 )}
-                <span className="whitespace-nowrap">{isExporting ? "Exporting..." : "Export"}</span>
+                <span className="whitespace-nowrap">{isExporting ? "…" : "Export"}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowIssueModal(true)}
-                className="flex-[2] sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-[11px] sm:text-sm font-black rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
+                className="flex-[2] sm:flex-none px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 text-[10px] font-bold rounded-md shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-950 stroke-[3]" />
-                <span className="whitespace-nowrap">+ Issue ID</span>
+                <Plus className="w-3 h-3 text-slate-950 stroke-[3] shrink-0" />
+                <span className="whitespace-nowrap">Issue ID</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Executive Stat KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
           {/* Total Issued */}
           <div
             onClick={() => {
               setStatusFilter("all");
               setPage(1);
             }}
-            className={`p-3.5 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
+            className={`p-2.5 bg-white rounded-lg border transition-all cursor-pointer shadow-xs hover:shadow-sm ${
               statusFilter === "all"
                 ? "border-[#03254c] ring-2 ring-[#03254c]/15"
                 : "border-gray-100 hover:border-blue-200"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-[11px] font-black text-gray-400 uppercase tracking-wider truncate">
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide truncate">
                 Total Issued
               </span>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-blue-50 text-[#03254c] flex items-center justify-center flex-shrink-0">
-                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              <div className="w-7 h-7 rounded-md bg-blue-50 text-[#03254c] flex items-center justify-center flex-shrink-0">
+                <CreditCard className="w-3.5 h-3.5 text-blue-600" />
               </div>
             </div>
-            <h3 className="text-xl sm:text-3xl font-black text-gray-900 mt-1 sm:mt-2">
-              {stats.total.toLocaleString()}
+            <h3 className="text-lg font-black text-gray-900 mt-0.5 tabular-nums">
+              {(stats.total ?? 0).toLocaleString()}
             </h3>
-            <div className="mt-1 sm:mt-2 flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-gray-500 truncate">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-600 flex-shrink-0"></span>
+            <div className="mt-0.5 flex items-center gap-1 text-[9px] font-semibold text-gray-500 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 flex-shrink-0"></span>
               Official Registry
             </div>
           </div>
@@ -451,57 +424,28 @@ export default function IDManagement() {
               setStatusFilter("active");
               setPage(1);
             }}
-            className={`p-3.5 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
+            className={`p-2.5 bg-white rounded-lg border transition-all cursor-pointer shadow-xs hover:shadow-sm ${
               statusFilter === "active"
                 ? "border-emerald-600 ring-2 ring-emerald-600/15"
                 : "border-gray-100 hover:border-emerald-200"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-[11px] font-black text-gray-400 uppercase tracking-wider truncate">
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide truncate">
                 Active Valid
               </span>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
+              <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5" />
               </div>
             </div>
-            <h3 className="text-xl sm:text-3xl font-black text-emerald-600 mt-1 sm:mt-2">
-              {stats.active.toLocaleString()}
+            <h3 className="text-lg font-black text-emerald-600 mt-0.5 tabular-nums">
+              {(stats.active ?? 0).toLocaleString()}
             </h3>
-            <div className="mt-1 sm:mt-2 flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-emerald-700 truncate">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
-              {stats.total > 0
-                ? `${Math.round((stats.active / stats.total) * 100)}% active`
+            <div className="mt-0.5 flex items-center gap-1 text-[9px] font-semibold text-emerald-700 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+              {(stats.total ?? 0) > 0
+                ? `${Math.round(((stats.active ?? 0) / stats.total) * 100)}% active`
                 : "100% active"}
-            </div>
-          </div>
-
-          {/* Expiring Soon */}
-          <div
-            onClick={() => {
-              setStatusFilter("expired");
-              setPage(1);
-            }}
-            className={`p-3.5 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
-              statusFilter === "expired"
-                ? "border-amber-500 ring-2 ring-amber-500/15"
-                : "border-gray-100 hover:border-amber-200"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-[11px] font-black text-gray-400 uppercase tracking-wider truncate">
-                Expiring (30D)
-              </span>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-            </div>
-            <h3 className="text-xl sm:text-3xl font-black text-amber-600 mt-1 sm:mt-2">
-              {stats.expiringSoon.toLocaleString()}
-            </h3>
-            <div className="mt-1 sm:mt-2 flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-amber-700 truncate">
-              <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-              Due for Renewal
             </div>
           </div>
 
@@ -511,42 +455,42 @@ export default function IDManagement() {
               setStatusFilter("revoked");
               setPage(1);
             }}
-            className={`p-3.5 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
+            className={`p-2.5 bg-white rounded-lg border transition-all cursor-pointer shadow-xs hover:shadow-sm ${
               statusFilter === "revoked"
                 ? "border-rose-600 ring-2 ring-rose-600/15"
                 : "border-gray-100 hover:border-rose-200"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-[11px] font-black text-gray-400 uppercase tracking-wider truncate">
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide truncate">
                 Revoked / Lost
               </span>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
-                <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
+              <div className="w-7 h-7 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
+                <Ban className="w-3.5 h-3.5" />
               </div>
             </div>
-            <h3 className="text-xl sm:text-3xl font-black text-rose-600 mt-1 sm:mt-2">
-              {stats.revoked.toLocaleString()}
+            <h3 className="text-lg font-black text-rose-600 mt-0.5 tabular-nums">
+              {(stats.revoked ?? 0).toLocaleString()}
             </h3>
-            <div className="mt-1 sm:mt-2 flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-rose-600 truncate">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
+            <div className="mt-0.5 flex items-center gap-1 text-[9px] font-semibold text-rose-600 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></span>
               Voided Cards
             </div>
           </div>
         </div>
 
         {/* Action Controls & Filters Bar */}
-        <div className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm space-y-3 sm:space-y-4">
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="bg-white p-2.5 rounded-lg border border-gray-100 shadow-sm space-y-2">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2">
             {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2" />
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search citizen name, ID number, or street..."
-                className="w-full pl-10 sm:pl-11 pr-10 py-2.5 sm:py-3 bg-gray-50/80 border border-gray-200 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#03254c] focus:bg-white transition-all shadow-inner"
+                placeholder="Search name, EC number, street..."
+                className="w-full pl-8 pr-8 py-1.5 bg-gray-50/80 border border-gray-200 rounded-md text-xs font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#03254c] focus:bg-white transition-all"
               />
               {search && (
                 <button
@@ -560,16 +504,16 @@ export default function IDManagement() {
             </div>
 
             {/* Sub-row on Mobile for Purok and Views */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5">
               {/* Purok Selector */}
-              <div className="flex-1 lg:w-48">
+              <div className="flex-1 lg:w-40">
                 <select
                   value={purokFilter}
                   onChange={(e) => {
                     setPurokFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50/80 border border-gray-200 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#03254c] focus:bg-white cursor-pointer"
+                  className="w-full px-2 py-1.5 bg-gray-50/80 border border-gray-200 rounded-md text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#03254c] focus:bg-white cursor-pointer"
                 >
                   {PUROK_LIST.map((p) => (
                     <option key={p} value={p}>
@@ -580,31 +524,31 @@ export default function IDManagement() {
               </div>
 
               {/* View Toggle */}
-              <div className="flex items-center bg-gray-100 p-1 rounded-xl sm:rounded-2xl border border-gray-200 text-xs flex-shrink-0">
+              <div className="flex items-center bg-gray-100 p-0.5 rounded-md border border-gray-200 text-[10px] flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setViewMode("grid")}
-                  className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2 py-1 rounded transition-all flex items-center gap-1 cursor-pointer ${
                     viewMode === "grid"
                       ? "bg-white text-[#03254c] shadow-xs font-black"
                       : "text-gray-500 hover:text-gray-900 font-bold"
                   }`}
                   title="Digital PVC Card Grid View"
                 >
-                  <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <LayoutGrid className="w-3 h-3" />
                   <span className="hidden sm:inline">Cards</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode("table")}
-                  className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2 py-1 rounded transition-all flex items-center gap-1 cursor-pointer ${
                     viewMode === "table"
                       ? "bg-white text-[#03254c] shadow-xs font-black"
                       : "text-gray-500 hover:text-gray-900 font-bold"
                   }`}
                   title="Official Ledger Table View"
                 >
-                  <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <List className="w-3 h-3" />
                   <span className="hidden sm:inline">Ledger</span>
                 </button>
               </div>
@@ -613,24 +557,23 @@ export default function IDManagement() {
               <button
                 type="button"
                 onClick={() => setShowIssueModal(true)}
-                className="hidden sm:flex px-5 py-3 bg-[#03254c] hover:bg-[#021b37] text-white text-xs sm:text-sm font-black rounded-2xl shadow-md hover:shadow-lg transition-all items-center gap-2 flex-shrink-0 cursor-pointer"
+                className="hidden sm:flex px-2.5 py-1.5 bg-[#03254c] hover:bg-[#021b37] text-white text-[11px] font-bold rounded-md shadow-sm transition-all items-center gap-1.5 flex-shrink-0 cursor-pointer"
               >
-                <Plus className="w-4 h-4 stroke-[3]" />
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
                 <span>Issue ID</span>
               </button>
             </div>
           </div>
 
           {/* Filter Status Tabs */}
-          <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 sm:pt-3 flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none w-full sm:w-auto">
+          <div className="flex items-center justify-between border-t border-gray-100 pt-2 flex-wrap gap-1.5">
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none w-full sm:w-auto">
               {[
-                { id: "all", label: "All Records", count: stats.total },
+                { id: "all", label: "All Records", count: stats.total ?? 0 },
                 { id: "household", label: "Household Head", count: stats.householdHead || 0 },
                 { id: "family", label: "Family Member", count: stats.familyMember || 0 },
-                { id: "active", label: "Active", count: stats.active },
-                { id: "expired", label: "Expired", count: stats.expired },
-                { id: "revoked", label: "Revoked", count: stats.revoked },
+                { id: "active", label: "Active", count: stats.active ?? 0 },
+                { id: "revoked", label: "Revoked", count: stats.revoked ?? 0 },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -639,7 +582,7 @@ export default function IDManagement() {
                     setStatusFilter(tab.id);
                     setPage(1);
                   }}
-                  className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2 py-1 rounded-md text-[10px] font-bold whitespace-nowrap transition-all flex items-center gap-1 cursor-pointer ${
                     statusFilter === tab.id
                       ? "bg-[#03254c] text-white shadow-xs"
                       : "bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200/70"
@@ -647,7 +590,7 @@ export default function IDManagement() {
                 >
                   <span>{tab.label}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded-md text-[10px] ${
+                    className={`px-1 py-px rounded text-[9px] tabular-nums ${
                       statusFilter === tab.id
                         ? "bg-white/20 text-white"
                         : "bg-gray-200 text-gray-700"
@@ -659,9 +602,9 @@ export default function IDManagement() {
               ))}
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 sm:border-l border-gray-100 sm:pl-3 pt-2 sm:pt-0">
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none w-full sm:w-auto sm:border-l border-gray-100 sm:pl-2">
               {[
-                { id: "", label: "All Print Status", count: stats.total },
+                { id: "", label: "All Print Status", count: stats.total ?? 0 },
                 { id: "printed", label: "Printed", count: stats.printed || 0 },
                 { id: "not_printed", label: "Not Printed", count: stats.notPrinted || 0 },
               ].map((tab) => (
@@ -672,7 +615,7 @@ export default function IDManagement() {
                     setPrintedFilter(tab.id);
                     setPage(1);
                   }}
-                  className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2 py-1 rounded-md text-[10px] font-bold whitespace-nowrap transition-all flex items-center gap-1 cursor-pointer ${
                     printedFilter === tab.id
                       ? "bg-emerald-600 text-white shadow-xs"
                       : "bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200/70"
@@ -680,7 +623,7 @@ export default function IDManagement() {
                 >
                   <span>{tab.label}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded-md text-[10px] ${
+                    className={`px-1 py-px rounded text-[9px] tabular-nums ${
                       printedFilter === tab.id
                         ? "bg-white/20 text-white"
                         : "bg-gray-200 text-gray-700"
@@ -692,8 +635,8 @@ export default function IDManagement() {
               ))}
             </div>
 
-            <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 w-full sm:w-auto text-right mt-2 sm:mt-0">
-              Showing {filteredIDs.length} of {totalCount} records
+            <span className="text-[10px] font-semibold text-gray-400 w-full sm:w-auto text-right tabular-nums">
+              {filteredIDs.length} / {totalCount.toLocaleString()}
             </span>
           </div>
         </div>
@@ -782,76 +725,36 @@ export default function IDManagement() {
           </div>
         ) : viewMode === "grid" ? (
           /* GRID VIEW: Official Visual Cards */
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
             {filteredIDs.map((card) => (
               <div
                 key={card.id}
                 onClick={() => setViewCardModal(card)}
-                className="bg-white rounded-3xl border border-gray-200/90 hover:border-blue-400 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col justify-between group p-5 space-y-4 cursor-pointer relative"
+                className="group bg-white rounded-lg border border-gray-200 hover:border-[#03254c]/25 hover:bg-slate-50/80 transition-colors cursor-pointer min-w-0 p-2 flex flex-col"
               >
-                {/* Header Info */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className="text-xs font-mono font-black text-[#03254c] bg-blue-50/90 group-hover:bg-blue-100 group-hover:text-blue-900 px-3 py-1 rounded-lg border border-blue-200/80 transition-all shadow-xs inline-flex items-center gap-1.5"
-                    >
-                      <span>{card.id_number}</span>
-                      <ExternalLink className="w-3 h-3 text-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {card.is_printed ? (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer transition-colors" title="Click to mark as NOT printed">
-                           Printed
-                        </button>
-                      ) : (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); handleTogglePrintStatus(card); }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gray-100 hover:bg-gray-200 text-gray-500 border border-gray-200 cursor-pointer transition-colors" title="Click to mark as PRINTED">
-                           Pending Print
-                        </button>
-                      )}
-                      {getStatusBadge(card.status, card.expiry_date)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4
-                      className="text-base font-black text-gray-900 group-hover:text-[#03254c] uppercase truncate transition-colors"
-                    >
-                      {card.full_name}
-                    </h4>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">
-                      {card.gender || "RESIDENT"} • DOB: {card.birth_date || card.date_of_birth || card.birthday || card.resident?.date_of_birth || "N/A"}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-gray-600 truncate flex items-center gap-1.5 font-semibold">
-                    <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                    {card.address}
+                <div className="flex items-baseline justify-between gap-2 min-w-0">
+                  <p className="text-[10px] font-mono font-semibold text-[#03254c] truncate min-w-0">
+                    {card.id_number}
                   </p>
+                  {getGridCardAttention(card)}
                 </div>
 
-                {/* Details Matrix */}
-                <div className="grid grid-cols-2 gap-2 py-2.5 px-3 bg-slate-50 group-hover:bg-blue-50/40 rounded-2xl border border-gray-100 text-[11px] transition-colors">
-                  <div>
-                    <span className="text-gray-400 font-bold block text-[9px] uppercase">
-                      Issued
-                    </span>
-                    <span className="font-bold text-gray-700 truncate block">
-                      {card.issue_date}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 font-bold block text-[9px] uppercase">
-                      Expires
-                    </span>
-                    <span className="font-bold text-emerald-700 truncate block">
-                      {card.expiry_date}
-                    </span>
-                  </div>
-                </div>
+                <h4 className="mt-0.5 text-[11px] font-bold text-gray-900 group-hover:text-[#03254c] uppercase truncate leading-snug">
+                  {card.full_name}
+                </h4>
 
-                {/* Actions Toolbar */}
+                <p className="mt-0.5 text-[10px] text-gray-500 line-clamp-2 leading-snug">
+                  {card.address}
+                </p>
+
+                {card.issue_date && (
+                  <p className="mt-1 text-[9px] text-gray-400 tabular-nums">
+                    Issued {card.issue_date}
+                  </p>
+                )}
+
                 <div
-                  className="flex items-center gap-2 pt-2 border-t border-gray-100"
+                  className="mt-1.5 flex items-center justify-end gap-0.5 text-gray-300 group-hover:text-gray-500 transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
@@ -861,26 +764,11 @@ export default function IDManagement() {
                       setSelectedCard(card);
                       setShowPrintModal(true);
                     }}
-                    className="flex-1 py-2.5 px-3 bg-[#03254c] hover:bg-[#021b37] text-white text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                    className="p-1 rounded hover:bg-blue-50 hover:text-[#03254c] cursor-pointer"
+                    title="Print PVC card"
                   >
-                    <Printer className="w-3.5 h-3.5 text-blue-200" />
-                    <span>Print PVC Card</span>
+                    <Printer className="w-3.5 h-3.5" />
                   </button>
-
-                  {card.status === "active" ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRenew(card);
-                      }}
-                      className="p-2.5 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 rounded-xl transition-colors border border-gray-200/60 cursor-pointer"
-                      title="Renew ID (Extend 1 Year)"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </button>
-                  ) : null}
-
                   {card.status === "active" ? (
                     <button
                       type="button"
@@ -888,23 +776,22 @@ export default function IDManagement() {
                         e.stopPropagation();
                         handleRevoke(card);
                       }}
-                      className="p-2.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-xl transition-colors border border-gray-200/60 cursor-pointer"
-                      title="Revoke / Report Lost"
+                      className="p-1 rounded hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
+                      title="Revoke"
                     >
-                      <Ban className="w-4 h-4" />
+                      <Ban className="w-3.5 h-3.5" />
                     </button>
                   ) : null}
-
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setIdToDelete(card);
                     }}
-                    className="p-2.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-xl transition-colors border border-gray-200/60 cursor-pointer"
-                    title="Delete Record"
+                    className="p-1 rounded hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
+                    title="Delete"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -912,18 +799,18 @@ export default function IDManagement() {
           </div>
         ) : (
           /* TABLE VIEW: Official Government Ledger */
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50/80 text-slate-500 uppercase tracking-widest font-black text-[10px] border-b border-slate-200">
+              <table className="w-full text-left text-[11px]">
+                <thead className="bg-slate-50/80 text-slate-500 uppercase tracking-wide font-bold text-[9px] border-b border-slate-200">
                   <tr>
-                    <th className="py-4 px-5 whitespace-nowrap">EC Card No.</th>
-                    <th className="py-4 px-5 whitespace-nowrap">Citizen Legal Name</th>
-                    <th className="py-4 px-5 whitespace-nowrap">Address</th>
-                    <th className="py-4 px-5 whitespace-nowrap">Issuance & Expiry</th>
-                    <th className="py-4 px-5 whitespace-nowrap">Status</th>
-                    <th className="py-4 px-5 whitespace-nowrap">Printed Status</th>
-                    <th className="py-4 px-5 text-right whitespace-nowrap">Actions</th>
+                    <th className="py-2 px-2.5 whitespace-nowrap">EC No.</th>
+                    <th className="py-2 px-2.5 whitespace-nowrap">Name</th>
+                    <th className="py-2 px-2.5 whitespace-nowrap">Address</th>
+                    <th className="py-2 px-2.5 whitespace-nowrap">Issued</th>
+                    <th className="py-2 px-2.5 whitespace-nowrap">Status</th>
+                    <th className="py-2 px-2.5 whitespace-nowrap">Print</th>
+                    <th className="py-2 px-2.5 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100/80 text-slate-700">
@@ -933,39 +820,30 @@ export default function IDManagement() {
                       onClick={() => setViewCardModal(card)}
                       className="hover:bg-blue-50/60 transition-colors cursor-pointer group"
                     >
-                      <td className="py-4 px-5">
-                        <div className="flex flex-col items-start gap-1.5">
-                          <span className="font-mono font-bold text-[#03254c] bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-700 px-2.5 py-1 rounded-md transition-all inline-flex items-center gap-1.5 text-xs shadow-xs border border-slate-200 group-hover:border-blue-200">
-                            <CreditCard className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500" />
-                            <span>{card.id_number}</span>
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-5">
-                        <div className="font-black text-slate-900 group-hover:text-[#03254c] uppercase transition-colors text-xs">
-                          {card.full_name}
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
-                          {card.gender || "RESIDENT"} • DOB: {card.birth_date || card.date_of_birth || card.birthday || card.resident?.date_of_birth || "N/A"}
+                      <td className="py-1.5 px-2.5">
+                        <span className="font-mono font-bold text-[#03254c] bg-slate-100 group-hover:bg-blue-50 px-1.5 py-0.5 rounded inline-flex items-center gap-1 text-[10px] border border-slate-200">
+                          <CreditCard className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span>{card.id_number}</span>
                         </span>
                       </td>
-                      <td className="py-4 px-5 text-slate-600 font-medium max-w-xs truncate text-xs">
+                      <td className="py-1.5 px-2.5 max-w-[140px]">
+                        <div className="font-bold text-slate-900 group-hover:text-[#03254c] uppercase truncate text-[10px]">
+                          {card.full_name}
+                        </div>
+                        <span className="text-[9px] text-slate-400 font-medium uppercase truncate block">
+                          {card.gender || "—"} • {card.birth_date || card.date_of_birth || card.birthday || card.resident?.date_of_birth || "—"}
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2.5 text-slate-600 max-w-[180px] truncate text-[10px]">
                         {card.address}
                       </td>
-                      <td className="py-4 px-5 text-xs">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-slate-600 font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> {card.issue_date}
-                          </span>
-                          <span className="text-slate-500 font-medium flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> {card.expiry_date}
-                          </span>
-                        </div>
+                      <td className="py-1.5 px-2.5 text-[10px] text-slate-600 tabular-nums">
+                        {card.issue_date || "—"}
                       </td>
-                      <td className="py-4 px-5">
-                        {getStatusBadge(card.status, card.expiry_date)}
+                      <td className="py-1.5 px-2.5">
+                        {getStatusBadge(card.status)}
                       </td>
-                      <td className="py-4 px-5">
+                      <td className="py-1.5 px-2.5">
                         {card.is_printed ? (
                           <button
                             type="button"
@@ -995,21 +873,20 @@ export default function IDManagement() {
                         )}
                       </td>
                       <td
-                        className="py-4 px-5 text-right whitespace-nowrap"
+                        className="py-1.5 px-2.5 text-right whitespace-nowrap"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setViewCardModal(card);
                             }}
-                            className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 rounded-lg transition-all inline-flex items-center gap-1.5 font-bold cursor-pointer shadow-xs text-xs"
-                            title="View Dossier"
+                            className="px-1.5 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded transition-all inline-flex items-center gap-1 font-semibold cursor-pointer text-[10px]"
+                            title="View"
                           >
-                            <ShieldCheck className="w-3.5 h-3.5 text-[#03254c]" />
-                            <span>View</span>
+                            <ShieldCheck className="w-3 h-3 text-[#03254c]" />
                           </button>
                           <button
                             type="button"
@@ -1018,23 +895,10 @@ export default function IDManagement() {
                               setSelectedCard(card);
                               setShowPrintModal(true);
                             }}
-                            className="px-3 py-1.5 bg-[#03254c] hover:bg-[#021b37] border border-[#03254c] text-white rounded-lg transition-all inline-flex items-center gap-1.5 font-bold cursor-pointer shadow-xs text-xs"
-                            title="Print Card"
+                            className="px-1.5 py-1 bg-[#03254c] hover:bg-[#021b37] text-white rounded transition-all inline-flex items-center gap-1 font-semibold cursor-pointer text-[10px]"
+                            title="Print"
                           >
-                            <Printer className="w-3.5 h-3.5 text-blue-200" />
-                            <span>Print</span>
-                          </button>
-                          <div className="w-px h-6 bg-slate-200 mx-1"></div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRenew(card);
-                            }}
-                            className="p-1.5 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-md transition-colors cursor-pointer"
-                            title="Renew ID"
-                          >
-                            <RefreshCw className="w-4 h-4" />
+                            <Printer className="w-3 h-3 text-blue-200" />
                           </button>
                           <button
                             type="button"
@@ -1042,10 +906,10 @@ export default function IDManagement() {
                               e.stopPropagation();
                               setIdToDelete(card);
                             }}
-                            className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-md transition-colors cursor-pointer"
-                            title="Delete Record"
+                            className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                            title="Delete"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -1059,7 +923,7 @@ export default function IDManagement() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center pt-2">
             <Pagination
               currentPage={page}
               totalPages={totalPages}
@@ -1079,7 +943,6 @@ export default function IDManagement() {
             setSelectedCard(c);
             setShowPrintModal(true);
           }}
-          onRenew={handleRenew}
           onRevoke={handleRevoke}
           onUpdate={(updatedCard) => {
             setViewCardModal(updatedCard);

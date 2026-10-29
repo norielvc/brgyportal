@@ -1,6 +1,5 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
-
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
   if (!userRes) return;

@@ -262,15 +262,6 @@ export default async function handler(req, res) {
         });
       }
 
-      if (validID.status === "expired" || (validID.expiry_date && new Date(validID.expiry_date) < new Date())) {
-        return res.status(422).json({
-          success: false,
-          isInvalid: true,
-          error: "Expired Barangay ID",
-          message: `The Barangay ID (${validID.id_number}) for ${validID.full_name} has expired. Please renew the ID card.`,
-        });
-      }
-
       // ── 2. DUPLICATE CHECK (SCOPED TO ACTIVE EVENT & TENANT) ─────────
       let duplicateQuery = supabase
         .from("qr_scans")

@@ -253,91 +253,63 @@ export default function PickupManagementPage() {
     totalProcessed: certificates.filter(c => ['ready', 'ready_for_pickup', 'released'].includes(c.status)).length
   };
 
+  const successRate =
+    stats.totalProcessed > 0
+      ? Math.round((stats.released / stats.totalProcessed) * 100)
+      : 0;
+
   return (
-    <div className="space-y-3.5 sm:space-y-5">
-      {/* Statistics Cards (3 columns on both mobile & desktop) */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6">
-        <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 md:p-6 text-white shadow-md sm:shadow-lg shadow-emerald-200 border border-emerald-500/20 relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-emerald-100 text-[8px] sm:text-[10px] uppercase font-black tracking-wider sm:tracking-[0.2em] mb-0.5 sm:mb-1 truncate">Ready for Pickup</p>
-            <p className="text-xl sm:text-3xl md:text-4xl font-black tracking-tight">{stats.readyForPickup}</p>
-            <div className="mt-1 sm:mt-3 flex items-center gap-1">
-              <span className="bg-white/20 px-1.5 sm:px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-black uppercase truncate">Priority</span>
-            </div>
-          </div>
-          <Package className="hidden sm:block absolute -bottom-4 -right-4 w-20 h-20 text-white/10 -rotate-12 pointer-events-none" />
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 md:p-6 text-white shadow-md sm:shadow-lg shadow-blue-200 border border-blue-500/20 relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-blue-100 text-[8px] sm:text-[10px] uppercase font-black tracking-wider sm:tracking-[0.2em] mb-0.5 sm:mb-1 truncate">Total Released</p>
-            <p className="text-xl sm:text-3xl md:text-4xl font-black tracking-tight">{stats.released}</p>
-            <div className="mt-1 sm:mt-3 flex items-center gap-1">
-              <span className="bg-white/20 px-1.5 sm:px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-black uppercase truncate">Released</span>
-            </div>
-          </div>
-          <CheckCircle className="hidden sm:block absolute -bottom-4 -right-4 w-20 h-20 text-white/10 -rotate-12 pointer-events-none" />
-        </div>
-
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 md:p-6 text-white shadow-md sm:shadow-lg shadow-gray-200 border border-gray-700/20 relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase font-black tracking-wider sm:tracking-[0.2em] mb-0.5 sm:mb-1 truncate">Success Rate</p>
-            <p className="text-xl sm:text-3xl md:text-4xl font-black tracking-tight">{stats.totalProcessed > 0 ? Math.round((stats.released / stats.totalProcessed) * 100) : 0}%</p>
-            <div className="mt-1 sm:mt-3 flex items-center gap-1">
-              <span className="bg-white/10 px-1.5 sm:px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-black uppercase truncate">Efficiency</span>
-            </div>
-          </div>
-          <Activity className="hidden sm:block absolute -bottom-4 -right-4 w-20 h-20 text-white/5 -rotate-12 pointer-events-none" />
-        </div>
-      </div>
-
-      {/* Filters & Actions Toolbar */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2.5 sm:p-4">
-        <div className="flex flex-col md:flex-row gap-2.5 sm:gap-4 items-stretch md:items-center justify-between">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
+    <div className="max-w-[1600px] mx-auto space-y-2 text-[13px] pb-4">
+      {/* Toolbar: filters + compact inline stats (single address block — no duplicate KPI banners) */}
+      <div className="bg-white rounded-lg border border-gray-200 p-2 sm:p-2.5">
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-2 p-0.5 bg-slate-100 rounded-md border border-slate-200/80 gap-0.5 sm:w-auto w-full min-w-[200px]">
             <button
               onClick={() => setStatusFilter('ready')}
-              className={`flex-1 sm:flex-initial justify-center px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-widest transition-all flex items-center gap-1.5 ${statusFilter === 'ready'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
-                : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'
-                }`}
+              className={`py-1.5 px-2 rounded text-[10px] font-bold transition-all flex items-center justify-center gap-1 ${
+                statusFilter === 'ready'
+                  ? 'bg-white text-emerald-700 shadow-sm'
+                  : 'text-gray-600 hover:bg-slate-200/50'
+              }`}
             >
-              <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <Package className="w-3 h-3 shrink-0" />
               <span>Ready ({stats.readyForPickup})</span>
             </button>
             <button
               onClick={() => setStatusFilter('released')}
-              className={`flex-1 sm:flex-initial justify-center px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-widest transition-all flex items-center gap-1.5 ${statusFilter === 'released'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'
-                }`}
+              className={`py-1.5 px-2 rounded text-[10px] font-bold transition-all flex items-center justify-center gap-1 ${
+                statusFilter === 'released'
+                  ? 'bg-white text-[#03254c] shadow-sm'
+                  : 'text-gray-600 hover:bg-slate-200/50'
+              }`}
             >
-              <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <CheckCircle className="w-3 h-3 shrink-0" />
               <span>Released ({stats.released})</span>
             </button>
           </div>
+            <p className="text-[10px] font-semibold text-gray-500 tabular-nums hidden md:block">
+              {successRate}% release rate
+            </p>
+          </div>
 
-          {/* Search, Type & Refresh */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            {/* Search */}
-            <div className="relative flex-1 min-w-0 md:w-52">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+            <div className="relative flex-1 min-w-0 sm:max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search reference, name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm font-medium"
+                className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-1 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none text-xs"
               />
             </div>
 
-            {/* Type Filter */}
             <div className="relative shrink-0">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="appearance-none pl-3 pr-7 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs font-bold text-gray-700 cursor-pointer outline-none"
+                className="appearance-none pl-2 pr-7 py-1.5 bg-gray-50 border border-gray-200 rounded-md focus:ring-1 focus:ring-[#03254c]/20 text-[11px] font-semibold text-gray-700 cursor-pointer outline-none"
               >
                 <option value="all">All Types</option>
                 <option value="barangay_clearance">Clearance</option>
@@ -352,27 +324,27 @@ export default function PickupManagementPage() {
               onClick={handleRefresh}
               disabled={refreshing}
               title="Refresh Records"
-              className="p-2 sm:px-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 disabled:opacity-50"
+              className="px-2.5 py-1.5 bg-[#03254c] hover:opacity-90 text-white rounded-md text-[11px] font-semibold flex items-center justify-center gap-1 transition-all shrink-0 disabled:opacity-50"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-blue-600' : ''}`} />
-              <span className="hidden lg:inline">Refresh</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Certificates Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center">
-            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading certificates...</p>
+          <div className="py-10 text-center">
+            <div className="animate-spin w-7 h-7 border-2 border-gray-200 border-t-[#03254c] rounded-full mx-auto mb-2"></div>
+            <p className="text-gray-500 text-xs">Loading certificates...</p>
           </div>
         ) : filteredCertificates.length === 0 ? (
-          <div className="p-12 text-center">
-            <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 font-medium">No certificates found</p>
-            <p className="text-gray-400 text-sm mt-1">
+          <div className="py-10 px-4 text-center">
+            <Package className="w-9 h-9 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-600 font-semibold text-xs">No certificates found</p>
+            <p className="text-gray-400 text-[11px] mt-0.5">
               {statusFilter === 'ready'
                 ? 'No certificates are currently ready for pickup'
                 : 'Try adjusting your filters'}
@@ -385,15 +357,15 @@ export default function PickupManagementPage() {
               {filteredCertificates.map((certificate) => (
                 <div
                   key={certificate.id}
-                  className="p-3.5 bg-white transition-all active:bg-gray-50 space-y-2.5"
+                  className="p-2.5 bg-white transition-all active:bg-gray-50 space-y-2"
                 >
                   {/* Top Row: Ref number & Status */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs font-bold text-blue-600 truncate">
+                    <span className="font-mono text-[11px] font-bold text-[#03254c] truncate">
                       {certificate.reference_number}
                     </span>
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${getStatusColor(
+                      className={`inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold border shrink-0 ${getStatusColor(
                         certificate.status
                       )}`}
                     >
@@ -403,11 +375,11 @@ export default function PickupManagementPage() {
 
                   {/* Middle Row: Applicant */}
                   <div className="flex items-start gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 mt-0.5">
-                      <User className="w-4 h-4 text-slate-600" />
+                    <div className="w-7 h-7 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                      <User className="w-3.5 h-3.5 text-slate-600" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-tight truncate">
+                      <p className="text-[11px] font-bold text-gray-900 uppercase truncate">
                         {certificate.applicant_name || certificate.full_name}
                       </p>
                       <p className="text-[11px] text-gray-500 truncate flex items-center gap-1">
@@ -435,10 +407,10 @@ export default function PickupManagementPage() {
                   </div>
 
                   {/* Action Buttons Row */}
-                  <div className="pt-2 border-t border-gray-100 flex items-center justify-end gap-2">
+                  <div className="pt-1.5 border-t border-gray-100 flex items-center justify-end gap-1">
                     <button
                       onClick={() => setSelectedCertificate(certificate)}
-                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                      className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       Details
@@ -448,7 +420,7 @@ export default function PickupManagementPage() {
                       (certificate.email || certificate.residents?.email) && (
                         <button
                           onClick={() => openSendCertificate(certificate)}
-                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors shadow-sm"
+                          className="px-2 py-1 bg-[#03254c] hover:opacity-90 text-white rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors"
                         >
                           <Mail className="w-3.5 h-3.5" />
                           Email
@@ -458,7 +430,7 @@ export default function PickupManagementPage() {
                     {["ready", "ready_for_pickup"].includes(certificate.status) && (
                       <button
                         onClick={() => openPickupVerification(certificate)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors shadow-sm"
+                        className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[10px] font-bold flex items-center gap-1 transition-colors"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
                         Release
@@ -477,91 +449,89 @@ export default function PickupManagementPage() {
 
             {/* DESKTOP VIEW: High-Density Table (hidden md:block) */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-[11px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Reference
                     </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Applicant
                     </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Type
                     </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                      Date Updated
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
+                      Updated
                     </th>
-                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <th className="px-2.5 py-2 text-center text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {filteredCertificates.map((certificate) => (
                     <tr
                       key={certificate.id}
                       className="hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-sans font-black text-blue-600 scale-110 inline-block tracking-tighter">
+                      <td className="px-2.5 py-1.5 whitespace-nowrap">
+                        <span className="font-mono font-bold text-[#03254c] text-[11px]">
                           {certificate.reference_number}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200 shadow-sm">
-                            <User className="w-4 h-4 text-gray-500" />
+                      <td className="px-2.5 py-1.5 max-w-[200px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200 shrink-0">
+                            <User className="w-3.5 h-3.5 text-gray-500" />
                           </div>
-                          <div>
-                            <p className="font-extrabold text-gray-900 uppercase text-[13px] tracking-tight">
+                          <div className="min-w-0">
+                            <p className="font-bold text-gray-900 uppercase text-[11px] truncate">
                               {certificate.applicant_name ||
                                 certificate.full_name}
                             </p>
-                            <p className="text-[11px] font-sans font-bold text-gray-400 tracking-tighter">
+                            <p className="text-[10px] text-gray-500 truncate">
                               {certificate.contact_number ||
-                                "NO CONTACT RECORDED"}
+                                "No contact"}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
+                      <td className="px-2.5 py-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <div
-                            className={`w-2 h-2 rounded-full ${getTypeColor(
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${getTypeColor(
                               certificate.certificate_type
-                            )} ring-4 ring-gray-50`}
+                            )}`}
                           ></div>
-                          <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-tight">
+                          <span className="text-[11px] font-medium text-gray-700 truncate">
                             {getTypeLabel(certificate.certificate_type)}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-2.5 py-1.5">
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black tracking-widest border shadow-sm ${getStatusColor(
+                          className={`inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold border ${getStatusColor(
                             certificate.status
                           )}`}
                         >
                           {certificate.status?.replace(/_/g, " ").toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase font-sans">
-                          {formatDate(certificate.updated_at)}
-                        </div>
+                      <td className="px-2.5 py-1.5 whitespace-nowrap text-[10px] text-gray-500 tabular-nums">
+                        {formatDate(certificate.updated_at)}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="px-2.5 py-1.5">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => setSelectedCertificate(certificate)}
-                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1 text-gray-500 hover:text-[#03254c] hover:bg-blue-50 rounded transition-colors"
                             title="View Details"
                           >
-                            <Eye className="w-5 h-5" />
+                            <Eye className="w-4 h-4" />
                           </button>
 
                           {["ready", "ready_for_pickup"].includes(
@@ -571,7 +541,7 @@ export default function PickupManagementPage() {
                               certificate.residents?.email) && (
                               <button
                                 onClick={() => openSendCertificate(certificate)}
-                                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 flex items-center gap-1.5 text-[11px] shadow-sm transition-all active:scale-95"
+                                className="px-2 py-1 bg-[#03254c] text-white rounded-md font-semibold hover:opacity-90 flex items-center gap-1 text-[10px] transition-all"
                                 title="Send Certificate to Email"
                               >
                                 <Mail className="w-3.5 h-3.5" />
@@ -586,7 +556,7 @@ export default function PickupManagementPage() {
                               onClick={() =>
                                 openPickupVerification(certificate)
                               }
-                              className="px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 flex items-center gap-1.5 text-[11px] shadow-sm transition-all active:scale-95"
+                              className="px-2 py-1 bg-emerald-600 text-white rounded-md font-semibold hover:bg-emerald-700 flex items-center gap-1 text-[10px] transition-all"
                               title="Confirm Pickup"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
@@ -595,8 +565,8 @@ export default function PickupManagementPage() {
                           )}
 
                           {certificate.status === "released" && (
-                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">
-                              PICKED UP
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[9px] font-bold border border-gray-200">
+                              Picked up
                             </span>
                           )}
                         </div>
@@ -650,7 +620,11 @@ export default function PickupManagementPage() {
 }
 
 PickupManagementPage.getLayout = (page) => (
-  <Layout title="Certificate Pickup Management" subtitle="Manage certificate pickups and verification">
+  <Layout
+    title="Pickup Management"
+    subtitle="Ready queue and release verification"
+    mainClassName="p-2 sm:p-3 pb-20 lg:pb-3"
+  >
     {page}
   </Layout>
 );

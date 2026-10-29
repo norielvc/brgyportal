@@ -31,7 +31,6 @@ export default function ViewBarangayIDModal({
   onClose,
   card,
   onPrint,
-  onRenew,
   onRevoke,
   onUpdate,
   tenantConfig = {},
@@ -523,30 +522,8 @@ export default function ViewBarangayIDModal({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-3.5 sm:p-5 bg-white border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 flex-shrink-0">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="w-full sm:w-auto px-4 py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer text-center"
-          >
-            Close Dossier
-          </button>
-
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
-            {card.status === "active" && onRenew ? (
-              <button
-                type="button"
-                onClick={() => {
-                  handleClose();
-                  onRenew(card);
-                }}
-                className="flex-1 sm:flex-none px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-200/80"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Renew</span>
-              </button>
-            ) : null}
-
+        <div className="shrink-0 border-t border-gray-200 bg-white px-4 sm:px-6 py-4">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-end gap-2">
             {card.status === "active" && onRevoke ? (
               <button
                 type="button"

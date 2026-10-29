@@ -1,4 +1,14 @@
-import { Bell, User, Settings, LogOut, Menu, HelpCircle, Smartphone, Download } from "lucide-react";
+import {
+  Bell,
+  User,
+  Settings,
+  LogOut,
+  Menu,
+  HelpCircle,
+  Smartphone,
+  PanelLeft,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { getUserData, logout, getAuthToken } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
@@ -10,6 +20,8 @@ export default function Header({
   onSearch,
   searchTerm,
   onMenuClick,
+  isDesktopSidebarOpen = true,
+  onToggleDesktopSidebar,
   onNeedHelp,
   onOpenInstall,
   isInstalled,
@@ -116,60 +128,75 @@ export default function Header({
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-xl border-b border-gray-100/80 px-3 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 sm:py-4 sticky top-0 z-30 shadow-sm transition-all duration-300">
-      <div className="flex items-center justify-between gap-3 sm:gap-4">
-        {/* Mobile Menu Toggle */}
+    <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 px-2 sm:px-4 pt-[calc(env(safe-area-inset-top,0px)+0.35rem)] pb-2 sticky top-0 z-30 shadow-sm">
+      <div className="flex items-center justify-between gap-2 min-h-[2.25rem]">
+        {/* Mobile menu */}
         <button
           onClick={onMenuClick}
-          aria-label="Open Navigation Menu"
-          className="lg:hidden p-2 -ml-1 rounded-xl text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors shrink-0"
+          aria-label="Open navigation menu"
+          className="lg:hidden p-1.5 -ml-0.5 rounded-md text-gray-700 hover:bg-gray-100 transition-colors shrink-0"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4 h-4" />
         </button>
 
+        {/* Desktop sidebar show/hide */}
+        {onToggleDesktopSidebar && (
+          <button
+            type="button"
+            onClick={onToggleDesktopSidebar}
+            aria-label={isDesktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            title={isDesktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            className={cn(
+              "hidden lg:flex p-1.5 rounded-md text-gray-600 hover:bg-gray-100 hover:text-[#03254c] transition-colors shrink-0",
+              !isDesktopSidebarOpen && "-ml-0.5",
+            )}
+          >
+            <PanelLeft className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Title section */}
-        <div className="flex-1 min-w-0">
-          <h1 className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 drop-shadow-sm truncate">
+        <div className="flex-1 min-w-0 leading-tight">
+          <h1 className="text-sm sm:text-base font-bold tracking-tight text-gray-900 truncate">
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-0.5 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-widest text-gray-400 truncate">
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 truncate hidden sm:block">
               {subtitle}
             </p>
           )}
         </div>
 
         {/* Right section */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           {/* Install PWA App Button */}
           {onOpenInstall && !isInstalled && (
             <button
               onClick={onOpenInstall}
               title="Install BrgyDesk Progressive Web App"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-[#03254c] bg-blue-50 hover:bg-blue-100/80 border border-blue-200/60 rounded-xl shadow-sm hover:shadow transition-all group"
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-[#03254c] bg-blue-50 hover:bg-blue-100 border border-blue-200/60 rounded-md transition-all"
             >
-              <Smartphone className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">Install App</span>
-              <span className="sm:hidden">App</span>
+              <Smartphone className="w-3 h-3 text-blue-600" />
+              <span className="hidden md:inline">Install</span>
             </button>
           )}
 
           {/* Need Help / E-Sumbong */}
           <button
             onClick={onNeedHelp}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
+            className="hidden sm:flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 hover:bg-red-50 rounded-md transition-all"
           >
-            <HelpCircle className="w-4 h-4" />
-            <span>E-Sumbong</span>
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">E-Sumbong</span>
           </button>
 
           {/* Notifications */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 sm:p-2.5 text-gray-500 hover:text-[#03254c] hover:bg-gray-100 focus:outline-none rounded-xl transition-all"
+              className="relative p-1.5 text-gray-500 hover:text-[#03254c] hover:bg-gray-100 rounded-md transition-all"
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse"></span>
               )}
@@ -254,20 +281,19 @@ export default function Header({
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-3 p-1.5 pr-3 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 border border-transparent hover:border-gray-100"
+              className="flex items-center gap-1.5 p-1 pr-1.5 rounded-md hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100"
             >
-              <div className="w-9 h-9 bg-gradient-to-br from-[#03254c] to-blue-800 rounded-lg flex items-center justify-center shadow-inner relative overflow-hidden group-hover:shadow-md transition-all">
-                <span className="text-sm font-black text-white tracking-widest z-10">
+              <div className="w-7 h-7 bg-gradient-to-br from-[#03254c] to-blue-800 rounded-md flex items-center justify-center">
+                <span className="text-[10px] font-bold text-white">
                   {getInitials(user?.firstName, user?.lastName)}
                 </span>
               </div>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-black uppercase text-gray-900 tracking-tight leading-none">
+              <div className="hidden lg:block text-left max-w-[120px]">
+                <p className="text-[11px] font-bold text-gray-900 truncate leading-none">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-                  {user?.role}{" "}
-                  <span className="text-emerald-500 ml-0.5">• Online</span>
+                <p className="text-[9px] font-semibold text-gray-400 uppercase truncate mt-0.5">
+                  {user?.role}
                 </p>
               </div>
             </button>

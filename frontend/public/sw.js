@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brgydesk-pwa-v1.0.0';
+const CACHE_NAME = 'brgydesk-pwa-v1.0.1';
 const OFFLINE_URL = '/offline.html';
 
 const PRECACHE_ASSETS = [

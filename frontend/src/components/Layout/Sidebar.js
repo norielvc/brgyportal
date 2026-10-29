@@ -29,6 +29,7 @@ import {
   MapPin,
   AlertCircle,
   CreditCard,
+  PanelLeftClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout, getUserData } from "@/lib/auth";
@@ -47,10 +48,10 @@ const mainMenuItems = [
     description: "Master Census Record",
   },
   {
-    name: "ID Management",
+    name: "EC Card",
     href: "/id-management",
     icon: CreditCard,
-    description: "Barangay Citizen IDs",
+    description: "EC Card registry",
   },
   {
     name: "Certificate Requests",
@@ -211,6 +212,8 @@ export default function Sidebar({
   className,
   isMobileMenuOpen,
   setIsMobileMenuOpen,
+  isDesktopOpen = true,
+  onToggleDesktop,
   onOpenInstall,
   isInstalled,
 }) {
@@ -229,6 +232,10 @@ export default function Sidebar({
   });
 
   const navRef = useRef(null);
+  const [navScrollEdges, setNavScrollEdges] = useState({
+    top: false,
+    bottom: false,
+  });
   const user = getUserData();
   const role = user?.role?.toLowerCase();
   const adminRoles = [
@@ -303,13 +310,24 @@ export default function Sidebar({
         setTimeout(() => {
           if (navRef.current) {
             navRef.current.scrollTop = parseInt(savedScrollPos, 10);
+            updateNavScrollEdges(navRef.current);
           }
         }, 50);
       }
     }
   }, []);
 
+  const updateNavScrollEdges = (el) => {
+    if (!el) return;
+    const canScroll = el.scrollHeight > el.clientHeight + 2;
+    setNavScrollEdges({
+      top: canScroll && el.scrollTop > 6,
+      bottom: canScroll && el.scrollTop + el.clientHeight < el.scrollHeight - 6,
+    });
+  };
+
   const handleScroll = (e) => {
+    updateNavScrollEdges(e.currentTarget);
     if (typeof window !== "undefined") {
       sessionStorage.setItem(
         "sidebarScrollPos",
@@ -317,6 +335,21 @@ export default function Sidebar({
       );
     }
   };
+
+  useEffect(() => {
+    const syncNavScroll = () => {
+      if (navRef.current) {
+        updateNavScrollEdges(navRef.current);
+      }
+    };
+    syncNavScroll();
+    const t = setTimeout(syncNavScroll, 120);
+    window.addEventListener("resize", syncNavScroll);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("resize", syncNavScroll);
+    };
+  }, [expandedItems, router.pathname]);
 
   // Check if any child item is active to auto-expand parent
   const isParentActive = (item) => {
@@ -340,45 +373,66 @@ export default function Sidebar({
   });
 
   const renderNav = (showClose) => (
-    <div className="flex flex-col h-full bg-[#03254c] pt-[calc(env(safe-area-inset-top,0px))] pb-[calc(env(safe-area-inset-bottom,0px))]">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden bg-[#03254c] pt-[calc(env(safe-area-inset-top,0px))] pb-[calc(env(safe-area-inset-bottom,0px))]">
       {/* Logo Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center mr-3 border border-white/20">
-            <LayoutDashboard className="w-4 h-4 text-white" />
+      <div className="flex shrink-0 items-center justify-between px-2.5 py-2 border-b border-white/10">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 bg-white/10 rounded-md flex items-center justify-center border border-white/20 shrink-0">
+            <LayoutDashboard className="w-3.5 h-3.5 text-white" />
           </div>
-          <div>
-            <h1 className="text-xs font-black text-white leading-tight tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-[11px] font-bold text-white leading-none truncate">
               BrgyDesk
             </h1>
-            <p className="text-[9px] font-bold text-blue-300/80 uppercase tracking-[0.18em]">
-              Management Portal
+            <p className="text-[8px] font-semibold text-blue-300/70 uppercase tracking-wide truncate">
+              Portal
             </p>
           </div>
         </div>
-        {showClose && (
+        {showClose ? (
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(false)}
             className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
+            aria-label="Close menu"
           >
             <X className="w-4 h-4" />
           </button>
+        ) : (
+          onToggleDesktop && (
+            <button
+              type="button"
+              onClick={onToggleDesktop}
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
+              title="Hide sidebar"
+              aria-label="Hide sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )
         )}
       </div>
 
-      {/* Navigation List */}
-      <nav
-        ref={navRef}
-        onScroll={handleScroll}
-        className="flex-1 px-3 py-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10"
-      >
-        <div className="mb-2 px-3">
-          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.25em]">
-            Admin Navigator
-          </p>
-        </div>
-
+      {/* Navigation List — scrollable; header/footer stay fixed */}
+      <div className="relative flex-1 min-h-0">
+        {navScrollEdges.top && (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-4 bg-gradient-to-b from-[#03254c] to-transparent"
+            aria-hidden
+          />
+        )}
+        {navScrollEdges.bottom && (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-5 bg-gradient-to-t from-[#03254c] via-[#03254c]/80 to-transparent"
+            aria-hidden
+          />
+        )}
+        <nav
+          ref={navRef}
+          onScroll={handleScroll}
+          className="sidebar-nav-scroll h-full px-1.5 py-2 pr-1 space-y-0.5 overflow-y-auto overflow-x-hidden"
+          aria-label="Main navigation"
+        >
         {filteredMenuItems.map((item) => {
           const isExpanded = getExpandedState(item);
           const hasChildren = item.children && item.children.length > 0;
@@ -392,7 +446,7 @@ export default function Sidebar({
                   type="button"
                   onClick={() => toggleExpanded(item.name)}
                   className={cn(
-                    "group flex items-center w-full px-3 py-2 text-xs font-bold rounded-xl transition-all duration-200",
+                    "group flex items-center w-full px-2 py-1.5 text-[11px] font-semibold rounded-md transition-all duration-200",
                     isParentActive(item)
                       ? "bg-white/10 text-white shadow-sm shadow-black/20"
                       : "text-blue-100/70 hover:bg-white/5 hover:text-white",
@@ -400,69 +454,45 @@ export default function Sidebar({
                 >
                   <item.icon
                     className={cn(
-                      "w-4 h-4 mr-2.5 transition-all shrink-0",
+                      "w-3.5 h-3.5 mr-2 transition-all shrink-0",
                       isParentActive(item)
-                        ? "text-blue-400 scale-105"
+                        ? "text-blue-400"
                         : "text-white/30 group-hover:text-blue-300",
                     )}
                   />
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="text-xs truncate">{item.name}</div>
-                    <div
-                      className={cn(
-                        "text-[9px] truncate transition-colors",
-                        isParentActive(item)
-                          ? "text-blue-300"
-                          : "text-blue-200/40 group-hover:text-blue-200/60",
-                      )}
-                    >
-                      {item.description}
-                    </div>
-                  </div>
+                  <div className="flex-1 min-w-0 text-left truncate">{item.name}</div>
                   {isExpanded ? (
-                    <ChevronDown className="w-3.5 h-3.5 text-white/30 shrink-0 ml-1" />
+                    <ChevronDown className="w-3 h-3 text-white/30 shrink-0" />
                   ) : (
-                    <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0 ml-1" />
+                    <ChevronRight className="w-3 h-3 text-white/30 shrink-0" />
                   )}
                 </button>
               ) : (
                 <Link
                   href={item.href}
                   className={cn(
-                    "group flex items-center px-3 py-2 text-xs font-bold rounded-xl transition-all duration-200",
+                    "group flex items-center px-2 py-1.5 text-[11px] font-semibold rounded-md transition-all duration-200",
                     isDirectActive
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 font-black"
+                      ? "bg-blue-600 text-white shadow-sm font-bold"
                       : "text-blue-100/70 hover:bg-white/5 hover:text-white",
                   )}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <item.icon
                     className={cn(
-                      "w-4 h-4 mr-2.5 transition-all shrink-0",
+                      "w-3.5 h-3.5 mr-2 transition-all shrink-0",
                       isDirectActive
-                        ? "text-white scale-105"
+                        ? "text-white"
                         : "text-white/30 group-hover:text-blue-300",
                     )}
                   />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs truncate">{item.name}</div>
-                    <div
-                      className={cn(
-                        "text-[9px] truncate",
-                        isDirectActive
-                          ? "text-blue-100/80"
-                          : "text-blue-200/40 group-hover:text-blue-200/60",
-                      )}
-                    >
-                      {item.description}
-                    </div>
-                  </div>
+                  <span className="flex-1 min-w-0 truncate">{item.name}</span>
                 </Link>
               )}
 
               {/* Child Menu Items */}
               {hasChildren && isExpanded && (
-                <div className="pl-3 mt-0.5 space-y-0.5 animate-in slide-in-from-top-1 duration-150 border-l border-white/10 ml-4">
+                <div className="pl-2 mt-0.5 space-y-0.5 border-l border-white/10 ml-3">
                   {item.children
                     .filter(
                       (child) =>
@@ -479,7 +509,7 @@ export default function Sidebar({
                           key={child.name}
                           href={isLocked ? "#" : child.href}
                           className={cn(
-                            "group flex items-center px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all",
+                            "group flex items-center px-2 py-1 text-[10px] font-semibold rounded-md transition-all",
                             isLocked
                               ? "text-blue-100/20 cursor-not-allowed opacity-50"
                               : isChildActive
@@ -521,33 +551,26 @@ export default function Sidebar({
             </div>
           );
         })}
-      </nav>
+        </nav>
+      </div>
 
       {/* User Info & Actions Footer */}
-      <div className="p-3 border-t border-white/10 bg-black/20 space-y-1.5">
-        {/* User Card */}
-        <div className="flex items-center gap-2.5 p-2.5 bg-white/5 border border-white/10 rounded-xl">
-          <div className="relative shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center border border-white/10 shadow-sm">
-              {user?.firstName?.charAt(0) || "U"}
-            </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full ring-1 ring-[#03254c]" />
+      <div className="shrink-0 p-2 border-t border-white/10 bg-[#021b37]/95 space-y-1">
+        <div className="flex items-center gap-2 p-1.5 bg-white/5 border border-white/10 rounded-md">
+          <div className="w-7 h-7 rounded-md bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+            {user?.firstName?.charAt(0) || "U"}
           </div>
-
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-white truncate leading-tight">
+            <p className="text-[10px] font-bold text-white truncate leading-none">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-[9px] font-semibold text-blue-200/60 uppercase flex items-center tracking-wider mt-0.5">
-              <Shield className="w-2.5 h-2.5 mr-1 text-blue-300/70" />
+            <p className="text-[8px] font-medium text-blue-200/60 uppercase truncate mt-0.5">
               {user?.role || "Staff"}
             </p>
           </div>
         </div>
 
-        {/* Action Buttons Group */}
-        <div className="space-y-0.5 pt-0.5">
-          {/* Install Mobile App */}
+        <div className="space-y-0.5">
           {onOpenInstall && !isInstalled && (
             <button
               type="button"
@@ -555,36 +578,31 @@ export default function Sidebar({
                 setIsMobileMenuOpen(false);
                 onOpenInstall();
               }}
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-blue-100/70 hover:text-white hover:bg-white/5 transition-all duration-200 group text-left"
+              className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-[10px] font-semibold text-blue-100/70 hover:text-white hover:bg-white/5 transition-all text-left"
             >
-              <Smartphone className="w-4 h-4 text-blue-200/50 group-hover:text-white transition-colors shrink-0" />
-              <div className="flex-1 min-w-0 leading-tight">
-                <span className="text-xs font-bold block truncate">Install Mobile App</span>
-                <span className="text-[9px] text-blue-200/40 font-medium block truncate">iOS &amp; Android PWA</span>
-              </div>
+              <Smartphone className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Install app</span>
             </button>
           )}
 
-          {/* Super Admin Panel */}
           {role && ["superadmin", "super_admin"].includes(role) && (
             <button
               type="button"
               onClick={() => router.push("/superadmin")}
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-blue-100/70 hover:text-white hover:bg-white/5 transition-all duration-200 group text-left"
+              className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-[10px] font-semibold text-blue-100/70 hover:text-white hover:bg-white/5 transition-all text-left"
             >
-              <ShieldAlert className="w-4 h-4 text-blue-200/50 group-hover:text-white transition-colors shrink-0" />
-              <span className="truncate flex-1">Super Admin Panel</span>
+              <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Super admin</span>
             </button>
           )}
 
-          {/* Sign Out */}
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-blue-100/70 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 group text-left"
+            className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-[10px] font-semibold text-blue-100/70 hover:text-red-400 hover:bg-red-500/10 transition-all text-left"
           >
-            <LogOut className="w-4 h-4 text-blue-200/50 group-hover:text-red-400 transition-colors shrink-0" />
-            <span className="truncate flex-1">Sign Out Portal</span>
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Sign out</span>
           </button>
         </div>
       </div>
@@ -614,7 +632,7 @@ export default function Sidebar({
         {/* Sidebar Container */}
         <div
           className={cn(
-            "absolute inset-y-0 left-0 w-[280px] bg-[#03254c] shadow-2xl transition-transform duration-500 ease-out flex flex-col",
+            "absolute inset-y-0 left-0 w-[240px] bg-[#03254c] shadow-2xl transition-transform duration-500 ease-out flex flex-col",
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
@@ -625,7 +643,8 @@ export default function Sidebar({
       {/* Desktop sidebar */}
       <div
         className={cn(
-          "hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-[#03254c] border-r border-white/5",
+          "hidden lg:flex lg:flex-col lg:w-52 lg:fixed lg:inset-y-0 z-40 bg-[#03254c] border-r border-white/5 transition-transform duration-300 ease-out",
+          !isDesktopOpen && "-translate-x-full",
           className,
         )}
       >

@@ -202,7 +202,7 @@ const MultiSelectDropdown = ({
   <div className="relative" ref={dropdownRef}>
     <button
       onClick={() => setIsOpen(!isOpen)}
-      className={`flex items-center justify-between w-full min-w-[160px] pl-3 pr-8 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm transition-all ${selected.length > 0
+      className={`flex items-center justify-between w-full min-w-[120px] pl-2 pr-7 py-1.5 border rounded-md focus:ring-1 focus:ring-[#03254c] bg-white text-xs transition-all ${selected.length > 0
           ? "border-blue-400 ring-1 ring-blue-50"
           : "border-gray-300"
         }`}
@@ -210,7 +210,7 @@ const MultiSelectDropdown = ({
       <div className="flex items-center gap-2 truncate">
         {Icon && (
           <Icon
-            className={`w-4 h-4 ${selected.length > 0 ? "text-blue-500" : "text-gray-400"}`}
+            className={`w-3.5 h-3.5 ${selected.length > 0 ? "text-[#03254c]" : "text-gray-400"}`}
           />
         )}
         <span
@@ -1256,49 +1256,46 @@ export default function RequestsPage() {
   ];
 
   return (
-    <div className="space-y-3.5 sm:space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-2.5 max-w-[1600px] mx-auto text-[13px]">
       {/* Pending Action Banner on Mobile & Desktop */}
       {pendingActionCount > 0 && (
-        <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-xl text-amber-900 shadow-sm">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 text-amber-700">
-              <AlertTriangle className="w-4 h-4" />
+        <div className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-lg text-amber-900">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-md bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 text-amber-700">
+              <AlertTriangle className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-bold text-amber-950 truncate">
-                {pendingActionCount} Request{pendingActionCount > 1 ? "s" : ""} Awaiting Your Review
-              </p>
-              <p className="text-[11px] text-amber-800/80 hidden sm:block">
-                Assigned workflow items ready for processing and signature approval
+              <p className="text-[11px] font-bold text-amber-950 truncate">
+                {pendingActionCount} request{pendingActionCount > 1 ? "s" : ""} awaiting your review
               </p>
             </div>
           </div>
           {viewMode !== "assigned" && (
             <button
               onClick={() => setViewMode("assigned")}
-              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shrink-0 transition-colors shadow-sm"
+              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-[10px] font-bold shrink-0 transition-colors"
             >
-              View My Tasks
+              My tasks
             </button>
           )}
         </div>
       )}
 
       {/* Segmented Control Tabs */}
-      <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200/80 gap-1">
+      <div className="grid grid-cols-2 p-0.5 bg-slate-100 rounded-md border border-slate-200/80 gap-0.5">
         <button
           onClick={() => setViewMode("assigned")}
-          className={`py-2 sm:py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 ${
+          className={`py-1.5 px-2 rounded text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
             viewMode === "assigned"
-              ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
+              ? "bg-white text-[#03254c] shadow-sm border border-slate-200/60"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
           }`}
         >
-          <FileCheck className="w-4 h-4 shrink-0" />
+          <FileCheck className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">My Assignments</span>
           <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-              viewMode === "assigned" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700"
+            className={`px-1 py-px rounded-full text-[9px] font-bold tabular-nums ${
+              viewMode === "assigned" ? "bg-blue-100 text-[#03254c]" : "bg-slate-200 text-slate-700"
             }`}
           >
             {assignedCount}
@@ -1307,17 +1304,17 @@ export default function RequestsPage() {
 
         <button
           onClick={() => setViewMode("all")}
-          className={`py-2 sm:py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 ${
+          className={`py-1.5 px-2 rounded text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
             viewMode === "all"
-              ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
+              ? "bg-white text-[#03254c] shadow-sm border border-slate-200/60"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
           }`}
         >
-          <History className="w-4 h-4 shrink-0" />
+          <History className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">Request History</span>
           <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-              viewMode === "all" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700"
+            className={`px-1 py-px rounded-full text-[9px] font-bold tabular-nums ${
+              viewMode === "all" ? "bg-blue-100 text-[#03254c]" : "bg-slate-200 text-slate-700"
             }`}
           >
             {totalCount}
@@ -1326,18 +1323,18 @@ export default function RequestsPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 space-y-3">
+      <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
         {/* Top Search & Filter Toggle Row */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {/* Search */}
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="relative flex-1 min-w-0 max-w-full sm:max-w-md">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
             <input
               type="text"
               placeholder="Search reference or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm bg-gray-50/50 focus:bg-white transition-colors"
+              className="w-full pl-8 pr-8 py-1.5 border border-gray-200 rounded-md focus:ring-1 focus:ring-[#03254c]/20 focus:border-[#03254c] text-xs bg-gray-50 focus:bg-white transition-colors"
             />
             {searchTerm && (
               <button
@@ -1352,16 +1349,16 @@ export default function RequestsPage() {
           {/* Filter Toggle Button (Mobile) */}
           <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className={`md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-all shrink-0 ${
+            className={`md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-semibold border transition-all shrink-0 ${
               showMobileFilters || activeFilterCount > 0
-                ? "bg-blue-50 border-blue-300 text-blue-700"
-                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                ? "bg-[#03254c] border-[#03254c] text-white"
+                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
             }`}
           >
             <Filter className="w-3.5 h-3.5" />
             <span>Filters</span>
             {activeFilterCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+              <span className="w-4 h-4 rounded-full bg-white text-[#03254c] text-[9px] font-bold flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
@@ -1371,16 +1368,16 @@ export default function RequestsPage() {
           <button
             onClick={() => fetchRequests(workflows, currentUser)}
             disabled={loading}
-            className="p-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 shadow-sm"
+            className="px-2.5 py-1.5 text-[11px] font-semibold text-white bg-[#03254c] hover:opacity-90 rounded-md transition-all disabled:opacity-50 flex items-center justify-center gap-1 shrink-0"
             title="Refresh requests"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
 
         {/* Quick Status Chips (Horizontal Scrollable on mobile) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pt-0.5">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
           {QUICK_STATUS_OPTIONS.map((opt) => {
             const isSelected =
               opt.value === ""
@@ -1397,10 +1394,10 @@ export default function RequestsPage() {
                     setStatusFilter(isSelected ? [] : [opt.value]);
                   }
                 }}
-                className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 border ${
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 border ${
                   isSelected
-                    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300"
+                    ? "bg-[#03254c] text-white border-[#03254c]"
+                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                 }`}
               >
                 {opt.label}
@@ -1423,7 +1420,7 @@ export default function RequestsPage() {
         <div
           className={`${
             showMobileFilters ? "grid" : "hidden md:grid"
-          } grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-2 border-t border-gray-100 animate-in fade-in duration-150`}
+          } grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1.5 border-t border-gray-100 animate-in fade-in duration-150`}
         >
           {/* Status MultiSelect */}
           <div className="w-full">
@@ -1475,13 +1472,13 @@ export default function RequestsPage() {
             <select
               value={historyGroup}
               onChange={(e) => setHistoryGroup(e.target.value)}
-              className="w-full appearance-none pl-3 pr-8 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-blue-50/50 text-xs sm:text-sm font-semibold text-blue-700"
+              className="w-full appearance-none pl-2 pr-7 py-1.5 border border-gray-200 rounded-md focus:ring-1 focus:ring-[#03254c]/20 bg-gray-50 text-xs font-semibold text-gray-800"
             >
               <option value="all">All Records</option>
               <option value="active">Active Requests</option>
               <option value="closed">Closed / Archive</option>
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
           </div>
 
           {/* Time Range */}
@@ -1489,7 +1486,7 @@ export default function RequestsPage() {
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
-              className="w-full appearance-none pl-8 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-xs sm:text-sm text-gray-700"
+              className="w-full appearance-none pl-7 pr-7 py-1.5 border border-gray-200 rounded-md focus:ring-1 focus:ring-[#03254c]/20 bg-gray-50 text-xs text-gray-700"
             >
               <option value="all">Any Time</option>
               <option value="daily">Today</option>
@@ -1498,12 +1495,12 @@ export default function RequestsPage() {
               <option value="yearly">This Year</option>
               <option value="custom">Custom Date</option>
             </select>
-            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
           </div>
 
           {timeRange === "custom" && (
-            <div className="col-span-full flex flex-wrap items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
+            <div className="col-span-full flex flex-wrap items-center gap-1.5 bg-gray-50 p-1.5 rounded-md border border-gray-200">
               <span className="text-xs font-semibold text-gray-500">From:</span>
               <input
                 type="date"
@@ -1524,29 +1521,29 @@ export default function RequestsPage() {
       </div>
 
       {/* Requests Container */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center">
-            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-500 text-sm font-medium">Loading requests...</p>
+          <div className="p-8 text-center">
+            <div className="animate-spin w-7 h-7 border-2 border-gray-200 border-t-[#03254c] rounded-full mx-auto mb-2"></div>
+            <p className="text-gray-500 text-xs font-medium">Loading requests...</p>
           </div>
         ) : filteredRequests.length === 0 ? (
-          <div className="p-12 text-center">
-            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-700 font-semibold text-sm sm:text-base">
+          <div className="py-10 px-4 text-center">
+            <FileText className="w-9 h-9 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-700 font-semibold text-xs">
               {viewMode === "assigned"
                 ? "No requests assigned to you"
                 : "No requests found"}
             </p>
-            <p className="text-gray-400 text-xs sm:text-sm mt-1">
+            <p className="text-gray-400 text-[11px] mt-0.5 max-w-sm mx-auto">
               {viewMode === "assigned"
-                ? "Requests will appear here when you are assigned as a reviewer or approver"
+                ? "Requests appear here when you are assigned as reviewer or approver"
                 : "Try clearing or adjusting your search filters"}
             </p>
             {activeFilterCount > 0 && (
               <button
                 onClick={clearFilters}
-                className="mt-4 px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5"
+                className="mt-3 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-[#03254c] rounded-md text-[11px] font-bold transition-colors inline-flex items-center gap-1"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Clear All Filters
@@ -1565,8 +1562,8 @@ export default function RequestsPage() {
                   <div
                     key={`${request.id}-${index}`}
                     onClick={() => setSelectedRequest(request)}
-                    className={`p-3.5 bg-white transition-all active:bg-blue-50/50 cursor-pointer ${
-                      canAct ? "bg-blue-50/20 border-l-4 border-l-blue-600" : ""
+                    className={`p-2.5 bg-white transition-all active:bg-blue-50/50 cursor-pointer ${
+                      canAct ? "bg-blue-50/20 border-l-2 border-l-[#03254c]" : ""
                     }`}
                   >
                     {/* Header Row: Ref Number + Action Badge + Status Pill */}
@@ -1638,26 +1635,26 @@ export default function RequestsPage() {
 
             {/* DESKTOP VIEW: Traditional High-Density Table (hidden md:block) */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-[11px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Reference
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Applicant
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Type
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Current Step
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
+                      Step
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Last Activity
+                    <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
+                      Updated
                     </th>
                   </tr>
                 </thead>
@@ -1674,7 +1671,7 @@ export default function RequestsPage() {
                           canAct ? "bg-blue-50/30" : ""
                         }`}
                       >
-                        <td className="px-6 py-4">
+                        <td className="px-2.5 py-1.5">
                           <Link
                             href={`/requests?id=${request.id}`}
                             onClick={(e) => {
@@ -1697,65 +1694,60 @@ export default function RequestsPage() {
                                 );
                               }
                             }}
-                            className="font-mono font-bold text-blue-600 hover:underline relative z-10"
+                            className="font-mono font-bold text-[11px] text-[#03254c] hover:underline relative z-10"
                           >
                             {request.reference_number}
                           </Link>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center">
-                              <User className="w-5 h-5 text-gray-500" />
+                        <td className="px-2.5 py-1.5 max-w-[200px]">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center shrink-0">
+                              <User className="w-3.5 h-3.5 text-gray-500" />
                             </div>
-                            <div>
-                              <p className="font-semibold text-gray-900 text-sm">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-900 text-[11px] truncate">
                                 {request.applicant_name ||
                                   request.full_name ||
                                   "N/A"}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-[10px] text-gray-500 truncate">
                                 {request.contact_number || "No contact"}
                               </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
+                        <td className="px-2.5 py-1.5">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <div
-                              className={`w-2 h-2 rounded-full ${getTypeColor(
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${getTypeColor(
                                 request.certificate_type
                               )}`}
                             ></div>
-                            <span className="text-sm font-medium text-gray-700">
+                            <span className="text-[11px] font-medium text-gray-700 truncate">
                               {getTypeLabel(request.certificate_type)}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-2.5 py-1.5">
                           <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
+                            className={`inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold border ${getStatusColor(
                               request.status
                             )}`}
                           >
                             {request.status?.replace(/_/g, " ").toUpperCase()}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-2.5 py-1.5 text-[11px] text-gray-600 max-w-[140px] truncate">
                           {currentStep ? (
-                            <span className="text-sm text-gray-600">
-                              {currentStep.name}
-                            </span>
+                            currentStep.name
                           ) : (
-                            <span className="text-sm text-gray-400">-</span>
+                            <span className="text-gray-400">—</span>
                           )}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Calendar className="w-4 h-4" />
-                            {formatDate(
-                              request.updated_at || request.created_at
-                            )}
-                          </div>
+                        <td className="px-2.5 py-1.5 text-[10px] text-gray-500 tabular-nums whitespace-nowrap">
+                          {formatDate(
+                            request.updated_at || request.created_at
+                          )}
                         </td>
                       </tr>
                     );
@@ -1836,7 +1828,11 @@ export default function RequestsPage() {
 }
 
 RequestsPage.getLayout = (page) => (
-  <Layout title="Certificate Requests" subtitle="Manage and process certificate applications">
+  <Layout
+    title="Certificate Requests"
+    subtitle="Manage and process applications"
+    mainClassName="p-2 sm:p-4 pb-24 lg:pb-4"
+  >
     {page}
   </Layout>
 );

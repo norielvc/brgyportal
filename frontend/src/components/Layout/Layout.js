@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Toaster } from "react-hot-toast";
+import { cn } from "@/lib/utils";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MobileBottomNav from "./MobileBottomNav";
@@ -17,12 +18,37 @@ export default function Layout({
   requireAuth = true,
   onSearch,
   searchTerm,
+  mainClassName,
 }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const [showESumbong, setShowESumbong] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sidebarDesktopOpen");
+      if (saved !== null) {
+        setIsDesktopSidebarOpen(saved === "true");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const toggleDesktopSidebar = () => {
+    setIsDesktopSidebarOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("sidebarDesktopOpen", String(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
 
   const {
     isInstallable,
@@ -101,21 +127,30 @@ export default function Layout({
           <Sidebar
             isMobileMenuOpen={isMobileMenuOpen}
             setIsMobileMenuOpen={setIsMobileMenuOpen}
+            isDesktopOpen={isDesktopSidebarOpen}
+            onToggleDesktop={toggleDesktopSidebar}
             onOpenInstall={() => setShowInstallModal(true)}
             isInstalled={isInstalled}
           />
-          <div className="lg:pl-64">
+          <div
+            className={cn(
+              "transition-[padding] duration-300 ease-out",
+              isDesktopSidebarOpen ? "lg:pl-52" : "lg:pl-0",
+            )}
+          >
             <Header
               title={title}
               subtitle={subtitle}
               onSearch={onSearch}
               searchTerm={searchTerm}
               onMenuClick={() => setIsMobileMenuOpen(true)}
+              isDesktopSidebarOpen={isDesktopSidebarOpen}
+              onToggleDesktopSidebar={toggleDesktopSidebar}
               onNeedHelp={() => setShowESumbong(true)}
               onOpenInstall={() => setShowInstallModal(true)}
               isInstalled={isInstalled}
             />
-            <main className="p-3 sm:p-6 pb-24 lg:pb-6">{children}</main>
+            <main className={mainClassName ?? "p-2 sm:p-3 pb-20 lg:pb-3"}>{children}</main>
             <ESumbongModal
               isOpen={showESumbong}
               onClose={() => setShowESumbong(false)}

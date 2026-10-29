@@ -6,9 +6,11 @@
     "dev": "next dev -p 3003",
     "build": "next build",
     "start": "next start -H 0.0.0.0",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:ph-birthplaces": "node scripts/build-ph-birthplaces.mjs"
   },
   "dependencies": {
+    "@ianlabicani/geoph-lite": "^2.0.0",
     "@supabase/supabase-js": "^2.101.1",
     "@zxing/library": "^0.21.3",
     "autoprefixer": "^10.4.23",

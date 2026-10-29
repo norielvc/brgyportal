@@ -48,7 +48,6 @@ export default function IssueIDModal({
     birth_date: "",
     civil_status: "SINGLE",
     contact_number: "",
-    validity_years: 1,
     remarks: "Official EC Card issued",
   });
 

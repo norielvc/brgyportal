@@ -1,5 +1,6 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
+import { EC_CARD_NO_EXPIRY_DATE } from "../../../src/lib/ecCard";
 
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
@@ -60,7 +61,16 @@ export default async function handler(req, res) {
             success: true,
             data: [],
             total: 0,
-            stats: { total: 0, active: 0, expired: 0, revoked: 0 },
+            stats: {
+              total: 0,
+              active: 0,
+              expired: 0,
+              revoked: 0,
+              householdHead: 0,
+              familyMember: 0,
+              printed: 0,
+              notPrinted: 0,
+            },
             tableNeedsCreation: true,
           });
         }
@@ -85,22 +95,8 @@ export default async function handler(req, res) {
         supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).not("id_number", "like", "%M-%"),
         supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).like("id_number", "%M-%"),
         supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_printed", true),
-        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).or("is_printed.eq.false,is_printed.is.null")
+        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).or("is_printed.eq.false,is_printed.is.null"),
       ]);
-
-      // Calculate expiring soon (active but expires in <= 30 days)
-      const now = new Date();
-      const in30Days = new Date();
-      in30Days.setDate(now.getDate() + 30);
-      
-      const { count: expiringSoonCount } = await supabase
-        .from("barangay_ids")
-        .select("*", { count: "exact", head: true })
-        .eq("tenant_id", tenantId)
-        .eq("status", "active")
-        .lte("expiry_date", in30Days.toISOString())
-        .gte("expiry_date", now.toISOString());
-
 
       // Enrich data with fallback to joined resident date_of_birth
       const enrichedData = (data || []).map((item) => {
@@ -142,7 +138,6 @@ export default async function handler(req, res) {
           active: activeCount || 0,
           expired: expiredCount || 0,
           revoked: revokedCount || 0,
-          expiringSoon: expiringSoonCount || 0,
           householdHead: householdCount || 0,
           familyMember: familyCount || 0,
           printed: printedCount || 0,
@@ -253,8 +248,6 @@ export default async function handler(req, res) {
 
       // 3. Compute Dates and Birth Date
       const startIssueDate = issue_date ? new Date(issue_date) : new Date();
-      const expDate = new Date(startIssueDate);
-      expDate.setFullYear(expDate.getFullYear() + parseInt(validity_years || 1, 10));
 
       const firstName = customFirstName !== undefined && customFirstName !== "" ? customFirstName : resident.first_name;
       const middleName = customMiddleName !== undefined ? customMiddleName : resident.middle_name;
@@ -332,6 +325,8 @@ export default async function handler(req, res) {
         captain_signature_url: captain_signature_url || null,
         qr_code_data: qrPayload,
         status: "active",
+        issue_date: startIssueDate.toISOString().split("T")[0],
+        expiry_date: EC_CARD_NO_EXPIRY_DATE,
         issue_date: startIssueDate.toISOString().split("T")[0],
         expiry_date: expDate.toISOString().split("T")[0],
         issued_by: userRes.id || null,

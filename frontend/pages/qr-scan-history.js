@@ -4,8 +4,8 @@ import { toast } from 'react-hot-toast';
 import Layout from '@/components/Layout/Layout';
 
 import {
-  History, Search, Calendar, User, Clock,
-  Smartphone, RefreshCw, Eye, Trash2, Download, CheckCircle, AlertCircle, X,
+  History, Search, Calendar, CalendarDays, User, Clock, Users, ScanLine, Copy,
+  RefreshCw, Eye, Trash2, Download, CheckCircle, X,
   MapPin, Activity, HardDrive, Info, Plus, FolderSync
 } from 'lucide-react';
 import { isAuthenticated, getAuthToken } from '@/lib/auth';
@@ -405,189 +405,149 @@ export default function QRScanHistoryPage() {
     }
   };
 
+  const activeScannerCount = new Set(
+    scans.map((s) => s.scanned_by || s.user_id || s.users?.id).filter(Boolean),
+  ).size;
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-blue-100">
-            <History className="w-6 h-6 text-blue-600" />
-          </div>
-        </div>
-      </div>
-
-      {/* Event Selection Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-indigo-100 p-4 sm:p-6 mb-6">
-         <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <div className="flex-1 space-y-2">
-               <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                  Active Event Database
-               </label>
-               <select 
-                  value={selectedEventId}
-                  onChange={(e) => setSelectedEventId(e.target.value)}
-                  className="w-full text-base font-semibold text-gray-800 bg-gray-50 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none"
-               >
-                  <option value="" disabled>-- Select Event Context --</option>
-                  {events.map((evt) => (
-                     <option key={evt.id} value={evt.id}>{evt.name} ({new Date(evt.date).toLocaleDateString()})</option>
-                  ))}
-               </select>
-            </div>
-            <button 
-               onClick={() => setIsEventModalOpen(true)}
-               className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-colors"
-            >
-               <Plus className="w-5 h-5" />
-               New Event
-            </button>
-         </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-blue-100">
-              <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-            </div>
-            <div className="mt-2 sm:mt-0 sm:ml-4">
-              <p className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">Today's Scans</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.today}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-emerald-100">
-              <History className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
-            </div>
-            <div className="mt-2 sm:mt-0 sm:ml-4">
-              <p className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Scans</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-purple-100">
-              <Smartphone className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-            </div>
-            <div className="mt-2 sm:mt-0 sm:ml-4">
-              <p className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">Active Scanners</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{scans.length > 0 ? 1 : 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-red-100">
-              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
-            </div>
-            <div className="mt-2 sm:mt-0 sm:ml-4">
-              <p className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">Duplicates</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{duplicates.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">
-              Search QR Data
+    <div className="max-w-[1600px] mx-auto space-y-2 text-[13px] pb-4">
+      {/* Event + compact KPIs */}
+      <div className="bg-white rounded-lg border border-gray-200 p-2 sm:p-2.5 space-y-2">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-2">
+          <div className="flex-1 min-w-0">
+            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wide">
+              Active event database
             </label>
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
+            <select
+              value={selectedEventId}
+              onChange={(e) => setSelectedEventId(e.target.value)}
+              className="mt-0.5 w-full text-xs font-semibold text-gray-800 bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 focus:ring-1 focus:ring-[#03254c]/30 outline-none"
+            >
+              <option value="" disabled>
+                — Select event —
+              </option>
+              {events.map((evt) => (
+                <option key={evt.id} value={evt.id}>
+                  {evt.name} ({new Date(evt.date).toLocaleDateString()})
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsEventModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#03254c] hover:opacity-90 text-white rounded-md text-[11px] font-bold shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New event
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
+          {[
+            { label: "Today", value: stats.today, icon: CalendarDays },
+            { label: "Total", value: stats.total, icon: ScanLine },
+            { label: "Scanners", value: activeScannerCount, icon: Users },
+            { label: "Duplicates", value: duplicates.length, icon: Copy },
+          ].map(({ label, value, icon: Icon }) => (
+            <div
+              key={label}
+              className="rounded-md border border-gray-200 bg-white px-2 py-1.5 flex items-center gap-2"
+            >
+              <div className="p-1.5 rounded-md border border-gray-200 bg-gray-50 text-gray-600 shrink-0">
+                <Icon className="w-3.5 h-3.5 stroke-[1.75]" aria-hidden />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wide truncate">
+                  {label}
+                </p>
+                <p className="text-base font-semibold text-gray-900 tabular-nums leading-tight">
+                  {value}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Toolbar: search, filters, actions */}
+      <div className="bg-white rounded-lg border border-gray-200 p-2 sm:p-2.5 space-y-2">
+        <div className="flex flex-col lg:flex-row gap-2 lg:items-end">
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Scan content..."
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all text-sm"
+                placeholder="Search scan content..."
+                className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-[#03254c]/20 outline-none"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">
-              Filter by Date
-            </label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all text-sm"
+              className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-[#03254c]/20 outline-none"
             />
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedDate('');
-              setCurrentPage(1);
-            }}
-            className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 hover:text-gray-900 transition-all font-bold text-sm border border-gray-200"
-          >
-            <X className="w-4 h-4" />
-            <span>Clear Filters</span>
-          </button>
-          <button
-            onClick={() => setIsClearModalOpen(true)}
-            className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all border border-red-100 font-bold text-sm"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Clear History</span>
-          </button>
-          <button
-            onClick={exportToCSV}
-            className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100 font-bold text-sm"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export CSV</span>
-          </button>
-          <button
-            onClick={loadScans}
-            className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all border border-blue-100 font-bold text-sm"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Refresh List</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            {[
+              { label: "Clear", icon: X, onClick: () => { setSearchTerm(""); setSelectedDate(""); setCurrentPage(1); } },
+              { label: "Clear history", icon: Trash2, onClick: () => setIsClearModalOpen(true) },
+              { label: "Export", icon: Download, onClick: exportToCSV },
+            ].map(({ label, icon: Icon, onClick }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={onClick}
+                className="px-2 py-1.5 text-[10px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 inline-flex items-center gap-1"
+              >
+                <Icon className="w-3.5 h-3.5 text-gray-500 stroke-[1.75]" aria-hidden />
+                {label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={loadScans}
+              className="px-2 py-1.5 text-[10px] font-semibold text-white bg-[#03254c] rounded-md hover:opacity-90 inline-flex items-center gap-1"
+            >
+              <RefreshCw className="w-3.5 h-3.5 stroke-[1.75]" aria-hidden />
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="border-b border-gray-100 bg-gray-50/50">
-          <nav className="flex px-2 sm:px-6 overflow-x-auto no-scrollbar">
+      {/* Tabs + table */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="border-b border-gray-100 px-2 pt-1.5 bg-gray-50/80">
+          <nav className="flex gap-1 p-0.5 bg-slate-100 rounded-md border border-slate-200/80 w-full sm:w-auto">
             <button
-              onClick={() => setActiveTab('scans')}
-              className={`flex-1 sm:flex-none py-4 px-4 sm:px-6 border-b-2 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'scans'
-                ? 'border-blue-600 text-blue-600 bg-blue-50/50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
-                }`}
+              type="button"
+              onClick={() => setActiveTab("scans")}
+              className={`flex-1 sm:flex-none py-1.5 px-3 rounded text-[10px] font-bold transition-all whitespace-nowrap inline-flex items-center justify-center gap-1.5 ${
+                activeTab === "scans"
+                  ? "bg-white text-[#03254c] shadow-sm"
+                  : "text-gray-600 hover:bg-slate-200/50"
+              }`}
             >
-              All Scans
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === 'scans' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}`}>
+              All scans
+              <span className="px-1.5 py-px rounded bg-gray-200/80 text-[9px] tabular-nums">
                 {stats.total}
               </span>
             </button>
             <button
-              onClick={() => setActiveTab('duplicates')}
-              className={`flex-1 sm:flex-none py-4 px-4 sm:px-6 border-b-2 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'duplicates'
-                ? 'border-red-600 text-red-600 bg-red-50/50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
-                }`}
+              type="button"
+              onClick={() => setActiveTab("duplicates")}
+              className={`flex-1 sm:flex-none py-1.5 px-3 rounded text-[10px] font-bold transition-all whitespace-nowrap inline-flex items-center justify-center gap-1.5 ${
+                activeTab === "duplicates"
+                  ? "bg-white text-[#03254c] shadow-sm"
+                  : "text-gray-600 hover:bg-slate-200/50"
+              }`}
             >
               Duplicates
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === 'duplicates' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'}`}>
+              <span className="px-1.5 py-px rounded bg-gray-200/80 text-[9px] tabular-nums">
                 {duplicates.length}
               </span>
             </button>
@@ -599,19 +559,19 @@ export default function QRScanHistoryPage() {
           // Existing scans table
           <div>
             {loading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Loading scan history...</p>
+              <div className="py-10 text-center">
+                <div className="animate-spin rounded-full h-7 w-7 border-2 border-gray-200 border-t-[#03254c] mx-auto" />
+                <p className="mt-2 text-xs text-gray-500">Loading scan history...</p>
               </div>
             ) : error ? (
-              <div className="p-8 text-center text-red-600">
+              <div className="py-10 text-center text-gray-700 text-xs px-4">
                 <p>{error}</p>
               </div>
             ) : scans.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <History className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>No QR scans found</p>
-                <p className="text-sm">Try scanning some QR codes first!</p>
+              <div className="py-10 text-center text-gray-500 px-4">
+                <ScanLine className="w-9 h-9 mx-auto mb-2 text-gray-300 stroke-[1.25]" aria-hidden />
+                <p className="text-xs font-semibold text-gray-600">No QR scans found</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Scan codes from Mobile Scanner first.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -668,7 +628,7 @@ export default function QRScanHistoryPage() {
                           </div>
                         </td>
                         <td className="px-4 py-1.5 whitespace-nowrap">
-                          <span className="text-sm font-mono font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+                          <span className="text-xs font-mono font-semibold text-gray-800 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
                             {parseQRData(scan.qr_data).id}
                           </span>
                         </td>
@@ -683,7 +643,7 @@ export default function QRScanHistoryPage() {
                           </div>
                         </td>
                         <td className="px-4 py-1.5 whitespace-nowrap border-l border-gray-50">
-                          <div className="text-xs text-emerald-600 font-semibold italic">
+                          <div className="text-xs text-gray-600 italic">
                             {parseQRData(scan.qr_data).remarks}
                           </div>
                         </td>
@@ -694,8 +654,7 @@ export default function QRScanHistoryPage() {
                         </td>
                         <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="flex items-center">
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${scan.scanner_type === 'mobile' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                              }`}>
+                            <span className="text-[10px] px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-gray-600 font-medium uppercase tracking-wide">
                               {scan.scanner_type}
                             </span>
                           </div>
@@ -715,10 +674,10 @@ export default function QRScanHistoryPage() {
                               setSelectedScan(scan);
                               setIsViewModalOpen(true);
                             }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                             title="View Details"
                           >
-                            <Eye className="w-5 h-5" />
+                            <Eye className="w-4 h-4 stroke-[1.75]" />
                           </button>
                         </td>
                       </tr>
@@ -732,41 +691,41 @@ export default function QRScanHistoryPage() {
           // Duplicates table
           <div>
             {duplicatesLoading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Loading duplicate attempts...</p>
+              <div className="py-10 text-center">
+                <div className="animate-spin rounded-full h-7 w-7 border-2 border-gray-200 border-t-[#03254c] mx-auto" />
+                <p className="mt-2 text-xs text-gray-500">Loading duplicate attempts...</p>
               </div>
             ) : duplicates.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-300" />
-                <p>No duplicate scan attempts found</p>
-                <p className="text-sm">All QR codes have been scanned only once!</p>
+              <div className="py-10 text-center text-gray-500 px-4">
+                <CheckCircle className="w-9 h-9 mx-auto mb-2 text-gray-300 stroke-[1.25]" aria-hidden />
+                <p className="text-xs font-semibold text-gray-600">No duplicate attempts</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Each QR was scanned only once.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-red-50">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Household ID & Name
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Original Scan
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Duplicate Attempt
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-bold text-red-700 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {duplicates.map((duplicate, index) => (
-                      <tr key={index} className="hover:bg-red-50">
+                      <tr key={index} className="hover:bg-gray-50">
                         <td className="px-4 py-1.5">
                           <div className="flex flex-col">
-                            <span className="text-sm font-bold text-red-700">{parseQRData(duplicate.qr_data).id}</span>
+                            <span className="text-xs font-mono font-semibold text-gray-800">{parseQRData(duplicate.qr_data).id}</span>
                             <span className="text-xs text-gray-900 font-medium">{parseQRData(duplicate.qr_data).name}</span>
                           </div>
                         </td>
@@ -777,14 +736,14 @@ export default function QRScanHistoryPage() {
                           </div>
                         </td>
                         <td className="px-4 py-1.5 whitespace-nowrap">
-                          <div className="text-xs text-gray-900 border-l-2 border-red-200 pl-3">
+                          <div className="text-xs text-gray-900 border-l-2 border-gray-200 pl-3">
                             <div className="font-semibold">{duplicate.duplicate_attempt.scanned_by}</div>
                             <div className="text-gray-500">{formatDate(duplicate.duplicate_attempt.scan_timestamp)}</div>
                           </div>
                         </td>
                         <td className="px-4 py-1.5 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full uppercase text-center">Blocked</span>
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-200 text-[10px] font-medium rounded uppercase text-center">Blocked</span>
                             <span className="text-[10px] text-gray-500 mt-1">
                               {Math.round(duplicate.time_difference / (1000 * 60))} mins later
                             </span>
@@ -1004,7 +963,7 @@ export default function QRScanHistoryPage() {
                     </td>
                     <td className="px-4 py-1.5 whitespace-nowrap">
                       <div className="flex items-center">
-                        <Smartphone className="w-4 h-4 text-gray-400 mr-2" />
+                        <ScanLine className="w-4 h-4 text-gray-400 mr-2" />
                         <span className="text-sm text-gray-900 capitalize">
                           {scan.scanner_type}
                         </span>
@@ -1119,7 +1078,7 @@ Device Info: ${JSON.stringify(scan.device_info, null, 2)}
                   <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Scanner Type</label>
                     <div className="text-base font-bold text-gray-800 flex items-center">
-                      <Smartphone className="w-4 h-4 text-gray-400 mr-2" />
+                      <ScanLine className="w-4 h-4 text-gray-400 mr-2" />
                       <span className="capitalize">{selectedScan.scanner_type}</span>
                     </div>
                   </div>
@@ -1281,7 +1240,11 @@ Device Info: ${JSON.stringify(scan.device_info, null, 2)}
 }
 
 QRScanHistoryPage.getLayout = (page) => (
-  <Layout title="Event Scans & Relief Operations" subtitle="Manage separate scan databases for each community event">
+  <Layout
+    title="Scan History"
+    subtitle="Event scan databases & relief operations"
+    mainClassName="p-2 sm:p-3 pb-20 lg:pb-3"
+  >
     {page}
   </Layout>
 );
@@ -1315,8 +1278,8 @@ function ClearHistoryModal({ onClose, onConfirm, processing }) {
 
           <div className="p-8">
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertCircle className="w-10 h-10 text-red-600" />
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200">
+                <Trash2 className="w-8 h-8 text-gray-600 stroke-[1.5]" aria-hidden />
               </div>
               <div>
                 <h4 className="text-xl font-bold text-gray-900">Are you absolutely sure?</h4>

@@ -74,7 +74,7 @@ export default function MobileBottomNav({ onOpenMenu, onOpenInstall }) {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#03254c]/95 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.3)] pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 px-3 transition-all"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#03254c]/95 backdrop-blur-xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.25)] pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1 px-2 transition-all"
     >
       <div className="flex items-center justify-around max-w-lg mx-auto relative">
         {navItems.map((item) => {
@@ -82,16 +82,16 @@ export default function MobileBottomNav({ onOpenMenu, onOpenInstall }) {
 
           if (item.isCenter) {
             return (
-              <div key={item.name} className="relative -top-5 flex flex-col items-center">
+              <div key={item.name} className="relative -top-3 flex flex-col items-center">
                 <Link
                   href={item.href}
-                  className="relative group flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 text-white shadow-[0_8px_20px_rgba(37,99,235,0.5)] border-4 border-[#03254c] active:scale-95 transition-all duration-200"
+                  className="relative flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 text-white shadow-md border-[3px] border-[#03254c] active:scale-95 transition-all"
                 >
-                  <item.icon className="w-6 h-6 animate-pulse" />
+                  <item.icon className="w-5 h-5" />
                   <span className="sr-only">{item.name}</span>
                 </Link>
-                <span className="text-[10px] font-black uppercase tracking-wider text-blue-200 mt-1">
-                  Scan QR
+                <span className="text-[9px] font-bold uppercase text-blue-200/90 mt-0.5">
+                  Scan
                 </span>
               </div>
             );
@@ -105,8 +105,8 @@ export default function MobileBottomNav({ onOpenMenu, onOpenInstall }) {
                 onClick={item.onClick}
                 className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-blue-200/70 hover:text-white active:scale-95 transition-all relative"
               >
-                <item.icon className="w-5 h-5 mb-1" />
-                <span className="text-[10px] font-bold uppercase tracking-wider">
+                <item.icon className="w-4 h-4 mb-0.5" />
+                <span className="text-[9px] font-bold uppercase">
                   {item.name}
                 </span>
               </button>
@@ -127,7 +127,7 @@ export default function MobileBottomNav({ onOpenMenu, onOpenInstall }) {
               <div className="relative">
                 <item.icon
                   className={cn(
-                    "w-5 h-5 mb-1 transition-transform",
+                    "w-4 h-4 mb-0.5 transition-transform",
                     isActive ? "scale-110 text-cyan-400" : ""
                   )}
                 />
