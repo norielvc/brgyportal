@@ -52,6 +52,7 @@ import {
 import { getAuthToken, getUserData } from "@/lib/auth";
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
 import Modal from "@/components/UI/Modal";
+import CertificateVerifyQR from "@/components/UI/CertificateVerifyQR";
 import useScrollLock from "@/lib/useScrollLock";
 // API Configuration
 const API_URL = "/api";
@@ -7774,15 +7775,23 @@ function ClearancePreviewForRequests({
                 </div>
               )}
 
-              {/* Reference Number Section */}
-              <div className="w-full text-right mt-auto mb-2">
-                <p className="text-sm">
-                  Reference No:{" "}
-                  <strong>{request.reference_number || request.id}</strong>
-                </p>
-                <p className="mt-1 italic text-gray-500 text-[10px]">
-                  This is a computerized generated document, dry seal is replaced with system-generated seal and is a valid document.
-                </p>
+              {/* Reference + BrgyDesk verification QR */}
+              <div className="w-full flex items-end justify-between gap-4 mt-auto mb-2">
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-sm">
+                    Reference No:{" "}
+                    <strong>{request.reference_number || request.id}</strong>
+                  </p>
+                  <p className="mt-1 italic text-gray-500 text-[10px] leading-snug">
+                    This is a computer-generated document. The dry seal is replaced with a system-generated QR code—scan it to verify.
+                  </p>
+                </div>
+                <CertificateVerifyQR
+                  request={request}
+                  tenantId={request.tenant_id}
+                  qrSize={80}
+                  className="shrink-0 print:shrink-0"
+                />
               </div>
 
               {/* Footer Divider and info */}

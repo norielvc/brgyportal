@@ -117,6 +117,9 @@ export default async function handler(req, res) {
   const refNumber =
     formData.referenceNumber || `${prefix}-${year}-${timestamp}`;
 
+  const { generateBrgydeskNo } = await import("../../../src/lib/certificateVerify");
+  const brgydeskNo = formData.brgydeskNo || generateBrgydeskNo(year);
+
   /**
    * STAGE 2: Attempt Live Supabase Insert
    */
@@ -263,6 +266,7 @@ export default async function handler(req, res) {
       } : {}),
       // JSON storage for certificate-specific fields
       details: {
+        brgydesk_no: brgydeskNo,
         // Business Fields
         businessName: formData.businessName?.toUpperCase(),
         natureOfBusiness: formData.natureOfBusiness?.toUpperCase(),
@@ -524,6 +528,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         referenceNumber: refNumber,
+        brgydeskNo,
         source: "cloud_supabase",
         data,
       });
@@ -555,6 +560,7 @@ export default async function handler(req, res) {
       ...formData,
       id: `TEMP-${refNumber}`,
       referenceNumber: refNumber,
+      brgydeskNo,
       certificate_type: type,
       tenant_id: tenantId,
       submitted_at: new Date().toISOString(),
@@ -567,6 +573,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       referenceNumber: refNumber,
+      brgydeskNo,
       source: "local_resilience_buffer",
       message: "Saved to local buffer. System will sync once online.",
     });

@@ -26,8 +26,19 @@ import { getStrings } from "../../lib/certLang";
 import { getAuthToken } from "@/lib/auth";
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
 import useScrollLock from "@/lib/useScrollLock";
+import CertificateVerifyQR from "@/components/UI/CertificateVerifyQR";
 
 const API_URL = "/api";
+
+/** Purok + barangay only (portal verified-applicant display). */
+function formatPurokBarangayDisplay({ purok, barangay, barangayFallback }) {
+  const p = (purok || "").trim();
+  let b = (barangay || barangayFallback || "").trim();
+  if (b && !/^brgy\.?\s/i.test(b) && !/^barangay\s/i.test(b)) {
+    b = `Brgy. ${b}`;
+  }
+  return [p, b].filter(Boolean).join(", ");
+}
 
 const defaultOfficials = {
   chairman: "ALEXANDER C. MANIO",
@@ -374,6 +385,7 @@ export default function BarangayClearanceModal({
   const [isDownloading, setIsDownloading] = useState(false);
   const [currentDate, setCurrentDate] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
+  const [submittedBrgydeskNo, setSubmittedBrgydeskNo] = useState("");
   const [submittedReferenceNumber, setSubmittedReferenceNumber] = useState("");
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
   const [errors, setErrors] = useState({});
@@ -393,6 +405,8 @@ export default function BarangayClearanceModal({
     sex: "",
     civilStatus: "",
     address: "",
+    purok: "",
+    barangay: "",
     contactNumber: "",
     email: "",
     dateOfBirth: "",
@@ -417,6 +431,8 @@ export default function BarangayClearanceModal({
       sex: resident.gender || "",
       civilStatus: resident.civil_status || "",
       address: resident.residential_address || "",
+      purok: resident.purok || "",
+      barangay: resident.barangay || "",
       dateOfBirth: resident.date_of_birth
         ? new Date(resident.date_of_birth).toISOString().split("T")[0]
         : "",
@@ -562,6 +578,7 @@ export default function BarangayClearanceModal({
       const result = await response.json();
       if (result.success) {
         setSubmittedReferenceNumber(result.referenceNumber);
+        setSubmittedBrgydeskNo(result.brgydeskNo || result.referenceNumber || "");
         setShowConfirmationPopup(false);
         setShowSuccessModal(true);
       } else if (result.code === 'DUPLICATE_REQUEST' || result.code === 'RATE_LIMITED' || result.code === 'COOLDOWN_ACTIVE') {
@@ -588,6 +605,8 @@ export default function BarangayClearanceModal({
       sex: "",
       civilStatus: "",
       address: "",
+      purok: "",
+      barangay: "",
       contactNumber: "",
       email: "",
       dateOfBirth: "",
@@ -600,6 +619,8 @@ export default function BarangayClearanceModal({
     setCurrentStep(1);
     setShowConfirmationPopup(false);
     setShowSuccessModal(false);
+    setSubmittedReferenceNumber("");
+    setSubmittedBrgydeskNo("");
     setConsentChecked(false);
     setConsentExpanded(false);
     setShowPrivacyModal(false);
@@ -769,21 +790,22 @@ export default function BarangayClearanceModal({
                               <p className="text-lg font-bold text-gray-900 leading-tight">
                                 {formData.fullName}
                               </p>
-                              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4 pt-4 border-t border-gray-100">
-                                <div>
-                                  <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.12em] mb-0.5">
-                                    {t.recordNo}
-                                  </dt>
-                                  <dd className="text-sm font-semibold text-gray-800">
-                                    #{formData.residentId}
-                                  </dd>
-                                </div>
+                              <dl className="mt-4 pt-4 border-t border-gray-100">
                                 <div className="min-w-0">
                                   <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.12em] mb-0.5">
                                     {t.address}
                                   </dt>
-                                  <dd className="text-sm font-semibold text-gray-800 truncate">
-                                    {formData.address || <span className="text-gray-400 italic font-normal">{t.notRecorded}</span>}
+                                  <dd className="text-sm font-semibold text-gray-800">
+                                    {formatPurokBarangayDisplay({
+                                      purok: formData.purok,
+                                      barangay: formData.barangay,
+                                      barangayFallback:
+                                        tenantConfig?.shortName || tenantConfig?.name,
+                                    }) || (
+                                      <span className="text-gray-400 italic font-normal">
+                                        {t.notRecorded}
+                                      </span>
+                                    )}
                                   </dd>
                                 </div>
                               </dl>
@@ -1202,16 +1224,26 @@ export default function BarangayClearanceModal({
                 <p className="text-sm text-gray-500 leading-relaxed mb-6">
                   {t.successBody}
                 </p>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">
-                    {t.referenceNumber}
-                  </p>
-                  <p className="text-2xl font-bold font-mono tracking-tight" style={{ color: accentColor }}>
-                    {submittedReferenceNumber}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {t.saveReference}
-                  </p>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6 space-y-4">
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">
+                      BrgyDesk No.
+                    </p>
+                    <p className="text-xl font-bold font-mono tracking-tight" style={{ color: accentColor }}>
+                      {submittedBrgydeskNo}
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">
+                      {t.referenceNumber}
+                    </p>
+                    <p className="text-lg font-bold font-mono tracking-tight text-gray-800">
+                      {submittedReferenceNumber}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {t.saveReference}
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={() => {
@@ -1260,11 +1292,16 @@ export default function BarangayClearanceModal({
 }
 
 const ClearancePreview = React.memo(
-  ({ formData, referenceNumber, currentDate, officials, certificateRef }) => {
+  ({ formData, referenceNumber, currentDate, officials, certificateRef, tenantId, brgydeskNo }) => {
+    const verifyRequest = {
+      reference_number: referenceNumber,
+      tenant_id: tenantId,
+      details: brgydeskNo ? { brgydesk_no: brgydeskNo } : {},
+    };
     return (
       <div
         ref={certificateRef}
-        className="bg-white p-20"
+        className="bg-white p-20 relative"
         style={{ width: "794px", height: "1123px" }}
       >
         <h1 className="text-4xl font-black text-center uppercase mb-20">
@@ -1283,6 +1320,13 @@ const ClearancePreview = React.memo(
           <p>
             <strong>Ref:</strong> {referenceNumber}
           </p>
+        </div>
+        <div className="absolute bottom-12 right-12">
+          <CertificateVerifyQR
+            request={verifyRequest}
+            tenantId={tenantId}
+            qrSize={96}
+          />
         </div>
       </div>
     );
