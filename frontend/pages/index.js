@@ -27,7 +27,6 @@ export async function getServerSideProps({ req, query }) {
   const shareMeta = await fetchPortalShareMetaForSSR(tenantId);
   const proto =
     req.headers["x-forwarded-proto"] === "http" ? "http" : "https";
-  const host = req.headers.host || "";
   const rawUrl = req.url || "/";
   const requestUrl = `${proto}://${host}${rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`}`.split("#")[0];
   shareMeta.canonicalUrl = shareMeta.sharePageUrl;
