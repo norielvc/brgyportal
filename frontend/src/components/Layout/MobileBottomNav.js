@@ -22,13 +22,19 @@ export default function MobileBottomNav({ onOpenMenu, onOpenInstall }) {
       try {
         const token = getAuthToken();
         if (!token) return;
-        const res = await fetch("/api/dashboard/stats", {
+        const res = await fetch("/api/dashboard/nav-counts", {
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (res.status === 401 || res.status === 403) {
+          setPendingCount(0);
+          return;
+        }
         if (res.ok) {
           const json = await res.json();
           if (json.success && json.data) {
-            setPendingCount(json.data.pendingRequests || json.data.pendingCount || 0);
+            setPendingCount(
+              json.data.pendingRequests ?? json.data.pendingCount ?? 0,
+            );
           }
         }
       } catch (e) {

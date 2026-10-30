@@ -99,12 +99,31 @@ const authenticateToken = async (req, res, next) => {
 /**
  * Middleware to check if user has admin role
  */
+const normalizeRole = (role) =>
+  String(role || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '_');
+
+const STAFF_ROLES = [
+  'superadmin',
+  'super_admin',
+  'admin',
+  'captain',
+  'secretary',
+  'staff',
+  'treasurer',
+  'clerk',
+  'kagawad',
+  'sk_chairman',
+];
+
 const requireAdmin = (req, res, next) => {
-  const allowedRoles = ['superadmin', 'super_admin', 'admin', 'captain', 'secretary', 'staff'];
-  if (!allowedRoles.includes(req.user.role)) {
+  const role = normalizeRole(req.user?.role);
+  if (!STAFF_ROLES.includes(role)) {
     return res.status(403).json({
       success: false,
-      message: 'Elevated privileges required'
+      message: 'Elevated privileges required',
     });
   }
   next();
@@ -128,9 +147,9 @@ const requireSuperAdmin = (req, res, next) => {
  */
 const requireAdminOrOwner = (req, res, next) => {
   const userId = req.params.id || req.params.userId;
-  const allowedRoles = ['superadmin', 'super_admin', 'admin', 'captain', 'secretary', 'staff'];
+  const role = normalizeRole(req.user?.role);
 
-  if (allowedRoles.includes(req.user.role) || req.user._id === userId) {
+  if (STAFF_ROLES.includes(role) || req.user._id === userId) {
     return next();
   }
 

@@ -4,6 +4,64 @@ const { requireAdmin, authenticateToken } = require('../middleware/auth-supabase
 
 const router = express.Router();
 
+/** Statuses that still need staff action (Requests tab badge). */
+const OPEN_REQUEST_STATUSES = [
+  'pending',
+  'submitted',
+  'processing',
+  'under_review',
+  'staff_review',
+  'returned',
+  'secretary_approval',
+  'captain_approval',
+  'oic_review',
+  'physical_inspection',
+  'Treasury',
+  'ready',
+  'ready_for_pickup',
+];
+
+/**
+ * @route   GET /api/dashboard/nav-counts
+ * @desc    Lightweight counts for mobile nav badges (any authenticated staff)
+ * @access  Private
+ */
+router.get('/nav-counts', async (req, res) => {
+  try {
+    const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
+    if (!tenantId) {
+      return res.status(200).json({
+        success: true,
+        data: { pendingRequests: 0 },
+      });
+    }
+
+    const { count, error } = await supabase
+      .from('certificate_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .in('status', OPEN_REQUEST_STATUSES);
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to fetch request counts',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { pendingRequests: count ?? 0 },
+    });
+  } catch (error) {
+    console.error('Get nav counts error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+});
+
 /**
  * @route   GET /api/dashboard/stats
  * @desc    Get dashboard statistics
