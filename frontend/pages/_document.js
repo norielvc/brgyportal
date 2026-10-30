@@ -2,7 +2,7 @@ import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {
   return (
-    <Html lang="fil">
+    <Html lang="fil" prefix="og: https://ogp.me/ns# fb: https://ogp.me/ns/fb#">
       <Head>
         <link rel="icon" href="/favicon.ico" />
         {/* PWA Manifest & Theme */}

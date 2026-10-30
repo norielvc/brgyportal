@@ -3,13 +3,14 @@ import { getPortalStrings } from "@/lib/portalLang";
 
 /** Preferred static OG assets under /public/og/{tenant}.jpg|.png */
 const TENANT_OG_FILES = {
-  ibaoeste: ["/og/ibaoeste.jpg", "/og/ibaoeste.png", "/images/community.jpg"],
+  /** Use a versioned filename (not only ?v=) — some Messenger clients ignore query strings on og:image. */
+  ibaoeste: ["/og/ibaoeste-v3.jpg", "/og/ibaoeste.jpg", "/og/ibaoeste.png"],
   demo: ["/og/demo.jpg", "/images/bdlogo.png"],
 };
 
-/** Bump when replacing thumbnail so Facebook/Messenger refetch the image. */
+/** Optional ?v= for APIs; primary share image uses versioned path above. */
 const OG_IMAGE_CACHE_VERSION =
-  process.env.NEXT_PUBLIC_OG_IMAGE_VERSION || "2";
+  process.env.NEXT_PUBLIC_OG_IMAGE_VERSION || "3";
 
 export function portalSiteOrigin(tenantId) {
   return publicPortalCanonical(String(tenantId || "ibaoeste").toLowerCase()).replace(
@@ -28,7 +29,10 @@ export function buildPortalShareImageUrl(tenantId) {
   const origin = portalSiteOrigin(tenant);
   const [primaryStatic] = tenantOgFileCandidates(tenant);
   if (primaryStatic?.startsWith("/og/")) {
-    return `${origin}${primaryStatic}?v=${OG_IMAGE_CACHE_VERSION}`;
+    const base = `${origin}${primaryStatic}`;
+    return primaryStatic.includes("-v")
+      ? base
+      : `${base}?v=${OG_IMAGE_CACHE_VERSION}`;
   }
   return `${origin}/api/portal/share-image?tenant=${encodeURIComponent(tenant)}`;
 }

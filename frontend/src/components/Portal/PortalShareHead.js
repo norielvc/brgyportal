@@ -8,11 +8,13 @@ export default function PortalShareHead({ meta }) {
   const description =
     meta.description ||
     `${meta.shortName} — ${meta.pageDescription}`;
+  const canonicalUrl = meta.canonicalUrl || meta.sharePageUrl;
+  const fbAppId = process.env.NEXT_PUBLIC_FB_APP_ID;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: meta.shortName,
-    url: meta.sharePageUrl,
+    url: canonicalUrl,
     description,
     image: meta.shareImageUrl,
   };
@@ -22,8 +24,10 @@ export default function PortalShareHead({ meta }) {
       <meta httpEquiv="content-language" content="fil" />
       <title>{title}</title>
       <meta name="description" content={description} />
-      <link rel="canonical" href={meta.sharePageUrl} />
+      <link rel="canonical" href={canonicalUrl} />
       <link rel="image_src" href={meta.shareImageUrl} />
+
+      {fbAppId ? <meta property="fb:app_id" content={fbAppId} /> : null}
 
       <meta property="og:type" content="website" />
       <meta property="og:locale" content="fil_PH" />
