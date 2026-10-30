@@ -5978,7 +5978,7 @@ export default function PortalPageContent({ initialTenantId }) {
       `}</style>
 
       {/* Resident Mobile Bottom Action Bar — installed PWA only (hidden in mobile browser) */}
-      {isInstalled && (
+      {isInstalled && !isAnyPortalModalOpen && (
       <ResidentMobileActionBar
         onRequestDocs={() => {
           const formsSection = document.getElementById("forms");

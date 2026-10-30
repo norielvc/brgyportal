@@ -26,6 +26,13 @@ export default function useMobileModalViewport(panelRef, isActive) {
         clearPanelViewportStyles(panel);
         return;
       }
+      const layoutH = window.innerHeight || vv.height;
+      const keyboardLikelyOpen =
+        vv.height < layoutH * 0.82 || vv.offsetTop > 8;
+      if (!keyboardLikelyOpen) {
+        clearPanelViewportStyles(panel);
+        return;
+      }
       panel.style.top = `${vv.offsetTop}px`;
       panel.style.left = `${vv.offsetLeft}px`;
       panel.style.width = `${vv.width}px`;
