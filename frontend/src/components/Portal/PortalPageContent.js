@@ -79,6 +79,7 @@ import useDisablePinchZoom from "@/lib/useDisablePinchZoom";
 import useScrollLock from "@/lib/useScrollLock";
 import { getPortalStrings, getPortalFormDefinitions, getKapchatPrompts } from "@/lib/portalLang";
 import { publicTenantPath } from "@/lib/tenantHost";
+import { redirectToStaffLogin } from "@/lib/staffLogin";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
 
 export default function PortalPageContent({ initialTenantId }) {
@@ -378,12 +379,23 @@ export default function PortalPageContent({ initialTenantId }) {
   const [lockedFeature, setLockedFeature] = useState(null);
 
   const isAnyPortalModalOpen = Boolean(
+    showClearanceModal ||
+    showIndigencyModal ||
+    showResidencyModal ||
+    showBusinessPermitModal ||
+    showEducationalAssistanceModal ||
+    showNaturalDeathModal ||
+    showGuardianshipModal ||
+    showCohabitationModal ||
+    showMedicoLegalModal ||
+    showSamePersonModal ||
+    showComingSoonModal ||
+    showUpgradeModal ||
+    showInstallModal ||
     selectedAchievement ||
     selectedNewsItem ||
     selectedProgram ||
-    selectedFacility ||
-    showComingSoonModal ||
-    showUpgradeModal
+    selectedFacility
   );
   useScrollLock(isAnyPortalModalOpen);
 
@@ -1508,7 +1520,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     type="button"
                     onClick={() => {
                       setMobileMenuOpen(false);
-                      router.push("/login");
+                      redirectToStaffLogin();
                     }}
                     className="w-full mt-2 py-3 rounded-lg text-sm font-bold text-white touch-manipulation"
                     style={{
@@ -1603,7 +1615,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
             <button
               type="button"
-              onClick={() => router.push("/login")}
+              onClick={() => redirectToStaffLogin()}
               className="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 ml-0.5 lg:ml-1"
               style={{ backgroundColor: tenantConfig.primaryColor }}
             >
@@ -4828,7 +4840,8 @@ export default function PortalPageContent({ initialTenantId }) {
         </div>
       </footer>
 
-      {/* Floating Assistance Widget — Government Style */}
+      {/* Floating Assistance Widget — hidden while any portal modal is open */}
+      {!isAnyPortalModalOpen && (
       <div
         className={`fixed right-3 left-3 md:left-auto md:bottom-4 md:right-4 z-50 flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto ${mobileFabBottom}`}
       >
@@ -5358,6 +5371,7 @@ export default function PortalPageContent({ initialTenantId }) {
           )}
         </button>
       </div>
+      )}
 
       <style jsx>{`
         @keyframes fade-in {
