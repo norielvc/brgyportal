@@ -13,10 +13,18 @@ export function portalSiteOrigin(tenantId) {
   );
 }
 
-/** Absolute URL for link previews (Open Graph / Messenger / Viber). */
+/**
+ * Absolute URL for link previews (Open Graph / Messenger / Facebook).
+ * Prefer a static file under /public/og — crawlers often HEAD the URL and
+ * reject API routes that only allow GET.
+ */
 export function buildPortalShareImageUrl(tenantId) {
   const tenant = String(tenantId || "ibaoeste").toLowerCase();
   const origin = portalSiteOrigin(tenant);
+  const [primaryStatic] = tenantOgFileCandidates(tenant);
+  if (primaryStatic?.startsWith("/og/")) {
+    return `${origin}${primaryStatic}`;
+  }
   return `${origin}/api/portal/share-image?tenant=${encodeURIComponent(tenant)}`;
 }
 
