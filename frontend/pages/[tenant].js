@@ -1,7 +1,9 @@
 import { useRouter } from "next/router";
 import PortalPageContent from "@/components/Portal/PortalPageContent";
+import PortalShareHead from "@/components/Portal/PortalShareHead";
+import { fetchPortalShareMetaForSSR } from "@/lib/portalShare";
 
-export default function DynamicTenantPortal({ initialTenantId }) {
+export default function DynamicTenantPortal({ initialTenantId, shareMeta }) {
   const router = useRouter();
   const { tenant } = router.query || {};
   const effectiveTenant = initialTenantId || (Array.isArray(tenant) ? tenant[0] : tenant);
@@ -22,7 +24,12 @@ export default function DynamicTenantPortal({ initialTenantId }) {
     return null; // Let the other page handle it
   }
 
-  return <PortalPageContent initialTenantId={effectiveTenant} />;
+  return (
+    <>
+      <PortalShareHead meta={shareMeta} />
+      <PortalPageContent initialTenantId={effectiveTenant} />
+    </>
+  );
 }
 
 export async function getStaticPaths() {
@@ -34,9 +41,12 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps({ params }) {
+  const tenant = (params?.tenant || "").toLowerCase();
+  const shareMeta = tenant ? await fetchPortalShareMetaForSSR(tenant) : null;
   return {
     props: {
-      initialTenantId: params?.tenant?.toLowerCase() || null,
+      initialTenantId: tenant || null,
+      shareMeta,
     },
   };
 }
