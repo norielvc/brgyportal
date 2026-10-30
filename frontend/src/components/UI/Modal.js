@@ -91,12 +91,25 @@ export default function Modal({
         {/* Content */}
         <div
           className={cn(
-            "overflow-y-auto flex-1",
+            "overflow-y-auto flex-1 min-h-0",
             dense ? "p-2.5 sm:p-3" : "p-4 sm:p-6",
+            footer ? (dense ? "pb-2" : "pb-3") : "",
           )}
         >
           {children}
         </div>
+
+        {footer ? (
+          <div
+            className={cn(
+              "shrink-0 border-t border-gray-200 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]",
+              dense ? "px-3 py-2.5" : "px-4 py-3 sm:px-6 sm:py-4",
+              "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
+            )}
+          >
+            {footer}
+          </div>
+        ) : null}
       </div>
     </div>
   );

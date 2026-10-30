@@ -2275,6 +2275,28 @@ export default function Residents() {
             </div>
           </div>
           )}
+
+          <div className="sticky bottom-0 z-10 mt-4 pt-3 pb-1 -mx-4 sm:-mx-6 px-4 sm:px-6 bg-white border-t border-gray-200 shadow-[0_-8px_16px_rgba(255,255,255,0.95)] flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <button
+              type="button"
+              onClick={requestCloseResidentForm}
+              className="px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 bg-[#03254c] text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {isSubmitting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {selectedResident ? "Save changes" : "Register"}
+            </button>
+          </div>
         </form>
       </Modal>
 
