@@ -79,6 +79,10 @@ import useDisablePinchZoom from "@/lib/useDisablePinchZoom";
 import useScrollLock from "@/lib/useScrollLock";
 import { getPortalStrings, getPortalFormDefinitions, getKapchatPrompts } from "@/lib/portalLang";
 import { publicPortalCanonical, publicTenantPath } from "@/lib/tenantHost";
+import {
+  buildPortalShareImageUrl,
+  buildPortalSharePageUrl,
+} from "@/lib/portalShare";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
 
 export default function PortalPageContent({ initialTenantId }) {
@@ -1210,6 +1214,19 @@ export default function PortalPageContent({ initialTenantId }) {
     ? "bottom-[calc(4.875rem+env(safe-area-inset-bottom,0px)+0.5rem)]"
     : "bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))]";
 
+  const sharePageUrl = useMemo(
+    () => buildPortalSharePageUrl(tenantId),
+    [tenantId],
+  );
+  const shareImageUrl = useMemo(
+    () => buildPortalShareImageUrl(tenantId),
+    [tenantId],
+  );
+  const shareDescription = useMemo(
+    () => `${tenantConfig.name}, ${tenantConfig.subtitle}. ${p.pageDescription}`,
+    [tenantConfig.name, tenantConfig.subtitle, p.pageDescription],
+  );
+
   return (
     <div
       className={`min-h-screen bg-gray-50 md:pb-0 ${mobileBottomBarClearance}`}
@@ -1223,16 +1240,28 @@ export default function PortalPageContent({ initialTenantId }) {
         <meta name="author" content={tenantConfig.name} />
         <meta name="robots" content="index, follow" />
 
-        {/* Open Graph */}
+        {/* Open Graph / chat link preview (Messenger, Viber, Facebook, etc.) */}
         <meta property="og:type" content="website" />
+        <meta property="og:locale" content="fil_PH" />
+        <meta property="og:site_name" content={tenantConfig.shortName} />
+        <meta property="og:url" content={sharePageUrl} />
         <meta property="og:title" content={`${tenantConfig.shortName} — ${p.pageTitleSuffix}`} />
-        <meta property="og:description" content={`${tenantConfig.name}, ${tenantConfig.subtitle}. ${p.pageDescription}`} />
-        <meta property="og:image" content={tenantConfig.logo} />
+        <meta property="og:description" content={shareDescription} />
+        <meta property="og:image" content={shareImageUrl} />
+        <meta property="og:image:secure_url" content={shareImageUrl} />
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta
+          property="og:image:alt"
+          content={`${tenantConfig.shortName} — ${p.pageTitleSuffix}`}
+        />
 
-        {/* Twitter Card */}
+        {/* Twitter / X Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${tenantConfig.shortName} — ${p.pageTitleSuffix}`} />
-        <meta name="twitter:description" content={`Official online portal of ${tenantConfig.name}, ${tenantConfig.subtitle}.`} />
+        <meta name="twitter:description" content={shareDescription} />
+        <meta name="twitter:image" content={shareImageUrl} />
 
         {/* Theme Color */}
         <meta name="theme-color" content={tenantConfig.primaryColor} />
