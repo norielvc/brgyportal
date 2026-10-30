@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
+import { censusExportFileName } from "@/lib/censusMasterExport";
 import Layout from "@/components/Layout/Layout";
 import { LoadingCard } from "@/components/UI/LoadingSpinner";
 import Pagination from "@/components/UI/Pagination";
@@ -406,6 +407,7 @@ export default function Residents() {
   const [residents, setResidents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingOne, setIsExportingOne] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -827,6 +829,38 @@ export default function Residents() {
       setResidents([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleExportOneResident = async (resident) => {
+    if (!resident?.id) return;
+    setIsExportingOne(true);
+    const toastId = toast.loading("Exporting resident…");
+    try {
+      const token = getAuthToken();
+      const tenantId = currentUser?.tenant_id || "ibaoeste";
+      const headers = { "x-tenant-id": tenantId };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch(
+        `${API_URL}/residents/export-census?resident_id=${encodeURIComponent(resident.id)}`,
+        { headers },
+      );
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Export failed");
+      }
+
+      const sheet = XLSX.utils.aoa_to_sheet([data.headers, ...data.rows]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, sheet, data.sheet || "MASTER LIST");
+      const fileName = censusExportFileName(data.resident || resident);
+      XLSX.writeFile(workbook, fileName);
+      toast.success("Resident exported to Excel", { id: toastId });
+    } catch (error) {
+      toast.error(error.message || "Failed to export resident", { id: toastId });
+    } finally {
+      setIsExportingOne(false);
     }
   };
 
@@ -1334,6 +1368,15 @@ export default function Residents() {
                 <Trash2 className="w-3 h-3" /> Delete
               </button>
               <div className="flex flex-wrap items-center justify-end gap-1">
+                <button
+                  type="button"
+                  disabled={isExportingOne}
+                  onClick={() => handleExportOneResident(selectedResident)}
+                  className="px-2 py-1.5 bg-white text-[#03254c] border border-[#03254c] rounded-md text-[10px] font-semibold hover:bg-blue-50 transition-colors flex items-center gap-1 disabled:opacity-60"
+                >
+                  <Download className="w-3 h-3" />
+                  {isExportingOne ? "Export…" : "Export"}
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -2275,28 +2318,6 @@ export default function Residents() {
             </div>
           </div>
           )}
-
-          <div className="sticky bottom-0 z-10 mt-4 pt-3 pb-1 -mx-4 sm:-mx-6 px-4 sm:px-6 bg-white border-t border-gray-200 shadow-[0_-8px_16px_rgba(255,255,255,0.95)] flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-            <button
-              type="button"
-              onClick={requestCloseResidentForm}
-              className="px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2.5 bg-[#03254c] text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {isSubmitting ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              {selectedResident ? "Save changes" : "Register"}
-            </button>
-          </div>
         </form>
       </Modal>
 
