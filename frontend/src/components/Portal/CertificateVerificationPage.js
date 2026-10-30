@@ -9,6 +9,7 @@ import {
   XCircle,
   Landmark,
 } from "lucide-react";
+import { publicTenantPath } from "@/lib/tenantHost";
 
 function GovHeader({ branding, tenantId, tenantFromApi }) {
   const logos = branding?.logos || {};
@@ -215,7 +216,7 @@ export default function CertificateVerificationPage({ tenantId: tenantProp, veri
     return `Verify Certificate | ${barangay}`;
   }, [branding, tenantFromApi]);
 
-  const portalHome = tenantId ? `/${tenantId}` : "/";
+  const portalHome = tenantId ? publicTenantPath(tenantId) : "/";
 
   return (
     <>

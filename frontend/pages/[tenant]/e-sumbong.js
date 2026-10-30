@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { getPortalStrings } from "@/lib/portalLang";
+import { publicTenantPath, tenantFromHostname } from "@/lib/tenantHost";
 import useEsumbongPageInteractionLock from "@/lib/useEsumbongPageInteractionLock";
 
 const ESumbongForm = dynamic(() => import("@/components/Forms/ESumbongForm"), {
@@ -39,15 +41,41 @@ export default function TenantESumbongPage({ initialTenantId }) {
   const router = useRouter();
   const p = getPortalStrings();
   const tenantRaw = initialTenantId || router.query.tenant;
-  const tenant = (Array.isArray(tenantRaw) ? tenantRaw[0] : tenantRaw || "").toLowerCase();
+  const queryTenant = (Array.isArray(tenantRaw) ? tenantRaw[0] : tenantRaw || "").toLowerCase();
+  const [hostTenant, setHostTenant] = useState("");
+  const [hostChecked, setHostChecked] = useState(Boolean(queryTenant));
 
-  const portalHref = tenant ? `/${tenant}#citizen-help` : "/";
+  useEffect(() => {
+    setHostTenant(tenantFromHostname(window.location.hostname) || "");
+    setHostChecked(true);
+  }, []);
+
+  const tenant = queryTenant || hostTenant;
+  const portalHref = tenant ? `${publicTenantPath(tenant)}#citizen-help` : "/";
 
   useEsumbongPageInteractionLock(true);
 
   const goBack = () => {
     router.push(portalHref);
   };
+
+  if (!tenant && !hostChecked) {
+    return (
+      <div className="min-h-[100dvh] bg-gray-100 flex items-center justify-center">
+        <p className="text-sm text-gray-600">Loading…</p>
+      </div>
+    );
+  }
+
+  if (!tenant) {
+    return (
+      <div className="min-h-[100dvh] bg-gray-100 flex items-center justify-center px-6">
+        <p className="text-sm text-gray-700 text-center">
+          Open E-Sumbong from your barangay website.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -2,6 +2,7 @@ import "../src/styles/globals.css";
 import { useEffect } from "react";
 import Head from "next/head";
 import OfflineBanner from "@/components/UI/OfflineBanner";
+import { tenantFromHostname } from "@/lib/tenantHost";
 
 export default function App({ Component, pageProps }) {
   useEffect(() => {
@@ -27,8 +28,10 @@ export default function App({ Component, pageProps }) {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has("tenant")) return urlParams.get("tenant");
 
-      // Try hostname (e.g., demo.brgydesk.com)
+      // Try hostname (e.g., demo.brgydesk.com or ibaoeste.brgydesk.com)
       if (window.location.hostname.includes("demo")) return "demo";
+      const fromHost = tenantFromHostname(window.location.hostname);
+      if (fromHost) return fromHost;
 
       // Always try stored user data first — most reliable source
       try {

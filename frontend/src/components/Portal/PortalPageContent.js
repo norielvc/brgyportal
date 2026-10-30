@@ -78,6 +78,7 @@ import usePwa from "@/lib/usePwa";
 import useDisablePinchZoom from "@/lib/useDisablePinchZoom";
 import useScrollLock from "@/lib/useScrollLock";
 import { getPortalStrings, getPortalFormDefinitions, getKapchatPrompts } from "@/lib/portalLang";
+import { publicPortalCanonical, publicTenantPath } from "@/lib/tenantHost";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
 
 export default function PortalPageContent({ initialTenantId }) {
@@ -85,12 +86,12 @@ export default function PortalPageContent({ initialTenantId }) {
   const router = useRouter();
   const [tenantId, setTenantId] = useState((initialTenantId || "ibaoeste").toLowerCase());
   const openESumbong = () => {
-    router.push(`/${tenantId}/e-sumbong`);
+    router.push(publicTenantPath(tenantId, "e-sumbong"));
   };
 
   useEffect(() => {
     if (!tenantId) return;
-    router.prefetch(`/${tenantId}/e-sumbong`);
+    router.prefetch(publicTenantPath(tenantId, "e-sumbong"));
   }, [tenantId, router]);
 
   useDisablePinchZoom(true);
@@ -1212,7 +1213,7 @@ export default function PortalPageContent({ initialTenantId }) {
   return (
     <div
       className={`min-h-screen bg-gray-50 md:pb-0 ${mobileBottomBarClearance}`}
-      style={{ fontFamily: "'Outfit', 'Inter', sans-serif" }}
+      style={{ fontFamily: "'Source Sans 3', 'Segoe UI', sans-serif" }}
     >
       <Head>
         <meta httpEquiv="content-language" content="fil" />
@@ -1237,13 +1238,17 @@ export default function PortalPageContent({ initialTenantId }) {
         <meta name="theme-color" content={tenantConfig.primaryColor} />
 
         {/* Canonical */}
-        <link rel="canonical" href={`https://brgydesk.vercel.app/${tenantId}`} />
+        <link rel="canonical" href={publicPortalCanonical(tenantId)} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet"
+        />
       </Head>
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap");
-
         * {
-          font-family: "Outfit", "Inter", sans-serif !important;
+          font-family: "Source Sans 3", "Segoe UI", sans-serif !important;
           scroll-behavior: smooth;
         }
 

@@ -1,6 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
+import { tenantFromHostname } from "@/lib/tenantHost";
 
 // Create axios instance
 // MIGRATED: Now routes through internal Next.js /api layer instead of Express port 5005
@@ -53,7 +54,10 @@ api.interceptors.request.use(
 
       // If not logged in, detect from URL or hostname (for public pages)
       if (!tenantId) {
-        if (window.location.hostname.includes("demo")) {
+        const fromHost = tenantFromHostname(window.location.hostname);
+        if (fromHost) {
+          tenantId = fromHost;
+        } else if (window.location.hostname.includes("demo")) {
           tenantId = "demo";
         } else {
           const urlParams = new URLSearchParams(window.location.search);

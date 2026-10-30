@@ -72,8 +72,9 @@ export function getCertificateQrSiteOrigin() {
 
 /**
  * Public URL encoded in certificate QR codes.
- * Format: https://brgydesk.vercel.app/{tenant}/verify-certificate?no=...
- * Always uses the public site origin for print/QR (not localhost).
+ * Iba O' Este: https://ibaoeste.brgydesk.com/verify-certificate?no=...
+ * Other tenants: https://brgydesk.vercel.app/{tenant}/verify-certificate?no=...
+ * Always uses a public origin for print/QR (not localhost).
  */
 export function buildCertificateVerifyUrl({ brgydeskNo, tenantId, origin }) {
   if (!brgydeskNo || !tenantId) return "";
@@ -83,6 +84,10 @@ export function buildCertificateVerifyUrl({ brgydeskNo, tenantId, origin }) {
 
   if (origin) {
     return `${String(origin).replace(/\/$/, "")}${path}`;
+  }
+
+  if (tenant === "ibaoeste" && !process.env.NEXT_PUBLIC_CERT_VERIFY_BASE) {
+    return `https://ibaoeste.brgydesk.com/verify-certificate?${params.toString()}`;
   }
 
   return `${getCertificateQrSiteOrigin()}${path}`;

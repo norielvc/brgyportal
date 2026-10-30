@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import PortalPageContent from "@/components/Portal/PortalPageContent";
+import { tenantFromHostname } from "@/lib/tenantHost";
 
 export default function Home() {
   const router = useRouter();
@@ -11,46 +12,13 @@ export default function Home() {
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
       const urlParams = new URLSearchParams(window.location.search);
+      const fromQuery = (urlParams.get("tenant") || "").trim().toLowerCase();
+      const tenant = fromQuery || tenantFromHostname(hostname);
 
-      // Explicit tenant in query param takes priority
-      if (urlParams.has("tenant")) {
-        setTenantId(urlParams.get("tenant"));
-        setView("portal");
-        return;
-      }
-
-      // Detection logic
-      if (
-        hostname === "brgydesk.up.railway.app" ||
-        hostname === "localhost" ||
-        hostname === "127.0.0.1" ||
-        hostname.includes("vercel.app")
-      ) {
-        router.replace("/login");
-      } else if (hostname.includes("-brgydesk.up.railway.app")) {
-        // Support for ibaoeste-brgydesk.up.railway.app structure (SSL compatible)
-        const tenant = hostname.split("-brgydesk")[0];
+      if (tenant) {
         setTenantId(tenant);
         setView("portal");
-      } else if (hostname.startsWith("ibaoeste.")) {
-        // Preserve legacy fallback structure
-        setTenantId("ibaoeste");
-        setView("portal");
-      } else if (hostname.includes("demo")) {
-        setTenantId("demo");
-        setView("portal");
-      } else if (
-        hostname.includes("railway.app") &&
-        !hostname.startsWith("brgydesk.")
-      ) {
-        // Fallback for generic or old railway subdomains (like demo-brgydesk or old name)
-        const parts = hostname.split(".");
-        const prefix = parts[0];
-        const tenant = prefix.includes("-") ? prefix.split("-")[0] : prefix;
-        setTenantId(tenant || "ibaoeste");
-        setView("portal");
       } else {
-        // Default to login
         router.replace("/login");
       }
     }

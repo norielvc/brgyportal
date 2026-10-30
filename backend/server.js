@@ -124,7 +124,8 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.up.railway.app')) {
+    const brgydeskHost = /^https:\/\/([a-z0-9-]+\.)?brgydesk\.com$/i.test(origin);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.up.railway.app') || brgydeskHost) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
