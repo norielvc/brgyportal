@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Search,
   X,
@@ -30,6 +30,8 @@ export default function ResidentSearchModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPendingCaseModal, setShowPendingCaseModal] = useState(false);
+  const panelRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   const handleResidentClick = (resident) => {
     if (resident.pending_case) {
@@ -38,6 +40,53 @@ export default function ResidentSearchModal({
       onSelect(resident);
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const panel = panelRef.current;
+    const vv = window.visualViewport;
+    if (!panel || !vv) return;
+
+    const syncPanelToViewport = () => {
+      const mobile = window.matchMedia("(max-width: 639px)").matches;
+      if (!mobile) {
+        panel.style.top = "";
+        panel.style.left = "";
+        panel.style.width = "";
+        panel.style.height = "";
+        panel.style.maxHeight = "";
+        return;
+      }
+      panel.style.top = `${vv.offsetTop}px`;
+      panel.style.left = `${vv.offsetLeft}px`;
+      panel.style.width = `${vv.width}px`;
+      panel.style.height = `${vv.height}px`;
+      panel.style.maxHeight = `${vv.height}px`;
+    };
+
+    syncPanelToViewport();
+    vv.addEventListener("resize", syncPanelToViewport);
+    vv.addEventListener("scroll", syncPanelToViewport);
+    return () => {
+      vv.removeEventListener("resize", syncPanelToViewport);
+      vv.removeEventListener("scroll", syncPanelToViewport);
+      if (panel) {
+        panel.style.top = "";
+        panel.style.left = "";
+        panel.style.width = "";
+        panel.style.height = "";
+        panel.style.maxHeight = "";
+      }
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const mobile = window.matchMedia("(max-width: 639px)").matches;
+    if (!mobile) {
+      searchInputRef.current?.focus({ preventScroll: true });
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -109,14 +158,17 @@ export default function ResidentSearchModal({
   const accentColor = tenantConfig.primaryColor || (isDemo ? "#111111" : "#059669");
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[100] sm:flex sm:items-center sm:justify-center sm:p-4">
       <div
         className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         onTouchMove={(e) => e.preventDefault()}
       />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[96dvh] sm:max-h-[92vh] animate-in zoom-in-95 fade-in duration-300">
+      <div
+        ref={panelRef}
+        className="fixed z-[101] inset-0 flex flex-col bg-white overflow-hidden shadow-2xl sm:static sm:z-auto sm:inset-auto sm:w-full sm:max-w-2xl sm:max-h-[92vh] sm:rounded-2xl sm:animate-in sm:zoom-in-95 sm:fade-in sm:duration-300"
+      >
         {/* Header */}
         <div
           className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between shrink-0"
@@ -152,9 +204,12 @@ export default function ResidentSearchModal({
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
+              ref={searchInputRef}
               id="resident-search"
-              type="text"
-              autoFocus
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              autoCorrect="off"
               placeholder={t.dirPlaceholder}
               className="w-full pl-10 pr-11 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg text-sm sm:text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
               value={searchTerm}
@@ -173,7 +228,7 @@ export default function ResidentSearchModal({
         </div>
 
         {/* Results Area */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6 bg-white">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-8 py-4 sm:py-6 bg-white">
           {error ? (
             <div className="py-8 flex flex-col items-center justify-center text-center max-w-sm mx-auto">
               <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4 border border-amber-200">

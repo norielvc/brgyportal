@@ -24,6 +24,11 @@ function restoreScrollPosition(scrollY) {
   });
 }
 
+function prefersLightScrollLock() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 639px)").matches;
+}
+
 export function lockScroll() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
@@ -31,6 +36,7 @@ export function lockScroll() {
   if (activeLocks === 1) {
     const scrollY = window.scrollY || window.pageYOffset || 0;
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const lightLock = prefersLightScrollLock();
 
     originalStyles = {
       overflow: document.body.style.overflow,
@@ -42,19 +48,24 @@ export function lockScroll() {
       bodyRight: document.body.style.right,
       bodyWidth: document.body.style.width,
       scrollY,
+      lightLock,
     };
 
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
 
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    if (!lightLock) {
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.width = "100%";
+
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
     }
+
     document.body.classList.add("modal-open");
     document.documentElement.classList.add("modal-open");
   }
