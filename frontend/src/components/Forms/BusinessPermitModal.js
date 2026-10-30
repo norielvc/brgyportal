@@ -4,6 +4,10 @@ import ResidentSearchModal from '../Modals/ResidentSearchModal';
 import LanguageGate from './LanguageGate';
 import { getStrings } from '../../lib/certLang';
 import useScrollLock from '@/lib/useScrollLock';
+import useMobileModalViewport, {
+  certModalOverlayClass,
+  certModalPanelClass,
+} from '@/lib/useMobileModalViewport';
 
 const BUSINESS_TYPES = [
   'SARI-SARI STORE', 'CARINDERIA / EATERY', 'BAKERY', 'SALON / BARBERSHOP',
@@ -41,8 +45,12 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
     pickupMethod: 'pickup',
   });
   const [pickupError, setPickupError] = useState('');
+  const panelRef = useRef(null);
+  const confirmPanelRef = useRef(null);
 
   useScrollLock(isOpen);
+  useMobileModalViewport(panelRef, isOpen && !showSuccess && !showConfirmation);
+  useMobileModalViewport(confirmPanelRef, isOpen && showConfirmation);
 
   useEffect(() => {
     if (!isOpen) {
@@ -164,8 +172,8 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
     ].filter(f => f.value);
 
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md" onTouchMove={(e) => e.preventDefault()}>
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
+      <div className={`${certModalOverlayClass} z-[60] bg-black/80 backdrop-blur-md`} onTouchMove={(e) => e.preventDefault()}>
+        <div ref={confirmPanelRef} className={certModalPanelClass}>
           <div className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
             <div>
               <p className="text-white/60 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">{t.reviewEyebrow}</p>
@@ -268,9 +276,9 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className={certModalOverlayClass}>
         <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} onTouchMove={(e) => e.preventDefault()} />
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-300">
+        <div ref={panelRef} className={certModalPanelClass}>
 
           {/* Header */}
           <div className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between shrink-0" style={{ backgroundColor: accentColor }}>
@@ -328,7 +336,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
 
           {/* Content */}
           {lang && (
-          <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 sm:px-8 py-6">
             <div>
 
               {/* Step 1: Owner Info */}

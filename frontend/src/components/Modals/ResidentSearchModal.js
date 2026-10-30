@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getStrings } from "../../lib/certLang";
 import useScrollLock from "@/lib/useScrollLock";
+import useMobileModalViewport from "@/lib/useMobileModalViewport";
 
 export default function ResidentSearchModal({
   isOpen,
@@ -41,44 +42,7 @@ export default function ResidentSearchModal({
     }
   };
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const panel = panelRef.current;
-    const vv = window.visualViewport;
-    if (!panel || !vv) return;
-
-    const syncPanelToViewport = () => {
-      const mobile = window.matchMedia("(max-width: 639px)").matches;
-      if (!mobile) {
-        panel.style.top = "";
-        panel.style.left = "";
-        panel.style.width = "";
-        panel.style.height = "";
-        panel.style.maxHeight = "";
-        return;
-      }
-      panel.style.top = `${vv.offsetTop}px`;
-      panel.style.left = `${vv.offsetLeft}px`;
-      panel.style.width = `${vv.width}px`;
-      panel.style.height = `${vv.height}px`;
-      panel.style.maxHeight = `${vv.height}px`;
-    };
-
-    syncPanelToViewport();
-    vv.addEventListener("resize", syncPanelToViewport);
-    vv.addEventListener("scroll", syncPanelToViewport);
-    return () => {
-      vv.removeEventListener("resize", syncPanelToViewport);
-      vv.removeEventListener("scroll", syncPanelToViewport);
-      if (panel) {
-        panel.style.top = "";
-        panel.style.left = "";
-        panel.style.width = "";
-        panel.style.height = "";
-        panel.style.maxHeight = "";
-      }
-    };
-  }, [isOpen]);
+  useMobileModalViewport(panelRef, isOpen);
 
   useEffect(() => {
     if (!isOpen) return;

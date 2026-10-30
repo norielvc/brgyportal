@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   GraduationCap,
@@ -19,6 +19,10 @@ import {
 import SignatureInput from "../UI/SignatureInput";
 import ResidentSearchModal from "../Modals/ResidentSearchModal";
 import useScrollLock from "@/lib/useScrollLock";
+import useMobileModalViewport, {
+  certModalOverlayClass,
+  certModalPanelClass,
+} from "@/lib/useMobileModalViewport";
 
 export default function EducationalAssistanceModal({
   isOpen,
@@ -27,6 +31,8 @@ export default function EducationalAssistanceModal({
   tenantConfig = {},
 }) {
   useScrollLock(isOpen);
+  const panelRef = useRef(null);
+  useMobileModalViewport(panelRef, isOpen);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -315,9 +321,11 @@ export default function EducationalAssistanceModal({
     <>
       {demoTheme}
       <div className="brgy-modal-wrap">
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 overflow-hidden" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
+        <div className={certModalOverlayClass} onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden />
           <div
-            className="relative bg-white md:rounded-2xl shadow-2xl w-full max-w-2xl h-full md:h-auto md:max-h-[90vh] flex flex-col overflow-hidden animate-fade-in no-scrollbar"
+            ref={panelRef}
+            className={certModalPanelClass}
             style={{ fontFamily: "'Open Sans', sans-serif" }}
           >
             {/* Header */}
@@ -344,7 +352,7 @@ export default function EducationalAssistanceModal({
             </div>
 
             {/* Form Body */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               <div className="p-6 sm:p-8 space-y-5">
                 <div className="bg-amber-50 border-l-4 border-amber-500 rounded-r-lg p-4 flex-shrink-0">
                   <div className="flex items-start gap-3">
