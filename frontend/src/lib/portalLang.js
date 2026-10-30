@@ -114,7 +114,7 @@ const STRINGS = {
     closeMenu: "Close menu",
     pageTitleSuffix: "Official Barangay Portal",
     pageDescription:
-      "Official online portal. Request certificates, track requests, and access barangay services online.",
+      "Connect with your barangay online — request certificates and track your application status.",
     locked: "Locked",
     lockedUpgrade: "Locked (Upgrade Needed)",
     requestCertificate: "Request Certificate",
@@ -391,7 +391,7 @@ const STRINGS = {
     closeMenu: "Isara ang menu",
     pageTitleSuffix: "Opisyal na Portal ng Barangay",
     pageDescription:
-      "Opisyal na online portal. Humiling ng sertipiko, subaybayan ang kahilingan, at gamitin ang serbisyo ng barangay online.",
+      "Makipag-ugnayan sa barangay online — humiling ng sertipiko at subaybayan ang status ng iyong kahilingan.",
     locked: "Naka-lock",
     lockedUpgrade: "Naka-lock (Kailangan ng upgrade)",
     requestCertificate: "Humiling ng Sertipiko",
