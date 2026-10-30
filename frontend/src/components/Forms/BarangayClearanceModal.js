@@ -28,6 +28,8 @@ import { mergeOfficialsConfig } from "@/lib/officialsConfig";
 import useScrollLock from "@/lib/useScrollLock";
 import useMobileModalViewport, {
   certModalOverlayClass,
+  certModalBackdropClass,
+  certModalBackdropHeavyClass,
   certModalPanelClass,
   certModalScrollClass,
   certModalScrollPurposeClass,
@@ -317,7 +319,6 @@ export default function BarangayClearanceModal({
   const [isDownloading, setIsDownloading] = useState(false);
   const [currentDate, setCurrentDate] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
-  const [submittedBrgydeskNo, setSubmittedBrgydeskNo] = useState("");
   const [submittedReferenceNumber, setSubmittedReferenceNumber] = useState("");
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
   const [errors, setErrors] = useState({});
@@ -510,7 +511,6 @@ export default function BarangayClearanceModal({
       const result = await response.json();
       if (result.success) {
         setSubmittedReferenceNumber(result.referenceNumber);
-        setSubmittedBrgydeskNo(result.brgydeskNo || result.referenceNumber || "");
         setShowConfirmationPopup(false);
         setShowSuccessModal(true);
       } else if (result.code === 'DUPLICATE_REQUEST' || result.code === 'RATE_LIMITED' || result.code === 'COOLDOWN_ACTIVE') {
@@ -552,7 +552,6 @@ export default function BarangayClearanceModal({
     setShowConfirmationPopup(false);
     setShowSuccessModal(false);
     setSubmittedReferenceNumber("");
-    setSubmittedBrgydeskNo("");
     setConsentChecked(false);
     setConsentExpanded(false);
     setShowPrivacyModal(false);
@@ -574,9 +573,10 @@ export default function BarangayClearanceModal({
         {!showConfirmationPopup && !showSuccessModal && (
           <div className={certModalOverlayClass}>
               <div
-                className="fixed inset-0 bg-black/60 backdrop-blur-[2px]"
+                className={certModalBackdropClass}
                 onClick={onClose}
                 onTouchMove={(e) => e.preventDefault()}
+                aria-hidden
               />
               <div
                 ref={panelRef}
@@ -945,11 +945,12 @@ export default function BarangayClearanceModal({
         )}
 
         {showConfirmationPopup && (
-          <div className={`${certModalOverlayClass} z-[60] bg-black/80 backdrop-blur-md`}>
+          <div className={`${certModalOverlayClass} z-[60]`}>
               <div
-                className="fixed inset-0 bg-black/80 backdrop-blur-md"
+                className={certModalBackdropHeavyClass}
                 onClick={() => setShowConfirmationPopup(false)}
                 onTouchMove={(e) => e.preventDefault()}
+                aria-hidden
               />
               <div ref={confirmPanelRef} className={certModalPanelClass}>
                 {/* Header */}
@@ -1158,26 +1159,14 @@ export default function BarangayClearanceModal({
                 <p className="text-sm text-gray-500 leading-relaxed mb-6">
                   {t.successBody}
                 </p>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6 space-y-4">
-                  <div>
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">
-                      BrgyDesk No.
-                    </p>
-                    <p className="text-xl font-bold font-mono tracking-tight" style={{ color: accentColor }}>
-                      {submittedBrgydeskNo}
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-gray-200">
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">
-                      {t.referenceNumber}
-                    </p>
-                    <p className="text-lg font-bold font-mono tracking-tight text-gray-800">
-                      {submittedReferenceNumber}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      {t.saveReference}
-                    </p>
-                  </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">
+                    {t.referenceNumber}
+                  </p>
+                  <p className="text-2xl font-bold font-mono tracking-tight" style={{ color: accentColor }}>
+                    {submittedReferenceNumber}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">{t.saveReference}</p>
                 </div>
                 <button
                   onClick={() => {

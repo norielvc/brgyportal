@@ -14,6 +14,8 @@ import { getStrings } from '../../lib/certLang';
 import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
   certModalOverlayClass,
+  certModalBackdropClass,
+  certModalBackdropHeavyClass,
   certModalPanelClass,
   certModalScrollClass,
   certModalScrollPurposeClass,
@@ -268,7 +270,8 @@ export default function UnifiedCertModal({
     const allData = { ...formData, ...extraFormData };
 
     return (
-      <div className={`${certModalOverlayClass} bg-black/80 backdrop-blur-md`} onTouchMove={(e) => e.preventDefault()}>
+      <div className={certModalOverlayClass} onTouchMove={(e) => e.preventDefault()}>
+        <div className={certModalBackdropHeavyClass} onClick={() => setShowConfirmation(false)} aria-hidden />
         <div ref={confirmPanelRef} className={certModalPanelClass}>
           <div className="px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between shrink-0" style={{ backgroundColor: accentColor }}>
             <div>
@@ -394,7 +397,7 @@ export default function UnifiedCertModal({
   return (
     <>
       <div className={certModalOverlayClass}>
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} onTouchMove={(e) => e.preventDefault()} />
+        <div className={certModalBackdropClass} onClick={onClose} onTouchMove={(e) => e.preventDefault()} aria-hidden />
         <div ref={panelRef} className={certModalPanelClass}>
 
           {/* Header */}

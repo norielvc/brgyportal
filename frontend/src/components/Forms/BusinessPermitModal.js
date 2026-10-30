@@ -6,6 +6,7 @@ import { getStrings } from '../../lib/certLang';
 import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
   certModalOverlayClass,
+  certModalBackdropClass,
   certModalPanelClass,
   certModalScrollClass,
   certModalFooterClass,
@@ -281,7 +282,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   return (
     <>
       <div className={certModalOverlayClass}>
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} onTouchMove={(e) => e.preventDefault()} />
+        <div className={certModalBackdropClass} onClick={onClose} onTouchMove={(e) => e.preventDefault()} aria-hidden />
         <div ref={panelRef} className={certModalPanelClass}>
 
           {/* Header */}

@@ -21,6 +21,7 @@ import ResidentSearchModal from "../Modals/ResidentSearchModal";
 import useScrollLock from "@/lib/useScrollLock";
 import useMobileModalViewport, {
   certModalOverlayClass,
+  certModalBackdropClass,
   certModalPanelClass,
 } from "@/lib/useMobileModalViewport";
 
@@ -322,7 +323,7 @@ export default function EducationalAssistanceModal({
       {demoTheme}
       <div className="brgy-modal-wrap">
         <div className={certModalOverlayClass} onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden />
+          <div className={certModalBackdropClass} onClick={onClose} aria-hidden />
           <div
             ref={panelRef}
             className={certModalPanelClass}

@@ -2597,10 +2597,10 @@ function RequestDetailsModal({
       />
 
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[90vh]"
+        className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[92dvh] sm:max-h-[85vh]"
       >
         {/* Header */}
-        <div className="bg-slate-900 border-b border-slate-800 px-3.5 sm:px-5 py-2.5 sm:py-3.5 flex items-center justify-between shrink-0">
+        <div className="bg-slate-900 border-b border-slate-800 px-4 sm:px-5 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
             <div className="bg-white/10 p-2 rounded-xl border border-white/10 shrink-0">
               <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
@@ -2664,7 +2664,7 @@ function RequestDetailsModal({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 bg-slate-100/75 px-3 sm:px-5 shrink-0">
+        <div className="flex border-b border-slate-200 bg-slate-100/75 px-4 sm:px-5 shrink-0">
           <button
             onClick={() => setActiveTab("details")}
             className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-colors ${
@@ -2690,7 +2690,7 @@ function RequestDetailsModal({
           </button>
         </div>
 
-        <div className="p-3 sm:p-5 overflow-y-auto overflow-x-hidden flex-1 space-y-3 sm:space-y-4 custom-scrollbar bg-slate-50/50">
+        <div className="p-4 sm:p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 space-y-4 custom-scrollbar bg-slate-50/50 text-sm">
           {activeTab === "details" && (
             <>
               {/* Ready / Released Guidance Banner */}
@@ -2738,28 +2738,28 @@ function RequestDetailsModal({
                 <ORPreviewSection request={request} />
               )}
               {/* Request Summary Card */}
-              <div className="bg-white rounded-xl border border-slate-200/90 shadow-sm p-3 sm:p-4 mb-2 sm:mb-3">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reference No.</p>
+              <div className="bg-white rounded-xl border border-slate-200/90 shadow-sm p-4 sm:p-5">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5">
+                  <div className="space-y-1.5 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Reference No.</p>
                     <p className="font-mono text-xs sm:text-sm font-bold text-blue-600 truncate">{request.reference_number || "—"}</p>
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Certificate Type</p>
+                  <div className="space-y-1.5 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Certificate Type</p>
                     <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{getTypeLabel(request.certificate_type)}</p>
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Current Step</p>
+                  <div className="space-y-1.5 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Current Step</p>
                     <p className="text-xs sm:text-sm font-bold text-slate-800 truncate">{currentStep?.name?.toUpperCase() || request.status?.replace(/_/g, " ").toUpperCase()}</p>
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Submitted</p>
+                  <div className="space-y-1.5 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Date Submitted</p>
                     <p className="text-xs sm:text-sm font-semibold text-slate-700 truncate">{formatDate(request.created_at)}</p>
                   </div>
                 </div>
-                <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 flex-wrap">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider border shadow-sm ${getStatusColor(request.status)}`}
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider border shadow-sm ${getStatusColor(request.status)}`}
                   >
                     {request.status?.replace(/_/g, " ").toUpperCase()}
                   </span>
@@ -2819,9 +2819,9 @@ function RequestDetailsModal({
                 </div>
               )}
 
-              {/* Compact Applicant Info Grid */}
-              <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/90 shadow-sm">
-                <div className="flex justify-between items-center mb-3 border-l-4 border-blue-600 pl-3">
+              {/* Applicant Info */}
+              <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200/90 shadow-sm">
+                <div className="flex justify-between items-center mb-4 border-l-[3px] border-blue-600 pl-3">
                   <h3 className="font-bold text-slate-900 flex items-center gap-2 text-xs uppercase tracking-wider">
                     <User className="w-4 h-4 text-blue-600" />
                     Applicant Information
@@ -2871,9 +2871,9 @@ function RequestDetailsModal({
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 md:gap-8">
                   {/* LEFT COLUMN */}
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {isEditing ? (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -2927,8 +2927,8 @@ function RequestDetailsModal({
                       </div>
                     ) : (
                       <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">
                             Full Name
                           </p>
                           {request.residents && !isEditing && (
@@ -2962,7 +2962,7 @@ function RequestDetailsModal({
                             </button>
                           )}
                         </div>
-                        <p className="font-bold text-slate-900 text-base sm:text-lg lg:text-xl leading-snug tracking-tight uppercase">
+                        <p className="font-bold text-slate-900 text-sm sm:text-base leading-snug tracking-tight uppercase">
                           {request.applicant_name ||
                             request.full_name ||
                             "NOT RECORDED"}
@@ -3004,9 +3004,9 @@ function RequestDetailsModal({
                     )}
 
                     {/* Key fields row */}
-                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 pt-2.5 border-t border-slate-100">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-4 pt-4 border-t border-slate-100">
                       <div>
-                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                           Date of Birth
                         </p>
                         {isEditing ? (
@@ -3029,7 +3029,7 @@ function RequestDetailsModal({
                         )}
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                           Civil Status
                         </p>
                         {isEditing ? (
@@ -3051,7 +3051,7 @@ function RequestDetailsModal({
                         )}
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                           Age / Sex
                         </p>
                         {isEditing ? (
@@ -3082,7 +3082,7 @@ function RequestDetailsModal({
                         )}
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                           Contact No.
                         </p>
                         <div className="flex items-center gap-2">
@@ -3093,7 +3093,7 @@ function RequestDetailsModal({
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                      <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                         Place of Birth
                       </p>
                       {isEditing ? (
@@ -3113,9 +3113,9 @@ function RequestDetailsModal({
                   </div>
 
                   {/* RIGHT COLUMN */}
-                  <div className="space-y-3">
+                  <div className="space-y-4 md:border-l md:border-slate-100 md:pl-6">
                     <div>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                      <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                         Residential Address
                       </p>
                       {isEditing ? (
@@ -3145,7 +3145,7 @@ function RequestDetailsModal({
                     </div>
 
                     <div>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                      <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                         Email Address
                       </p>
                       {isEditing ? (
@@ -3169,7 +3169,7 @@ function RequestDetailsModal({
                       "barangay_residency",
                     ].includes(request.certificate_type) && (
                         <div>
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
                             Purpose of Request
                           </p>
                           {isEditing ? (
@@ -3219,8 +3219,8 @@ function RequestDetailsModal({
                               </div>
                             </>
                           ) : (
-                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                              <p className="font-semibold text-gray-800 text-sm uppercase leading-relaxed whitespace-pre-wrap">
+                            <div className="bg-slate-50 p-3 sm:p-3.5 rounded-lg border border-slate-100">
+                              <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase leading-relaxed whitespace-pre-wrap">
                                 {request.purpose || "NOT SPECIFIED"}
                               </p>
                             </div>
@@ -4940,9 +4940,9 @@ function RequestDetailsModal({
           ].includes(request.status) ||
             (request.status === "ready_for_pickup" &&
               isUserAssignedToRequest(request))) && (
-            <div className="border-t bg-gray-50 px-4 py-3 pb-4 shrink-0 mt-auto">
+            <div className="border-t bg-gray-50 px-4 sm:px-5 py-3 sm:py-4 shrink-0 mt-auto">
               {request.residents?.pending_case && (
-                <div className="bg-red-600 p-3 rounded-xl shadow-sm border border-red-400 text-white mb-4">
+                <div className="bg-red-600 p-2 rounded-lg shadow-sm border border-red-400 text-white mb-2">
                   <div className="flex items-start gap-3">
                     <div className="bg-white/20 p-1.5 rounded-lg">
                       <ShieldAlert className="w-4 h-4 text-white" />
@@ -4971,12 +4971,12 @@ function RequestDetailsModal({
               )}
 
               {currentStep?.status === "staff_review" ? (
-                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center sm:justify-end pt-3 mt-3 border-t border-gray-100">
+                <div className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3 items-stretch sm:items-center sm:justify-end">
                   {request.status === "physical_inspection" ? (
                     <button
                       onClick={() => handleSaveInspectionResults(true)}
                       disabled={isUpdatingInspection}
-                      className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
+                      className={`w-full sm:w-auto px-4 py-2.5 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
                     >
                       <CheckCircle className="w-4 h-4" />
                       Submit Inspection Result & Forward
@@ -4986,7 +4986,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "reject")}
                         disabled={isEditing}
-                        className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300"}`}
+                        className={`w-full sm:w-auto px-4 py-2.5 bg-white border border-red-200 text-red-600 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300"}`}
                       >
                         <XCircle className="w-4 h-4" />
                         Mark as Ineligible
@@ -4994,7 +4994,7 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "approve")}
                         disabled={isEditing}
-                        className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
+                        className={`w-full sm:w-auto px-4 py-2.5 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
                       >
                         <CheckCircle className="w-4 h-4" />
                         Verify & Forward
