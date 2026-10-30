@@ -7,7 +7,7 @@ export default function PortalShareHead({ meta }) {
   const title = `${meta.shortName} — ${meta.pageTitleSuffix}`;
   const description =
     meta.description ||
-    `${meta.nameUpper}, ${meta.subtitle}. ${meta.pageDescription}`;
+    `${meta.shortName} — ${meta.pageDescription}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",

@@ -29,6 +29,11 @@ import useScrollLock from "@/lib/useScrollLock";
 import useMobileModalViewport, {
   certModalOverlayClass,
   certModalPanelClass,
+  certModalScrollClass,
+  certModalScrollPurposeClass,
+  certModalFooterClass,
+  certModalFooterBackClass,
+  certModalFooterPrimaryClass,
 } from "@/lib/useMobileModalViewport";
 import CertSearchableDropdown from "./CertSearchableDropdown";
 import CertificateVerifyQR from "@/components/UI/CertificateVerifyQR";
@@ -622,7 +627,7 @@ export default function BarangayClearanceModal({
 
                 {/* Progress */}
                 {lang && (
-                <div className="px-6 sm:px-8 py-5 bg-gray-50 border-b border-gray-200 shrink-0">
+                <div className="px-4 sm:px-8 py-2.5 sm:py-5 bg-gray-50 border-b border-gray-200 shrink-0">
                   <div className="flex items-start">
                     {[
                       { n: 1, label: t.stepIdentity },
@@ -656,7 +661,7 @@ export default function BarangayClearanceModal({
                 )}
 
                 {lang && (
-                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 sm:px-8 py-6">
+                <div className={currentStep === 3 ? certModalScrollPurposeClass : certModalScrollClass}>
                   <div>
                     {currentStep === 1 && (
                       <div className="space-y-4 animate-in fade-in duration-300">
@@ -879,23 +884,25 @@ export default function BarangayClearanceModal({
 
                 {/* Footer Nav */}
                 {lang && (
-                <div className="border-t border-gray-200 bg-gray-50 px-6 sm:px-8 py-4 flex items-center justify-between gap-4 shrink-0">
+                <div className={certModalFooterClass}>
                   {currentStep > 1 ? (
                     <button
+                      type="button"
                       onClick={() => setCurrentStep((prev) => prev - 1)}
-                      className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
+                      className={certModalFooterBackClass}
                     >
                       {t.back}
                     </button>
                   ) : (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <button
+                        type="button"
                         onClick={() => setLang(null)}
-                        className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
+                        className={certModalFooterBackClass}
                       >
                         {t.back}
                       </button>
-                      <p className="text-xs text-gray-500">
+                      <p className="hidden sm:block text-xs text-gray-500 truncate">
                         <span className="text-red-600">*</span> {t.requiredFields}
                       </p>
                     </div>
@@ -903,6 +910,7 @@ export default function BarangayClearanceModal({
 
                   {currentStep < totalSteps ? (
                     <button
+                      type="button"
                       onClick={() => {
                         if (currentStep === 1 && !formData.fullName) {
                           setErrors({ fullName: true });
@@ -914,18 +922,20 @@ export default function BarangayClearanceModal({
                         }
                         setCurrentStep((prev) => prev + 1);
                       }}
-                      className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+                      className={certModalFooterPrimaryClass}
                       style={{ backgroundColor: accentColor }}
                     >
-                      {t.continue} <ChevronRight className="w-4 h-4" />
+                      {t.continue} <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                     </button>
                   ) : (
                     <button
+                      type="button"
                       onClick={handleSubmit}
-                      className="px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+                      className={certModalFooterPrimaryClass}
                       style={{ backgroundColor: accentColor }}
                     >
-                      <Send className="w-4 h-4" /> {t.reviewSubmit}
+                      <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />{" "}
+                      <span className="truncate">{t.reviewSubmit}</span>
                     </button>
                   )}
                 </div>

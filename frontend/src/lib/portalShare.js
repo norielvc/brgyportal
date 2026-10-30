@@ -87,6 +87,10 @@ export async function fetchPortalShareMetaForSSR(tenantId) {
     subtitleParts.length > 0
       ? `${subtitleParts.join(", ")} · ${p.pageTitleSuffix}`
       : p.pageTitleSuffix;
+  const locationLine =
+    subtitleParts.length > 0
+      ? `${shortName}, ${subtitleParts.join(", ")}`
+      : shortName;
 
   return {
     tenantId: tenant,
@@ -95,7 +99,7 @@ export async function fetchPortalShareMetaForSSR(tenantId) {
     subtitle: geoSubtitle,
     pageTitleSuffix: p.pageTitleSuffix,
     pageDescription: p.pageDescription,
-    description: `${nameUpper}, ${geoSubtitle}. ${p.pageDescription}`,
+    description: `${locationLine} — ${p.pageDescription}`,
     sharePageUrl: buildPortalSharePageUrl(tenant),
     shareImageUrl: buildPortalShareImageUrl(tenant),
     imageWidth: 1200,

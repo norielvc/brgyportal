@@ -15,6 +15,11 @@ import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
   certModalOverlayClass,
   certModalPanelClass,
+  certModalScrollClass,
+  certModalScrollPurposeClass,
+  certModalFooterClass,
+  certModalFooterBackClass,
+  certModalFooterPrimaryClass,
 } from '@/lib/useMobileModalViewport';
 
 const PURPOSE_LIST_1 = [
@@ -429,7 +434,7 @@ export default function UnifiedCertModal({
 
           {/* Progress Steps */}
           {lang && (
-          <div className="px-4 sm:px-8 py-3.5 sm:py-5 bg-gray-50 border-b border-gray-200 shrink-0 overflow-x-auto">
+          <div className="px-4 sm:px-8 py-2.5 sm:py-5 bg-gray-50 border-b border-gray-200 shrink-0 overflow-x-auto">
             <div className="flex items-start min-w-max sm:min-w-0 justify-between">
               {[
                 { n: 1, label: t.stepIdentity },
@@ -453,7 +458,7 @@ export default function UnifiedCertModal({
 
           {/* Step Content */}
           {lang && (
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-8 py-4 sm:py-6">
+          <div className={currentStep === 3 || (extraStep4 && currentStep === 4) ? certModalScrollPurposeClass : certModalScrollClass}>
             <div>
 
               {/* Step 1: Resident Search */}
@@ -597,17 +602,17 @@ export default function UnifiedCertModal({
 
           {/* Footer */}
           {lang && (
-          <div className="border-t border-gray-200 bg-gray-50 px-4 sm:px-8 py-3.5 sm:py-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
+          <div className={certModalFooterClass}>
             {currentStep > 1 ? (
-              <button onClick={() => setCurrentStep(p => p - 1)} className="w-full sm:w-auto justify-center px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">
+              <button type="button" onClick={() => setCurrentStep(p => p - 1)} className={certModalFooterBackClass}>
                 {t.back}
               </button>
             ) : (
-              <div className="flex items-center justify-between sm:justify-start gap-3">
-                <button onClick={() => setLang(null)} className="w-full sm:w-auto justify-center px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <button type="button" onClick={() => setLang(null)} className={certModalFooterBackClass}>
                   {t.back}
                 </button>
-                <p className="text-xs text-gray-500 whitespace-nowrap"><span className="text-red-600">*</span> {t.requiredFields}</p>
+                <p className="hidden sm:block text-xs text-gray-500 truncate"><span className="text-red-600">*</span> {t.requiredFields}</p>
               </div>
             )}
 
@@ -615,21 +620,21 @@ export default function UnifiedCertModal({
               const totalSteps = extraStep4 ? 4 : 3;
               if (currentStep < totalSteps) {
                 return (
-                  <button onClick={() => {
+                  <button type="button" onClick={() => {
                     if (currentStep === 1 && !formData.fullName) { setErrors({ fullName: true }); return; }
                     if (currentStep === 2 && !formData.contactNumber) { setErrors({ contactNumber: true }); return; }
                     setCurrentStep(p => p + 1);
-                  }} className="w-full sm:w-auto justify-center px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2" style={{ backgroundColor: accentColor }}>
-                    {t.continue} <ChevronRight className="w-4 h-4" />
+                  }} className={certModalFooterPrimaryClass} style={{ backgroundColor: accentColor }}>
+                    {t.continue} <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   </button>
                 );
               }
               return (
-                <button onClick={() => {
+                <button type="button" onClick={() => {
                   if (requirePurpose && !formData.purpose.trim()) { setErrors({ purpose: true }); return; }
                   setShowConfirmation(true);
-                }} className="w-full sm:w-auto justify-center px-6 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2" style={{ backgroundColor: accentColor }}>
-                  <Send className="w-4 h-4" /> {t.reviewSubmit}
+                }} className={certModalFooterPrimaryClass} style={{ backgroundColor: accentColor }}>
+                  <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> <span className="truncate">{t.reviewSubmit}</span>
                 </button>
               );
             })()}

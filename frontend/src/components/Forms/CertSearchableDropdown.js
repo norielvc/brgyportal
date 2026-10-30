@@ -35,7 +35,9 @@ export default function CertSearchableDropdown({
   useEffect(() => {
     if (!isOpen) return;
     const mobile = window.matchMedia("(max-width: 639px)").matches;
-    if (!mobile) {
+    if (mobile) {
+      rootRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } else {
       inputRef.current?.focus({ preventScroll: true });
     }
   }, [isOpen]);
@@ -56,7 +58,7 @@ export default function CertSearchableDropdown({
         <Search className={`w-3.5 h-3.5 shrink-0 ${colorClass.icon}`} />
       </button>
       {isOpen && (
-        <div className="absolute z-[110] top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-[min(240px,40dvh)] sm:max-h-[220px]">
+        <div className="absolute z-[120] top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-[min(160px,32dvh)] sm:max-h-[220px]">
           <div className="p-2 border-b border-gray-100 shrink-0 bg-white">
             <div className="relative">
               <Search
