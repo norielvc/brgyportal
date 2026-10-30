@@ -19,6 +19,9 @@ export default function DynamicTenantPortal({ initialTenantId, shareMeta }) {
     "api",
     "admin",
     "dashboard",
+    "robots.txt",
+    "sitemap.xml",
+    "favicon.ico",
   ];
   if (staticRoutes.includes(effectiveTenant)) {
     return null; // Let the other page handle it

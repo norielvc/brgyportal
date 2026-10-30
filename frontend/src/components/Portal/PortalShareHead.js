@@ -8,6 +8,14 @@ export default function PortalShareHead({ meta }) {
   const description =
     meta.description ||
     `${meta.nameUpper}, ${meta.subtitle}. ${meta.pageDescription}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: meta.shortName,
+    url: meta.sharePageUrl,
+    description,
+    image: meta.shareImageUrl,
+  };
 
   return (
     <Head>
@@ -36,6 +44,10 @@ export default function PortalShareHead({ meta }) {
       <meta name="twitter:image" content={meta.shareImageUrl} />
 
       <meta name="theme-color" content={meta.primaryColor || "#112e1f"} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     </Head>
   );
 }

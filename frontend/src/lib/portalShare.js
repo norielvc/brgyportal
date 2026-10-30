@@ -7,6 +7,10 @@ const TENANT_OG_FILES = {
   demo: ["/og/demo.jpg", "/images/bdlogo.png"],
 };
 
+/** Bump when replacing thumbnail so Facebook/Messenger refetch the image. */
+const OG_IMAGE_CACHE_VERSION =
+  process.env.NEXT_PUBLIC_OG_IMAGE_VERSION || "2";
+
 export function portalSiteOrigin(tenantId) {
   return publicPortalCanonical(String(tenantId || "ibaoeste").toLowerCase()).replace(
     /\/$/,
@@ -24,7 +28,7 @@ export function buildPortalShareImageUrl(tenantId) {
   const origin = portalSiteOrigin(tenant);
   const [primaryStatic] = tenantOgFileCandidates(tenant);
   if (primaryStatic?.startsWith("/og/")) {
-    return `${origin}${primaryStatic}`;
+    return `${origin}${primaryStatic}?v=${OG_IMAGE_CACHE_VERSION}`;
   }
   return `${origin}/api/portal/share-image?tenant=${encodeURIComponent(tenant)}`;
 }
