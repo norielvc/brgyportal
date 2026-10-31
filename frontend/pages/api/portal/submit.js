@@ -316,31 +316,6 @@ export default async function handler(req, res) {
     if (!error) {
       console.log(`✅ LIVE Request stored: ${refNumber}`);
 
-      // Send email notification to applicant
-      try {
-        if (formData.email) {
-          const { sendProcessNotification } = await import("@/lib/mailer");
-          const emailResult = await sendProcessNotification({
-            recipientEmail: formData.email,
-            recipientName: formData.fullName || formData.ownerFullName || "Applicant",
-            eventType: "RECEIVED",
-            certificateType: canonicalType,
-            referenceNumber: refNumber,
-            applicantName: formData.fullName || formData.ownerFullName || "Applicant",
-            comments: "",
-            requestId: data.id,
-          });
-          if (emailResult.success) {
-            console.log(`📧 Confirmation email sent to ${formData.email}`);
-          } else {
-            console.warn(`⚠️ Email failed: ${emailResult.error}`);
-          }
-        }
-      } catch (emailError) {
-        console.error('Email notification error:', emailError);
-        // Don't fail the submission if email fails
-      }
-
       // Create initial workflow assignment so staff can see it in their queue
       try {
         const { data: workflowConfig } = await supabase
@@ -369,10 +344,18 @@ export default async function handler(req, res) {
         if (staffUserIds.length === 0) {
           const { data: staffUsers } = await supabase
             .from("users")
-            .select("_id")
+            .select("id")
             .eq("tenant_id", tenantId)
-            .in("role", ["admin", "staff", "secretary", "captain"]);
-          staffUserIds = (staffUsers || []).map((u) => u._id);
+            .in("role", [
+              "admin",
+              "superadmin",
+              "staff",
+              "secretary",
+              "captain",
+              "treasurer",
+              "clerk",
+            ]);
+          staffUserIds = (staffUsers || []).map((u) => u.id);
         }
 
         for (const userId of staffUserIds) {
@@ -389,106 +372,25 @@ export default async function handler(req, res) {
           ]);
         }
 
-        // Send email notifications & in-app notifications to assigned staff
         try {
-          console.log(`📋 Staff User IDs to notify:`, staffUserIds);
-          
-          const { data: staffUsers, error: staffQueryError } = await supabase
-            .from('users')
-            .select('_id, email, first_name, last_name')
-            .in('_id', staffUserIds)
-            .eq('tenant_id', tenantId);
-
-          if (staffQueryError) {
-            console.error('❌ Error querying staff users:', staffQueryError);
-          }
-          
-          console.log(`👥 Found ${staffUsers?.length || 0} staff users to notify`);
-
-          for (const staff of staffUsers || []) {
-            console.log(`📤 Notifying staff: ${staff.first_name} ${staff.last_name} (${staff._id})`);
-            
-            // Send email
-            if (staff.email) {
-              const { sendProcessNotification } = await import("@/lib/mailer");
-              await sendProcessNotification({
-                recipientEmail: staff.email,
-                recipientName: `${staff.first_name} ${staff.last_name}`,
-                eventType: "SUBMITTED",
-                certificateType: canonicalType,
-                referenceNumber: refNumber,
-                applicantName: formData.fullName || formData.ownerFullName || "Applicant",
-                comments: "",
-                requestId: data.id,
-              });
-              console.log(`📧 Assignment email sent to ${staff.email}`);
-            }
-            
-            // Create in-app notification
-            try {
-              const notifData = {
-                tenant_id: tenantId,
-                user_id: staff._id,
-                title: 'New Request Assigned',
-                message: `New request ${refNumber} from ${formData.fullName || formData.ownerFullName || 'Applicant'} needs your review.`,
-                type: 'info',
-                category: 'assignment',
-                reference_number: refNumber,
-                request_id: data.id,
-                link: `/requests`,
-                read: false,
-                created_at: new Date().toISOString()
-              };
-              
-              console.log(`🔔 Creating notification for user ${staff._id}:`, notifData);
-              
-              const { data: notifResult, error: notifError } = await supabase
-                .from('notifications')
-                .insert([notifData])
-                .select();
-              
-              if (notifError) {
-                console.error(`❌ In-app notification failed for ${staff._id}:`, notifError);
-              } else {
-                console.log(`✅ In-app notification created for staff ${staff._id}`, notifResult);
-              }
-            } catch (notifError) {
-              console.error(`❌ In-app notification exception for ${staff._id}:`, notifError);
-            }
-          }
+          const { notifyNewCertificateRequest } = await import(
+            "@/lib/requestNotificationHelper"
+          );
+          const notifyResult = await notifyNewCertificateRequest({
+            supabase,
+            tenantId,
+            requestId: data.id,
+            referenceNumber: refNumber,
+            certificateType: canonicalType,
+            applicantName:
+              formData.fullName || formData.ownerFullName || "Applicant",
+            applicantEmail: formData.email || data.email || "",
+            staffUserIds,
+            residentId: formData.residentId || null,
+          });
+          console.log("[portal/submit] notifications:", notifyResult);
         } catch (emailError) {
-          console.error('❌ Staff notification error:', emailError);
-        }
-        
-        // Create in-app notification for applicant (if they have a user account)
-        if (formData.residentId) {
-          try {
-            const { data: residentUser } = await supabase
-              .from('users')
-              .select('_id')
-              .eq('resident_id', formData.residentId)
-              .eq('tenant_id', tenantId)
-              .maybeSingle();
-            
-            if (residentUser) {
-              await supabase.from('notifications').insert([{
-                tenant_id: tenantId,
-                user_id: residentUser._id,
-                title: 'Request Received',
-                message: `Your request ${refNumber} has been received and is being processed.`,
-                type: 'success',
-                category: 'request_submitted',
-                reference_number: refNumber,
-                request_id: data.id,
-                link: `/track/${refNumber}`,
-                read: false,
-                created_at: new Date().toISOString()
-              }]);
-              console.log(`🔔 In-app notification created for applicant ${residentUser._id}`);
-            }
-          } catch (notifError) {
-            console.warn('⚠️ Applicant in-app notification failed:', notifError.message);
-          }
+          console.error("❌ Request notification error:", emailError);
         }
 
         // Log initial history entry

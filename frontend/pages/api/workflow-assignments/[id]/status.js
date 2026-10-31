@@ -543,14 +543,14 @@ export default async function handler(req, res) {
         if (cert.resident_id) {
           const { data: residentUser } = await supabase
             .from('users')
-            .select('_id')
+            .select('id')
             .eq('resident_id', cert.resident_id)
             .eq('tenant_id', tenantId)
             .maybeSingle();
           
           if (residentUser) {
             await createNotification({
-              userId: residentUser._id,
+              userId: residentUser.id,
               title: 'Certificate Ready!',
               message: `Your certificate ${cert.reference_number} is ready for pickup at the Barangay Hall.`,
               type: 'success',
@@ -572,8 +572,8 @@ export default async function handler(req, res) {
           const userIds = [...new Set(nextAssignments.map(a => a.assigned_user_id))];
           const { data: nextUsers } = await supabase
             .from('users')
-            .select('_id, email, first_name, last_name')
-            .in('_id', userIds)
+            .select('id, email, first_name, last_name')
+            .in('id', userIds)
             .eq('tenant_id', tenantId);
 
           for (const nextUser of nextUsers || []) {
@@ -593,7 +593,7 @@ export default async function handler(req, res) {
             
             // Create in-app notification
             await createNotification({
-              userId: nextUser._id,
+              userId: nextUser.id,
               title: 'Request Waiting for You',
               message: `Request ${cert.reference_number} from ${applicantName} requires your approval.`,
               type: 'info',
@@ -622,14 +622,14 @@ export default async function handler(req, res) {
       if (cert.resident_id) {
         const { data: residentUser } = await supabase
           .from('users')
-          .select('_id')
+          .select('id')
           .eq('resident_id', cert.resident_id)
           .eq('tenant_id', tenantId)
           .maybeSingle();
         
         if (residentUser) {
           await createNotification({
-            userId: residentUser._id,
+            userId: residentUser.id,
             title: 'Request Rejected',
             message: `Your request ${cert.reference_number} has been rejected. ${note ? `Reason: ${note}` : ''}`,
             type: 'error',
@@ -643,7 +643,7 @@ export default async function handler(req, res) {
       const { data: rejector } = await supabase
         .from('users')
         .select('email, first_name, last_name')
-        .eq('_id', user._id)
+        .eq('id', user._id)
         .eq('tenant_id', tenantId)
         .single();
       
@@ -670,14 +670,14 @@ export default async function handler(req, res) {
       if (cert.resident_id) {
         const { data: residentUser } = await supabase
           .from('users')
-          .select('_id')
+          .select('id')
           .eq('resident_id', cert.resident_id)
           .eq('tenant_id', tenantId)
           .maybeSingle();
         
         if (residentUser) {
           await createNotification({
-            userId: residentUser._id,
+            userId: residentUser.id,
             title: 'Corrections Needed',
             message: `Your request ${cert.reference_number} needs corrections. ${note ? `Comments: ${note}` : ''}`,
             type: 'warning',
@@ -700,8 +700,8 @@ export default async function handler(req, res) {
           const userIds = [...new Set(reassignedStaff.map(a => a.assigned_user_id))];
           const { data: staffUsers } = await supabase
             .from('users')
-            .select('_id, email, first_name, last_name')
-            .in('_id', userIds)
+            .select('id, email, first_name, last_name')
+            .in('id', userIds)
             .eq('tenant_id', tenantId);
 
           for (const staff of staffUsers || []) {
@@ -721,7 +721,7 @@ export default async function handler(req, res) {
             
             // Create in-app notification
             await createNotification({
-              userId: staff._id,
+              userId: staff.id,
               title: 'Request Resubmitted',
               message: `Request ${cert.reference_number} from ${applicantName} has been sent back for review.`,
               type: 'info',
