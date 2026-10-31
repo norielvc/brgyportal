@@ -1,13 +1,9 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase, isSupabaseServerConfigured } from "../../../lib/supabase";
-
-function escapeHtml(text) {
-  return String(text || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import {
+  escapeHtml,
+  sendTransactionalEmail,
+} from "../../../src/lib/sendTransactionalEmail";
 
 async function sendAssistanceEmail({
   to,
@@ -16,10 +12,6 @@ async function sendAssistanceEmail({
   bodyText,
   originalInquiry,
 }) {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const resendFrom =
-    process.env.RESEND_FROM || "BrgyDesk <noreply@brgydesk.app>";
-
   const inquiryBlock = (originalInquiry || "").trim();
   const replyBlock = (bodyText || "").trim();
 
@@ -59,46 +51,19 @@ async function sendAssistanceEmail({
     </div>
   `;
 
-  if (resendApiKey) {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: resendFrom,
-        to,
-        subject,
-        html,
-        text: plainText,
-      }),
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to send email via Resend");
-    }
-    return { channel: "email" };
+  const sent = await sendTransactionalEmail({
+    to,
+    subject,
+    html,
+    text: plainText,
+  });
+  if (sent.skipped) {
+    return { channel: null, skipped: true };
   }
-
-  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-    const nodemailer = (await import("nodemailer")).default;
-    const pass = String(process.env.SMTP_PASS).replace(/\s+/g, "");
-    const transport = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: process.env.SMTP_USER, pass },
-    });
-    await transport.sendMail({
-      from: `"Barangay Help Desk" <${process.env.SMTP_USER}>`,
-      to,
-      subject,
-      html,
-      text: plainText,
-    });
-    return { channel: "email" };
+  if (!sent.success) {
+    throw new Error(sent.error || "Failed to send email via SMTP");
   }
-
-  return { channel: null, skipped: true };
+  return { channel: "email" };
 }
 
 export default async function handler(req, res) {

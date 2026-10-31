@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { sendTransactionalEmail } from "./sendTransactionalEmail";
 
 const TYPE_NAMES = {
   barangay_clearance: "Barangay Clearance",
@@ -65,27 +65,8 @@ const TEMPLATES = {
   },
 };
 
-function smtpConfigured() {
-  return Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
-}
-
-function createTransport() {
-  const pass = String(process.env.SMTP_PASS || "").replace(/\s+/g, "");
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass,
-    },
-  });
-}
-
-/**
- * Send a bilingual process email via Gmail SMTP.
- * Used by Vercel API routes (no separate Express server).
- */
-export async function sendProcessNotification({
-  recipientEmail,
+/** Build bilingual process email content (sent via Gmail SMTP). */
+export function buildProcessNotificationEmail({
   recipientName,
   eventType,
   certificateType,
@@ -93,19 +74,21 @@ export async function sendProcessNotification({
   applicantName,
   comments = "",
   requestId,
+  portalPath = "/ibaoeste",
 }) {
-  if (!smtpConfigured()) {
-    return { success: false, error: "SMTP credentials missing" };
-  }
-  if (!recipientEmail) {
-    return { success: false, error: "Recipient email missing" };
-  }
-
   const template = TEMPLATES[eventType] || TEMPLATES.SUBMITTED;
-  const certificateName = TYPE_NAMES[certificateType] || certificateType || "Certificate";
-  const baseUrl = (process.env.FRONTEND_URL || "https://brgydesk.com").replace(/\/$/, "");
-  const isResident = ["RECEIVED", "REJECTED", "RETURNED", "READY_FOR_PICKUP"].includes(eventType);
-  const link = isResident ? `${baseUrl}/ibaoeste` : `${baseUrl}/requests`;
+  const certificateName =
+    TYPE_NAMES[certificateType] || certificateType || "Certificate";
+  const baseUrl = (process.env.FRONTEND_URL || "https://brgydesk.com").replace(
+    /\/$/,
+    "",
+  );
+  const isResident = ["RECEIVED", "REJECTED", "RETURNED", "READY_FOR_PICKUP"].includes(
+    eventType,
+  );
+  const link = isResident
+    ? `${baseUrl}${portalPath.startsWith("/") ? portalPath : `/${portalPath}`}`
+    : `${baseUrl}/requests`;
 
   const html = `
     <div style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a">
@@ -132,12 +115,61 @@ export async function sendProcessNotification({
     </div>
   `;
 
-  const info = await createTransport().sendMail({
-    from: `"Barangay Iba O' Este" <${process.env.SMTP_USER}>`,
-    to: recipientEmail,
-    subject: template.subject,
-    html,
+  const text = [
+    `Hello ${recipientName || "there"},`,
+    "",
+    template.messageEN,
+    template.messageTL,
+    comments ? `Note: ${comments}` : "",
+    "",
+    `Reference: ${referenceNumber || "—"}`,
+    `Name: ${applicantName || "—"}`,
+    `Certificate: ${certificateName}`,
+    "",
+    link,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { subject: template.subject, html, text };
+}
+
+/**
+ * Send a bilingual process email via Gmail SMTP.
+ * Used by Vercel API routes (no separate Express server).
+ */
+export async function sendProcessNotification({
+  recipientEmail,
+  recipientName,
+  eventType,
+  certificateType,
+  referenceNumber,
+  applicantName,
+  comments = "",
+  requestId,
+}) {
+  if (!recipientEmail) {
+    return { success: false, error: "Recipient email missing" };
+  }
+
+  const { subject, html, text } = buildProcessNotificationEmail({
+    recipientName,
+    eventType,
+    certificateType,
+    referenceNumber,
+    applicantName,
+    comments,
+    requestId,
   });
 
-  return { success: true, messageId: info.messageId };
+  const sent = await sendTransactionalEmail({
+    to: recipientEmail,
+    subject,
+    html,
+    text,
+  });
+  if (!sent.success) {
+    return { success: false, error: sent.error, code: sent.code };
+  }
+  return { success: true, messageId: sent.messageId };
 }

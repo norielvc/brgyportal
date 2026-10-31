@@ -577,21 +577,7 @@ export default async function handler(req, res) {
             .eq('tenant_id', tenantId);
 
           for (const nextUser of nextUsers || []) {
-            // Send email
-            if (nextUser.email) {
-              await sendEmail({
-                recipientEmail: nextUser.email,
-                recipientName: `${nextUser.first_name} ${nextUser.last_name}`,
-                eventType: 'APPROVED_STEP',
-                certificateType: certType,
-                referenceNumber: cert.reference_number,
-                applicantName: applicantName,
-                comments: note,
-                requestId: requestId
-              });
-            }
-            
-            // Create in-app notification
+            // In-app only. Mid-workflow email is disabled.
             await createNotification({
               userId: nextUser.id,
               title: 'Request Waiting for You',
@@ -604,21 +590,7 @@ export default async function handler(req, res) {
         }
       }
     } else if (action === 'reject') {
-      // Rejected - notify applicant
-      if (applicantEmail) {
-        await sendEmail({
-          recipientEmail: applicantEmail,
-          recipientName: applicantName,
-          eventType: 'REJECTED',
-          certificateType: certType,
-          referenceNumber: cert.reference_number,
-          applicantName: applicantName,
-          comments: note,
-          requestId: requestId
-        });
-      }
-      
-      // In-app notification for applicant
+      // In-app notification for applicant. Rejection email is disabled.
       if (cert.resident_id) {
         const { data: residentUser } = await supabase
           .from('users')
@@ -652,21 +624,7 @@ export default async function handler(req, res) {
       }
       
     } else if (action === 'return' || action === 'send_back_to_start') {
-      // Returned for corrections - notify applicant
-      if (applicantEmail) {
-        await sendEmail({
-          recipientEmail: applicantEmail,
-          recipientName: applicantName,
-          eventType: 'RETURNED',
-          certificateType: certType,
-          referenceNumber: cert.reference_number,
-          applicantName: applicantName,
-          comments: note,
-          requestId: requestId
-        });
-      }
-      
-      // In-app notification for applicant
+      // In-app notification for applicant. Return email is disabled.
       if (cert.resident_id) {
         const { data: residentUser } = await supabase
           .from('users')
@@ -705,21 +663,7 @@ export default async function handler(req, res) {
             .eq('tenant_id', tenantId);
 
           for (const staff of staffUsers || []) {
-            // Send email
-            if (staff.email) {
-              await sendEmail({
-                recipientEmail: staff.email,
-                recipientName: `${staff.first_name} ${staff.last_name}`,
-                eventType: 'RESUBMITTED',
-                certificateType: certType,
-                referenceNumber: cert.reference_number,
-                applicantName: applicantName,
-                comments: `Request was sent back with comments: ${note}`,
-                requestId: requestId
-              });
-            }
-            
-            // Create in-app notification
+            // In-app only. Resubmit email is disabled.
             await createNotification({
               userId: staff.id,
               title: 'Request Resubmitted',

@@ -1,5 +1,7 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
+import { buildProcessNotificationEmail } from "../../../../src/lib/mailer";
+import { sendTransactionalEmail } from "../../../../src/lib/sendTransactionalEmail";
 
 export default async function handler(req, res) {
   const user = await authenticateToken(req, res);
@@ -25,16 +27,13 @@ export default async function handler(req, res) {
       .json({ success: false, message: "Certificate ID required" });
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const resendFrom =
-    process.env.RESEND_FROM || "BrgyDesk <noreply@brgydesk.app>";
   const gmailReady = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
-  if (!resendApiKey && !gmailReady) {
+  if (!gmailReady) {
     return res.status(503).json({
       success: false,
       code: "EMAIL_NOT_CONFIGURED",
       message:
-        "Email is not configured. Set SMTP_USER and SMTP_PASS (Gmail app password) in the Vercel project environment.",
+        "Email is not configured. Set SMTP_USER and SMTP_PASS (Gmail app password) in your environment.",
     });
   }
 
@@ -59,76 +58,63 @@ export default async function handler(req, res) {
     cert.residents?.full_name ||
     "Applicant";
 
-  if (!to) {
+  if (!to?.trim()) {
     return res
       .status(400)
       .json({ success: false, message: "Requestor email not found" });
   }
 
-  const typeLabel =
-    cert.certificate_type?.replace(/_/g, " ").toUpperCase() ||
-    "CERTIFICATE";
   const ref = cert.reference_number || id;
+  const portalPath =
+    tenantId && tenantId !== "demo" ? `/${tenantId}` : "/ibaoeste";
 
-  const html = `
-    <p>Hi ${name},</p>
-    <p>Your <strong>${typeLabel}</strong> (Reference: <strong>${ref}</strong>) is now ready.</p>
-    <p>If you selected online delivery, you may download and print your certificate from the portal using your reference number. Otherwise, you can claim it at the barangay office.</p>
-    <p>Regards,<br/>BrgyDesk</p>
-  `;
-
-  const text = `Hi ${name},\n\nYour ${typeLabel} (Reference: ${ref}) is now ready.\n\nIf you selected online delivery, you may download and print your certificate from the portal using your reference number. Otherwise, you can claim it at the barangay office.\n\nRegards,\nBrgyDesk`;
+  const { subject, html, text } = buildProcessNotificationEmail({
+    recipientName: name,
+    eventType: "READY_FOR_PICKUP",
+    certificateType: cert.certificate_type,
+    referenceNumber: ref,
+    applicantName: name,
+    requestId: id,
+    portalPath,
+  });
 
   try {
-    if (!resendApiKey) {
-      const { sendProcessNotification } = await import("@/lib/mailer");
-      const sent = await sendProcessNotification({
-        recipientEmail: to,
-        recipientName: name,
-        eventType: "READY_FOR_PICKUP",
-        certificateType: cert.certificate_type,
-        referenceNumber: ref,
-        applicantName: name,
-        requestId: id,
-      });
-      if (!sent.success) {
-        return res.status(502).json({
-          success: false,
-          message: sent.error || "Failed to send email",
-        });
-      }
-      return res.json({
-        success: true,
-        message: `Certificate sent to ${to}`,
-      });
-    }
-
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: resendFrom,
-        to,
-        subject: `Your ${typeLabel} is ready`,
-        html,
-        text,
-      }),
+    const sent = await sendTransactionalEmail({
+      to: to.trim(),
+      subject,
+      html,
+      text,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return res.status(response.status).json({
+    if (sent.skipped || !sent.success) {
+      const code = sent.skipped
+        ? "EMAIL_NOT_CONFIGURED"
+        : sent.code || "EMAIL_SEND_FAILED";
+      const status = sent.skipped ? 503 : code === "SMTP_QUOTA" ? 429 : 502;
+      return res.status(status).json({
         success: false,
-        message: errorData.message || "Resend API error",
+        code,
+        message: sent.error || "Failed to send email",
       });
     }
+
+    console.info("[send-email]", {
+      certificateId: id,
+      to: to.trim(),
+      channel: sent.channel,
+      messageId: sent.messageId,
+      from: sent.from,
+    });
 
     return res.json({
       success: true,
-      message: `Certificate sent to ${to}`,
+      message: `Certificate ready email sent to ${to.trim()}`,
+      channel: sent.channel,
+      to: to.trim(),
+      from: sent.from,
+      messageId: sent.messageId,
+      hint:
+        "If it does not appear in Inbox within a few minutes, check Spam/Promotions and search for “Certificate Ready” or the sender address.",
     });
   } catch (error) {
     console.error("Send email error:", error);

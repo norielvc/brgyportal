@@ -97,7 +97,7 @@ export async function notifyNewCertificateRequest({
       requestId,
     });
     if (result.success) emailsSent += 1;
-    else console.warn("[notify] resident email:", result.error);
+    else console.warn("[notify] resident email:", result.error || result.code);
   }
 
   let staffList = await fetchUsersByIds(supabase, staffUserIds, tenantId);
@@ -123,7 +123,7 @@ export async function notifyNewCertificateRequest({
         requestId,
       });
       if (result.success) emailsSent += 1;
-      else console.warn(`[notify] staff ${staff.email}:`, result.error);
+      else console.warn(`[notify] staff ${staff.email}:`, result.error || result.code);
     }
 
     await createInAppNotification(supabase, {

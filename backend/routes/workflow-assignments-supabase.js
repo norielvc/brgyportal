@@ -5,7 +5,7 @@ const { authenticateToken } = require('../middleware/auth-supabase');
 const certificateGenerationService = require('../services/certificateGenerationService');
 const qrCodeService = require('../services/qrCodeService');
 const workflowService = require('../services/workflowService');
-const { sendWorkflowNotifications, sendProcessNotification } = require('../services/emailService');
+const { sendProcessNotification } = require('../services/emailService');
 
 // Get active assignment for a request (helps if not attached to request object)
 router.get('/active-assignment/:requestId', authenticateToken, async (req, res) => {
@@ -508,68 +508,10 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
         console.log(`[Workflow Email Debug] Action: ${action}, Status: ${newRequestStatus}, RequestId: ${certReq.id}`);
         console.log(`[Workflow Email Debug] CertEmail: ${certReq.email}, ResidentId: ${certReq.resident_id}`);
 
-        // 1. Notify Applicant of Rejection or Return
-        if (action === 'reject' || action === 'return') {
-          let recipientEmail = certReq.email;
-          let recipientName = certReq.requestor_name || certReq.full_name;
+        // Mid-workflow emails (reject, return, next approver) are disabled.
+        // Only the ready-for-pickup email is sent from this route.
 
-          // Find applicant's email (check direct email first, then user link)
-          if (!recipientEmail && certReq.resident_id) {
-            const { data: applicantUser } = await supabase
-              .from('users')
-              .select('email, first_name, last_name')
-              .eq('id', certReq.resident_id)
-              .single();
-
-            if (applicantUser) {
-              recipientEmail = applicantUser.email;
-              recipientName = `${applicantUser.first_name} ${applicantUser.last_name}`;
-            }
-          }
-
-          if (recipientEmail) {
-            sendProcessNotification({
-              recipientEmail: recipientEmail,
-              recipientName: recipientName,
-              eventType: action === 'reject' ? 'REJECTED' : 'RETURNED',
-              certificateType: certType,
-              referenceNumber: refNum,
-              applicantName: applicantName,
-              comments: comment,
-              requestId: certReq.id
-            }).catch(err => console.error('Background email error:', err));
-          }
-        }
-
-        // 2. Notify Next Approvers
-        if (action === 'approve' && nextStep) {
-          const nextStepAssignments = nextStep.assignedUsers || [];
-          if (nextStepAssignments.length > 0) {
-            const { data: users } = await supabase
-              .from('users')
-              .select('email, first_name, last_name')
-              .in('id', nextStepAssignments);
-
-            if (users && users.length > 0) {
-              const recipients = users.map(u => ({
-                email: u.email,
-                name: `${u.first_name} ${u.last_name}`
-              }));
-
-              sendWorkflowNotifications({
-                recipients,
-                eventType: 'APPROVED_STEP',
-                certificateType: certType,
-                referenceNumber: refNum,
-                applicantName: applicantName,
-                requestId: certReq.id,
-                comments: `Moved to ${nextStep.name}`
-              }).catch(err => console.error('Background email error:', err));
-            }
-          }
-        }
-
-        // 3. Notify Applicant if Ready for Pickup
+        // Notify Applicant if Ready for Pickup
         if ((newRequestStatus === 'ready' || newRequestStatus === 'ready_for_pickup') && action === 'approve') {
           let recipientEmail = certReq.email;
           let recipientName = certReq.requestor_name || certReq.full_name;
