@@ -6791,9 +6791,7 @@ function ClearancePreviewForRequests({
     ? `${secretaryApproval.users.first_name || ''} ${secretaryApproval.users.last_name || ''}`.trim()
     : secretaryApproval?.performed_by_name || officials?.secretary || '';
     
-  const detectedRole = effectiveCaptain 
-    ? (effectiveCaptain.official_role || effectiveCaptain.officialRole || effectiveCaptain.privilege_role || effectiveCaptain.privilegeRole || 'Barangay Chairman').toUpperCase()
-    : 'BARANGAY CHAIRMAN';
+  const detectedRole = "BARANGAY CHAIRMAN";
 
   const getSignatureForCommittee = (committee) => {
     if (!history) return null;
@@ -7523,7 +7521,7 @@ function ClearancePreviewForRequests({
                     <div className="flex flex-col mb-4 relative ml-4">
                       {effectiveSignature && (
                         <div
-                          className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[80%] w-60 h-32 pointer-events-none flex items-center justify-center z-20"
+                          className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[64%] w-[30rem] h-64 pointer-events-none flex items-center justify-center z-20"
                           style={{ mixBlendMode: "multiply" }}
                         >
                           <img
@@ -7978,11 +7976,38 @@ function ClearancePreviewForRequests({
                         )}
 
                       <div className="text-left mb-4 self-start cert-captain-signature-block">
-                        <p
-                          className={`font-bold text-[15px] ${isSamePerson ? "mb-44" : request.certificate_type === "certificate_of_indigency" ? "mb-20" : "mb-32"}`}
+                        <div
+                          className={`flex items-start justify-between gap-4 ${isSamePerson ? "mb-44" : request.certificate_type === "certificate_of_indigency" ? "mb-20" : "mb-32"}`}
                         >
-                          TRULY YOURS,
-                        </p>
+                          <p className="font-bold text-[15px] shrink-0 relative top-[1.5em]">
+                            TRULY YOURS,
+                          </p>
+                          {request.residents?.pending_case && (
+                            <div className="border border-black px-2 py-1.5 text-left max-w-[230px] leading-tight">
+                              <p className="text-[9px] font-bold uppercase tracking-wide">
+                                Pending case
+                              </p>
+                              <p className="text-[8px] mt-1">
+                                <span className="font-bold">Case: </span>
+                                {request.residents.case_record_history || "Not recorded"}
+                              </p>
+                              <p className="text-[8px] mt-0.5">
+                                <span className="font-bold">Date recorded: </span>
+                                {request.residents.updated_at
+                                  ? new Date(request.residents.updated_at).toLocaleDateString("en-PH", {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    })
+                                  : "Not recorded"}
+                              </p>
+                              <p className="text-[8px] mt-0.5">
+                                <span className="font-bold">Status: </span>
+                                PENDING
+                              </p>
+                            </div>
+                          )}
+                        </div>
 
                         <div className="relative inline-block">
                           <div className="flex items-center gap-1 relative z-10">
@@ -7990,7 +8015,7 @@ function ClearancePreviewForRequests({
                               {effectiveSignature && (
                                 <>
                                   <div
-                                    className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[75%] w-64 h-32 pointer-events-none flex items-center justify-center z-20"
+                                    className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[64%] w-[30rem] h-64 pointer-events-none flex items-center justify-center z-20"
                                     style={{ mixBlendMode: "multiply" }}
                                   >
                                     <img

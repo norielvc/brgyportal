@@ -1192,6 +1192,7 @@ export default function BarangayClearanceModal({
             isDemo={isDemo}
             tenantConfig={tenantConfig}
             lang={lang || "tl"}
+            blockPendingCase
           />
         )}
         <style jsx>{`

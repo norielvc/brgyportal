@@ -322,7 +322,7 @@ const STRINGS = {
     dirManualNote: "Gamitin lamang kung hindi pa nakarehistro ang residente.",
     dirSelect: "Piliin",
     dirVerified: "Beripikadong rekord",
-    dirVisitTitle: "Kailangang Pumunta sa Opisina",
+    dirVisitTitle: "Kailangan mag sadya sa Barangay Hall",
     dirVisitBody:
       "Mangyaring pumunta sa tanggapan ng barangay upang maproseso ang kahilingang ito. Dahil sa mga patakaran sa data privacy at sa sensitibong kalikasan ng ilang rekord, hindi namin ito maaaring iproseso online.",
     dirVisitAt: "Bisitahin kami sa",

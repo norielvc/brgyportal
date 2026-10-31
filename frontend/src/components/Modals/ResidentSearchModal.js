@@ -26,6 +26,7 @@ export default function ResidentSearchModal({
   tenantConfig = {},
   tenantId: tenantIdProp,
   lang = "en",
+  blockPendingCase = false,
 }) {
   const t = getStrings(lang);
   useScrollLock(isOpen);
@@ -39,7 +40,7 @@ export default function ResidentSearchModal({
   const searchInputRef = useRef(null);
 
   const handleResidentClick = (resident) => {
-    if (resident.pending_case) {
+    if (blockPendingCase && resident.pending_case) {
       setShowPendingCaseModal(true);
     } else {
       onSelect(resident);
