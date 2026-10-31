@@ -1,9 +1,7 @@
 /**
  * certLang.js — Bilingual strings for the barangay certificate request flow.
  *
- * The resident picks a language on the first screen of every request modal,
- * so all downstream copy (steps, labels, errors, confirmation) renders in
- * either English ("en") or Tagalog ("tl").
+ * Certificate request modals use Tagalog ("tl") only; browser translation is disabled site-wide.
  */
 
 export const LANGUAGES = [

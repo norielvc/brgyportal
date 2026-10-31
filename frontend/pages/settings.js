@@ -523,17 +523,16 @@ export default function Settings() {
                 <div>
                   <label className="label">Language</label>
                   <select
-                    value={settings.language}
-                    onChange={(e) =>
-                      handleSettingChange("language", e.target.value)
-                    }
-                    className="input"
+                    value="tl"
+                    disabled
+                    className="input opacity-70 cursor-not-allowed"
+                    title="Portal language is fixed to Filipino (Tagalog)."
                   >
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
+                    <option value="tl">Filipino (Tagalog)</option>
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Fixed for all users. Browser auto-translate is disabled on the portal.
+                  </p>
                 </div>
               </div>
             </div>

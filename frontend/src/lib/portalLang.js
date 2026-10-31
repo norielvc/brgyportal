@@ -720,7 +720,7 @@ const FORM_ORDER = [
 ];
 
 export function getPortalStrings(lang = DEFAULT_PORTAL_LANG) {
-  const base = STRINGS.en;
+  const base = STRINGS.tl;
   const active = STRINGS[lang] || STRINGS.tl;
   return { ...base, ...active };
 }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, AlertCircle, Building2, MapPin, Store } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
-import LanguageGate from './LanguageGate';
 import { getStrings } from '../../lib/certLang';
 import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
@@ -35,8 +34,8 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [lang, setLang] = useState("tl");
-  const t = getStrings(lang || "tl");
+  const lang = "tl";
+  const t = getStrings(lang);
 
   const [formData, setFormData] = useState({
     // Owner info
@@ -61,7 +60,6 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
     if (!isOpen) {
       setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
       setErrors({}); setNotification(null); setConsentChecked(false); setConsentExpanded(false); setShowPrivacyModal(false);
-      setLang("tl");
       setFormData({
         ownerFullName: '', residentId: null, age: '', sex: '', civilStatus: '',
         ownerAddress: '', dateOfBirth: '', placeOfBirth: '',
@@ -302,13 +300,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
             </div>
           )}
 
-          {/* Language gate — shown before the wizard begins */}
-          {!lang && (
-            <LanguageGate accentColor={accentColor} lang={lang} onSelect={setLang} />
-          )}
-
           {/* Progress */}
-          {lang && (
           <div className="px-4 sm:px-8 py-3.5 sm:py-5 bg-gray-50 border-b border-gray-200 shrink-0 overflow-x-auto">
             <div className="flex items-start min-w-max sm:min-w-0 justify-between">
               {[1, 2, 3].map((s) => (
@@ -324,10 +316,8 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               ))}
             </div>
           </div>
-          )}
 
           {/* Content */}
-          {lang && (
           <div className={certModalScrollClass}>
             <div>
 
@@ -524,10 +514,8 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               )}
             </div>
           </div>
-          )}
 
           {/* Footer */}
-          {lang && (
           <div className={certModalFooterClass}>
             {currentStep > 1 ? (
               <button type="button" onClick={() => setCurrentStep(p => p - 1)} className={certModalFooterBackClass}>
@@ -535,7 +523,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               </button>
             ) : (
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <button type="button" onClick={() => setLang(null)} className={certModalFooterBackClass}>
+                <button type="button" onClick={onClose} className={certModalFooterBackClass}>
                   {t.back}
                 </button>
                 <p className="hidden sm:block text-xs text-gray-500 truncate"><span className="text-red-600">*</span> {t.requiredFields}</p>
@@ -567,7 +555,6 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               </button>
             )}
           </div>
-          )}
         </div>
       </div>
 

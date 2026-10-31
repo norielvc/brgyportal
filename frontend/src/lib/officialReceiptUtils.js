@@ -82,15 +82,88 @@ export function buildOfficialReceiptHtml(request, { orNumber, amount, controlNum
 </html>`;
 }
 
-export function officialReceiptsDirectory() {
-  return path.join(process.cwd(), "..", "backend", "generated-receipts");
+/** Writable on Vercel/Lambda; local dev uses backend folder. */
+export function officialReceiptsDirectories() {
+  const dirs = [path.join("/tmp", "brgy-generated-receipts")];
+  dirs.push(path.join(process.cwd(), "..", "backend", "generated-receipts"));
+  dirs.push(path.join(process.cwd(), "generated-receipts"));
+  return [...new Set(dirs)];
 }
 
+export function officialReceiptsDirectory() {
+  return officialReceiptsDirectories()[0];
+}
+
+/** Best-effort disk write (optional); DB holds canonical HTML on serverless. */
 export function writeOfficialReceiptFile(filename, html) {
-  const dir = officialReceiptsDirectory();
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const safeName = path.basename(String(filename || ""));
-  const filePath = path.join(dir, safeName);
-  fs.writeFileSync(filePath, html, "utf8");
+  if (!safeName) return null;
+  for (const dir of officialReceiptsDirectories()) {
+    try {
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, safeName), html, "utf8");
+      return safeName;
+    } catch (err) {
+      console.warn("[OR] disk write skipped:", dir, err?.code || err?.message);
+    }
+  }
   return safeName;
+}
+
+export function readOfficialReceiptFileFromDisk(safeName) {
+  const name = path.basename(String(safeName || ""));
+  if (!name) return null;
+  for (const dir of officialReceiptsDirectories()) {
+    const filePath = path.join(dir, name);
+    try {
+      if (fs.existsSync(filePath)) {
+        return fs.readFileSync(filePath, "utf8");
+      }
+    } catch {
+      /* try next dir */
+    }
+  }
+  return null;
+}
+
+/** Load OR HTML from disk, official_receipts.html_content, or request details.or_html */
+export async function loadOfficialReceiptHtml(safeName, supabase) {
+  const name = path.basename(String(safeName || ""));
+  const fromDisk = name ? readOfficialReceiptFileFromDisk(name) : null;
+  if (fromDisk) return fromDisk;
+
+  if (!supabase || !name) return null;
+
+  let { data: row } = await supabase
+    .from("official_receipts")
+    .select("html_content, request_id")
+    .eq("file_path", name)
+    .maybeSingle();
+
+  if (!row && name.startsWith("OR_")) {
+    const orNum = name.replace(/^OR_([^_]+)_.*$/i, "$1");
+    if (orNum && orNum !== name) {
+      const { data: byOr } = await supabase
+        .from("official_receipts")
+        .select("html_content, request_id")
+        .eq("or_number", orNum)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      row = Array.isArray(byOr) ? byOr[0] : byOr;
+    }
+  }
+
+  if (row?.html_content) return row.html_content;
+
+  if (row?.request_id) {
+    const { data: cert } = await supabase
+      .from("certificate_requests")
+      .select("details")
+      .eq("id", row.request_id)
+      .maybeSingle();
+    const details = parseBusinessDetails(cert);
+    if (details.or_html) return details.or_html;
+  }
+
+  return null;
 }

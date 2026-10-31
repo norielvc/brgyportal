@@ -2,8 +2,15 @@ import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {
   return (
-    <Html lang="fil" prefix="og: https://ogp.me/ns# fb: https://ogp.me/ns/fb#">
+    <Html
+      lang="fil"
+      translate="no"
+      className="notranslate"
+      prefix="og: https://ogp.me/ns# fb: https://ogp.me/ns/fb#"
+    >
       <Head>
+        <meta name="google" content="notranslate" />
+        <meta httpEquiv="content-language" content="fil-PH" />
         <link rel="icon" href="/favicon.ico" />
         {/* PWA Manifest & Theme */}
         <link rel="manifest" href="/manifest.json" />
@@ -34,7 +41,7 @@ export default function Document() {
           rel="stylesheet"
         />
       </Head>
-      <body className="antialiased selection:bg-blue-500 selection:text-white">
+      <body className="notranslate antialiased selection:bg-blue-500 selection:text-white">
         <Main />
         <NextScript />
       </body>

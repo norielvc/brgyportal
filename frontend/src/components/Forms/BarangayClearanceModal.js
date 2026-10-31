@@ -21,7 +21,6 @@ import {
   Home,
 } from "lucide-react";
 import ResidentSearchModal from "../Modals/ResidentSearchModal";
-import LanguageGate from "./LanguageGate";
 import { getStrings } from "../../lib/certLang";
 import { getAuthToken } from "@/lib/auth";
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
@@ -329,8 +328,8 @@ export default function BarangayClearanceModal({
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const accentColor = tenantConfig.primaryColor || '#059669';
-  const [lang, setLang] = useState("tl");
-  const t = getStrings(lang || "tl");
+  const lang = "tl";
+  const t = getStrings(lang);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -620,13 +619,7 @@ export default function BarangayClearanceModal({
                   </div>
                 )}
 
-                {/* Language gate — shown before the wizard begins */}
-                {!lang && (
-                  <LanguageGate accentColor={accentColor} lang={lang} onSelect={setLang} />
-                )}
-
                 {/* Progress */}
-                {lang && (
                 <div className="px-4 sm:px-8 py-2.5 sm:py-5 bg-gray-50 border-b border-gray-200 shrink-0">
                   <div className="flex items-start">
                     {[
@@ -658,9 +651,7 @@ export default function BarangayClearanceModal({
                     ))}
                   </div>
                 </div>
-                )}
 
-                {lang && (
                 <div className={currentStep === 3 ? certModalScrollPurposeClass : certModalScrollClass}>
                   <div>
                     {currentStep === 1 && (
@@ -880,10 +871,8 @@ export default function BarangayClearanceModal({
                     )}
                   </div>
                 </div>
-                )}
 
                 {/* Footer Nav */}
-                {lang && (
                 <div className={certModalFooterClass}>
                   {currentStep > 1 ? (
                     <button
@@ -897,7 +886,7 @@ export default function BarangayClearanceModal({
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <button
                         type="button"
-                        onClick={() => setLang(null)}
+                        onClick={onClose}
                         className={certModalFooterBackClass}
                       >
                         {t.back}
@@ -939,7 +928,6 @@ export default function BarangayClearanceModal({
                     </button>
                   )}
                 </div>
-                )}
               </div>
           </div>
         )}

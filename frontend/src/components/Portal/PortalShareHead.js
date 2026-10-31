@@ -21,7 +21,8 @@ export default function PortalShareHead({ meta }) {
 
   return (
     <Head>
-      <meta httpEquiv="content-language" content="fil" />
+      <meta httpEquiv="content-language" content="fil-PH" />
+      <meta name="google" content="notranslate" />
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={canonicalUrl} />

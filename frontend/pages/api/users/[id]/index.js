@@ -1,16 +1,10 @@
 import bcrypt from "bcryptjs";
 import { authenticateToken } from "../../../../src/lib/api-auth";
+import {
+  requireTenantAdmin,
+  requireTenantStaffRead,
+} from "../../../../src/lib/tenantStaffAuth";
 import { supabase } from "../../../../lib/supabase";
-
-const requireAdmin = async (req, res) => {
-  const user = await authenticateToken(req, res);
-  if (!user) return null;
-  if (!["admin", "superadmin", "captain"].includes(user.role)) {
-    res.status(403).json({ success: false, message: "Admin access required" });
-    return null;
-  }
-  return user;
-};
 
 const transformUser = (u) => ({
   id: u.id,
@@ -35,7 +29,7 @@ export default async function handler(req, res) {
   const { id } = req.query;
 
   if (req.method === "GET") {
-    const user = await requireAdmin(req, res);
+    const user = await requireTenantStaffRead(req, res, authenticateToken);
     if (!user) return;
     let query = supabase.from("users").select("*").eq("id", id);
     if (user.role !== "superadmin")
@@ -49,7 +43,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "PUT") {
-    const user = await requireAdmin(req, res);
+    const user = await requireTenantAdmin(req, res, authenticateToken);
     if (!user) return;
     const {
       firstName,
@@ -115,7 +109,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "DELETE") {
-    const user = await requireAdmin(req, res);
+    const user = await requireTenantAdmin(req, res, authenticateToken);
     if (!user) return;
     if (id === user._id)
       return res

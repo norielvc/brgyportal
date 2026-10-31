@@ -30,7 +30,14 @@ async function persistOrAssignment({
   });
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const filename = `OR_${orNumber}_${timestamp}.html`;
-  writeOfficialReceiptFile(filename, html);
+  try {
+    writeOfficialReceiptFile(filename, html);
+  } catch (err) {
+    console.warn("[OR] Disk write skipped:", err?.message || err);
+  }
+
+  const payorLabel = request.full_name || request.applicant_name || "—";
+  const payorAddr = request.address || "";
 
   const row = {
     or_number: orNumber,
@@ -38,8 +45,8 @@ async function persistOrAssignment({
     amount,
     payment_method: "CASH",
     payment_for: "BUSINESS PERMIT PROCESSING FEE",
-    payor_name: request.full_name || request.applicant_name || "",
-    payor_address: request.address || "",
+    payer_name: payorLabel,
+    payer_address: payorAddr,
     business_name:
       businessDetails.businessName || businessDetails.business_name || "",
     nature_of_business:
@@ -49,6 +56,7 @@ async function persistOrAssignment({
     reference_number: request.reference_number,
     issued_by: user._id || user.id,
     file_path: filename,
+    html_content: html,
     updated_at: new Date().toISOString(),
   };
   if (bcControlStored) row.control_number = bcControlStored;
@@ -73,7 +81,7 @@ async function persistOrAssignment({
   let payload = { ...row };
   let orRecord = null;
   let saveError = null;
-  for (let attempt = 0; attempt < 4; attempt += 1) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
     ({ data: orRecord, error: saveError } = await persistOrRow(payload));
     if (!saveError) break;
     const msg = saveError.message || "";
@@ -92,6 +100,41 @@ async function persistOrAssignment({
       payload = next;
       continue;
     }
+    if (/html_content/i.test(msg) && "html_content" in payload) {
+      const { html_content: _h, ...next } = payload;
+      payload = next;
+      continue;
+    }
+    if (/payer_name/i.test(msg) && "payer_name" in payload) {
+      const {
+        payer_name,
+        payer_address,
+        payor_name: _pn,
+        payor_address: _pa,
+        ...next
+      } = payload;
+      payload = {
+        ...next,
+        payor_name: payer_name,
+        payor_address: payer_address,
+      };
+      continue;
+    }
+    if (/payor_name/i.test(msg) && "payor_name" in payload) {
+      const {
+        payor_name,
+        payor_address,
+        payer_name: _pn2,
+        payer_address: _pa2,
+        ...next
+      } = payload;
+      payload = {
+        ...next,
+        payer_name: payor_name,
+        payer_address: payor_address,
+      };
+      continue;
+    }
     break;
   }
   if (saveError) {
@@ -107,6 +150,7 @@ async function persistOrAssignment({
         or_number: orNumber,
         or_amount: amount,
         bc_control_number: bcControlStored,
+        or_html: html,
       },
       updated_at: new Date().toISOString(),
     })
@@ -194,13 +238,23 @@ export default async function handler(req, res) {
       });
     }
 
-    const { data: existingOR } = await supabase
+    let existingQuery = supabase
       .from("official_receipts")
       .select("*")
       .eq("request_id", requestId)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
+    if (tenantId) existingQuery = existingQuery.eq("tenant_id", tenantId);
+    let { data: existingRows, error: existingErr } = await existingQuery;
+    if (existingErr && tenantId && /tenant_id/i.test(existingErr.message || "")) {
+      ({ data: existingRows } = await supabase
+        .from("official_receipts")
+        .select("*")
+        .eq("request_id", requestId)
+        .order("created_at", { ascending: false })
+        .limit(1));
+    }
+    const existingOR = Array.isArray(existingRows) ? existingRows[0] : existingRows;
 
     if (!manualOrNumber) {
       return res.status(400).json({

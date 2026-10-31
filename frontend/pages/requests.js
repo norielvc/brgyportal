@@ -9568,6 +9568,10 @@ function ORPreviewSection({
       setORContent("");
       return;
     }
+    if (record.html_content) {
+      setORContent(record.html_content);
+      return;
+    }
     const fileRef = record.file_path || `OR_${record.or_number}.html`;
     try {
       const orResponse = await fetch(
@@ -9923,7 +9927,9 @@ function ORPreviewSection({
             <p className="text-xs text-gray-500 uppercase font-bold mb-1">
               Payor Name
             </p>
-            <p className="font-bold text-gray-900">{orData.payor_name}</p>
+            <p className="font-bold text-gray-900">
+              {orData.payer_name || orData.payor_name}
+            </p>
           </div>
           <div className="col-span-2">
             <p className="text-xs text-gray-500 uppercase font-bold mb-1">

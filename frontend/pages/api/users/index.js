@@ -1,16 +1,10 @@
 import bcrypt from "bcryptjs";
 import { authenticateToken } from "../../../src/lib/api-auth";
+import {
+  requireTenantAdmin,
+  requireTenantStaffRead,
+} from "../../../src/lib/tenantStaffAuth";
 import { supabase } from "../../../lib/supabase";
-
-const requireAdmin = async (req, res) => {
-  const user = await authenticateToken(req, res);
-  if (!user) return null;
-  if (!["admin", "superadmin", "captain"].includes(user.role)) {
-    res.status(403).json({ success: false, message: "Admin access required" });
-    return null;
-  }
-  return user;
-};
 
 const transformUser = (user) => ({
   id: user.id,
@@ -33,7 +27,7 @@ const transformUser = (user) => ({
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    const user = await requireAdmin(req, res);
+    const user = await requireTenantStaffRead(req, res, authenticateToken);
     if (!user) return;
 
     const { search = "", role, status, tenant_id } = req.query;
@@ -71,7 +65,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const user = await requireAdmin(req, res);
+    const user = await requireTenantAdmin(req, res, authenticateToken);
     if (!user) return;
 
     const {

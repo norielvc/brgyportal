@@ -8,7 +8,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, AlertCircle, Info, User, Hash, Calendar, MapPin, Users, Clock, Baby, Fingerprint, Shield, Link, ClipboardList, Home, Building } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
-import LanguageGate from './LanguageGate';
 import CertSearchableDropdown from './CertSearchableDropdown';
 import { getStrings } from '../../lib/certLang';
 import useScrollLock from '@/lib/useScrollLock';
@@ -80,9 +79,8 @@ export default function UnifiedCertModal({
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [lang, setLang] = useState("tl");
-
-  const t = getStrings(lang || "tl");
+  const lang = "tl";
+  const t = getStrings(lang);
 
   const [formData, setFormData] = useState({
     fullName: '', residentId: null, age: '', sex: '', civilStatus: '',
@@ -105,7 +103,6 @@ export default function UnifiedCertModal({
     if (!isOpen) {
       setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
       setErrors({}); setNotification(null); setConsentChecked(false); setConsentExpanded(false); setShowPrivacyModal(false);
-      setLang("tl");
       setFormData({ fullName: '', residentId: null, age: '', sex: '', civilStatus: '', address: '', dateOfBirth: '', placeOfBirth: '', contactNumber: '', email: '', purpose: '', pickupMethod: 'pickup' });
       setPickupError('');
     }
@@ -430,13 +427,7 @@ export default function UnifiedCertModal({
             </div>
           )}
 
-          {/* Language gate — shown before the wizard begins */}
-          {!lang && (
-            <LanguageGate accentColor={accentColor} lang={lang} onSelect={setLang} />
-          )}
-
           {/* Progress Steps */}
-          {lang && (
           <div className="px-4 sm:px-8 py-2.5 sm:py-5 bg-gray-50 border-b border-gray-200 shrink-0 overflow-x-auto">
             <div className="flex items-start min-w-max sm:min-w-0 justify-between">
               {[
@@ -457,10 +448,8 @@ export default function UnifiedCertModal({
               ))}
             </div>
           </div>
-          )}
 
           {/* Step Content */}
-          {lang && (
           <div className={currentStep === 3 || (extraStep4 && currentStep === 4) ? certModalScrollPurposeClass : certModalScrollClass}>
             <div>
 
@@ -601,10 +590,8 @@ export default function UnifiedCertModal({
               )}
             </div>
           </div>
-          )}
 
           {/* Footer */}
-          {lang && (
           <div className={certModalFooterClass}>
             {currentStep > 1 ? (
               <button type="button" onClick={() => setCurrentStep(p => p - 1)} className={certModalFooterBackClass}>
@@ -612,7 +599,7 @@ export default function UnifiedCertModal({
               </button>
             ) : (
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <button type="button" onClick={() => setLang(null)} className={certModalFooterBackClass}>
+                <button type="button" onClick={onClose} className={certModalFooterBackClass}>
                   {t.back}
                 </button>
                 <p className="hidden sm:block text-xs text-gray-500 truncate"><span className="text-red-600">*</span> {t.requiredFields}</p>
@@ -642,7 +629,6 @@ export default function UnifiedCertModal({
               );
             })()}
           </div>
-          )}
         </div>
       </div>
 

@@ -12,6 +12,9 @@ ALTER TABLE official_receipts
 ALTER TABLE official_receipts
   ADD COLUMN IF NOT EXISTS tenant_id TEXT;
 
+ALTER TABLE official_receipts
+  ADD COLUMN IF NOT EXISTS html_content TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_official_receipts_tenant_id
   ON official_receipts (tenant_id);
 
