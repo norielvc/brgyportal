@@ -1,5 +1,10 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
+import {
+  deriveInitialsFromOfficialName,
+  resolveEmployeeCodeForName,
+  signatoryNamesMatch,
+} from "../../../../src/lib/employeeCodeUtils";
 
 const DEFAULT_AREAS = [
   "HEALTH AND SAFETY",
@@ -51,6 +56,50 @@ function toDateTimeLocal(value) {
 function blankToNull(value) {
   const text = String(value || "").trim();
   return text || null;
+}
+
+async function defaultSignatureForUserId(userId) {
+  if (!userId) return null;
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("default_signature_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (settings?.default_signature_id) {
+    const { data: sig } = await supabase
+      .from("user_signatures")
+      .select("signature_data")
+      .eq("id", settings.default_signature_id)
+      .maybeSingle();
+    if (sig?.signature_data) return sig.signature_data;
+  }
+  const { data: sigs } = await supabase
+    .from("user_signatures")
+    .select("signature_data")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  return sigs?.[0]?.signature_data || null;
+}
+
+async function lookupSignatoryProfile(tenantId, signatoryName) {
+  if (!signatoryName) return { signature_data: null, employee_code: null };
+  const { data: users } = await supabase
+    .from("users")
+    .select("id, first_name, middle_name, last_name, employee_code")
+    .eq("tenant_id", tenantId);
+  const match = (users || []).find((userRow) =>
+    signatoryNamesMatch(
+      signatoryName,
+      `${userRow.first_name || ""} ${userRow.middle_name || ""} ${userRow.last_name || ""}`,
+    ),
+  );
+  if (!match) return { signature_data: null, employee_code: null };
+  const signature_data = await defaultSignatureForUserId(match.id);
+  return {
+    signature_data,
+    employee_code: match.employee_code || null,
+  };
 }
 
 export default async function handler(req, res) {
@@ -116,12 +165,68 @@ export default async function handler(req, res) {
           .status(500)
           .json({ success: false, message: committeeError.message });
 
-      (committeeRecs || []).forEach((committee) => {
+      const { data: wfHistory } = await supabase
+        .from("workflow_history")
+        .select(
+          "signature_data, step_name, created_at, performed_by_name, users:performed_by (first_name, middle_name, last_name, employee_code)",
+        )
+        .eq("request_id", requestId)
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: false });
+
+      const { data: tenantUsers } = await supabase
+        .from("users")
+        .select("first_name, middle_name, last_name, employee_code")
+        .eq("tenant_id", tenantId);
+
+      for (const committee of committeeRecs || []) {
+        const signatoryName = committee.signatory_name || "";
+        let signature_data = null;
+        let employee_code = null;
+
+        const byStep = (wfHistory || []).find(
+          (row) =>
+            row.signature_data &&
+            row.step_name
+              ?.toUpperCase()
+              .includes(committee.committee_name.toUpperCase()),
+        );
+        if (byStep?.signature_data) {
+          signature_data = byStep.signature_data;
+          employee_code = byStep.users?.employee_code || null;
+        } else if (signatoryName) {
+          const byName = (wfHistory || []).find((row) => {
+            if (!row.signature_data) return false;
+            const performer = row.users
+              ? `${row.users.first_name || ""} ${row.users.middle_name || ""} ${row.users.last_name || ""}`
+              : row.performed_by_name || "";
+            return signatoryNamesMatch(signatoryName, performer);
+          });
+          if (byName?.signature_data) {
+            signature_data = byName.signature_data;
+            employee_code = byName.users?.employee_code || null;
+          }
+        }
+
+        if (!signature_data && signatoryName) {
+          const profile = await lookupSignatoryProfile(tenantId, signatoryName);
+          signature_data = profile.signature_data;
+          employee_code = employee_code || profile.employee_code;
+        }
+
+        if (!employee_code && signatoryName) {
+          employee_code =
+            resolveEmployeeCodeForName(signatoryName, tenantUsers || []) ||
+            deriveInitialsFromOfficialName(signatoryName);
+        }
+
         inspectionData.recommendations[committee.committee_name] = {
-          name: committee.signatory_name || "",
+          name: signatoryName,
           date: committee.recommendation_date || "",
+          signature_data,
+          employee_code,
         };
-      });
+      }
 
       return res.json({ success: true, data: inspectionData, reportId: report.id });
     }

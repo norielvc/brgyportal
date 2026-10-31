@@ -1,3 +1,5 @@
+import { redirectToStaffLogin } from "@/lib/staffLogin";
+
 // Token management
 export const setAuthToken = (token) => {
   if (typeof window !== "undefined") {
@@ -76,6 +78,6 @@ export const logout = () => {
 
   // Redirect to login page
   if (typeof window !== "undefined") {
-    window.location.href = "/login";
+    redirectToStaffLogin();
   }
 };

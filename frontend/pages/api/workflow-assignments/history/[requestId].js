@@ -22,5 +22,24 @@ export default async function handler(req, res) {
 
   if (error)
     return res.status(500).json({ success: false, message: error.message });
-  return res.json({ success: true, history: data || [] });
+
+  const { data: assignments, error: assignmentError } = await supabase
+    .from("workflow_assignments")
+    .select(
+      "id, step_id, step_name, status, assigned_user_id, completed_at, updated_at, users:assigned_user_id (first_name, middle_name, last_name, role, employee_code)",
+    )
+    .eq("request_id", requestId)
+    .eq("tenant_id", tenantId)
+    .order("updated_at", { ascending: true });
+
+  if (assignmentError)
+    return res
+      .status(500)
+      .json({ success: false, message: assignmentError.message });
+
+  return res.json({
+    success: true,
+    history: data || [],
+    assignments: assignments || [],
+  });
 }

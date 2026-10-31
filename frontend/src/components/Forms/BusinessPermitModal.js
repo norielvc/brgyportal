@@ -100,10 +100,6 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   };
 
   const handleSubmit = async () => {
-    if (formData.pickupMethod === 'online' && !formData.email?.trim()) {
-      setPickupError(t.pickupEmailRequired);
-      return;
-    }
     setPickupError('');
     setIsSubmitting(true);
     try {
@@ -115,7 +111,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
         },
         body: JSON.stringify({
           type: 'business_permit',
-          formData: { ...formData, fullName: formData.ownerFullName, address: formData.ownerAddress },
+          formData: { ...formData, pickupMethod: 'pickup', fullName: formData.ownerFullName, address: formData.ownerAddress },
         }),
       });
       const result = await response.json();
@@ -216,24 +212,15 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
             <div className="mt-5">
               <h4 className="text-sm font-bold text-gray-900 mb-1">{t.pickupHeading}</h4>
               <p className="text-xs text-gray-500 mb-3">{t.pickupHelp}</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 <button
                   type="button"
                   onClick={() => { setFormData(prev => ({ ...prev, pickupMethod: 'pickup' })); setPickupError(''); }}
-                  className={`p-4 rounded-xl border-2 text-left transition-colors ${formData.pickupMethod === 'pickup' ? '' : 'bg-white border-gray-200 hover:border-gray-300'}`}
-                  style={formData.pickupMethod === 'pickup' ? { borderColor: accentColor, backgroundColor: `${accentColor}0D` } : undefined}
+                  className="p-4 rounded-xl border-2 text-left"
+                  style={{ borderColor: accentColor, backgroundColor: `${accentColor}0D` }}
                 >
-                  <p className="text-sm font-bold" style={formData.pickupMethod === 'pickup' ? { color: accentColor } : { color: '#111827' }}>{t.pickupPickup}</p>
+                  <p className="text-sm font-bold" style={{ color: accentColor }}>{t.pickupPickup}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{t.pickupPickupSub}</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setFormData(prev => ({ ...prev, pickupMethod: 'online' })); setPickupError(''); }}
-                  className={`p-4 rounded-xl border-2 text-left transition-colors ${formData.pickupMethod === 'online' ? '' : 'bg-white border-gray-200 hover:border-gray-300'}`}
-                  style={formData.pickupMethod === 'online' ? { borderColor: accentColor, backgroundColor: `${accentColor}0D` } : undefined}
-                >
-                  <p className="text-sm font-bold" style={formData.pickupMethod === 'online' ? { color: accentColor } : { color: '#111827' }}>{t.pickupOnline}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{t.pickupOnlineSub}</p>
                 </button>
               </div>
               {pickupError && (

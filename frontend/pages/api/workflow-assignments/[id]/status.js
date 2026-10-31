@@ -1,5 +1,10 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
+import {
+  normalizeCertificateStatus,
+  resolveBusinessPermitCaptainStep,
+  workflowStatusesMatch,
+} from "../../../../src/lib/workflowStatus";
 
 function shouldPersistCaptainSignature({
   certStatus,
@@ -52,6 +57,37 @@ function mergeCaptainSignatureDetails(
     captain_signature: signatureData,
     captain_signed_at: new Date().toISOString(),
   };
+}
+
+function mergeFinanceVerificationDetails(
+  existingDetails,
+  signatureData,
+  certStatus,
+  stepName,
+  employeeCode,
+) {
+  const statusOk = String(certStatus || "").toLowerCase() === "verifying";
+  const stepOk = String(stepName || "").toLowerCase().includes("finance");
+  if (!statusOk && !stepOk) return null;
+  let details = existingDetails;
+  if (typeof details === "string") {
+    try {
+      details = JSON.parse(details);
+    } catch {
+      details = {};
+    }
+  }
+  if (!details || typeof details !== "object") details = {};
+  const patch = { ...details };
+  if (signatureData) {
+    patch.finance_signature = signatureData;
+    patch.finance_signed_at = new Date().toISOString();
+  }
+  if (employeeCode) {
+    patch.finance_employee_code = employeeCode;
+  }
+  if (!signatureData && !employeeCode) return null;
+  return patch;
 }
 
 function clearCaptainSignatureDetails(existingDetails) {
@@ -140,8 +176,9 @@ export default async function handler(req, res) {
     returned: "secretary_approval",
     processing: "secretary_approval",  // Legacy: processing = waiting for secretary
     secretary_approval: "captain_approval",
-    physical_inspection: "captain_approval",
-    captain_approval: "oic_review",
+    physical_inspection: "verifying",
+    verifying: "captain_approval",
+    captain_approval: "oic_review", // BP: overridden by workflow next step (Business Permit Preparation)
     Treasury: "oic_review",
     oic_review: "ready",
     ready: "released",
@@ -151,8 +188,9 @@ export default async function handler(req, res) {
   let newCertStatus = cert.status;
   let inspectionNextStep = null;
   if (action === "approve") {
-    newCertStatus = statusFlow[cert.status] || cert.status;
-    if (cert.status === "physical_inspection") {
+    newCertStatus = statusFlow[cert.status] || statusFlow[String(cert.status || "").toLowerCase()] || cert.status;
+    const isBusinessPermit = (certType || cert.certificate_type) === "business_permit";
+    if (isBusinessPermit) {
       const { data: permitWf } = await supabase
         .from("workflow_configurations")
         .select("workflow_config")
@@ -160,16 +198,22 @@ export default async function handler(req, res) {
         .eq("tenant_id", tenantId)
         .maybeSingle();
       const permitSteps = permitWf?.workflow_config?.steps || [];
-      const inspectionIndex = permitSteps.findIndex(
-        (step) => step.status === "physical_inspection",
+      const currentStatusKey = String(cert.status || "").toLowerCase();
+      let stepIndex = permitSteps.findIndex(
+        (step) => String(step.id) === String(assignment.step_id),
       );
-      const followingStep =
-        inspectionIndex !== -1 ? permitSteps[inspectionIndex + 1] : null;
-      if (followingStep?.status && followingStep.status !== "physical_inspection") {
-        newCertStatus = followingStep.status;
+      if (stepIndex === -1) {
+        stepIndex = permitSteps.findIndex((step) =>
+          workflowStatusesMatch(step.status, cert.status),
+        );
+      }
+      const followingStep = stepIndex !== -1 ? permitSteps[stepIndex + 1] : null;
+      if (followingStep?.status) {
+        newCertStatus = normalizeCertificateStatus(followingStep.status, {
+          stepName: followingStep.name,
+          certificateType: certType || cert.certificate_type,
+        });
         inspectionNextStep = followingStep;
-      } else {
-        newCertStatus = "captain_approval";
       }
     }
     console.log(`[WORKFLOW-ASSIGNMENT] Status flow: ${cert.status} -> ${newCertStatus}`);
@@ -194,7 +238,11 @@ export default async function handler(req, res) {
       );
       if (currentIndex !== -1 && currentIndex < inspectionSteps.length - 1) {
         inspectionNextStep = inspectionSteps[currentIndex + 1];
-        newCertStatus = inspectionNextStep.status || "physical_inspection";
+        newCertStatus =
+          normalizeCertificateStatus(inspectionNextStep.status, {
+            stepName: inspectionNextStep.name,
+            certificateType: certType || cert.certificate_type,
+          }) || "physical_inspection";
       }
     }
   }
@@ -244,7 +292,19 @@ export default async function handler(req, res) {
       assignment.step_name,
       activeStep?.officialRole,
     );
-    if (mergedCaptainDetails) detailsPatch = mergedCaptainDetails;
+    const { data: performerRow } = await supabase
+      .from("users")
+      .select("employee_code")
+      .eq("id", user._id)
+      .maybeSingle();
+    const mergedFinanceDetails = mergeFinanceVerificationDetails(
+      mergedCaptainDetails || cert.details,
+      signatureData,
+      cert.status,
+      assignment.step_name,
+      performerRow?.employee_code || null,
+    );
+    detailsPatch = mergedFinanceDetails || mergedCaptainDetails;
   }
   if (detailsPatch) {
     await supabase
@@ -268,9 +328,76 @@ export default async function handler(req, res) {
     console.log(`[WORKFLOW-ASSIGNMENT] Looking for next step with status: ${newCertStatus}`);
     console.log(`[WORKFLOW-ASSIGNMENT] Available steps:`, steps.map(s => ({ name: s.name, status: s.status, users: s.assignedUsers?.length || 0 })));
 
-    // Find the step matching the new certificate status
-    const nextStep = steps.find(s => s.status === newCertStatus)
-      || steps.find(s => s.requiresApproval && s.status !== cert.status);
+    const isBusinessPermit = (certType || cert.certificate_type) === "business_permit";
+    let nextStep = inspectionNextStep;
+    if (!nextStep) {
+      const currentIdx = steps.findIndex(
+        (s) => String(s.id) === String(assignment.step_id),
+      );
+      if (currentIdx !== -1 && steps[currentIdx + 1]) {
+        nextStep = steps[currentIdx + 1];
+      }
+    }
+    if (!nextStep && isBusinessPermit) {
+      const afterIdx = steps.findIndex(
+        (s) => String(s.id) === String(assignment.step_id),
+      );
+      if (
+        afterIdx !== -1 &&
+        workflowStatusesMatch(newCertStatus, "captain_approval")
+      ) {
+        nextStep =
+          steps
+            .slice(afterIdx + 1)
+            .find(
+              (s) =>
+                workflowStatusesMatch(s.status, "captain_approval") ||
+                String(s.name || "")
+                  .toLowerCase()
+                  .includes("captain"),
+            ) || null;
+      }
+      if (!nextStep && workflowStatusesMatch(newCertStatus, "captain_approval")) {
+        nextStep = resolveBusinessPermitCaptainStep(steps, {
+          workflow_assignment: { previous_status: cert.status },
+          workflow_history: [
+            { action: "approve", previous_status: cert.status },
+          ],
+        });
+      }
+    }
+    if (!nextStep) {
+      const statusMatches = steps.filter((s) =>
+        workflowStatusesMatch(s.status, newCertStatus),
+      );
+      if (
+        isBusinessPermit &&
+        statusMatches.length > 1 &&
+        workflowStatusesMatch(newCertStatus, "captain_approval")
+      ) {
+        nextStep = resolveBusinessPermitCaptainStep(steps, {
+          workflow_assignment: assignment,
+        });
+      } else if (statusMatches.length === 1) {
+        nextStep = statusMatches[0];
+      } else if (statusMatches.length > 1) {
+        const afterIdx = steps.findIndex(
+          (s) => String(s.id) === String(assignment.step_id),
+        );
+        nextStep =
+          afterIdx !== -1
+            ? statusMatches.find(
+                (s) =>
+                  steps.findIndex((st) => st.id === s.id) > afterIdx,
+              ) || statusMatches[0]
+            : statusMatches[0];
+      }
+    }
+    if (!nextStep && !isBusinessPermit) {
+      nextStep = steps.find(
+        (s) => s.requiresApproval && s.status !== cert.status,
+      );
+    }
 
     console.log(`[WORKFLOW-ASSIGNMENT] Next step found:`, nextStep ? { name: nextStep.name, status: nextStep.status, users: nextStep.assignedUsers?.length || 0 } : 'NONE');
 

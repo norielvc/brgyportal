@@ -19,6 +19,7 @@ ALTER TABLE certificate_requests ADD CONSTRAINT certificate_requests_status_chec
     'secretary_approval',
     'captain_approval',
     'physical_inspection',
+    'verifying',
     'Treasury',
     'oic_review',
     'approved',

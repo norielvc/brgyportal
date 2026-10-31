@@ -97,7 +97,12 @@ export default async function handler(req, res) {
     return res.status(403).json({ success: false, message: "Tenant context required" });
 
   const { id } = req.query;
-  const { status, comments, current_step, action, signatureData } = req.body;
+  const { comments, current_step, action, signatureData } = req.body;
+  const rawStatus = req.body?.status;
+  const status =
+    String(rawStatus || "").trim().toLowerCase() === "verifying"
+      ? "verifying"
+      : rawStatus;
 
   if (!status)
     return res.status(400).json({ success: false, message: "Status is required" });

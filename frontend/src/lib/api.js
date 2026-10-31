@@ -2,6 +2,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { tenantFromHostname } from "@/lib/tenantHost";
+import { getStaffLoginUrl } from "@/lib/staffLogin";
 
 // Create axios instance
 // MIGRATED: Now routes through internal Next.js /api layer instead of Express port 5005
@@ -108,7 +109,7 @@ api.interceptors.response.use(
           typeof window !== "undefined" &&
           !window.location.pathname.includes("/login")
         ) {
-          window.location.href = "/login";
+          window.location.href = getStaffLoginUrl();
         }
 
         toast.error("Session expired. Please login again.");

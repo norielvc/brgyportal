@@ -44,8 +44,17 @@ export default async function handler(req, res) {
         isStale = !['staff_review', 'pending', 'submitted', 'returned'].includes(certStatus);
       } else if (stepName.includes('secretary')) {
         isStale = !['processing', 'secretary_approval'].includes(certStatus);
+      } else if (stepName.includes('inspection')) {
+        isStale = certStatus !== 'physical_inspection';
+      } else if (
+        stepName.includes('finance') ||
+        stepName.includes('verifying')
+      ) {
+        isStale = String(certStatus).toLowerCase() !== 'verifying';
       } else if (stepName.includes('captain')) {
         isStale = certStatus !== 'captain_approval';
+      } else if (stepName.includes('treasury') || stepName.includes('or prep')) {
+        isStale = certStatus !== 'Treasury';
       } else if (stepName.includes('releasing') || stepName.includes('oic')) {
         isStale = !['oic_review', 'ready', 'ready_for_pickup'].includes(certStatus);
       }

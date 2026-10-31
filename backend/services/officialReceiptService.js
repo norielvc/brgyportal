@@ -73,7 +73,7 @@ class OfficialReceiptService {
         };
     }
 
-    async generateOfficialReceipt(requestId, paymentAmount = 100) {
+    async generateOfficialReceipt(requestId, paymentAmount = 100, options = {}) {
         try {
             console.log(`Generating Official Receipt for request ID: ${requestId}`);
 
@@ -91,8 +91,11 @@ class OfficialReceiptService {
             // Get barangay configuration
             const config = await this.getBarangayConfig();
 
-            // Generate OR number
-            const orNumber = await this.generateORNumber();
+            // Generate OR number (or use assigned number from treasurer / preparation)
+            const orNumber =
+                options.orNumber && String(options.orNumber).trim()
+                    ? String(options.orNumber).trim()
+                    : await this.generateORNumber();
 
             // Generate the HTML content
             const htmlContent = await this.generateORContent(request, config, orNumber, paymentAmount);

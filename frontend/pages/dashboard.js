@@ -34,7 +34,7 @@ const TYPE_LABELS = {
   natural_death: "Certificate of Natural Death",
   barangay_guardianship: "Certificate of Guardianship",
   barangay_cohabitation: "Certificate of Co-Habitation",
-  business_permit: "Barangay Business Clearance",
+  business_permit: "Business Permit",
   same_person: "Certificate of Same Person",
   medico_legal: "Medico Legal Certification",
   educational_assistance: "Educational Assistance Endorsement",

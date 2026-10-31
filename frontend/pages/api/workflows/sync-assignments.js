@@ -1,5 +1,12 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
+import {
+  certificateStatusForStep,
+  isBusinessPermitPreparationStep,
+  isReleasingTeamStep,
+  resolveBusinessPermitCaptainStep,
+  resolveWorkflowStepIndex,
+} from "../../../src/lib/workflowStatus";
 
 const certTypes = [
   "barangay_clearance",
@@ -80,18 +87,45 @@ export default async function handler(req, res) {
     for (const request of requests || []) {
       let currentStep = null;
       const s = request.status;
-      if (["staff_review", "pending", "submitted"].includes(s))
-        currentStep =
-          steps.find((st) => st.status === "staff_review") ||
-          steps.find((st) => st.requiresApproval);
-      else if (s === "secretary_approval")
-        currentStep = steps.find((st) => st.status === "secretary_approval");
-      else if (s === "captain_approval")
-        currentStep = steps.find((st) => st.status === "captain_approval");
-      else
-        currentStep =
-          steps.find((st) => st.status === s) ||
-          [...steps].reverse().find((st) => st.requiresApproval);
+      let requestForRouting = request;
+
+      if (certType === "business_permit") {
+        const { data: history } = await supabase
+          .from("workflow_history")
+          .select("action, step_name, previous_status, new_status, created_at")
+          .eq("request_id", request.id)
+          .eq("tenant_id", tenantId)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        requestForRouting = { ...request, workflow_history: history || [] };
+        const stepIndex = resolveWorkflowStepIndex(steps, requestForRouting);
+        if (stepIndex !== -1) currentStep = steps[stepIndex];
+      }
+
+      if (!currentStep) {
+        if (["staff_review", "pending", "submitted"].includes(s))
+          currentStep =
+            steps.find((st) => st.status === "staff_review") ||
+            steps.find((st) => st.requiresApproval);
+        else if (s === "secretary_approval")
+          currentStep = steps.find((st) => st.status === "secretary_approval");
+        else if (s === "captain_approval") {
+          currentStep =
+            certType === "business_permit"
+              ? resolveBusinessPermitCaptainStep(steps, requestForRouting)
+              : steps.find((st) => st.status === "captain_approval");
+        } else if (s === "oic_review" && certType === "business_permit") {
+          currentStep =
+            steps.find(isBusinessPermitPreparationStep) ||
+            steps.find(isReleasingTeamStep) ||
+            steps.find((st) => st.status === "oic_review");
+        } else {
+          currentStep =
+            steps.find((st) => certificateStatusForStep(st, certType) === s) ||
+            steps.find((st) => st.status === s) ||
+            [...steps].reverse().find((st) => st.requiresApproval);
+        }
+      }
 
       if (currentStep?.assignedUsers?.length) {
         for (const userId of currentStep.assignedUsers) {

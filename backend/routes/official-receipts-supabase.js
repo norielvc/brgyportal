@@ -30,11 +30,14 @@ router.post('/generate/:requestId', authenticateToken, async (req, res) => {
       });
     }
 
-    // Check if request is in Treasury status
-    if (request.status !== 'Treasury') {
+    const status = String(request.status || '').toLowerCase();
+    const canAssignOr =
+      status === 'treasury' ||
+      (request.certificate_type === 'business_permit' && status === 'oic_review');
+    if (!canAssignOr) {
       return res.status(400).json({
         success: false,
-        message: 'Request is not in Treasury status'
+        message: 'Request is not eligible for Official Receipt assignment'
       });
     }
 

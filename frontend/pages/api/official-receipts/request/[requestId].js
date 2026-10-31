@@ -9,16 +9,32 @@ export default async function handler(req, res) {
   const { requestId } = req.query;
 
   if (req.method === "GET") {
-    const { data, error } = await supabase
+    let query = supabase
       .from("official_receipts")
       .select("*")
       .eq("request_id", requestId)
-      .eq("tenant_id", tenantId)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-    if (error && error.code !== "PGRST116")
-      return res.status(500).json({ success: false, message: error.message });
+      .limit(1);
+    if (tenantId) {
+      query = query.eq("tenant_id", tenantId);
+    }
+    let { data, error } = await query.maybeSingle();
+    if (error && error.code !== "PGRST116") {
+      if (tenantId && /tenant_id/.test(error.message || "")) {
+        const fallback = await supabase
+          .from("official_receipts")
+          .select("*")
+          .eq("request_id", requestId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        data = fallback.data;
+        error = fallback.error;
+      }
+      if (error && error.code !== "PGRST116") {
+        return res.status(500).json({ success: false, message: error.message });
+      }
+    }
     return res.json({ success: true, data: data || null });
   }
 
