@@ -2,6 +2,7 @@ import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
 import {
   normalizeCertificateStatus,
+  resolveBusinessPermitApproveTarget,
   resolveBusinessPermitCaptainStep,
   workflowStatusesMatch,
 } from "../../../../src/lib/workflowStatus";
@@ -198,22 +199,21 @@ export default async function handler(req, res) {
         .eq("tenant_id", tenantId)
         .maybeSingle();
       const permitSteps = permitWf?.workflow_config?.steps || [];
-      const currentStatusKey = String(cert.status || "").toLowerCase();
-      let stepIndex = permitSteps.findIndex(
-        (step) => String(step.id) === String(assignment.step_id),
-      );
-      if (stepIndex === -1) {
-        stepIndex = permitSteps.findIndex((step) =>
-          workflowStatusesMatch(step.status, cert.status),
-        );
-      }
-      const followingStep = stepIndex !== -1 ? permitSteps[stepIndex + 1] : null;
-      if (followingStep?.status) {
-        newCertStatus = normalizeCertificateStatus(followingStep.status, {
-          stepName: followingStep.name,
-          certificateType: certType || cert.certificate_type,
-        });
-        inspectionNextStep = followingStep;
+      const { data: priorHistory } = await supabase
+        .from("workflow_history")
+        .select("action, step_name, previous_status, new_status")
+        .eq("request_id", requestId)
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      const target = resolveBusinessPermitApproveTarget(permitSteps, {
+        status: cert.status,
+        assignmentStepId: assignment.step_id,
+        history: priorHistory || [],
+      });
+      if (target?.status) {
+        newCertStatus = target.status;
+        inspectionNextStep = target.next || null;
       }
     }
     console.log(`[WORKFLOW-ASSIGNMENT] Status flow: ${cert.status} -> ${newCertStatus}`);

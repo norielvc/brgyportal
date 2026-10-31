@@ -15,6 +15,7 @@ import {
   isBusinessPermitPreparationStep as isPrepWorkflowStep,
   isReleasingTeamStep,
   normalizeCertificateStatus,
+  resolveBusinessPermitApproveTarget,
   resolveWorkflowStepIndex,
   workflowStatusesMatch,
 } from "@/lib/workflowStatus";
@@ -757,6 +758,17 @@ export default function RequestsPage() {
       return workflowSteps[0];
     }
 
+    if (
+      workflowSteps &&
+      request?.certificate_type === "business_permit" &&
+      ["ready", "ready_for_pickup", "released"].includes(currentStatus)
+    ) {
+      return (
+        workflowSteps.find((step) => isReleasingTeamStep(step)) ||
+        workflowSteps[workflowSteps.length - 1]
+      );
+    }
+
     // 1. Prioritize explicit assignment data from the backend
     if (request.workflow_assignment) {
       const { step_id: stepId, step_name: stepName } =
@@ -925,6 +937,14 @@ export default function RequestsPage() {
     if (action === "approve") {
       const steps = workflows?.[request?.certificate_type] || [];
       const certType = request?.certificate_type;
+      if (certType === "business_permit") {
+        const target = resolveBusinessPermitApproveTarget(steps, {
+          status: currentStatus,
+          assignmentStepId: request?.workflow_assignment?.step_id,
+          history: request?.workflow_history || [],
+        });
+        if (target?.status) return target.status;
+      }
       const stepIndex = resolveWorkflowStepIndex(steps, request);
       if (stepIndex !== -1 && steps[stepIndex + 1]) {
         return normalizeCertificateStatus(steps[stepIndex + 1].status, {

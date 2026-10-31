@@ -85,6 +85,77 @@ export function isReleasingTeamStep(step) {
   return name.includes("releasing");
 }
 
+export function isBusinessPermitFinalChairmanStep(step) {
+  if (!step) return false;
+  const name = String(step.name || "").toLowerCase();
+  return (
+    name.includes("business permit") &&
+    (name.includes("captain") ||
+      name.includes("chairman") ||
+      name.includes("punong"))
+  );
+}
+
+/**
+ * Business permit approve target.
+ * Preparation always advances to the chairman. Ready is only allowed from
+ * Releasing, and only after the chairman step was approved.
+ */
+export function resolveBusinessPermitApproveTarget(
+  steps,
+  { status, assignmentStepId, history } = {},
+) {
+  if (!steps?.length) return null;
+
+  const assignmentIdx = steps.findIndex(
+    (step) => String(step.id) === String(assignmentStepId),
+  );
+  const assignmentStep = assignmentIdx >= 0 ? steps[assignmentIdx] : null;
+  const statusKey = normalizeStepStatusKey(status);
+  const prepIdx = steps.findIndex(isBusinessPermitPreparationStep);
+  const releaseIdx = steps.findIndex(isReleasingTeamStep);
+
+  const chairmanApproved = (history || []).some((row) => {
+    const name = String(row.step_name || "").toLowerCase();
+    const prev = normalizeStepStatusKey(row.previous_status);
+    return (
+      String(row.action || "").toLowerCase() === "approve" &&
+      name.includes("business permit") &&
+      (name.includes("captain") || name.includes("chairman")) &&
+      prev === "captain_approval"
+    );
+  });
+
+  let currentIdx = assignmentIdx;
+  if (statusKey === "oic_review") {
+    const onReleasing = assignmentStep && isReleasingTeamStep(assignmentStep);
+    if (onReleasing && chairmanApproved && releaseIdx !== -1) {
+      currentIdx = releaseIdx;
+    } else if (prepIdx !== -1) {
+      currentIdx = prepIdx;
+    }
+  }
+
+  if (currentIdx < 0) return null;
+  const next = steps[currentIdx + 1] || null;
+  if (!next) {
+    return {
+      current: steps[currentIdx],
+      next: null,
+      status: releaseIdx === currentIdx ? "ready" : status,
+    };
+  }
+
+  return {
+    current: steps[currentIdx],
+    next,
+    status: normalizeCertificateStatus(next.status, {
+      stepName: next.name,
+      certificateType: "business_permit",
+    }),
+  };
+}
+
 export function isCaptainApprovalStep(step) {
   if (!step) return false;
   if (workflowStatusesMatch(step.status, "captain_approval")) return true;
