@@ -120,7 +120,10 @@ api.interceptors.response.use(
       const message = data?.message || `HTTP Error ${status}`;
 
       if (status >= 500) {
-        toast.error("Server error. Please try again later.");
+        toast.error(
+          data?.message?.trim() ||
+            "Server error. Please try again later.",
+        );
       } else if (status === 403) {
         toast.error("Access denied. Insufficient permissions.");
       } else if (status === 404) {
@@ -258,6 +261,23 @@ export const blotterAPI = {
     return response.data;
   },
 
+  verifyReport: async (id, { petsa_ng_paghaharap } = {}) => {
+    const response = await api.put(`/blotter?id=${id}`, {
+      action: "verify",
+      petsa_ng_paghaharap: petsa_ng_paghaharap || undefined,
+    });
+    return response.data;
+  },
+
+  updatePetsaNgPaghaharap: async (id, petsa_ng_paghaharap, oras_ng_paghaharap) => {
+    const response = await api.put(`/blotter?id=${id}`, {
+      action: "update_petsa",
+      petsa_ng_paghaharap,
+      oras_ng_paghaharap: oras_ng_paghaharap ?? undefined,
+    });
+    return response.data;
+  },
+
   deleteReport: async (id) => {
     const response = await api.delete(`/blotter?id=${id}`);
     return response.data;
@@ -283,6 +303,15 @@ export const assistanceAPI = {
 
   deleteInquiry: async (id) => {
     const response = await api.delete(`/assistance?id=${id}`);
+    return response.data;
+  },
+
+  sendResponse: async (inquiryId, message, markResolved = false) => {
+    const response = await api.post("/assistance/respond", {
+      inquiryId,
+      message,
+      markResolved,
+    });
     return response.data;
   },
 };

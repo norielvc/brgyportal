@@ -80,7 +80,7 @@
 
 ## 📊 **OFFICIALS DATA STRUCTURE**
 
-### **Section 1: Barangay Captain (1)**
+### **Section 1: Barangay Chairman (1)**
 - ALEXANDER C. MANIO - Punong Barangay
 
 ### **Section 2: Barangay Kagawad (7)**

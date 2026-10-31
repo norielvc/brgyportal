@@ -42,12 +42,15 @@ const STRINGS = {
     verifiedApplicant: "Verified Applicant",
     verifiedOwner: "Verified Business Owner",
     recordNo: "Record No.",
+    purokLabel: "Purok",
     address: "Address",
     notRecorded: "Not recorded",
 
     // Step 2 — contact
     contactHeading: "How can we reach you?",
     contactHelp: "We will use this to notify you when your document is ready.",
+    readyNotifyReminder:
+      "When your certificate is ready, we will notify you by text message (SMS) and by email—please provide accurate contact details.",
     mobileLabel: "Mobile Number",
     mobileHelp: "Used for SMS updates about your request.",
     errMobile: "Please enter your mobile number.",
@@ -112,6 +115,9 @@ const STRINGS = {
     pickupOnline: "Online Delivery (Email / Print at home)",
     pickupOnlineSub: "Receive a digital copy via email or download and print at home.",
     pickupEmailRequired: "Email address is required for online delivery.",
+    pickupEmailReminder:
+      "Use an active email address and check it regularly—we will send certificate updates and your digital copy there when ready.",
+    pickupMethodLabel: "Delivery method",
 
     // Buttons
     back: "Back",
@@ -218,12 +224,15 @@ const STRINGS = {
     verifiedApplicant: "Beripikadong Aplikante",
     verifiedOwner: "Beripikadong May-ari",
     recordNo: "Bilang ng Rekord",
+    purokLabel: "Purok",
     address: "Tirahan",
     notRecorded: "Walang tala",
 
     // Step 2 — contact
     contactHeading: "Paano ka namin makokontak?",
     contactHelp: "Gagamitin namin ito upang ipaalam sa iyo kapag handa na ang dokumento.",
+    readyNotifyReminder:
+      "Kapag handa na ang iyong sertipiko, aabisuhan ka namin sa SMS at sa email—pakilagay ang tamang detalye ng kontak.",
     mobileLabel: "Numero ng Cellphone",
     mobileHelp: "Gagamitin para sa SMS tungkol sa iyong kahilingan.",
     errMobile: "Mangyaring ilagay ang numero ng iyong cellphone.",
@@ -288,6 +297,9 @@ const STRINGS = {
     pickupOnline: "Online Delivery (Email / Mag-print sa bahay)",
     pickupOnlineSub: "Tumanggap ng digital na kopya sa email o i-download at i-print sa bahay.",
     pickupEmailRequired: "Kinakailangan ang email address para sa online delivery.",
+    pickupEmailReminder:
+      "Gumamit ng aktibong email address at regular na suriin ito—doon namin ipapadala ang mga update at digital na kopya ng sertipiko kapag handa na.",
+    pickupMethodLabel: "Paraan ng pagkuha",
 
     // Buttons
     back: "Bumalik",

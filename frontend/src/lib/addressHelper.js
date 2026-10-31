@@ -74,6 +74,47 @@ export function generateFullAddress(addressData) {
 }
 
 /**
+ * Full residential address for certificate requests — prefers structured
+ * resident fields (house no., purok, barangay, etc.) when linked.
+ */
+export function resolveRequestResidentialAddress(request) {
+  if (!request) return "";
+
+  if (request.certificate_type === "barangay_cohabitation") {
+    return (
+      request.details?.currentAddress ||
+      request.address ||
+      ""
+    ).trim();
+  }
+
+  const r = request.residents;
+  const fromStructured = r ? generateFullAddress(r) : "";
+  const stored = (
+    request.address ||
+    request.details?.currentAddress ||
+    ""
+  ).trim();
+
+  if (fromStructured) {
+    const storedUpper = stored.toUpperCase();
+    const builtUpper = fromStructured.toUpperCase();
+    const builtHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(builtUpper);
+    const storedHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(storedUpper);
+    if (!stored || (builtHasHouse && !storedHasHouse)) {
+      return fromStructured;
+    }
+    if (builtUpper.length > storedUpper.length && storedUpper && !builtUpper.includes(storedUpper)) {
+      return fromStructured;
+    }
+  }
+
+  if (stored) return stored;
+  if (r?.residential_address?.trim()) return r.residential_address.trim();
+  return fromStructured;
+}
+
+/**
  * Parse existing address string into components (best effort)
  * @param {string} addressString - Full address string
  * @returns {Object} { house_number, purok, barangay, municipality, province }
@@ -215,6 +256,28 @@ export function hasPhaseField(purok) {
 /**
  * Common purok options for dropdown
  */
+/** Portal verified-applicant card: purok only (no house no. / full address). */
+export function formatPurokForPublicDisplay(purok) {
+  const raw = String(purok || "").trim();
+  if (!raw) return "";
+  if (/^purok\s+/i.test(raw)) return raw.toUpperCase();
+  if (/^\d+$/.test(raw)) return `PUROK ${raw}`;
+  return raw.toUpperCase();
+}
+
+export function formatResidentPurokForPortal(resident) {
+  if (!resident) return "";
+  const direct = formatPurokForPublicDisplay(resident.purok);
+  if (direct) return direct;
+  const subInfo = getSubdivisionInfo(
+    resident.subdivision || resident.purok || "",
+  );
+  if (subInfo?.parentPurok) {
+    return formatPurokForPublicDisplay(subInfo.parentPurok);
+  }
+  return "";
+}
+
 export const PUROK_OPTIONS = [
   { value: 'Purok 1', label: 'PUROK 1' },
   { value: 'HAZEL HEIGHTS', label: 'PUROK 1 - HAZEL HEIGHTS' },

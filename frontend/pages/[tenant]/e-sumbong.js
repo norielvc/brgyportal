@@ -115,6 +115,7 @@ export default function TenantESumbongPage({ initialTenantId }) {
               variant="page"
               publicMode
               isActive
+              tenantId={tenant}
               onSuccess={goBack}
               onCancel={goBack}
             />

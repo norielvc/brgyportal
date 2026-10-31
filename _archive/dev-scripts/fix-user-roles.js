@@ -77,7 +77,7 @@ async function fixUserRoles() {
     console.log('Staff IDs for Step 2 (Under Review):');
     console.log(JSON.stringify(staffUsers.map(u => u.id), null, 2));
     
-    console.log('\nAdmin IDs for Step 3 (Captain Approval):');
+    console.log('\nAdmin IDs for Step 3 (Chairman Approval):');
     console.log(JSON.stringify(adminUsers.map(u => u.id), null, 2));
     
   } catch (error) {

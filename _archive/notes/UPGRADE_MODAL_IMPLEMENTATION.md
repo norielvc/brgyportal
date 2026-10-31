@@ -223,7 +223,7 @@ Lands on pricing page (conversion opportunity)
     "The Pro plan transformed our barangay operations!"
   </p>
   <p className="text-xs text-gray-500 mt-1">
-    - Brgy. Captain, Iba O' Este
+    - Brgy. Chairman, Iba O' Este
   </p>
 </div>
 ```

@@ -28,9 +28,9 @@ async function fixWorkflows() {
           updated = true;
           console.log(`[${config.certificate_type}] Added Brgy. Secretary to step: ${step.name}`);
         } else if (name.includes('captain') || name.includes('chairman') || status.includes('captain') || status.includes('chairman')) {
-          step.officialRole = 'Brgy. Captain';
+          step.officialRole = 'Brgy. Chairman';
           updated = true;
-          console.log(`[${config.certificate_type}] Added Brgy. Captain to step: ${step.name}`);
+          console.log(`[${config.certificate_type}] Added Brgy. Chairman to step: ${step.name}`);
         }
         
         return step;

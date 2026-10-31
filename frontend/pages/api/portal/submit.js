@@ -223,18 +223,77 @@ export default async function handler(req, res) {
       }
     }
 
+    let structuredName = {
+      first_name: "",
+      middle_name: "",
+      last_name: "",
+      suffix: "",
+    };
+    let residentFullAddress = "";
+    if (formData.residentId) {
+      const { data: residentRow } = await supabase
+        .from("residents")
+        .select(
+          "first_name, middle_name, last_name, suffix, house_number, purok, subdivision, barangay, municipality, province, residential_address",
+        )
+        .eq("id", formData.residentId)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      if (residentRow) {
+        structuredName = {
+          first_name: (residentRow.first_name || "").toUpperCase(),
+          middle_name: (residentRow.middle_name || "").toUpperCase(),
+          last_name: (residentRow.last_name || "").toUpperCase(),
+          suffix: (residentRow.suffix || "").toUpperCase(),
+        };
+        const { generateFullAddress } = await import(
+          "../../../src/lib/addressHelper"
+        );
+        residentFullAddress =
+          generateFullAddress(residentRow) ||
+          (residentRow.residential_address || "").trim();
+      }
+    }
+
+    const submittedFullName =
+      (formData.fullName || formData.ownerFullName || formData.deceasedFullName)?.toUpperCase() ||
+      "";
+    const fullNameFromParts = [
+      structuredName.first_name,
+      structuredName.middle_name,
+      structuredName.last_name,
+      structuredName.suffix,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
     const insertData = {
       tenant_id: tenantId,
       reference_number: refNumber,
       certificate_type: canonicalType,
-      full_name:
-        (formData.fullName || formData.ownerFullName || formData.deceasedFullName)?.toUpperCase() || "",
+      full_name: submittedFullName || fullNameFromParts,
+      ...structuredName,
       age: parseInt(formData.age) || 0,
       sex: (formData.sex || formData.gender)?.toUpperCase() || "",
       civil_status: formData.civilStatus?.toUpperCase() || "",
-      address: canonicalType === "barangay_cohabitation"
-        ? (formData.currentAddress || formData.address || "")?.toUpperCase()
-        : (formData.address || formData.ownerAddress || formData.deceasedAddress)?.toUpperCase() || "",
+      address: (() => {
+        if (canonicalType === "barangay_cohabitation") {
+          return (formData.currentAddress || formData.address || "")?.toUpperCase();
+        }
+        const submitted = (
+          formData.address ||
+          formData.ownerAddress ||
+          formData.deceasedAddress ||
+          ""
+        )
+          .trim()
+          .toUpperCase();
+        if (residentFullAddress && !/\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(submitted)) {
+          return residentFullAddress.toUpperCase();
+        }
+        return submitted || residentFullAddress.toUpperCase() || "";
+      })(),
       contact_number: formData.contactNumber || "",
       email: formData.email || "",
       purpose:

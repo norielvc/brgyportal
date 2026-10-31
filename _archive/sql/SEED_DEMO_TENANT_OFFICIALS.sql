@@ -40,7 +40,7 @@ SELECT cert_type, 'demo',
     jsonb_build_object('steps', jsonb_build_array(
         jsonb_build_object('id',1,  'name','Review Request',              'status','staff_review',       'icon','Eye',         'autoApprove',false,'assignedUsers','[]'::jsonb,'requiresApproval',true,'sendEmail',true),
         jsonb_build_object('id',2,  'name','Barangay Secretary Approval', 'status','secretary_approval', 'icon','Clock',       'autoApprove',false,'assignedUsers','[]'::jsonb,'requiresApproval',true,'sendEmail',true,'officialRole','Brgy. Secretary'),
-        jsonb_build_object('id',3,  'name','Barangay Captain Approval',   'status','captain_approval',   'icon','UserCheck',   'autoApprove',false,'assignedUsers','[]'::jsonb,'requiresApproval',true,'sendEmail',true,'officialRole','Brgy. Captain'),
+        jsonb_build_object('id',3,  'name','Barangay Chairman Approval',   'status','captain_approval',   'icon','UserCheck',   'autoApprove',false,'assignedUsers','[]'::jsonb,'requiresApproval',true,'sendEmail',true,'officialRole','Brgy. Chairman'),
         jsonb_build_object('id',999,'name','Releasing Team',              'status','oic_review',         'icon','CheckCircle', 'autoApprove',false,'assignedUsers','[]'::jsonb,'requiresApproval',true,'sendEmail',true)
     )),
     true

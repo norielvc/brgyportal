@@ -7,7 +7,7 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function testCaptainApprovalWorkflow() {
-  console.log('🧪 Testing Captain Approval → Post-Approval Workflow');
+  console.log('🧪 Testing Chairman Approval → Post-Approval Workflow');
   console.log('=' .repeat(60));
 
   try {

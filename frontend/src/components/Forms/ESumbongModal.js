@@ -3,10 +3,18 @@ import { createPortal } from "react-dom";
 import { X, ShieldAlert } from "lucide-react";
 import useScrollLock from "@/lib/useScrollLock";
 import ESumbongForm from "./ESumbongForm";
+import { getUserData } from "@/lib/auth";
 
 export default function ESumbongModal({ isOpen, onClose, publicMode = false }) {
   useScrollLock(isOpen);
   const [mounted, setMounted] = useState(false);
+  const [tenantId, setTenantId] = useState("ibaoeste");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const user = getUserData();
+    if (user?.tenant_id) setTenantId(user.tenant_id);
+  }, [isOpen]);
 
   useEffect(() => {
     setMounted(true);
@@ -60,6 +68,7 @@ export default function ESumbongModal({ isOpen, onClose, publicMode = false }) {
           variant="modal"
           publicMode={publicMode}
           isActive={isOpen}
+          tenantId={tenantId}
           onSuccess={onClose}
           onCancel={onClose}
         />

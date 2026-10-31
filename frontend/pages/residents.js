@@ -42,6 +42,12 @@ import IssueIDModal from "@/components/Modals/IssueIDModal";
 import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
 import { generateFullAddress, PUROK_OPTIONS, PHASE_OPTIONS, isSubdivisionPurok, getSubdivisionInfo, hasPhaseField } from "@/lib/addressHelper";
+import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
+import {
+  pendingCaseRows,
+  serializeCaseRecordHistory,
+  emptyPendingCase,
+} from "@/lib/caseRecordHistory";
 
 function formatCivilStatusLabel(code) {
   const c = (code || "").toUpperCase();
@@ -1276,9 +1282,20 @@ export default function Residents() {
                     { label: "Email", value: selectedResident.email },
                     {
                       label: "Case / clearance notes",
-                      value:
-                        selectedResident.case_record_history ||
-                        "No previous legal history or pending cases reported.",
+                      value: selectedResident.pending_case
+                        ? pendingCaseRows(selectedResident.case_record_history)
+                            .map((r) => {
+                              const parts = [
+                                r.sn !== "—" ? `SN ${r.sn}` : null,
+                                r.caseNo !== "—" ? r.caseNo : null,
+                                r.description !== "—" ? r.description : null,
+                                r.dateRecorded !== "—" ? r.dateRecorded : null,
+                                `(${r.status})`,
+                              ].filter(Boolean);
+                              return parts.join(" · ");
+                            })
+                            .join(" | ")
+                        : "No previous legal history or pending cases reported.",
                       fullWidth: true,
                     },
                   ]}
@@ -2202,12 +2219,25 @@ export default function Residents() {
                     type="checkbox"
                     className="sr-only peer"
                     checked={formData.pending_case}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        pending_case: e.target.checked,
-                      })
-                    }
+                    onChange={(e) => {
+                      const on = e.target.checked;
+                      setFormData((prev) => {
+                        let case_record_history = prev.case_record_history;
+                        if (
+                          on &&
+                          !String(case_record_history || "").trim()
+                        ) {
+                          case_record_history = serializeCaseRecordHistory([
+                            emptyPendingCase(),
+                          ]);
+                        }
+                        return {
+                          ...prev,
+                          pending_case: on,
+                          case_record_history,
+                        };
+                      });
+                    }}
                   />
                   <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600" />
                   <span className="ml-2.5 text-xs font-bold text-rose-700 uppercase">
@@ -2216,15 +2246,11 @@ export default function Residents() {
                 </label>
               </div>
               {formData.pending_case ? (
-                <textarea
-                  className="input min-h-[80px] resize-y uppercase text-xs"
-                  placeholder="Enter case records..."
+                <PendingCaseRecordsEditor
+                  variant="compact"
                   value={formData.case_record_history}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      case_record_history: e.target.value,
-                    })
+                  onChange={(case_record_history) =>
+                    setFormData((prev) => ({ ...prev, case_record_history }))
                   }
                 />
               ) : (

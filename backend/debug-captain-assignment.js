@@ -8,7 +8,7 @@ const supabase = createClient(
 
 async function debugCaptainAssignment() {
   try {
-    console.log('🔍 Debugging Captain Approval Assignment Issue...\n');
+    console.log('🔍 Debugging Chairman Approval Assignment Issue...\n');
     
     // Check the specific request that's showing incorrectly
     const requestRef = '2026-0305003';

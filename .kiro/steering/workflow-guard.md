@@ -56,14 +56,14 @@ Files that must stay in sync:
 - **Save Draft** → saves inspection data, no status change
 - **Reject Application** → `reject` action
 - **Send Back** → `return` action → status: `returned`
-- **Submit & Forward to Captain** → saves inspection + `approve` action
+- **Submit & Forward to Chairman** → saves inspection + `approve` action
 
 ### Step 2 — secretary_approval (Barangay Secretary)
 - **Send Back** → `return` action → status: `returned`, Step 1 reassigned
 - **Reject** → `reject` action → status: `rejected`
 - **Forward to Next** → `approve` action → status: `captain_approval`
 
-### Step 3 — captain_approval (Barangay Captain)
+### Step 3 — captain_approval (Barangay Chairman)
 - **Send Back** → `return` action → status: `returned`, Step 1 reassigned
 - **Reject** → `reject` action → status: `rejected`
 - **Official Approval** → `approve` action → status: `oic_review`

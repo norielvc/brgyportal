@@ -60,7 +60,7 @@ async function addNaturalDeathWorkflow() {
     Steps from 3456:
     1. Review Request Team (staff_review) -> Users: ["1b1a...", "d165..."]
     2. Brgy. Secretary Approval (secretary_approval) -> User: "ca84..." (Franky Dono?)
-    3. Barangay Captain Approval (captain_approval) -> User: "9550..." (Noriel Cruz?)
+    3. Barangay Chairman Approval (captain_approval) -> User: "9550..." (Noriel Cruz?)
     4. Releasing Team (oic_review) -> User: "3798..." (Sarah Wilson?)
     */
 
@@ -86,7 +86,7 @@ async function addNaturalDeathWorkflow() {
         },
         {
             "id": 3,
-            "name": "Barangay Captain Approval",
+            "name": "Barangay Chairman Approval",
             "status": "captain_approval",
             "assignedUsers": [
                 "9550a8b2-9e32-4f52-a260-52766afb49b1" // Noriel Cruz

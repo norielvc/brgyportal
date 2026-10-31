@@ -40,18 +40,13 @@ import useMobileModalViewport, {
 import LanguageGate from "./LanguageGate";
 import CertSearchableDropdown from "./CertSearchableDropdown";
 import CertificateVerifyQR from "@/components/UI/CertificateVerifyQR";
+import PickupMethodSelector from "./PickupMethodSelector";
+import {
+  formatResidentPurokForPortal,
+  generateFullAddress,
+} from "@/lib/addressHelper";
 
 const API_URL = "/api";
-
-/** Purok + barangay only (portal verified-applicant display). */
-function formatPurokBarangayDisplay({ purok, barangay, barangayFallback }) {
-  const p = (purok || "").trim();
-  let b = (barangay || barangayFallback || "").trim();
-  if (b && !/^brgy\.?\s/i.test(b) && !/^barangay\s/i.test(b)) {
-    b = `Brgy. ${b}`;
-  }
-  return [p, b].filter(Boolean).join(", ");
-}
 
 const defaultOfficials = {
   chairman: "ALEXANDER C. MANIO",
@@ -340,6 +335,7 @@ export default function BarangayClearanceModal({
     civilStatus: "",
     address: "",
     purok: "",
+    subdivision: "",
     barangay: "",
     contactNumber: "",
     email: "",
@@ -364,8 +360,12 @@ export default function BarangayClearanceModal({
       age: resident.age || "",
       sex: resident.gender || "",
       civilStatus: resident.civil_status || "",
-      address: resident.residential_address || "",
+      address:
+        generateFullAddress(resident) ||
+        resident.residential_address ||
+        "",
       purok: resident.purok || "",
+      subdivision: resident.subdivision || "",
       barangay: resident.barangay || "",
       dateOfBirth: resident.date_of_birth
         ? new Date(resident.date_of_birth).toISOString().split("T")[0]
@@ -569,6 +569,7 @@ export default function BarangayClearanceModal({
       civilStatus: "",
       address: "",
       purok: "",
+      subdivision: "",
       barangay: "",
       contactNumber: "",
       email: "",
@@ -754,28 +755,21 @@ export default function BarangayClearanceModal({
                               </p>
                             </div>
                             <div className="p-5 bg-white">
-                              <p className="text-lg font-bold text-gray-900 leading-tight">
-                                {formData.fullName}
-                              </p>
-                              <dl className="mt-4 pt-4 border-t border-gray-100">
-                                <div className="min-w-0">
-                                  <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.12em] mb-0.5">
-                                    {t.address}
-                                  </dt>
-                                  <dd className="text-sm font-semibold text-gray-800">
-                                    {formatPurokBarangayDisplay({
-                                      purok: formData.purok,
-                                      barangay: formData.barangay,
-                                      barangayFallback:
-                                        tenantConfig?.shortName || tenantConfig?.name,
-                                    }) || (
-                                      <span className="text-gray-400 italic font-normal">
-                                        {t.notRecorded}
-                                      </span>
-                                    )}
-                                  </dd>
-                                </div>
-                              </dl>
+                              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                                <p className="text-lg font-bold text-gray-900 leading-tight min-w-0 flex-1">
+                                  {formData.fullName}
+                                </p>
+                                <p className="text-sm font-semibold text-gray-700 shrink-0 text-right">
+                                  {formatResidentPurokForPortal({
+                                    purok: formData.purok,
+                                    subdivision: formData.subdivision,
+                                  }) || (
+                                    <span className="text-gray-400 italic font-normal text-xs">
+                                      {t.notRecorded}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -784,12 +778,29 @@ export default function BarangayClearanceModal({
 
                     {currentStep === 2 && (
                       <div className="space-y-5 animate-in fade-in duration-300">
+                        <PickupMethodSelector
+                          t={t}
+                          accentColor={accentColor}
+                          pickupMethod={formData.pickupMethod}
+                          onSelect={(method) => {
+                            setFormData((prev) => ({ ...prev, pickupMethod: method }));
+                            setPickupError("");
+                            if (method !== "online") {
+                              setErrors((prev) => ({ ...prev, email: false }));
+                            }
+                          }}
+                          pickupError={pickupError}
+                        />
+
                         <div>
                           <h3 className="text-base font-bold text-gray-900 mb-1">
                             {t.contactHeading}
                           </h3>
                           <p className="text-sm text-gray-500">
                             {t.contactHelp}
+                          </p>
+                          <p className="text-xs text-blue-900 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 mt-3 leading-relaxed">
+                            {t.readyNotifyReminder}
                           </p>
                         </div>
 
@@ -818,7 +829,12 @@ export default function BarangayClearanceModal({
 
                         <div>
                           <label htmlFor="bc-email" className="block text-sm font-semibold text-gray-800 mb-1.5">
-                            {t.emailLabel} <span className="font-normal text-gray-400">{t.optional}</span>
+                            {t.emailLabel}{" "}
+                            {formData.pickupMethod === "online" ? (
+                              <span className="text-red-600">*</span>
+                            ) : (
+                              <span className="font-normal text-gray-400">{t.optional}</span>
+                            )}
                           </label>
                           <div className="relative">
                             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -829,9 +845,17 @@ export default function BarangayClearanceModal({
                               value={formData.email}
                               onChange={handleInputChange}
                               placeholder="you@example.com"
-                              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+                              className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-offset-0 ${errors.email ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
                             />
                           </div>
+                          {errors.email && (
+                            <p className="text-xs text-red-600 mt-1.5">{t.pickupEmailRequired}</p>
+                          )}
+                          {formData.pickupMethod === "online" && (
+                            <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 mt-2 leading-relaxed">
+                              {t.pickupEmailReminder}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -947,9 +971,24 @@ export default function BarangayClearanceModal({
                           setErrors({ fullName: true });
                           return;
                         }
-                        if (currentStep === 2 && !formData.contactNumber) {
-                          setErrors({ contactNumber: true });
-                          return;
+                        if (currentStep === 2) {
+                          const stepErrors = {};
+                          if (!formData.contactNumber) {
+                            stepErrors.contactNumber = true;
+                          }
+                          if (
+                            formData.pickupMethod === "online" &&
+                            !formData.email?.trim()
+                          ) {
+                            stepErrors.email = true;
+                            setPickupError(t.pickupEmailRequired);
+                          } else {
+                            setPickupError("");
+                          }
+                          if (Object.keys(stepErrors).length) {
+                            setErrors(stepErrors);
+                            return;
+                          }
                         }
                         setCurrentStep((prev) => prev + 1);
                       }}
@@ -1035,6 +1074,7 @@ export default function BarangayClearanceModal({
                         contactNumber: t.mobileLabel,
                         email: t.emailLabel,
                         purpose: t.purposeLabel,
+                        pickupMethod: t.pickupMethodLabel,
                       };
                       const label = labelMap[k] || k.replace(/([A-Z])/g, " $1");
 
@@ -1064,6 +1104,10 @@ export default function BarangayClearanceModal({
                                     </div>
                                   ))}
                               </div>
+                            ) : k === "pickupMethod" ? (
+                              <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
+                                {v === "online" ? t.pickupOnline : t.pickupPickup}
+                              </span>
                             ) : (
                               <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
                                 {v.toString()}
@@ -1089,35 +1133,6 @@ export default function BarangayClearanceModal({
                       </div>
                     </div>
                   )}
-                  {/* Pickup Method Selection */}
-                <div className="mt-5">
-                  <h4 className="text-sm font-bold text-gray-900 mb-1">{t.pickupHeading}</h4>
-                  <p className="text-xs text-gray-500 mb-3">{t.pickupHelp}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => { setFormData(prev => ({ ...prev, pickupMethod: "pickup" })); setPickupError(""); }}
-                      className={`p-4 rounded-xl border-2 text-left transition-colors ${formData.pickupMethod === "pickup" ? "" : "bg-white border-gray-200 hover:border-gray-300"}`}
-                      style={formData.pickupMethod === "pickup" ? { borderColor: accentColor, backgroundColor: `${accentColor}0D` } : undefined}
-                    >
-                      <p className="text-sm font-bold" style={formData.pickupMethod === "pickup" ? { color: accentColor } : { color: "#111827" }}>{t.pickupPickup}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{t.pickupPickupSub}</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setFormData(prev => ({ ...prev, pickupMethod: "online" })); setPickupError(""); }}
-                      className={`p-4 rounded-xl border-2 text-left transition-colors ${formData.pickupMethod === "online" ? "" : "bg-white border-gray-200 hover:border-gray-300"}`}
-                      style={formData.pickupMethod === "online" ? { borderColor: accentColor, backgroundColor: `${accentColor}0D` } : undefined}
-                    >
-                      <p className="text-sm font-bold" style={formData.pickupMethod === "online" ? { color: accentColor } : { color: "#111827" }}>{t.pickupOnline}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{t.pickupOnlineSub}</p>
-                    </button>
-                  </div>
-                  {pickupError && (
-                    <p className="text-xs text-red-600 mt-2">{pickupError}</p>
-                  )}
-                </div>
-
                 <div className="mt-5 flex items-start gap-2.5 p-4 bg-white border border-gray-200 rounded-xl">
                     <input
                       type="checkbox"
@@ -1257,7 +1272,7 @@ const ClearancePreview = React.memo(
       <div
         ref={certificateRef}
         className="bg-white p-20 relative"
-        style={{ width: "794px", height: "1123px" }}
+        style={{ width: "816px", height: "1056px" }}
       >
         <h1 className="text-4xl font-black text-center uppercase mb-20">
           Barangay Clearance
@@ -1271,9 +1286,6 @@ const ClearancePreview = React.memo(
           </p>
           <p>
             <strong>Date:</strong> {currentDate}
-          </p>
-          <p>
-            <strong>Ref:</strong> {referenceNumber}
           </p>
         </div>
         <div className="absolute bottom-12 right-12">

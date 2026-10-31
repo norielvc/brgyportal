@@ -1,6 +1,6 @@
 # BrgyDesk Admin Mobile App (iOS & Android)
 
-A native cross-platform mobile application engineered exclusively for **Barangay Captains, Secretaries, Treasurers, Kagawads, and Field Officers**.
+A native cross-platform mobile application engineered exclusively for **Barangay Chairmen, Secretaries, Treasurers, Kagawads, and Field Officers**.
 
 ---
 

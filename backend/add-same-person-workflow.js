@@ -29,7 +29,7 @@ async function addWorkflowConfig() {
             },
             {
                 "id": 3,
-                "name": "Barangay Captain Approval",
+                "name": "Barangay Chairman Approval",
                 "status": "captain_approval",
                 "assignedUsers": [
                     "9550a8b2-9e32-4f52-a260-52766afb49b1"

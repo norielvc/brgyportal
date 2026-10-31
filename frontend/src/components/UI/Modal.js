@@ -7,10 +7,12 @@ export default function Modal({
   isOpen,
   onClose,
   title,
+  headerActions,
   children,
   footer,
   size = "md",
   dense = false,
+  bodyScroll = true,
   showCloseButton = true,
 }) {
   const sizeClasses = {
@@ -60,38 +62,47 @@ export default function Modal({
         )}
       >
         {/* Header */}
-        {(title || showCloseButton) && (
+        {(title || headerActions || showCloseButton) && (
           <div
             className={cn(
-              "flex items-center justify-between shrink-0 border-b border-gray-100",
-              dense ? "px-3 py-2" : "p-4 sm:p-6 pb-3 sm:pb-4",
+              "flex items-center gap-2 sm:gap-3 shrink-0 border-b border-gray-100 min-w-0",
+              dense ? "px-3 py-2" : "px-4 py-3 sm:px-6 sm:py-4",
             )}
           >
             {title && (
               <h3
                 className={cn(
-                  "font-bold text-gray-900 truncate pr-2",
+                  "font-bold text-gray-900 truncate min-w-0 mr-3",
                   dense ? "text-sm" : "text-base sm:text-lg",
                 )}
               >
                 {title}
               </h3>
             )}
-            {showCloseButton && (
-              <button
-                onClick={onClose}
-                className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#03254c] rounded-md transition-colors ml-auto shrink-0"
-              >
-                <X className={dense ? "w-4 h-4" : "w-5 h-5"} />
-              </button>
-            )}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 ml-auto">
+              {headerActions ? (
+                <div className="flex items-center gap-2 min-w-0">
+                  {headerActions}
+                </div>
+              ) : null}
+              {showCloseButton && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#03254c] rounded-md transition-colors shrink-0"
+                >
+                  <X className={dense ? "w-4 h-4" : "w-5 h-5"} />
+                </button>
+              )}
+            </div>
           </div>
         )}
 
         {/* Content */}
         <div
           className={cn(
-            "overflow-y-auto flex-1 min-h-0",
+            "flex-1 min-h-0",
+            bodyScroll ? "overflow-y-auto" : "overflow-hidden flex flex-col",
             dense ? "p-2.5 sm:p-3" : "p-4 sm:p-6",
             footer ? (dense ? "pb-2" : "pb-3") : "",
           )}

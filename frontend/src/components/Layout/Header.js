@@ -4,9 +4,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  HelpCircle,
-  Smartphone,
   PanelLeft,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -22,17 +21,29 @@ export default function Header({
   onMenuClick,
   isDesktopSidebarOpen = true,
   onToggleDesktopSidebar,
-  onNeedHelp,
-  onOpenInstall,
-  isInstalled,
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [pageRefreshing, setPageRefreshing] = useState(false);
   const user = getUserData();
   const router = useRouter();
+
+  const handlePageRefresh = async () => {
+    if (pageRefreshing) return;
+    setPageRefreshing(true);
+    try {
+      await fetchNotifications();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("brgydesk-page-refresh"));
+        window.dispatchEvent(new CustomEvent("help-desk-nav-refresh"));
+      }
+    } finally {
+      window.setTimeout(() => setPageRefreshing(false), 600);
+    }
+  };
 
   // Fetch notifications
   useEffect(() => {
@@ -169,25 +180,17 @@ export default function Header({
 
         {/* Right section */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Install PWA App Button */}
-          {onOpenInstall && !isInstalled && (
-            <button
-              onClick={onOpenInstall}
-              title="Install BrgyDesk Progressive Web App"
-              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-[#03254c] bg-blue-50 hover:bg-blue-100 border border-blue-200/60 rounded-md transition-all"
-            >
-              <Smartphone className="w-3 h-3 text-blue-600" />
-              <span className="hidden md:inline">Install</span>
-            </button>
-          )}
-
-          {/* Need Help / E-Sumbong */}
           <button
-            onClick={onNeedHelp}
-            className="hidden sm:flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 hover:bg-red-50 rounded-md transition-all"
+            type="button"
+            onClick={handlePageRefresh}
+            disabled={pageRefreshing}
+            title="Refresh page data"
+            aria-label="Refresh page data"
+            className="p-1.5 text-gray-500 hover:text-[#03254c] hover:bg-gray-100 rounded-md transition-all disabled:opacity-60"
           >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">E-Sumbong</span>
+            <RefreshCw
+              className={`h-4 w-4 ${pageRefreshing ? "animate-spin" : ""}`}
+            />
           </button>
 
           {/* Notifications */}

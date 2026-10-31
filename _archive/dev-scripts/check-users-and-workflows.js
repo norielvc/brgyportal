@@ -43,7 +43,7 @@ async function checkUsersAndWorkflows() {
     console.log('For Step 2 (Staff Review) - assignedUsers should be:');
     console.log(JSON.stringify(staffUsers.map(u => u.id), null, 2));
     
-    console.log('\nFor Step 3 (Captain Approval) - assignedUsers should be:');
+    console.log('\nFor Step 3 (Chairman Approval) - assignedUsers should be:');
     console.log(JSON.stringify(adminUsers.map(u => u.id), null, 2));
     
   } catch (error) {

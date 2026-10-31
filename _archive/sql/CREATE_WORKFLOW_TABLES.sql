@@ -212,7 +212,7 @@ INSERT INTO workflow_configurations (certificate_type, workflow_config, created_
     },
     {
       "id": 3,
-      "name": "Barangay Captain Approval",
+      "name": "Barangay Chairman Approval",
       "description": "Approved by authorized personnel",
       "status": "approved",
       "icon": "UserCheck",
@@ -274,7 +274,7 @@ INSERT INTO workflow_configurations (certificate_type, workflow_config, created_
     },
     {
       "id": 3,
-      "name": "Barangay Captain Approval",
+      "name": "Barangay Chairman Approval",
       "description": "Approved by authorized personnel",
       "status": "approved",
       "icon": "UserCheck",
@@ -336,7 +336,7 @@ INSERT INTO workflow_configurations (certificate_type, workflow_config, created_
     },
     {
       "id": 3,
-      "name": "Barangay Captain Approval",
+      "name": "Barangay Chairman Approval",
       "description": "Approved by authorized personnel",
       "status": "approved",
       "icon": "UserCheck",

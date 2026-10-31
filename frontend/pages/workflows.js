@@ -105,15 +105,15 @@ const defaultSteps = [
   },
   {
     id: 3,
-    name: "Barangay Captain Approval",
-    description: "Awaiting Barangay Captain approval",
+    name: "Barangay Chairman Approval",
+    description: "Awaiting Barangay Chairman approval",
     status: "captain_approval",
     icon: "UserCheck",
     autoApprove: false,
     assignedUsers: [],
     requiresApproval: true,
     sendEmail: true,
-    officialRole: "Brgy. Captain",
+    officialRole: "Brgy. Chairman",
   },
   {
     id: 999,
@@ -1333,7 +1333,7 @@ function EditStepForm({ step, onSave, onCancel }) {
           </label>
           <div className="grid grid-cols-2 gap-2">
             {[
-              "Brgy. Captain",
+              "Brgy. Chairman",
               "Brgy. Secretary",
               "Brgy. Kagawad",
               "Brgy. Treasurer",
@@ -1510,7 +1510,7 @@ function AddStepModal({ newStep, setNewStep, onAdd, onClose }) {
               </label>
               <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1 border border-gray-200 rounded-lg">
                 {[
-                  "Brgy. Captain",
+                  "Brgy. Chairman",
                   "Brgy. Secretary",
                   "Brgy. Kagawad",
                   "Brgy. Treasurer",

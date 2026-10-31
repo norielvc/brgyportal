@@ -28,7 +28,7 @@ export default function ViewEmployeeModal({ employee, onClose }) {
   const roleMap = {
     super_admin: { color: 'text-purple-600 bg-purple-50 border-purple-100', label: 'SYSTEM SUPER ADMIN' },
     admin: { color: 'text-indigo-600 bg-indigo-50 border-indigo-100', label: 'ADMINISTRATOR' },
-    captain: { color: 'text-blue-600 bg-blue-50 border-blue-100', label: 'BRGY. CAPTAIN' },
+    captain: { color: 'text-blue-600 bg-blue-50 border-blue-100', label: 'BRGY. CHAIRMAN' },
     secretary: { color: 'text-cyan-600 bg-cyan-50 border-cyan-100', label: 'BRGY. SECRETARY' },
     staff: { color: 'text-teal-600 bg-teal-50 border-teal-100', label: 'BRGY. STAFF' },
     user: { color: 'text-gray-600 bg-gray-50 border-gray-100', label: 'LEGACY USER' },

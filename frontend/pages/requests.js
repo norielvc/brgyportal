@@ -70,6 +70,13 @@ import { mergeOfficialsConfig } from "@/lib/officialsConfig";
 import Modal from "@/components/UI/Modal";
 import CertificateVerifyQR from "@/components/UI/CertificateVerifyQR";
 import useScrollLock from "@/lib/useScrollLock";
+import {
+  joinNameParts,
+  resolveApplicantNameParts,
+} from "@/lib/personName";
+import { resolveRequestResidentialAddress } from "@/lib/addressHelper";
+import { pendingCaseRows } from "@/lib/caseRecordHistory";
+import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
 // API Configuration
 const API_URL = "/api";
 
@@ -173,7 +180,7 @@ const STATUS_OPTIONS = [
   { value: "physical_inspection", label: "Physical Inspection" },
   { value: "Treasury", label: "Treasury" },
   { value: "secretary_approval", label: "Secretary Approval" },
-  { value: "captain_approval", label: "Captain Approval" },
+  { value: "captain_approval", label: "Chairman Approval" },
   { value: "oic_review", label: "Releasing Team" },
   { value: "ready", label: "Ready for Pickup" },
   { value: "approved", label: "Approved" },
@@ -226,7 +233,7 @@ const STEP_OPTIONS = [
   { value: "Physical Inspection Team", label: "Physical Inspection Team" },
   { value: "Treasury Team", label: "Treasury Team" },
   { value: "Secretary Approval", label: "Secretary Approval" },
-  { value: "Captain Approval", label: "Captain Approval" },
+  { value: "Chairman Approval", label: "Chairman Approval" },
 ];
 
 const MultiSelectDropdown = ({
@@ -1016,7 +1023,7 @@ export default function RequestsPage() {
               defaultComment =
                 "Request approved and forwarded to Physical Inspection Team";
             else if (req.status === "physical_inspection")
-              defaultComment = "Inspection completed and forwarded to Captain";
+              defaultComment = "Inspection completed and forwarded to Chairman";
             else if (req.status === "captain_approval")
               defaultComment = "Request approved and forwarded to Treasury";
             else if (req.status === "Treasury")
@@ -1032,7 +1039,7 @@ export default function RequestsPage() {
                     .toLowerCase()
                     .includes("preparation"));
               defaultComment = bpPrep
-                ? "Business permit documents prepared and forwarded to Barangay Captain for final approval"
+                ? "Business permit documents prepared and forwarded to Barangay Chairman for final approval"
                 : "Certificate marked as ready for pickup";
             }
             else defaultComment = "Request approved and forwarded";
@@ -2109,7 +2116,7 @@ function RequestDetailsModal({
     const name = String(inspectionNextWorkflowStep?.name || "").toLowerCase();
     if (!name) return "Submit & Forward to Next Step";
     if (name.includes("captain") || name.includes("chairman")) {
-      return "Submit & Forward to Captain";
+      return "Submit & Forward to Chairman";
     }
     if (name.includes("finance") || name.includes("treasury")) {
       return "Submit & Forward to Finance Team";
@@ -2172,11 +2179,12 @@ function RequestDetailsModal({
   const [isEditResidentMode, setIsEditResidentMode] = useState(false);
   const [residentFormData, setResidentFormData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
+  const initialNameParts = resolveApplicantNameParts(request);
   const [editFormData, setEditFormData] = useState({
-    first_name: request.first_name || "",
-    middle_name: request.middle_name || "",
-    last_name: request.last_name || "",
-    suffix: request.suffix || "",
+    first_name: initialNameParts.first_name || "",
+    middle_name: initialNameParts.middle_name || "",
+    last_name: initialNameParts.last_name || "",
+    suffix: initialNameParts.suffix || "",
     full_name: request.full_name || request.applicant_name || "",
     contact_number: request.contact_number || "",
     age: request.age || "",
@@ -2184,9 +2192,7 @@ function RequestDetailsModal({
     civil_status: request.civil_status || "",
     date_of_birth: request.date_of_birth || "",
     place_of_birth: request.place_of_birth || "",
-    address: request.certificate_type === "barangay_cohabitation"
-      ? (request.details?.currentAddress || request.address || "")
-      : (request.address || request.details?.currentAddress || ""),
+    address: resolveRequestResidentialAddress(request),
     purpose: request.purpose || "",
     date_of_death: request.date_of_death || request.details?.date_of_death || "",
     cause_of_death: request.cause_of_death || request.details?.cause_of_death || "",
@@ -2208,25 +2214,18 @@ function RequestDetailsModal({
     date_of_hearing: request.date_of_hearing || "",
   });
 
-  // Split name if fields are empty but full_name exists
-  useEffect(() => {
-    if (
-      isEditing &&
-      !editFormData.first_name &&
-      !editFormData.last_name &&
-      editFormData.full_name
-    ) {
-      const parts = editFormData.full_name.trim().split(" ");
-      if (parts.length >= 2) {
-        setEditFormData((prev) => ({
-          ...prev,
-          first_name: parts[0],
-          last_name: parts[parts.length - 1],
-          middle_name: parts.length > 2 ? parts.slice(1, -1).join(" ") : "",
-        }));
-      }
-    }
-  }, [isEditing]);
+  const handleStartEditing = () => {
+    const names = resolveApplicantNameParts(request);
+    setEditFormData((prev) => ({
+      ...prev,
+      first_name: names.first_name,
+      middle_name: names.middle_name,
+      last_name: names.last_name,
+      suffix: names.suffix,
+      address: resolveRequestResidentialAddress(request),
+    }));
+    setIsEditing(true);
+  };
 
   // Calculate age when date_of_birth changes
   useEffect(() => {
@@ -2828,10 +2827,7 @@ function RequestDetailsModal({
 
   const handleSave = async () => {
     setIsSaving(true);
-    const combinedName =
-      `${editFormData.first_name || ''} ${editFormData.middle_name || ''} ${editFormData.last_name || ''} ${editFormData.suffix || ''}`
-        .replace(/\s+/g, " ")
-        .trim();
+    const combinedName = joinNameParts(editFormData);
 
     // Sanitize: convert empty strings to null for date/timestamp fields
     const dateFields = [
@@ -2920,7 +2916,7 @@ function RequestDetailsModal({
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {!isEditing && canAct && !["oic_review", "ready", "ready_for_pickup"].includes(request.status) && (
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={handleStartEditing}
                 className="px-2.5 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
                 title="Edit Request"
               >
@@ -3045,7 +3041,7 @@ function RequestDetailsModal({
                           {isBusinessPermitPreparationStage ||
                           (request.certificate_type === "business_permit" &&
                             !isBusinessPermitReleasingStage)
-                            ? "Assign the OR number, amount, and BC control no., preview both documents, then forward to the Barangay Captain."
+                            ? "Assign the OR number, amount, and BC control no., preview both documents, then forward to the Barangay Chairman."
                             : "Review the certificate and click Set as Ready once approved for release."}
                         </p>
                       </div>
@@ -3503,23 +3499,12 @@ function RequestDetailsModal({
                           name="address"
                           value={editFormData.address}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
-                          rows="3"
+                          className="w-full min-h-[5.5rem] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm leading-relaxed resize-y"
+                          rows={4}
                         />
                       ) : (
-                        <p className="font-medium text-slate-800 text-xs sm:text-sm leading-relaxed">
-                          {request.address || (() => {
-                            const r = request.residents;
-                            if (!r) return "NOT RECORDED";
-                            const parts = [
-                              r.house_number ? `HOUSE NO. ${r.house_number}` : null,
-                              r.purok || null,
-                              r.barangay || null,
-                              r.municipality || null,
-                              r.province || null,
-                            ].filter(Boolean);
-                            return parts.length ? parts.join(", ").toUpperCase() : (r.residential_address || "NOT RECORDED");
-                          })()}
+                        <p className="font-medium text-slate-800 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                          {resolveRequestResidentialAddress(request) || "NOT RECORDED"}
                         </p>
                       )}
                     </div>
@@ -5074,17 +5059,21 @@ function RequestDetailsModal({
                         </span>
                       </label>
                     </div>
-                    <textarea
-                      className="w-full bg-white border border-red-200 text-gray-900 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-red-500 min-h-[80px] resize-none uppercase"
-                      placeholder="Enter case records..."
-                      value={residentFormData.case_record_history}
-                      onChange={(e) =>
-                        setResidentFormData({
-                          ...residentFormData,
-                          case_record_history: e.target.value,
-                        })
-                      }
-                    />
+                    {residentFormData.pending_case ? (
+                      <PendingCaseRecordsEditor
+                        value={residentFormData.case_record_history}
+                        onChange={(case_record_history) =>
+                          setResidentFormData({
+                            ...residentFormData,
+                            case_record_history,
+                          })
+                        }
+                      />
+                    ) : (
+                      <p className="text-[10px] text-red-400/80">
+                        Enable &quot;With Case&quot; to add pending cases.
+                      </p>
+                    )}
                   </div>
 
                   <div
@@ -5582,7 +5571,7 @@ function RequestDetailsModal({
                             !hasOfficialReceipt
                           ) {
                             toast.error(
-                              "Assign or generate an Official Receipt (OR) before forwarding to the Barangay Captain.",
+                              "Assign or generate an Official Receipt (OR) before forwarding to the Barangay Chairman.",
                             );
                             return;
                           }
@@ -5607,7 +5596,7 @@ function RequestDetailsModal({
                             : request.status === "captain_approval"
                               ? "Official Approval"
                               : isBusinessPermitPreparationStage
-                                ? "Forward to Barangay Captain"
+                                ? "Forward to Barangay Chairman"
                                 : isBusinessPermitReleasingStage
                                   ? "Set as Ready"
                                   : "Forward to Next"}
@@ -6264,6 +6253,7 @@ function normalizeCloneForCanvasCapture(clonedDoc) {
 }
 
 const CAPTAIN_SIGNATURE_ROLES = [
+  "BRGY. CHAIRMAN",
   "BRGY. CAPTAIN",
   "CHAIRMAN",
   "BARANGAY CHAIRMAN",
@@ -6306,8 +6296,43 @@ function computeLastReturnTimeFromHistory(history) {
     : 0;
 }
 
-/** Build A4 PDF from certificate DOM (shared by Download + Print). */
-async function buildCertificatePdfFromElement(certificateEl) {
+/** US Letter vs A4 — business permit clearance & inspection stay on A4. */
+const CERT_PAGE_SIZES = {
+  a4: {
+    id: "a4",
+    widthMm: 210,
+    heightMm: 297,
+    widthPx: 794,
+    heightPx: 1123,
+    jsPdfFormat: "a4",
+  },
+  letter: {
+    id: "letter",
+    widthMm: 215.9,
+    heightMm: 279.4,
+    widthPx: 816,
+    heightPx: 1056,
+    jsPdfFormat: "letter",
+  },
+};
+
+function getCertificatePageSpec({
+  certificateType,
+  businessPreviewVariant = "default",
+} = {}) {
+  const type = String(certificateType || "").toLowerCase();
+  if (type === "business_permit") {
+    return CERT_PAGE_SIZES.a4;
+  }
+  return CERT_PAGE_SIZES.letter;
+}
+
+/** Build certificate PDF from DOM (shared by Download + Print). */
+async function buildCertificatePdfFromElement(
+  certificateEl,
+  pageSpec = CERT_PAGE_SIZES.a4,
+) {
+  const spec = pageSpec?.widthMm ? pageSpec : CERT_PAGE_SIZES.a4;
   const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
     import("html2canvas"),
     import("jspdf"),
@@ -6333,8 +6358,8 @@ async function buildCertificatePdfFromElement(certificateEl) {
   iframe.style.position = "fixed";
   iframe.style.right = "0";
   iframe.style.bottom = "0";
-  iframe.style.width = "210mm";
-  iframe.style.height = "297mm";
+  iframe.style.width = `${spec.widthMm}mm`;
+  iframe.style.height = `${spec.heightMm}mm`;
   iframe.style.border = "none";
   iframe.style.zIndex = "-9999";
   document.body.appendChild(iframe);
@@ -6351,13 +6376,13 @@ async function buildCertificatePdfFromElement(certificateEl) {
             html, body {
               margin: 0;
               padding: 0;
-              width: 210mm;
-              min-height: 297mm;
+              width: ${spec.widthMm}mm;
+              min-height: ${spec.heightMm}mm;
               background: white;
               overflow: visible;
             }
             .certificate-container {
-              width: 210mm !important;
+              width: ${spec.widthMm}mm !important;
               min-height: 0 !important;
               height: auto !important;
               box-sizing: border-box !important;
@@ -6368,7 +6393,7 @@ async function buildCertificatePdfFromElement(certificateEl) {
             .cert-header-section {
               border-bottom: 2px solid #111827 !important;
             }
-            @page { size: 210mm 297mm; margin: 0; }
+            @page { size: ${spec.widthMm}mm ${spec.heightMm}mm; margin: 0; }
             .mix-blend-multiply {
               mix-blend-mode: normal !important;
             }
@@ -6410,12 +6435,12 @@ async function buildCertificatePdfFromElement(certificateEl) {
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "mm",
-    format: "a4",
+    format: spec.jsPdfFormat,
     compress: true,
   });
 
-  const pdfW = 210;
-  const pdfH = 297;
+  const pdfW = spec.widthMm;
+  const pdfH = spec.heightMm;
   const imgWidthMm = pdfW;
   const imgHeightMm = (canvas.height * pdfW) / canvas.width;
 
@@ -6538,10 +6563,18 @@ function CertificatePreviewModal({
   // Responsive Zoom & Mobile Fit Controls
   const [zoom, setZoom] = useState("auto"); // "auto" | number (e.g. 0.5, 0.75, 1, 1.25)
   const [containerWidth, setContainerWidth] = useState(0);
-  const [docHeight, setDocHeight] = useState(1123);
+  const [docHeight, setDocHeight] = useState(1056);
 
-  const A4_WIDTH_PX = 794;
-  const A4_HEIGHT_PX = 1123;
+  const previewPageSpec = getCertificatePageSpec({
+    certificateType: request.certificate_type,
+    businessPreviewVariant: isBusinessPermitRequest
+      ? businessPreviewTab === "permit"
+        ? "permit"
+        : "inspection"
+      : "default",
+  });
+  const PREVIEW_WIDTH_PX = previewPageSpec.widthPx;
+  const PREVIEW_HEIGHT_PX = previewPageSpec.heightPx;
 
   // Measure container width on resize / orientation change
   useEffect(() => {
@@ -6566,7 +6599,7 @@ function CertificatePreviewModal({
     if (!certificateRef.current) return;
     const updateDocHeight = () => {
       if (certificateRef.current) {
-        const h = certificateRef.current.offsetHeight || certificateRef.current.scrollHeight || A4_HEIGHT_PX;
+        const h = certificateRef.current.offsetHeight || certificateRef.current.scrollHeight || PREVIEW_HEIGHT_PX;
         setDocHeight(h);
       }
     };
@@ -6574,13 +6607,13 @@ function CertificatePreviewModal({
     const observer = new ResizeObserver(updateDocHeight);
     observer.observe(certificateRef.current);
     return () => observer.disconnect();
-  }, [officials, request, businessPreviewTab]);
+  }, [officials, request, businessPreviewTab, PREVIEW_HEIGHT_PX]);
 
   // Compute scale factor
   const isMobileView = containerWidth > 0 && containerWidth < 840;
   const padding = isMobileView ? 16 : 32;
-  const availableWidth = containerWidth > 0 ? Math.max(280, containerWidth - padding) : A4_WIDTH_PX;
-  const fitScale = Math.min(1, Math.max(0.35, availableWidth / A4_WIDTH_PX));
+  const availableWidth = containerWidth > 0 ? Math.max(280, containerWidth - padding) : PREVIEW_WIDTH_PX;
+  const fitScale = Math.min(1, Math.max(0.35, availableWidth / PREVIEW_WIDTH_PX));
   const currentScale = zoom === "auto" ? fitScale : zoom;
 
   const handleZoomIn = () => {
@@ -6865,7 +6898,10 @@ function CertificatePreviewModal({
     if (!activeCertificateRef.current || isPrinting || isDownloading) return;
     setIsPrinting(true);
     try {
-      const pdf = await buildCertificatePdfFromElement(activeCertificateRef.current);
+      const pdf = await buildCertificatePdfFromElement(
+        activeCertificateRef.current,
+        previewPageSpec,
+      );
       pdf.autoPrint();
       const blobUrl = pdf.output("bloburl");
       const printWindow = window.open(blobUrl, "_blank");
@@ -6894,7 +6930,10 @@ function CertificatePreviewModal({
     setIsDownloading(true);
 
     try {
-      const pdf = await buildCertificatePdfFromElement(activeCertificateRef.current);
+      const pdf = await buildCertificatePdfFromElement(
+        activeCertificateRef.current,
+        previewPageSpec,
+      );
       pdf.save(`${request.reference_number}.pdf`);
     } catch (error) {
       console.error("PDF download error:", error);
@@ -7060,7 +7099,7 @@ function CertificatePreviewModal({
             <div
               className="flex justify-center transition-all duration-150 ease-out"
               style={{
-                width: `${A4_WIDTH_PX * currentScale}px`,
+                width: `${PREVIEW_WIDTH_PX * currentScale}px`,
                 height: `${docHeight * currentScale}px`,
                 position: "relative",
                 flexShrink: 0,
@@ -7070,7 +7109,7 @@ function CertificatePreviewModal({
                 style={{
                   transform: `scale(${currentScale})`,
                   transformOrigin: "top left",
-                  width: "210mm",
+                  width: `${previewPageSpec.widthMm}mm`,
                   position: "absolute",
                   top: 0,
                   left: 0,
@@ -7120,36 +7159,6 @@ function CertificatePreviewModal({
   );
 }
 
-function pendingCaseRows(history) {
-  const lines = String(history || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 20);
-
-  if (!lines.length) {
-    return [{ sn: 1, caseNo: "—", description: "Not recorded", status: "PENDING" }];
-  }
-
-  return lines.map((line, index) => {
-    const parts = line.split(/\s*\|\s*/);
-    if (parts.length >= 2) {
-      return {
-        sn: index + 1,
-        caseNo: parts[0] || "—",
-        description: parts[1] || "—",
-        status: (parts[2] || "PENDING").toUpperCase(),
-      };
-    }
-    return {
-      sn: index + 1,
-      caseNo: "—",
-      description: line,
-      status: "PENDING",
-    };
-  });
-}
-
 // Certificate Preview Component - Exact copy from BarangayClearanceModal
 function ClearancePreviewForRequests({
   request,
@@ -7191,24 +7200,7 @@ function ClearancePreviewForRequests({
     age: request.age || "",
     sex: request.sex || "",
     civilStatus: request.civil_status || "",
-    address: request.certificate_type === "barangay_cohabitation"
-      ? (request.details?.currentAddress || request.address || "")
-      : (() => {
-          if (request.address) return request.address;
-          const r = request.residents;
-          if (r?.residential_address) return r.residential_address;
-          if (r) {
-            const parts = [
-              r.house_number ? `HOUSE NO. ${r.house_number}` : null,
-              r.purok || null,
-              r.barangay || null,
-              r.municipality || null,
-              r.province || null,
-            ].filter(Boolean);
-            if (parts.length) return parts.join(", ").toUpperCase();
-          }
-          return request.details?.currentAddress || "";
-        })(),
+    address: resolveRequestResidentialAddress(request),
     dateOfBirth: request.date_of_birth || "",
     placeOfBirth: request.place_of_birth || "",
     dateOfDeath:
@@ -7285,6 +7277,12 @@ function ClearancePreviewForRequests({
   const isBusinessClearanceDoc =
     isBusinessPermit && businessPreviewVariant === "permit";
 
+  const pageSpec = getCertificatePageSpec({
+    certificateType: request.certificate_type,
+    businessPreviewVariant,
+  });
+  const isLetterPage = pageSpec.id === "letter";
+
   // Parse details if string
   let additionalDetails = {};
   try {
@@ -7316,7 +7314,15 @@ function ClearancePreviewForRequests({
   const lastReturnTime = computeLastReturnTimeFromHistory(history);
 
   // Determine Issued Date (Final Approval Date or Current Date)
-  const CAPTAIN_ROLES = ["BRGY. CAPTAIN", "CHAIRMAN", "BARANGAY CHAIRMAN", "PUNONG BARANGAY", "CAPTAIN", "PUNONG"];
+  const CAPTAIN_ROLES = [
+    "BRGY. CHAIRMAN",
+    "BRGY. CAPTAIN",
+    "CHAIRMAN",
+    "BARANGAY CHAIRMAN",
+    "PUNONG BARANGAY",
+    "CAPTAIN",
+    "PUNONG",
+  ];
   const captainApproval = !history ? null : [...history]
     .filter(h => {
       const hasAction = h.action === 'approve' || h.action === 'forward' || h.action === 'create';
@@ -7631,13 +7637,14 @@ function ClearancePreviewForRequests({
 
   return (
     <div className="flex justify-center print:p-0">
-      {/* A4 Size Container - 210mm x 297mm */}
+      {/* Certificate page — Letter for standard certs; A4 for business clearance & inspection */}
       <div
         ref={certificateRef}
+        data-page={pageSpec.id}
         className={`certificate-container bg-white shadow-lg print:shadow-none flex flex-col ${getFontClass(bodyStyle.fontFamily)}`}
         style={{
-          width: "210mm",
-          minHeight: isBusinessClearanceDoc ? "auto" : "297mm",
+          width: `${pageSpec.widthMm}mm`,
+          minHeight: isBusinessClearanceDoc ? "auto" : `${pageSpec.heightMm}mm`,
           padding: "0",
           boxSizing: "border-box",
         }}
@@ -7645,7 +7652,11 @@ function ClearancePreviewForRequests({
         {/* Header Section */}
         <div
           className={`cert-header-section w-full border-b-2 flex justify-center items-center flex-shrink-0 ${getFontClass(headerStyle.fontFamily)} ${
-            isBusinessClearanceDoc ? "pt-3 pb-4 px-10 sm:px-12" : "pt-4 pb-6 px-8"
+            isBusinessClearanceDoc
+              ? "pt-3 pb-4 px-10 sm:px-12"
+              : isLetterPage
+                ? "pt-3 pb-4 px-7"
+                : "pt-4 pb-6 px-8"
           }`}
           style={{
             backgroundColor: headerStyle.bgColor,
@@ -7813,7 +7824,11 @@ function ClearancePreviewForRequests({
           {/* Document Body */}
           <div
             className={`flex-1 relative flex flex-col ${
-              isBusinessClearanceDoc ? "px-12 sm:px-14 pt-4 pb-6" : "px-20 pt-6 pb-2"
+              isBusinessClearanceDoc
+                ? "px-12 sm:px-14 pt-4 pb-6"
+                : isLetterPage
+                  ? "px-14 pt-4 pb-3"
+                  : "px-20 pt-6 pb-2"
             }`}
             style={{
               backgroundColor: bodyStyle.bgColor || "#ffffff",
@@ -7840,10 +7855,10 @@ function ClearancePreviewForRequests({
             >
               {!isBusinessPermit && (
                 <h2
-                  className={`text-center font-bold mb-10 w-full pb-1 px-4 uppercase leading-normal ${isSamePerson ? "block whitespace-nowrap" : "inline-block"}`}
+                  className={`text-center font-bold ${isLetterPage ? "mb-6" : "mb-10"} w-full pb-1 px-4 uppercase leading-normal ${isSamePerson ? "block whitespace-nowrap" : "inline-block"}`}
                   style={{
                     color: isMedicoLegal ? "#000000" : "#004d40",
-                    fontSize: isSamePerson ? "20px" : "24px",
+                    fontSize: isSamePerson ? "20px" : isLetterPage ? "22px" : "24px",
                   }}
                 >
                   {isNaturalDeath
@@ -7981,36 +7996,72 @@ function ClearancePreviewForRequests({
                   </div>
 
                   <div className="grid grid-cols-2 gap-6 mt-10 sm:mt-12 items-start">
-                    <div className="text-left pt-2">
-                      <p className="font-bold mb-12 text-gray-900">
-                        TRULY YOURS,
-                      </p>
-                      <div className="relative inline-block">
-                        {signatureOnBusinessClearance && (
-                          <div
-                            className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[80%] w-64 h-32 pointer-events-none z-0"
-                            style={{ mixBlendMode: "multiply" }}
-                          >
-                            <img
-                              src={signatureOnBusinessClearance}
-                              className="w-full h-full object-contain"
-                              alt="Sig"
-                            />
-                          </div>
-                        )}
-                        <p className="font-bold text-[22px] uppercase relative z-10 text-black">
-                          {captainName}
+                    <div className="text-left pt-2 cert-captain-signature-block">
+                      <div className="relative flex items-start justify-between gap-4 mb-32">
+                        <p className="font-bold text-[15px] shrink-0 relative top-[3em] text-gray-900">
+                          TRULY YOURS,
                         </p>
-                        <div className="flex flex-col relative z-10">
-                          <p className="text-[16px] font-bold text-gray-900 uppercase tracking-tight">
-                            {detectedRole || "BARANGAY CHAIRMAN"}
-                          </p>
-                          {hasBusinessPermitClearanceChairmanApproval &&
-                            uniqueProcessorCodes && (
-                            <p className="text-[10px] font-bold text-gray-500 mt-0.5">
-                              {uniqueProcessorCodes}
+                      </div>
+                      <div className="relative inline-block">
+                        <div className="flex items-center gap-1 relative z-10">
+                          <div className="relative">
+                            {signatureOnBusinessClearance && (
+                              <>
+                                <div
+                                  className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[64%] w-[30rem] h-64 pointer-events-none flex items-center justify-center z-20"
+                                  style={{ mixBlendMode: "multiply" }}
+                                >
+                                  <img
+                                    src={signatureOnBusinessClearance}
+                                    className="w-full h-full object-contain"
+                                    alt="Chairman signature"
+                                  />
+                                </div>
+                                <div className="absolute left-[70%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
+                                  <span className="font-bold text-gray-500">
+                                    {captainName}
+                                  </span>
+                                  <span>
+                                    {new Date(
+                                      businessPermitFinalCaptainApproval?.created_at ||
+                                        effectiveCaptain?.created_at ||
+                                        Date.now(),
+                                    ).toLocaleDateString("en-US")}
+                                  </span>
+                                  <span>
+                                    {new Date(
+                                      businessPermitFinalCaptainApproval?.created_at ||
+                                        effectiveCaptain?.created_at ||
+                                        Date.now(),
+                                    ).toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            <p
+                              className="uppercase font-bold mb-0 whitespace-nowrap relative z-10 text-black"
+                              style={{ fontSize: "20px" }}
+                            >
+                              {captainName}
                             </p>
-                          )}
+                          </div>
+                        </div>
+                        <div className="relative flex items-center z-10 w-full mb-2 -mt-1.5">
+                          <div className="flex flex-col">
+                            <p className="text-[14px] font-bold shrink-0 leading-tight text-gray-900 uppercase tracking-tight">
+                              {detectedRole || "BARANGAY CHAIRMAN"}
+                            </p>
+                            {hasBusinessPermitClearanceChairmanApproval &&
+                              uniqueProcessorCodes && (
+                                <p className="text-[9px] font-bold text-gray-500 mt-0.5 shrink-0 leading-tight">
+                                  {uniqueProcessorCodes}
+                                </p>
+                              )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -8049,7 +8100,6 @@ function ClearancePreviewForRequests({
                         <span className="text-left pl-2 font-bold">
                           {orData?.control_number ||
                             additionalDetails?.bc_control_number ||
-                            request.reference_number ||
                             ""}
                         </span>
                       </div>
@@ -8102,8 +8152,8 @@ function ClearancePreviewForRequests({
                           </td>
                           <td className="border border-black p-1.5 w-[30%] text-center text-red-700 font-bold">
                             {request.applicationNo ||
-                              request.reference_number ||
-                              "2026 -"}
+                              additionalDetails?.applicationNo ||
+                              ""}
                           </td>
                         </tr>
                         <tr>
@@ -8351,7 +8401,7 @@ function ClearancePreviewForRequests({
                                 <img
                                   src={effectiveSignature}
                                   className="w-full h-full object-contain"
-                                  alt="Captain Sig"
+                                  alt="Chairman signature"
                                 />
                               </div>
                               <div className="absolute left-[70%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
@@ -8451,7 +8501,9 @@ function ClearancePreviewForRequests({
                             REFERENCE / CONTROL NO.
                           </td>
                           <td className="border border-black p-1.5 font-bold">
-                            {request.reference_number || "_____________"}
+                            {orData?.control_number ||
+                              additionalDetails?.bc_control_number ||
+                              "_____________"}
                           </td>
                         </tr>
                       </tbody>
@@ -8948,7 +9000,7 @@ function ClearancePreviewForRequests({
                                     <img
                                       src={effectiveSignature}
                                       className="w-full h-full object-contain"
-                                      alt="Captain Sig"
+                                      alt="Chairman signature"
                                     />
                                   </div>
                                   <div className="absolute left-[70%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
@@ -9024,18 +9076,14 @@ function ClearancePreviewForRequests({
                 </div>
               )}
 
-              {/* Reference + BrgyDesk verification QR */}
+              {/* BrgyDesk verification QR */}
               <div
                 className={`w-full flex items-end justify-between gap-4 mb-2 ${
                   isBusinessClearanceDoc ? "mt-6" : "mt-auto"
                 }`}
               >
                 <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm">
-                    Reference No:{" "}
-                    <strong>{request.reference_number || request.id}</strong>
-                  </p>
-                  <p className="mt-1 italic text-gray-500 text-[10px] leading-snug">
+                  <p className="italic text-gray-500 text-[10px] leading-snug">
                     This is a computer-generated document. The dry seal is replaced with a system-generated QR code—scan it to verify.
                   </p>
                 </div>

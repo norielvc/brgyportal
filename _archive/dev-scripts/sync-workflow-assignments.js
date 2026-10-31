@@ -87,8 +87,8 @@ async function syncWorkflowAssignments() {
       }
     }
     
-    // 2. Update all Step 3 (Captain Approval) assignments to John Doe only
-    console.log('\n2. Updating Step 3 (Captain Approval) assignments to John Doe...');
+    // 2. Update all Step 3 (Chairman Approval) assignments to John Doe only
+    console.log('\n2. Updating Step 3 (Chairman Approval) assignments to John Doe...');
     
     // Update existing step 3 assignments
     const { error: updateStep3Error } = await supabase
@@ -131,8 +131,8 @@ async function syncWorkflowAssignments() {
         },
         {
           id: 3,
-          name: 'Barangay Captain Approval',
-          description: 'Awaiting Barangay Captain approval',
+          name: 'Barangay Chairman Approval',
+          description: 'Awaiting Barangay Chairman approval',
           status: 'captain_approval',
           icon: 'UserCheck',
           autoApprove: false,
@@ -201,11 +201,11 @@ async function syncWorkflowAssignments() {
       .eq('status', 'pending');
     
     console.log(`✅ Noriel Cruz (Staff Review): ${norielAssignments?.length || 0} assignments`);
-    console.log(`✅ John Doe (Captain Approval): ${johnAssignments?.length || 0} assignments`);
+    console.log(`✅ John Doe (Chairman Approval): ${johnAssignments?.length || 0} assignments`);
     
     console.log('\n🎉 Workflow assignments synced with UI configuration!');
     console.log('   - Staff Review: Noriel Cruz only');
-    console.log('   - Captain Approval: John Doe only');
+    console.log('   - Chairman Approval: John Doe only');
     console.log('   - Workflow configurations updated in database');
     
   } catch (error) {

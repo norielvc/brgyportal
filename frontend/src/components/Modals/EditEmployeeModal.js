@@ -266,7 +266,7 @@ export default function EditEmployeeModal({ employee, onClose, onSubmit, isLoadi
                     >
                       <option value="super_admin">Super Admin</option>
                       <option value="admin">Admin</option>
-                      <option value="captain">Brgy. Captain</option>
+                      <option value="captain">Brgy. Chairman</option>
                       <option value="secretary">Brgy. Secretary</option>
                       <option value="staff">Brgy. Staff</option>
                     </select>

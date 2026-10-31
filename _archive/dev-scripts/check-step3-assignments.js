@@ -20,7 +20,7 @@ async function checkStep3Assignments() {
       return;
     }
     
-    console.log(`\nStep 3 (Captain Approval) assignments:`);
+    console.log(`\nStep 3 (Chairman Approval) assignments:`);
     if (step3Assignments && step3Assignments.length > 0) {
       step3Assignments.forEach(assignment => {
         const request = assignment.certificate_requests;

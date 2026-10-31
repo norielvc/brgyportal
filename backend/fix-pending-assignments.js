@@ -58,7 +58,7 @@ async function fixPendingAssignments() {
           keepPendingStepName = 'Inspection Team';
           break;
         case 'captain_approval':
-          keepPendingStepName = 'Barangay Captain Approval';
+          keepPendingStepName = 'Barangay Chairman Approval';
           break;
         case 'Treasury':
           keepPendingStepName = 'OR Preparation';

@@ -50,8 +50,8 @@ async function fixMissingCaptainAssignments() {
           .insert([{
             request_id: request.id,
             request_type: request.certificate_type,
-            step_id: 3, // Step 3: Barangay Captain Approval
-            step_name: 'Barangay Captain Approval',
+            step_id: 3, // Step 3: Barangay Chairman Approval
+            step_name: 'Barangay Chairman Approval',
             assigned_user_id: captainId,
             status: 'pending'
           }])

@@ -3,6 +3,7 @@ import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, Aler
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 import { getStrings } from '../../lib/certLang';
 import LanguageGate from './LanguageGate';
+import { formatResidentPurokForPortal } from '@/lib/addressHelper';
 import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
   certModalOverlayClass,
@@ -42,6 +43,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   const [formData, setFormData] = useState({
     // Owner info
     ownerFullName: '', residentId: null, age: '', sex: '', civilStatus: '',
+    purok: '', subdivision: '',
     ownerAddress: '', dateOfBirth: '', placeOfBirth: '',
     contactNumber: '', email: '',
     // Business info
@@ -64,7 +66,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
       setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
       setErrors({}); setNotification(null); setConsentChecked(false); setConsentExpanded(false); setShowPrivacyModal(false);
       setFormData({
-        ownerFullName: '', residentId: null, age: '', sex: '', civilStatus: '',
+        ownerFullName: '', residentId: null, age: '', sex: '', civilStatus: '', purok: '', subdivision: '',
         ownerAddress: '', dateOfBirth: '', placeOfBirth: '',
         contactNumber: '', email: '',
         businessName: '', natureOfBusiness: '', businessAddress: '',
@@ -102,6 +104,8 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
       sex: resident.gender || resident.sex || '',
       civilStatus: resident.civil_status || '',
       ownerAddress: resident.residential_address || '',
+      purok: resident.purok || '',
+      subdivision: resident.subdivision || '',
       dateOfBirth: resident.date_of_birth || '',
       placeOfBirth: resident.place_of_birth || '',
     }));
@@ -385,18 +389,18 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                         <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: accentColor }}>{t.verifiedOwner}</p>
                       </div>
                       <div className="p-5 bg-white">
-                        <p className="text-lg font-bold text-gray-900 leading-tight">{formData.ownerFullName}</p>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4 pt-4 border-t border-gray-100">
-                          <div>
-                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.12em] mb-0.5">{t.recordNo}</p>
-                            <p className="text-sm font-semibold text-gray-800">#{formData.residentId}</p>
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.12em] mb-0.5">{t.address}</p>
-                            <p className="text-sm font-semibold text-gray-800 truncate">
-                              {formData.ownerAddress || <span className="text-gray-400 italic font-normal">{t.notRecorded}</span>}
-                            </p>
-                          </div>
+                        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                          <p className="text-lg font-bold text-gray-900 leading-tight min-w-0 flex-1">
+                            {formData.ownerFullName}
+                          </p>
+                          <p className="text-sm font-semibold text-gray-700 shrink-0 text-right">
+                            {formatResidentPurokForPortal({
+                              purok: formData.purok,
+                              subdivision: formData.subdivision,
+                            }) || (
+                              <span className="text-gray-400 italic font-normal text-xs">{t.notRecorded}</span>
+                            )}
+                          </p>
                         </div>
                       </div>
                     </div>

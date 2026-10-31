@@ -77,10 +77,12 @@ import InstallAppModal from "@/components/UI/InstallAppModal";
 import usePwa from "@/lib/usePwa";
 import useDisablePinchZoom from "@/lib/useDisablePinchZoom";
 import useScrollLock from "@/lib/useScrollLock";
-import { getPortalStrings, getPortalFormDefinitions, getKapchatPrompts } from "@/lib/portalLang";
+import { getPortalStrings, getPortalFormDefinitions } from "@/lib/portalLang";
 import { publicTenantPath } from "@/lib/tenantHost";
 import { redirectToStaffLogin } from "@/lib/staffLogin";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
+import ResidentSearchModal from "@/components/Modals/ResidentSearchModal";
+import { filterKapchatMessagesForResident } from "@/lib/kapchatThread";
 
 export default function PortalPageContent({ initialTenantId }) {
   const p = getPortalStrings();
@@ -312,19 +314,30 @@ export default function PortalPageContent({ initialTenantId }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
-  const [chatUserInfo, setChatUserInfo] = useState({ name: "", contact: "" });
+  const [chatUserInfo, setChatUserInfo] = useState({
+    name: "",
+    contact: "",
+    residentId: null,
+    address: "",
+  });
   const [chatStarted, setChatStarted] = useState(false);
+  const [kapchatResidentError, setKapchatResidentError] = useState(false);
+  const [isKapchatResidentModalOpen, setIsKapchatResidentModalOpen] = useState(false);
+  const [showKapchatResetConfirm, setShowKapchatResetConfirm] = useState(false);
   const [isChatSyncing, setIsChatSyncing] = useState(false);
   const chatMessagesEndRef = useRef(null);
   const [assistanceFormData, setAssistanceFormData] = useState({
-    firstName: "",
-    lastName: "",
+    fullName: "",
     email: "",
     phone: "",
     message: "",
   });
   const [assistanceSubmitting, setAssistanceSubmitting] = useState(false);
   const [assistanceSuccess, setAssistanceSuccess] = useState(false);
+  const [assistanceResidentId, setAssistanceResidentId] = useState(null);
+  const [assistanceResidentError, setAssistanceResidentError] = useState(false);
+  const [isAssistanceResidentModalOpen, setIsAssistanceResidentModalOpen] =
+    useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [weatherInfo, setWeatherInfo] = useState({
     icon: Sun,
@@ -395,7 +408,9 @@ export default function PortalPageContent({ initialTenantId }) {
     selectedAchievement ||
     selectedNewsItem ||
     selectedProgram ||
-    selectedFacility
+    selectedFacility ||
+    isKapchatResidentModalOpen ||
+    isAssistanceResidentModalOpen
   );
   useScrollLock(isAnyPortalModalOpen);
 
@@ -1026,7 +1041,7 @@ export default function PortalPageContent({ initialTenantId }) {
     });
   };
 
-  // Get the Barangay Captain from officials data
+  // Get the Barangay Chairman from officials data
   const captain = officials.find((o) => o.position_type === "captain");
   const captainDisplayName = captain?.name || p.kapchatCaptainFallback;
   const kapchatInitials = (() => {
@@ -1045,9 +1060,13 @@ export default function PortalPageContent({ initialTenantId }) {
       const savedUser = localStorage.getItem("brgy_kapchat_user");
       if (savedUser) {
         const parsed = JSON.parse(savedUser);
-        if (parsed?.name && parsed?.contact) {
-          setChatUserInfo(parsed);
-          setChatStarted(true);
+        if (parsed?.name && parsed?.contact && parsed?.residentId) {
+          setChatUserInfo({
+            name: parsed.name,
+            contact: parsed.contact,
+            residentId: parsed.residentId,
+            address: parsed.address || "",
+          });
         }
       }
     } catch (e) {
@@ -1063,24 +1082,42 @@ export default function PortalPageContent({ initialTenantId }) {
   }, [chatMessages, showAssistance, assistanceMode]);
 
   // Fetch live chat messages for active contact
-  const fetchLiveKapChatMessages = async (contactNum, isSilent = false) => {
+  const fetchLiveKapChatMessages = async (
+    contactNum,
+    isSilent = false,
+    residentId = chatUserInfo.residentId,
+    residentName = chatUserInfo.name,
+  ) => {
     const contactToQuery = contactNum || chatUserInfo.contact;
-    if (!contactToQuery) return;
+    if (!contactToQuery || !residentId) return;
 
     if (!isSilent) setIsChatSyncing(true);
     try {
-      const res = await kapchatAPI.getMessages({ contact: contactToQuery });
+      const res = await kapchatAPI.getMessages({
+        contact: contactToQuery,
+        resident_id: residentId,
+        resident_name: residentName,
+      });
       if (res?.messages) {
-        const mapped = res.messages.map((m) => ({
-          id: m.id,
-          text: m.message,
-          sender: m.is_admin ? "captain" : "user",
-          sender_name: m.sender_name,
-          time: new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          created_at: m.created_at,
-          status: m.status,
-          is_admin: m.is_admin,
-        }));
+        const thread = filterKapchatMessagesForResident(
+          res.messages,
+          residentId,
+          residentName,
+        );
+        const mapped = thread.map((m) => ({
+            id: m.id,
+            text: m.message,
+            sender: m.is_admin ? "captain" : "user",
+            sender_name: m.sender_name,
+            time: new Date(m.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            created_at: m.created_at,
+            status: m.status,
+            is_admin: m.is_admin,
+            resident_id: m.resident_id,
+          }));
         setChatMessages(mapped);
       }
     } catch (err) {
@@ -1092,66 +1129,127 @@ export default function PortalPageContent({ initialTenantId }) {
 
   // Live polling for KapChat (every 3 seconds when open)
   useEffect(() => {
-    if (!showAssistance || assistanceMode !== "kapchat" || !chatStarted || !chatUserInfo.contact) {
+    if (
+      !showAssistance ||
+      assistanceMode !== "kapchat" ||
+      !chatStarted ||
+      !chatUserInfo.contact ||
+      !chatUserInfo.residentId
+    ) {
       return;
     }
 
-    fetchLiveKapChatMessages(chatUserInfo.contact, false);
+    fetchLiveKapChatMessages(
+      chatUserInfo.contact,
+      false,
+      chatUserInfo.residentId,
+      chatUserInfo.name,
+    );
 
     const interval = setInterval(() => {
-      fetchLiveKapChatMessages(chatUserInfo.contact, true);
+      fetchLiveKapChatMessages(
+        chatUserInfo.contact,
+        true,
+        chatUserInfo.residentId,
+        chatUserInfo.name,
+      );
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [showAssistance, assistanceMode, chatStarted, chatUserInfo.contact]);
+  }, [
+    showAssistance,
+    assistanceMode,
+    chatStarted,
+    chatUserInfo.contact,
+    chatUserInfo.residentId,
+    chatUserInfo.name,
+  ]);
 
-  const kapchatQuickPrompts = getKapchatPrompts();
+  const handleKapchatResidentSelect = (resident) => {
+    if (!resident) return;
+    setChatMessages([]);
+    setChatStarted(false);
+    setChatUserInfo({
+      name: resident.full_name || "",
+      contact: resident.contact_number || "",
+      residentId: resident.id,
+      address: resident.residential_address || "",
+    });
+    setKapchatResidentError(false);
+    setIsKapchatResidentModalOpen(false);
+  };
 
   // KapChat — Start chat session handler
   const handleStartChat = (e) => {
     e.preventDefault();
+    if (!chatUserInfo.residentId) {
+      setKapchatResidentError(true);
+      return;
+    }
     if (chatUserInfo.name.trim() && chatUserInfo.contact.trim()) {
-      const cleanInfo = { name: chatUserInfo.name.trim(), contact: chatUserInfo.contact.trim() };
+      const cleanInfo = {
+        name: chatUserInfo.name.trim(),
+        contact: chatUserInfo.contact.trim(),
+        residentId: chatUserInfo.residentId,
+        address: chatUserInfo.address || "",
+      };
       setChatUserInfo(cleanInfo);
+      setKapchatResidentError(false);
       setChatStarted(true);
       try {
         localStorage.setItem("brgy_kapchat_user", JSON.stringify(cleanInfo));
       } catch (err) {}
-      fetchLiveKapChatMessages(cleanInfo.contact, false);
+      setChatMessages([]);
+      fetchLiveKapChatMessages(
+        cleanInfo.contact,
+        false,
+        cleanInfo.residentId,
+        cleanInfo.name,
+      );
     }
   };
 
   // KapChat — Reset chat session handler
   const handleResetChatSession = () => {
-    if (window.confirm("Switch user or start a fresh session?")) {
-      try {
-        localStorage.removeItem("brgy_kapchat_user");
-      } catch (err) {}
-      setChatUserInfo({ name: "", contact: "" });
-      setChatMessages([]);
-      setChatStarted(false);
-    }
+    setShowKapchatResetConfirm(true);
   };
 
-  // KapChat — Send message (from input or quick prompt)
-  const handleChatSend = async (e, customText = null) => {
+  const confirmKapchatReset = () => {
+    try {
+      localStorage.removeItem("brgy_kapchat_user");
+    } catch (err) {}
+    setChatUserInfo({ name: "", contact: "", residentId: null, address: "" });
+    setKapchatResidentError(false);
+    setChatMessages([]);
+    setChatStarted(false);
+    setShowKapchatResetConfirm(false);
+  };
+
+  // KapChat — Send message
+  const handleChatSend = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    const messageText = (customText || chatInput).trim();
+    const messageText = chatInput.trim();
     if (!messageText) return;
 
-    if (!customText) {
-      setChatInput("");
-    }
+    setChatInput("");
     setChatSending(true);
 
+    if (!chatUserInfo.residentId || !chatUserInfo.contact?.trim()) {
+      setKapchatResidentError(true);
+      return;
+    }
+
+    const optimisticId = "temp-" + Date.now();
     const optimisticMsg = {
-      id: "temp-" + Date.now(),
+      id: optimisticId,
       text: messageText,
       sender: "user",
       sender_name: chatUserInfo.name,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       status: "sending",
       created_at: new Date().toISOString(),
+      resident_id: chatUserInfo.residentId,
+      is_admin: false,
     };
     setChatMessages((prev) => [...prev, optimisticMsg]);
 
@@ -1159,36 +1257,79 @@ export default function PortalPageContent({ initialTenantId }) {
       await kapchatAPI.send({
         name: chatUserInfo.name,
         contact: chatUserInfo.contact,
+        resident_id: chatUserInfo.residentId,
         message: messageText,
         is_admin: false,
       });
       // Re-fetch to sync DB timestamp & state
-      await fetchLiveKapChatMessages(chatUserInfo.contact, true);
+      await fetchLiveKapChatMessages(
+        chatUserInfo.contact,
+        true,
+        chatUserInfo.residentId,
+        chatUserInfo.name,
+      );
     } catch (error) {
       console.error("Error sending KapChat message:", error);
+      setChatMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      const apiMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to send message. Please try again.";
+      if (typeof window !== "undefined") {
+        window.alert(apiMsg);
+      }
     } finally {
       setChatSending(false);
     }
   };
 
+  const splitResidentFullName = (fullName) => {
+    const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return { firstName: "", lastName: "" };
+    if (parts.length === 1) return { firstName: parts[0], lastName: parts[0] };
+    return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+  };
+
+  const handleAssistanceResidentSelect = (resident) => {
+    if (!resident) return;
+    setAssistanceResidentId(resident.id);
+    setAssistanceResidentError(false);
+    setAssistanceFormData((prev) => ({
+      ...prev,
+      fullName: (resident.full_name || "").trim(),
+      phone: resident.contact_number || prev.phone,
+    }));
+    setIsAssistanceResidentModalOpen(false);
+  };
+
   // Brgy Assistance — Submit assistance request
   const handleAssistanceSubmit = async (e) => {
     e.preventDefault();
+    if (!assistanceResidentId) {
+      setAssistanceResidentError(true);
+      return;
+    }
+    setAssistanceResidentError(false);
     setAssistanceSubmitting(true);
 
     try {
+      const { firstName, lastName } = splitResidentFullName(
+        assistanceFormData.fullName,
+      );
       await assistanceAPI.create({
-        firstName: assistanceFormData.firstName,
-        lastName: assistanceFormData.lastName,
+        firstName,
+        lastName,
         email: assistanceFormData.email,
         phone: assistanceFormData.phone,
         message: assistanceFormData.message,
+        resident_id: assistanceResidentId,
       });
 
       setAssistanceSuccess(true);
+      setAssistanceResidentId(null);
+      setAssistanceResidentError(false);
       setAssistanceFormData({
-        firstName: "",
-        lastName: "",
+        fullName: "",
         email: "",
         phone: "",
         message: "",
@@ -1198,7 +1339,7 @@ export default function PortalPageContent({ initialTenantId }) {
         setAssistanceSuccess(false);
         setShowAssistance(false);
         setAssistanceMode(null);
-      }, 2500);
+      }, 4500);
     } catch (error) {
       console.error("Error submitting assistance inquiry:", error);
       alert("Failed to submit inquiry. Please try again.");
@@ -1217,12 +1358,32 @@ export default function PortalPageContent({ initialTenantId }) {
   const closeAssistance = () => {
     setShowAssistance(false);
     setAssistanceMode(null);
+    setShowKapchatResetConfirm(false);
     setChatMessages([]);
     setChatInput("");
     setChatStarted(false);
-    setChatUserInfo({ name: "", contact: "" });
+    setChatUserInfo({ name: "", contact: "", residentId: null, address: "" });
     setAssistanceSuccess(false);
+    setAssistanceResidentId(null);
+    setAssistanceResidentError(false);
+    setAssistanceFormData({
+      fullName: "",
+      email: "",
+      phone: "",
+      message: "",
+    });
   };
+
+  useScrollLock(showKapchatResetConfirm);
+
+  useEffect(() => {
+    if (!showKapchatResetConfirm) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setShowKapchatResetConfirm(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showKapchatResetConfirm]);
 
   const mobileBottomBarClearance = isInstalled
     ? "pb-[calc(4.875rem+env(safe-area-inset-bottom,0px))]"
@@ -3749,6 +3910,27 @@ export default function PortalPageContent({ initialTenantId }) {
           document.body,
       )}
 
+      {(isKapchatResidentModalOpen || isAssistanceResidentModalOpen) && (
+        <ResidentSearchModal
+          isOpen={isKapchatResidentModalOpen || isAssistanceResidentModalOpen}
+          onClose={() => {
+            setIsKapchatResidentModalOpen(false);
+            setIsAssistanceResidentModalOpen(false);
+          }}
+          onSelect={(resident) => {
+            if (isAssistanceResidentModalOpen) {
+              handleAssistanceResidentSelect(resident);
+            } else {
+              handleKapchatResidentSelect(resident);
+            }
+          }}
+          isDemo={tenantId === "demo"}
+          tenantConfig={{ ...tenantConfig, tenant_id: tenantId }}
+          tenantId={tenantId}
+          lang="tl"
+        />
+      )}
+
       {/* Barangay Clearance Modal */}
       <BarangayClearanceModal
         isOpen={showClearanceModal}
@@ -4024,7 +4206,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     const sections = [
                       {
                         key: "captain",
-                        title: "Barangay Captain",
+                        title: "Barangay Chairman",
                         subtitle: "Chief Executive Officer",
                         officials: groupedOfficials.captain,
                         bgColor:
@@ -4224,41 +4406,15 @@ export default function PortalPageContent({ initialTenantId }) {
                               </>
                             ) : section.key === "sk_chairman" ? (
                               <>
-                                {/* Left Aligned Plain SK Goal & Vision */}
-                                <div className="flex-grow space-y-6 order-2 lg:order-1">
-                                  <div className="px-4 py-6">
-                                    <div className="mb-6">
-                                      <h3 className="text-2xl font-black text-gray-900 tracking-widest uppercase mb-3">
-                                        SK Vision
-                                      </h3>
-                                      <p
-                                        className="text-gray-700 text-lg font-medium leading-relaxed italic border-l-4 pl-6 py-2"
-                                        style={{
-                                          borderColor:
-                                            tenantId === "demo"
-                                              ? tenantConfig.accentColor
-                                              : "#f97316",
-                                        }}
-                                      >
-                                        {`"An inspired youth community of ${tenantConfig.shortName} that is actively involved in community building, advocating for education, sports, and social responsibility while maintaining the highest level of integrity."`}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <h3 className="text-2xl font-black text-gray-900 tracking-widest uppercase mb-3">
-                                        SK Goal
-                                      </h3>
-                                      <p
-                                        className="text-gray-700 text-lg font-medium leading-relaxed border-l-4 pl-6 py-2"
-                                        style={{
-                                          borderColor:
-                                            tenantId === "demo"
-                                              ? tenantConfig.primaryColor
-                                              : "#ea580c",
-                                        }}
-                                      >
-                                        {`"To empower the youth through comprehensive development programs in leadership, environment, and wellness, ensuring every young resident has the opportunity to contribute to our barangay's future."`}
-                                      </p>
-                                    </div>
+                                {/* SK logo (vision & goal graphic) */}
+                                <div className="flex-grow order-2 lg:order-1 flex items-center justify-center px-4 py-4 lg:py-6">
+                                  <div className="w-full max-w-[280px] sm:max-w-[340px] lg:max-w-[400px]">
+                                    <img
+                                      src="/sk.png"
+                                      alt={`Sangguniang Kabataan — ${tenantConfig.shortName || "Barangay"}`}
+                                      className="w-full h-auto object-contain drop-shadow-md rounded-lg"
+                                      loading="lazy"
+                                    />
                                   </div>
                                 </div>
 
@@ -4899,8 +5055,8 @@ export default function PortalPageContent({ initialTenantId }) {
                   <Headphones className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-gray-900">Brgy Assistance</p>
-                  <p className="text-xs text-gray-500">Send an inquiry to the office</p>
+                  <p className="text-sm font-bold text-gray-900">{p.brgyAssist}</p>
+                  <p className="text-xs text-gray-500">{p.brgyAssistDesc}</p>
                 </div>
               </button>
 
@@ -4956,9 +5112,72 @@ export default function PortalPageContent({ initialTenantId }) {
         {/* KapChat Panel — official resident messaging */}
         {showAssistance && assistanceMode === "kapchat" && (
           <div
-            className="bg-white rounded-2xl shadow-[0_24px_48px_-12px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/80 w-[calc(100vw-24px)] sm:w-[400px] max-w-[420px] overflow-hidden animate-fade-in flex flex-col transition-all font-[family-name:var(--font-portal,sans-serif)]"
+            className="relative bg-white rounded-2xl shadow-[0_24px_48px_-12px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/80 w-[calc(100vw-24px)] sm:w-[400px] max-w-[420px] overflow-hidden animate-fade-in flex flex-col transition-all font-[family-name:var(--font-portal,sans-serif)]"
             style={{ height: "560px", maxHeight: "88vh" }}
           >
+            {showKapchatResetConfirm &&
+              createPortal(
+                <div
+                  className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 bg-black/55 backdrop-blur-sm animate-fade-in"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="kapchat-reset-title"
+                  onClick={() => setShowKapchatResetConfirm(false)}
+                >
+                  <div
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200/90 text-left"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div
+                      className="h-1 w-full"
+                      style={{
+                        background: `linear-gradient(90deg, ${tenantConfig.primaryColor}, ${tenantConfig.accentColor || tenantConfig.primaryColor})`,
+                      }}
+                    />
+                    <div className="p-6 sm:p-7">
+                      <div
+                        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-md"
+                        style={{
+                          background: `linear-gradient(135deg, ${tenantConfig.primaryColor}18, ${tenantConfig.primaryColor}08)`,
+                        }}
+                      >
+                        <RotateCcw
+                          className="w-7 h-7"
+                          style={{ color: tenantConfig.primaryColor }}
+                          aria-hidden
+                        />
+                      </div>
+                      <h3
+                        id="kapchat-reset-title"
+                        className="text-lg font-bold text-slate-900 tracking-tight mb-2"
+                      >
+                        {p.kapchatResetTitle}
+                      </h3>
+                      <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                        {p.kapchatResetMessage}
+                      </p>
+                      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowKapchatResetConfirm(false)}
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                        >
+                          {p.kapchatResetCancel}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={confirmKapchatReset}
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm hover:shadow-md transition-all"
+                          style={{ backgroundColor: tenantConfig.primaryColor }}
+                        >
+                          {p.kapchatResetConfirm}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>,
+                document.body,
+              )}
             <div
               className="px-4 py-3.5 flex items-center justify-between text-white shrink-0"
               style={{
@@ -5023,20 +5242,70 @@ export default function PortalPageContent({ initialTenantId }) {
                   </div>
 
                   <form onSubmit={handleStartChat} className="space-y-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1">
-                        {p.kapchatFullName} <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={chatUserInfo.name}
-                        onChange={(e) => setChatUserInfo({ ...chatUserInfo, name: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all"
-                        style={{ "--tw-ring-color": tenantConfig.primaryColor }}
-                        placeholder="e.g. Juan Dela Cruz"
-                        required
-                      />
-                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      {p.kapchatCensusHelp}
+                    </p>
+
+                    {!chatUserInfo.residentId ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsKapchatResidentModalOpen(true)}
+                        className="w-full flex items-center gap-3 p-3.5 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl text-left hover:bg-white transition-colors"
+                      >
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-white"
+                          style={{ backgroundColor: tenantConfig.primaryColor }}
+                        >
+                          <Search className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-900">{p.kapchatSearchDirectory}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">{p.kapchatSearchDirectorySub}</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                      </button>
+                    ) : (
+                      <div className="border border-slate-200 rounded-xl overflow-hidden">
+                        <div
+                          className="px-3 py-2 flex items-center justify-between gap-2"
+                          style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <CheckCircle className="w-3.5 h-3.5 shrink-0" style={{ color: tenantConfig.primaryColor }} />
+                            <p className="text-[10px] font-bold uppercase tracking-wide truncate" style={{ color: tenantConfig.primaryColor }}>
+                              {p.kapchatVerifiedResident}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setChatUserInfo({ name: "", contact: "", residentId: null, address: "" });
+                              setKapchatResidentError(false);
+                              setChatMessages([]);
+                              setChatStarted(false);
+                            }}
+                            className="text-[10px] font-semibold shrink-0 hover:underline"
+                            style={{ color: tenantConfig.primaryColor }}
+                          >
+                            {p.kapchatChangeResident}
+                          </button>
+                        </div>
+                        <div className="p-3 bg-white">
+                          <p className="text-sm font-bold text-slate-900 leading-tight">{chatUserInfo.name}</p>
+                          {chatUserInfo.address ? (
+                            <p className="text-[10px] text-slate-600 mt-1 line-clamp-2">{chatUserInfo.address}</p>
+                          ) : null}
+                        </div>
+                      </div>
+                    )}
+
+                    {kapchatResidentError && (
+                      <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg">
+                        <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-red-700 font-medium">{p.kapchatSelectResidentErr}</p>
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1">
                         {p.kapchatMobile} <span className="text-red-500">*</span>
@@ -5045,7 +5314,8 @@ export default function PortalPageContent({ initialTenantId }) {
                         type="tel"
                         value={chatUserInfo.contact}
                         onChange={(e) => setChatUserInfo({ ...chatUserInfo, contact: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-900 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all"
+                        disabled={!chatUserInfo.residentId}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-900 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ "--tw-ring-color": tenantConfig.primaryColor }}
                         placeholder="09XX XXX XXXX"
                         required
@@ -5109,27 +5379,6 @@ export default function PortalPageContent({ initialTenantId }) {
                       </p>
                     </div>
                   </div>
-
-                  {chatMessages.length === 0 && (
-                    <div className="pt-1 pb-1 space-y-2">
-                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-0.5">
-                        {p.kapchatQuickInquiries}
-                      </p>
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {kapchatQuickPrompts.map((prompt, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => handleChatSend(null, prompt.text)}
-                            className="text-left px-3 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center justify-between gap-2 group"
-                          >
-                            <span className="leading-snug">{prompt.label}</span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-600 shrink-0" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Conversation History Stream */}
                   {chatMessages.map((msg) => {
@@ -5228,7 +5477,10 @@ export default function PortalPageContent({ initialTenantId }) {
 
         {/* Brgy Assistance Panel — Contact Form */}
         {showAssistance && assistanceMode === "assistance" && (
-          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-80 overflow-hidden animate-fade-in flex flex-col" style={{ maxHeight: '560px' }}>
+          <div
+            className="bg-white rounded-2xl shadow-[0_24px_48px_-12px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/80 w-[calc(100vw-24px)] sm:w-[400px] max-w-[420px] overflow-hidden animate-fade-in flex flex-col font-[family-name:var(--font-portal,sans-serif)]"
+            style={{ height: "560px", maxHeight: "88vh" }}
+          >
             {/* Form Header */}
             <div
               className="px-4 py-3 border-b border-gray-100 flex items-center justify-between"
@@ -5242,9 +5494,9 @@ export default function PortalPageContent({ initialTenantId }) {
                   <Headphones className="w-4 h-4" style={{ color: tenantConfig.primaryColor }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-gray-900">Brgy Assistance</p>
+                  <p className="text-sm font-bold text-gray-900">{p.brgyAssist}</p>
                   <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: tenantConfig.primaryColor }}>
-                    Send an Inquiry
+                    {p.assistInquiryHeading}
                   </p>
                 </div>
               </div>
@@ -5266,86 +5518,179 @@ export default function PortalPageContent({ initialTenantId }) {
                   >
                     <CheckCircle className="w-6 h-6" style={{ color: tenantConfig.primaryColor }} />
                   </div>
-                  <p className="text-sm font-bold text-gray-900 mb-1">Message Sent</p>
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Your inquiry has been received. We will get back to you soon.
+                  <p className="text-sm font-bold text-gray-900 mb-1">{p.assistSuccessTitle}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed px-1">
+                    {p.assistSuccessBody}
                   </p>
                 </div>
               ) : (
                 <form onSubmit={handleAssistanceSubmit} className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
-                      <input
-                        type="text"
-                        value={assistanceFormData.firstName}
-                        onChange={(e) => setAssistanceFormData({ ...assistanceFormData, firstName: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
-                        style={{ '--tw-ring-color': tenantConfig.primaryColor }}
-                        placeholder="Juan"
-                        required
-                      />
+                  <div
+                    className="flex gap-2.5 rounded-lg border px-3 py-2.5 text-left border-amber-200/80 bg-amber-50/90"
+                  >
+                    <Shield
+                      className="w-4 h-4 shrink-0 mt-0.5 text-amber-700"
+                      aria-hidden
+                    />
+                    <p className="text-[11px] text-amber-950 leading-relaxed font-medium">
+                      {p.assistCensusHelp}
+                    </p>
+                  </div>
+                  {!assistanceResidentId ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsAssistanceResidentModalOpen(true)}
+                      className="w-full flex items-center gap-3 p-3 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl text-left hover:bg-white transition-colors"
+                    >
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-white"
+                        style={{ backgroundColor: tenantConfig.primaryColor }}
+                      >
+                        <Search className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-slate-900">{p.kapchatSearchDirectory}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{p.kapchatSearchDirectorySub}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                    </button>
+                  ) : (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      <div
+                        className="px-3 py-2 flex items-center justify-between gap-2"
+                        style={{ backgroundColor: `${tenantConfig.primaryColor}12` }}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <CheckCircle className="w-3.5 h-3.5 shrink-0" style={{ color: tenantConfig.primaryColor }} />
+                          <p className="text-[10px] font-bold uppercase tracking-wide truncate" style={{ color: tenantConfig.primaryColor }}>
+                            {p.kapchatVerifiedResident}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAssistanceResidentId(null);
+                            setAssistanceResidentError(false);
+                            setAssistanceFormData({
+                              fullName: "",
+                              email: "",
+                              phone: "",
+                              message: "",
+                            });
+                          }}
+                          className="text-[10px] font-semibold shrink-0 hover:underline"
+                          style={{ color: tenantConfig.primaryColor }}
+                        >
+                          {p.kapchatChangeResident}
+                        </button>
+                      </div>
+                      <div className="p-3 bg-white">
+                        <p className="text-sm font-bold text-slate-900 leading-tight">
+                          {assistanceFormData.fullName}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
-                      <input
-                        type="text"
-                        value={assistanceFormData.lastName}
-                        onChange={(e) => setAssistanceFormData({ ...assistanceFormData, lastName: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
-                        style={{ '--tw-ring-color': tenantConfig.primaryColor }}
-                        placeholder="Dela Cruz"
-                        required
-                      />
+                  )}
+
+                  {assistanceResidentError && (
+                    <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-red-700 font-medium">{p.assistSelectResidentErr}</p>
                     </div>
+                  )}
+
+                  <div
+                    className="flex gap-2.5 rounded-lg border px-3 py-2.5 text-left"
+                    style={{
+                      borderColor: `${tenantConfig.primaryColor}30`,
+                      backgroundColor: `${tenantConfig.primaryColor}08`,
+                    }}
+                  >
+                    <Info
+                      className="w-4 h-4 shrink-0 mt-0.5"
+                      style={{ color: tenantConfig.primaryColor }}
+                      aria-hidden
+                    />
+                    <p className="text-[11px] text-gray-700 leading-relaxed font-medium">
+                      {p.assistResponseNotice}
+                    </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">{p.kapchatFullName}</label>
                     <input
-                      type="email"
-                      value={assistanceFormData.email}
-                      onChange={(e) => setAssistanceFormData({ ...assistanceFormData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
-                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
-                      placeholder="juan@example.com"
+                      type="text"
+                      value={assistanceFormData.fullName}
+                      onChange={(e) =>
+                        setAssistanceFormData({
+                          ...assistanceFormData,
+                          fullName: e.target.value,
+                        })
+                      }
+                      disabled={!assistanceResidentId}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-600"
+                      style={{ "--tw-ring-color": tenantConfig.primaryColor }}
+                      placeholder="Juan Dela Cruz"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">{p.email}</label>
+                    <input
+                      type="email"
+                      value={assistanceFormData.email}
+                      onChange={(e) => setAssistanceFormData({ ...assistanceFormData, email: e.target.value })}
+                      disabled={!assistanceResidentId}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-600"
+                      style={{ '--tw-ring-color': tenantConfig.primaryColor }}
+                      placeholder="juan@example.com"
+                      required
+                    />
+                    <p className="mt-1 text-[10px] text-gray-500 flex items-center gap-1">
+                      <Mail className="w-3 h-3 shrink-0" aria-hidden />
+                      {p.assistEmailHint}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">{p.phone}</label>
                     <input
                       type="tel"
                       value={assistanceFormData.phone}
                       onChange={(e) => setAssistanceFormData({ ...assistanceFormData, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all"
+                      disabled={!assistanceResidentId}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-600"
                       style={{ '--tw-ring-color': tenantConfig.primaryColor }}
                       placeholder="09XX XXX XXXX"
                     />
+                    <p className="mt-1 text-[10px] text-gray-500 flex items-center gap-1">
+                      <Phone className="w-3 h-3 shrink-0" aria-hidden />
+                      {p.assistPhoneHint}
+                    </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Message</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">{p.message}</label>
                     <textarea
                       value={assistanceFormData.message}
                       onChange={(e) => setAssistanceFormData({ ...assistanceFormData, message: e.target.value })}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all resize-none"
+                      disabled={!assistanceResidentId}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent transition-all resize-none disabled:bg-gray-50 disabled:text-gray-600"
                       style={{ '--tw-ring-color': tenantConfig.primaryColor }}
-                      placeholder="How can we help you?"
+                      placeholder={p.assistMessagePlaceholder}
                       required
                     />
                   </div>
                   <button
                     type="submit"
-                    disabled={assistanceSubmitting}
+                    disabled={assistanceSubmitting || !assistanceResidentId}
                     className="w-full text-white py-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
                     style={{ backgroundColor: tenantConfig.primaryColor }}
                   >
                     {assistanceSubmitting ? (
-                      <>Sending...</>
+                      <>{p.assistSubmitSending}</>
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        Send Inquiry
+                        {p.assistSubmitButton}
                       </>
                     )}
                   </button>

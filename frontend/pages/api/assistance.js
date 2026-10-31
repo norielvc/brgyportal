@@ -17,7 +17,8 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "POST") {
-      const { firstName, lastName, email, phone, message } = req.body;
+      const { firstName, lastName, email, phone, message, resident_id } =
+        req.body;
 
       if (!firstName || !lastName || !message) {
         return res.status(400).json({
@@ -26,21 +27,56 @@ export default async function handler(req, res) {
         });
       }
 
-      const { data, error } = await supabase
+      const residentId =
+        resident_id != null ? String(resident_id).trim() : "";
+      if (!residentId) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Brgy Assistance is available to registered barangay residents only. Select your record from the census directory.",
+        });
+      }
+
+      const { data: resident, error: residentErr } = await supabase
+        .from("residents")
+        .select("id, full_name, contact_number, tenant_id, is_deceased")
+        .eq("tenant_id", tenantId)
+        .eq("id", residentId)
+        .maybeSingle();
+
+      if (residentErr) throw residentErr;
+      if (!resident || resident.is_deceased) {
+        return res.status(403).json({
+          success: false,
+          message: "Invalid or inactive resident record for Brgy Assistance.",
+        });
+      }
+
+      const insertRow = {
+        tenant_id: tenantId,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: email ? email.trim() : null,
+        phone: phone ? phone.trim() : null,
+        message: message.trim(),
+        status: "pending",
+        resident_id: String(resident.id),
+      };
+
+      let { data, error } = await supabase
         .from("assistance_inquiries")
-        .insert([
-          {
-            tenant_id: tenantId,
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            email: email ? email.trim() : null,
-            phone: phone ? phone.trim() : null,
-            message: message.trim(),
-            status: "pending",
-          },
-        ])
+        .insert([insertRow])
         .select()
         .single();
+
+      if (error && /resident_id/i.test(error.message || "")) {
+        const { resident_id: _rid, ...legacyRow } = insertRow;
+        ({ data, error } = await supabase
+          .from("assistance_inquiries")
+          .insert([legacyRow])
+          .select()
+          .single());
+      }
 
       if (error) throw error;
 

@@ -19,7 +19,7 @@ const defaultWorkflows = {
     },
     {
       id: 3,
-      name: "Captain Approval",
+      name: "Chairman Approval",
       status: "captain_approval",
       requiresApproval: true,
       assignedUsers: [],

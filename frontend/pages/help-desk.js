@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout/Layout";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
 import {
@@ -13,6 +14,7 @@ import {
   Eye,
   Trash2,
   Printer,
+  Download,
   Send,
   Phone,
   Mail,
@@ -28,7 +30,6 @@ import {
   FileText,
   ShieldAlert,
   Clock3,
-  Sparkles,
   ExternalLink,
   Check,
   Building,
@@ -39,8 +40,26 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import Modal, { ConfirmModal } from "@/components/UI/Modal";
+import ESumbongForm from "@/components/Forms/ESumbongForm";
 import { toast } from "react-hot-toast";
 import useScrollLock from "@/lib/useScrollLock";
+import { buildKapchatHelpDeskThreads } from "@/lib/kapchatThread";
+import {
+  BLOTTER_DOC_VARIANT,
+  downloadBlotterDocumentPdf,
+  printBlotterDocument,
+} from "@/lib/blotterDocument";
+import BlotterDocumentPreviewModal from "@/components/HelpDesk/BlotterDocumentPreviewModal";
+import {
+  DEFAULT_CERTIFICATE_OFFICIALS,
+} from "@/lib/certificateLetterhead";
+import { mergeOfficialsConfig } from "@/lib/officialsConfig";
+import { getAuthToken } from "@/lib/auth";
+import {
+  formatHearingScheduleDisplay,
+  isBlotterVerified,
+  orasNgPaghaharapInputValue,
+} from "@/lib/blotterVerify";
 
 const TABS = [
   {
@@ -94,7 +113,11 @@ const STATUS_CONFIGS = {
   ],
 };
 
+const VALID_HELP_DESK_TABS = ["esumbong", "assistance", "kapchat"];
+const API_URL = "/api";
+
 export default function HelpDesk() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("esumbong");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,17 +139,24 @@ export default function HelpDesk() {
   const [isNewEntryModalOpen, setIsNewEntryModalOpen] = useState(false);
   const [newEntryType, setNewEntryType] = useState("esumbong");
   const [deleteConfirmItem, setDeleteConfirmItem] = useState(null);
+  const [rejectConfirmItem, setRejectConfirmItem] = useState(null);
+  const [isVerifyingBlotter, setIsVerifyingBlotter] = useState(false);
+  const [blotterPdfDownloadingKey, setBlotterPdfDownloadingKey] = useState(null);
+  const [blotterPreviewReport, setBlotterPreviewReport] = useState(null);
+  const [blotterPreviewVariant, setBlotterPreviewVariant] = useState(
+    BLOTTER_DOC_VARIANT.BLOTTER,
+  );
+  const [petsaDraft, setPetsaDraft] = useState("");
+  const [petsaTimeDraft, setPetsaTimeDraft] = useState("");
+  const [isSavingPetsa, setIsSavingPetsa] = useState(false);
+  const [certificateOfficials, setCertificateOfficials] = useState(
+    DEFAULT_CERTIFICATE_OFFICIALS,
+  );
 
   // New entry form state
+  const [staffTenantId, setStaffTenantId] = useState("");
+
   const [newEntryData, setNewEntryData] = useState({
-    // E-Sumbong
-    complainant_name: "",
-    respondent_name: "",
-    details: "",
-    incident_date: new Date().toISOString().split("T")[0],
-    incident_time: "10:00",
-    contact_number: "",
-    email: "",
     // Assistance
     firstName: "",
     lastName: "",
@@ -138,6 +168,20 @@ export default function HelpDesk() {
   });
   const [isSubmittingEntry, setIsSubmittingEntry] = useState(false);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) return;
+      const userObj = JSON.parse(storedUser);
+      if (userObj?.tenant_id) {
+        setStaffTenantId(String(userObj.tenant_id).toLowerCase());
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // KapChat Messenger Specific States
   const [kapchatViewMode, setKapchatViewMode] = useState("messenger"); // 'messenger' | 'table'
   const [activeThreadKey, setActiveThreadKey] = useState(null);
@@ -145,17 +189,12 @@ export default function HelpDesk() {
   const [messengerReplyInput, setMessengerReplyInput] = useState("");
   const messengerEndRef = useRef(null);
 
-  // KapChat Canned Responses
-  const CANNED_RESPONSES = [
-    "Good day! We have received your inquiry. Our desk officer will assist you shortly.",
-    "Barangay Hall is open 8:00 AM – 5:00 PM, Monday to Friday. Please bring 1 valid government ID.",
-    "Your requested barangay document is processed and ready for pickup at Window 2.",
-    "Thank you for reporting this concern. We have alerted our Barangay Tanods to inspect the location.",
-  ];
-
   // KapChat reply state (for modal)
   const [replyMessage, setReplyMessage] = useState("");
   const [isSendingReply, setIsSendingReply] = useState(false);
+
+  const [assistanceReplyMessage, setAssistanceReplyMessage] = useState("");
+  const [isSendingAssistanceReply, setIsSendingAssistanceReply] = useState(false);
 
   // Auto-scroll messenger chat to bottom
   useEffect(() => {
@@ -190,6 +229,83 @@ export default function HelpDesk() {
     fetchAllChannelCounts();
   }, []);
 
+  useEffect(() => {
+    const loadCertificateOfficials = async () => {
+      const applySaved = () => {
+        const saved = localStorage.getItem("barangayOfficials");
+        if (!saved) {
+          setCertificateOfficials(DEFAULT_CERTIFICATE_OFFICIALS);
+          return;
+        }
+        try {
+          setCertificateOfficials(
+            mergeOfficialsConfig(DEFAULT_CERTIFICATE_OFFICIALS, JSON.parse(saved)),
+          );
+        } catch {
+          setCertificateOfficials(DEFAULT_CERTIFICATE_OFFICIALS);
+        }
+      };
+
+      try {
+        const token = getAuthToken();
+        const headers = {
+          "Content-Type": "application/json",
+          "x-tenant-id": "ibaoeste",
+        };
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const res = await fetch(`${API_URL}/officials/config`, { headers });
+        const data = await res.json();
+        if (data.success && data.data) {
+          const merged = mergeOfficialsConfig(DEFAULT_CERTIFICATE_OFFICIALS, data.data);
+          setCertificateOfficials(merged);
+          localStorage.setItem("barangayOfficials", JSON.stringify(merged));
+          return;
+        }
+      } catch (err) {
+        console.error("Help desk: failed to load certificate officials", err);
+      }
+      applySaved();
+    };
+
+    loadCertificateOfficials();
+  }, []);
+
+  useEffect(() => {
+    const onNavbarRefresh = () => {
+      fetchCurrentTabData();
+      fetchAllChannelCounts();
+    };
+    window.addEventListener("brgydesk-page-refresh", onNavbarRefresh);
+    return () =>
+      window.removeEventListener("brgydesk-page-refresh", onNavbarRefresh);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const tab =
+      typeof router.query.tab === "string" && VALID_HELP_DESK_TABS.includes(router.query.tab)
+        ? router.query.tab
+        : "esumbong";
+    setActiveTab(tab);
+  }, [router.isReady, router.query.tab]);
+
+  const switchHelpDeskTab = (tabId) => {
+    setActiveTab(tabId);
+    setStatusFilter("all");
+    setSearchTerm("");
+    setMobileChatViewActive(false);
+    const nextQuery = { ...router.query };
+    if (tabId === "esumbong") {
+      delete nextQuery.tab;
+    } else {
+      nextQuery.tab = tabId;
+    }
+    router.replace({ pathname: "/help-desk", query: nextQuery }, undefined, {
+      shallow: true,
+    });
+  };
+
   const fetchAllChannelCounts = async () => {
     try {
       const [esumbongRes, assistanceRes, kapchatRes] = await Promise.allSettled([
@@ -213,12 +329,22 @@ export default function HelpDesk() {
           pending: inquiries.filter((i) => i.status === "pending" || i.status === "in_progress").length,
           resolved: inquiries.filter((i) => i.status === "resolved").length,
         },
-        kapchat: {
-          total: messages.length,
-          unread: messages.filter((m) => m.status === "unread").length,
-          replied: messages.filter((m) => m.status === "replied").length,
-        },
+        kapchat: (() => {
+          const threads = buildKapchatHelpDeskThreads(messages);
+          const unread = threads.reduce(
+            (sum, t) => sum + (t.unreadCount || 0),
+            0,
+          );
+          return {
+            total: messages.length,
+            unread,
+            replied: messages.filter((m) => m.status === "replied").length,
+          };
+        })(),
       });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("help-desk-nav-refresh"));
+      }
     } catch (error) {
       console.error("Error loading channel counts:", error);
     }
@@ -305,22 +431,8 @@ export default function HelpDesk() {
 
     try {
       if (newEntryType === "esumbong") {
-        if (!newEntryData.complainant_name || !newEntryData.respondent_name || !newEntryData.details || !newEntryData.contact_number) {
-          toast.error("Please fill in all required fields");
-          setIsSubmittingEntry(false);
-          return;
-        }
-
-        await blotterAPI.createReport({
-          complainant_name: newEntryData.complainant_name,
-          respondent_name: newEntryData.respondent_name,
-          details: newEntryData.details,
-          incident_date: newEntryData.incident_date,
-          incident_time: newEntryData.incident_time,
-          contact_number: newEntryData.contact_number,
-          email: newEntryData.email,
-        });
-        toast.success("Blotter report recorded successfully!");
+        setIsSubmittingEntry(false);
+        return;
       } else if (newEntryType === "assistance") {
         if (!newEntryData.firstName || !newEntryData.lastName || !newEntryData.message) {
           toast.error("Please provide first name, last name, and assistance details");
@@ -366,52 +478,10 @@ export default function HelpDesk() {
     }
   };
 
-  // Group KapChat messages into conversation threads
+  // Group KapChat messages — one conversation per resident (census record)
   const kapchatThreads = useMemo(() => {
     if (activeTab !== "kapchat") return [];
-    const threadsMap = {};
-
-    items.forEach((msg) => {
-      const key = msg.contact?.trim() || msg.sender_name?.trim() || `anon-${msg.id}`;
-      if (!threadsMap[key]) {
-        threadsMap[key] = {
-          threadKey: key,
-          contact: msg.contact || "",
-          sender_name: msg.sender_name || "Resident",
-          messages: [],
-          lastMessageTime: msg.created_at,
-          unreadCount: 0,
-        };
-      }
-      threadsMap[key].messages.push(msg);
-      if (!msg.is_admin && msg.status === "unread") {
-        threadsMap[key].unreadCount += 1;
-      }
-      if (!msg.is_admin && msg.sender_name) {
-        threadsMap[key].sender_name = msg.sender_name;
-      }
-    });
-
-    const threadList = Object.values(threadsMap).map((thread) => {
-      const sortedMsgs = [...thread.messages].sort(
-        (a, b) => new Date(a.created_at) - new Date(b.created_at)
-      );
-      const lastMsg = sortedMsgs[sortedMsgs.length - 1];
-      const hasUnread = thread.unreadCount > 0;
-      const allReplied = sortedMsgs.some((m) => m.is_admin);
-
-      return {
-        ...thread,
-        messages: sortedMsgs,
-        lastMessage: lastMsg?.message || "",
-        lastMessageTime: lastMsg?.created_at || thread.lastMessageTime,
-        status: hasUnread ? "unread" : allReplied ? "replied" : "read",
-      };
-    });
-
-    return threadList.sort(
-      (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-    );
+    return buildKapchatHelpDeskThreads(items);
   }, [items, activeTab]);
 
   // Filtered KapChat threads for left column
@@ -433,29 +503,42 @@ export default function HelpDesk() {
     });
   }, [kapchatThreads, searchTerm, statusFilter]);
 
+  const kapchatThreadCounts = useMemo(() => {
+    const threads = kapchatThreads;
+    return {
+      all: threads.length,
+      unread: threads.filter((t) => t.status === "unread").length,
+      read: threads.filter((t) => t.status === "read").length,
+      replied: threads.filter((t) => t.status === "replied").length,
+    };
+  }, [kapchatThreads]);
+
   // Active selected thread in messenger
   const activeThread = useMemo(() => {
     if (!kapchatThreads.length) return null;
     if (activeThreadKey) {
-      const found = kapchatThreads.find((t) => t.threadKey === activeThreadKey);
-      if (found) return found;
+      const inFiltered = filteredThreads.find((t) => t.threadKey === activeThreadKey);
+      if (inFiltered) return inFiltered;
+      const inAll = kapchatThreads.find((t) => t.threadKey === activeThreadKey);
+      if (inAll) return inAll;
     }
-    return filteredThreads[0] || kapchatThreads[0];
+    return filteredThreads[0] || kapchatThreads[0] || null;
   }, [kapchatThreads, filteredThreads, activeThreadKey]);
 
   // Messenger Reply Handler
-  const handleSendMessengerReply = async (customText = null) => {
+  const handleSendMessengerReply = async () => {
     if (!activeThread) return;
-    const textToSend = (customText || messengerReplyInput).trim();
+    const textToSend = messengerReplyInput.trim();
     if (!textToSend) return;
 
     setIsSendingReply(true);
-    if (!customText) setMessengerReplyInput("");
+    setMessengerReplyInput("");
 
     try {
       await kapchatAPI.send({
         sender_name: "Barangay Desk Officer",
         contact: activeThread.contact || "",
+        resident_id: activeThread.residentId || undefined,
         message: textToSend,
         is_admin: true,
         status: "replied",
@@ -478,12 +561,8 @@ export default function HelpDesk() {
   // Update whole thread status
   const handleUpdateThreadStatus = async (thread, newStatus) => {
     try {
-      if (thread.contact) {
-        await kapchatAPI.updateThreadStatus(thread.contact, newStatus);
-      } else {
-        for (const m of thread.messages) {
-          await kapchatAPI.updateStatus(m.id, newStatus);
-        }
+      for (const m of thread.messages || []) {
+        if (m.id) await kapchatAPI.updateStatus(m.id, newStatus);
       }
       toast.success(`Conversation marked as ${newStatus}`);
       fetchCurrentTabData();
@@ -499,18 +578,69 @@ export default function HelpDesk() {
       return;
     }
     try {
-      if (thread.contact) {
-        await kapchatAPI.deleteThread(thread.contact);
-      } else {
-        for (const m of thread.messages) {
-          await kapchatAPI.deleteMessage(m.id);
-        }
+      for (const m of thread.messages || []) {
+        if (m.id) await kapchatAPI.deleteMessage(m.id);
       }
       toast.success("Chat thread deleted");
       fetchCurrentTabData();
     } catch (err) {
       console.error("Error deleting thread:", err);
       toast.error("Failed to delete chat thread");
+    }
+  };
+
+  useEffect(() => {
+    if (isDetailsModalOpen && activeTab === "assistance" && selectedItem) {
+      setAssistanceReplyMessage(selectedItem.staff_response || "");
+    }
+  }, [isDetailsModalOpen, selectedItem?.id, activeTab, selectedItem?.staff_response]);
+
+  useEffect(() => {
+    if (activeTab !== "esumbong" || !selectedItem?.petsa_ng_paghaharap) {
+      setPetsaDraft("");
+      setPetsaTimeDraft("");
+      return;
+    }
+    const raw = String(selectedItem.petsa_ng_paghaharap);
+    setPetsaDraft(raw.includes("T") ? raw.slice(0, 10) : raw.slice(0, 10));
+    setPetsaTimeDraft(
+      orasNgPaghaharapInputValue(selectedItem.oras_ng_paghaharap) || "09:00",
+    );
+  }, [
+    activeTab,
+    selectedItem?.id,
+    selectedItem?.petsa_ng_paghaharap,
+    selectedItem?.oras_ng_paghaharap,
+  ]);
+
+  const handleSendAssistanceReply = async (markResolved = false) => {
+    if (!assistanceReplyMessage.trim() || !selectedItem) return;
+    setIsSendingAssistanceReply(true);
+    try {
+      const res = await assistanceAPI.sendResponse(
+        selectedItem.id,
+        assistanceReplyMessage.trim(),
+        markResolved,
+      );
+      if (res?.inquiry) {
+        setSelectedItem(res.inquiry);
+        setItems((prev) =>
+          prev.map((row) => (row.id === res.inquiry.id ? res.inquiry : row)),
+        );
+      }
+      toast.success(res?.message || "Response sent to resident");
+      fetchAllChannelCounts();
+      if (markResolved) {
+        setIsDetailsModalOpen(false);
+        setSelectedItem(null);
+      }
+    } catch (error) {
+      console.error("Error sending assistance reply:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to send response",
+      );
+    } finally {
+      setIsSendingAssistanceReply(false);
     }
   };
 
@@ -525,6 +655,7 @@ export default function HelpDesk() {
       await kapchatAPI.send({
         sender_name: "Barangay Desk Officer",
         contact: selectedItem.contact || "",
+        resident_id: selectedItem.resident_id || undefined,
         message: replyMessage.trim(),
         is_admin: true,
         status: "replied",
@@ -546,103 +677,207 @@ export default function HelpDesk() {
     }
   };
 
-  const handlePrintBlotterSlip = (report) => {
-    const printWindow = window.open("", "_blank", "width=850,height=1100");
-    if (!printWindow) {
-      alert("Please allow pop-ups to print the blotter summary slip.");
-      return;
+  const handlePreviewBlotterSlip = (report, variant = BLOTTER_DOC_VARIANT.BLOTTER) => {
+    setBlotterPreviewVariant(variant);
+    setBlotterPreviewReport(report);
+  };
+
+  const handlePrintBlotterSlip = async (
+    report,
+    variant = BLOTTER_DOC_VARIANT.BLOTTER,
+  ) => {
+    if (!report) return;
+    try {
+      const result = await printBlotterDocument(report, {
+        officials: certificateOfficials,
+        variant,
+      });
+      if (!result.ok) {
+        toast.error("Could not open print dialog.");
+      }
+    } catch (err) {
+      console.error("Blotter print error:", err);
+      toast.error("Failed to print document");
     }
+  };
 
-    const html = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Barangay Blotter Slip - ${report.id.substring(0, 8).toUpperCase()}</title>
-    <style>
-      body { font-family: 'Times New Roman', serif; margin: 30px; color: #111; line-height: 1.5; }
-      .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px; }
-      .header h2 { margin: 0; font-size: 16px; text-transform: uppercase; }
-      .header h3 { margin: 2px 0; font-size: 14px; font-weight: normal; }
-      .header h1 { margin: 8px 0 0 0; font-size: 20px; font-weight: bold; color: #b91c1c; }
-      .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12px; font-weight: bold; }
-      .section-title { font-size: 13px; font-weight: bold; text-transform: uppercase; background: #f3f4f6; padding: 4px 8px; border-left: 4px solid #b91c1c; margin-top: 15px; }
-      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; font-size: 13px; }
-      .info-row { margin-bottom: 6px; }
-      .info-row strong { display: inline-block; width: 140px; color: #374151; }
-      .narrative-box { border: 1px solid #d1d5db; padding: 12px; min-height: 140px; font-size: 13px; white-space: pre-wrap; margin-top: 8px; background: #fafafa; }
-      .signatures { margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; text-align: center; font-size: 12px; }
-      .sig-line { border-top: 1px solid #000; margin-top: 45px; padding-top: 4px; font-weight: bold; text-transform: uppercase; }
-      @media print { body { margin: 0; } }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <h3>Republic of the Philippines &bull; Province of Bulacan &bull; Municipality of Calumpit</h3>
-      <h2>BARANGAY IBA O' ESTE</h2>
-      <h3>OFFICE OF THE PUNONG BARANGAY / LUPONG TAGAPAMAYAPA</h3>
-      <h1>OFFICIAL BLOTTER INCIDENT SLIP</h1>
-    </div>
+  const handlePrintFromBlotterPreview = () => {
+    if (blotterPreviewReport) {
+      void handlePrintBlotterSlip(blotterPreviewReport, blotterPreviewVariant);
+    }
+  };
 
-    <div class="meta">
-      <div>ENTRY NO: <strong>BL-${report.id.substring(0, 8).toUpperCase()}</strong></div>
-      <div>STATUS: <strong style="text-transform: uppercase;">${(report.status || "pending").replace("_", " ")}</strong></div>
-      <div>DATE FILED: <strong>${new Date(report.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</strong></div>
-    </div>
+  const handleDownloadFromBlotterPreview = () => {
+    if (blotterPreviewReport) {
+      void handleDownloadBlotterPdf(
+        blotterPreviewReport,
+        blotterPreviewVariant,
+      );
+    }
+  };
 
-    <div class="section-title">I. Parties Involved</div>
-    <div class="info-grid">
-      <div>
-        <div class="info-row"><strong>Complainant:</strong> ${report.complainant_name || "-"}</div>
-        <div class="info-row"><strong>Contact Number:</strong> ${report.contact_number || "-"}</div>
-        <div class="info-row"><strong>Email Address:</strong> ${report.email || "-"}</div>
+  const handleDownloadBlotterPdf = async (
+    report,
+    variant = BLOTTER_DOC_VARIANT.BLOTTER,
+  ) => {
+    if (!report?.id) return;
+    const downloadKey = `${report.id}:${variant}`;
+    setBlotterPdfDownloadingKey(downloadKey);
+    try {
+      const result = await downloadBlotterDocumentPdf(report, {
+        officials: certificateOfficials,
+        variant,
+      });
+      if (!result.ok) {
+        toast.error("Could not generate PDF. Try Preview or Print instead.");
+        return;
+      }
+      toast.success("PDF downloaded");
+    } catch (err) {
+      console.error("Blotter PDF download error:", err);
+      toast.error("Failed to download PDF");
+    } finally {
+      setBlotterPdfDownloadingKey(null);
+    }
+  };
+
+  const renderEsumbongDocActions = (report, variant, compactLabel) => {
+    const downloadKey = `${report.id}:${variant}`;
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 px-2.5 py-2 bg-white border border-gray-200 rounded-lg">
+        <span className="text-[11px] font-semibold text-gray-800 mr-1 min-w-0">
+          {compactLabel}
+        </span>
+        <button
+          type="button"
+          onClick={() => handlePreviewBlotterSlip(report, variant)}
+          className="p-1 text-gray-600 hover:bg-gray-100 rounded-md"
+          title={`Preview — ${compactLabel}`}
+        >
+          <Eye className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => void handlePrintBlotterSlip(report, variant)}
+          className="p-1 text-gray-600 hover:bg-gray-100 rounded-md"
+          title={`Print — ${compactLabel}`}
+        >
+          <Printer className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleDownloadBlotterPdf(report, variant)}
+          disabled={blotterPdfDownloadingKey === downloadKey}
+          className="p-1 text-gray-600 hover:bg-gray-100 rounded-md disabled:opacity-40"
+          title={`Download PDF — ${compactLabel}`}
+        >
+          <Download className="w-3.5 h-3.5" />
+        </button>
       </div>
-      <div>
-        <div class="info-row"><strong>Respondent:</strong> ${report.respondent_name || "-"}</div>
-        <div class="info-row"><strong>Incident Date:</strong> ${report.incident_date || "-"}</div>
-        <div class="info-row"><strong>Incident Time:</strong> ${report.incident_time || "-"}</div>
-      </div>
-    </div>
+    );
+  };
 
-    <div class="section-title">II. Statement of Facts / Incident Narrative</div>
-    <div class="narrative-box">${report.details || "No narrative details recorded."}</div>
+  const handleRejectEsumbong = async (item) => {
+    if (!item?.id) return;
+    setUpdating(item.id);
+    try {
+      await blotterAPI.updateStatus(item.id, "dismissed");
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, status: "dismissed" } : i)),
+      );
+      if (selectedItem?.id === item.id) {
+        setSelectedItem((prev) => ({ ...prev, status: "dismissed" }));
+      }
+      toast.success("E-Sumbong marked as rejected (dismissed)");
+      fetchAllChannelCounts();
+    } catch (error) {
+      console.error("Reject E-Sumbong error:", error);
+      toast.error("Failed to reject E-Sumbong");
+    } finally {
+      setUpdating(null);
+      setRejectConfirmItem(null);
+    }
+  };
 
-    <div class="signatures">
-      <div>
-        <div class="sig-line">${report.complainant_name || "Complainant Signature"}</div>
-        <div>Affiant / Complainant</div>
-      </div>
-      <div>
-        <div class="sig-line">Barangay Desk Officer</div>
-        <div>Recorded By / Desk Officer on Duty</div>
-      </div>
-    </div>
+  const handleVerifyEsumbong = async () => {
+    if (!selectedItem?.id) return;
+    setIsVerifyingBlotter(true);
+    try {
+      const res = await blotterAPI.verifyReport(selectedItem.id);
+      const report = res.report;
+      setItems((prev) =>
+        prev.map((item) => (item.id === report.id ? report : item)),
+      );
+      setSelectedItem(report);
+      toast.success(
+        res.alreadyVerified
+          ? "E-Sumbong was already verified."
+          : `Verified — ${report.usaping_barangay_number}`,
+      );
+      fetchAllChannelCounts();
+    } catch (error) {
+      console.error("Verify E-Sumbong error:", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to verify E-Sumbong",
+      );
+    } finally {
+      setIsVerifyingBlotter(false);
+    }
+  };
 
-    <script>
-      window.onload = function() { window.print(); }
-    <\/script>
-  </body>
-</html>`;
+  const handleSavePetsaNgPaghaharap = async () => {
+    if (!selectedItem?.id || !petsaDraft) return;
+    const currentDate = selectedItem.petsa_ng_paghaharap
+      ? String(selectedItem.petsa_ng_paghaharap).slice(0, 10)
+      : "";
+    const currentTime =
+      orasNgPaghaharapInputValue(selectedItem.oras_ng_paghaharap) || "09:00";
+    if (petsaDraft === currentDate && petsaTimeDraft === currentTime) return;
 
-    printWindow.document.write(html);
-    printWindow.document.close();
+    setIsSavingPetsa(true);
+    try {
+      const res = await blotterAPI.updatePetsaNgPaghaharap(
+        selectedItem.id,
+        petsaDraft,
+        petsaTimeDraft || null,
+      );
+      const report = res.report;
+      setItems((prev) =>
+        prev.map((item) => (item.id === report.id ? report : item)),
+      );
+      setSelectedItem(report);
+      toast.success("Petsa ng paghaharap saved");
+    } catch (error) {
+      console.error("Update petsa error:", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to update hearing date",
+      );
+    } finally {
+      setIsSavingPetsa(false);
+    }
   };
 
   const resetNewEntryForm = () => {
     setNewEntryData({
-      complainant_name: "",
-      respondent_name: "",
-      details: "",
-      incident_date: new Date().toISOString().split("T")[0],
-      incident_time: "10:00",
-      contact_number: "",
-      email: "",
       firstName: "",
       lastName: "",
       phone: "",
       message: "",
       name: "",
       contact: "",
+      email: "",
     });
+  };
+
+  const handleWalkInEsumbongSaved = () => {
+    setIsNewEntryModalOpen(false);
+    resetNewEntryForm();
+    if (activeTab === "esumbong") {
+      fetchCurrentTabData();
+    } else {
+      setActiveTab("esumbong");
+    }
+    fetchAllChannelCounts();
   };
 
   const formatDate = (date) => {
@@ -717,7 +952,7 @@ export default function HelpDesk() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {/* Card 1: E-Sumbong */}
           <div
-            onClick={() => setActiveTab("esumbong")}
+            onClick={() => switchHelpDeskTab("esumbong")}
             className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
               activeTab === "esumbong" ? "border-red-400 ring-1 ring-red-100" : "border-gray-200/80"
             }`}
@@ -743,7 +978,7 @@ export default function HelpDesk() {
 
           {/* Card 2: Assistance */}
           <div
-            onClick={() => setActiveTab("assistance")}
+            onClick={() => switchHelpDeskTab("assistance")}
             className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
               activeTab === "assistance" ? "border-emerald-400 ring-1 ring-emerald-100" : "border-gray-200/80"
             }`}
@@ -769,7 +1004,7 @@ export default function HelpDesk() {
 
           {/* Card 3: KapChat */}
           <div
-            onClick={() => setActiveTab("kapchat")}
+            onClick={() => switchHelpDeskTab("kapchat")}
             className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
               activeTab === "kapchat" ? "border-blue-400 ring-1 ring-blue-100" : "border-gray-200/80"
             }`}
@@ -801,13 +1036,14 @@ export default function HelpDesk() {
             </div>
             <button
               onClick={() => {
-                setNewEntryType(activeTab);
+                setNewEntryType("esumbong");
                 setIsNewEntryModalOpen(true);
               }}
               className="mt-1.5 w-full py-1.5 px-2 bg-white/15 hover:bg-white/25 text-white rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1"
+              title="Log walk-in E-Sumbong at the help desk"
             >
               <Plus className="w-3 h-3" />
-              <span>Log record</span>
+              <span>Walk-in E-Sumbong</span>
             </button>
           </div>
         </div>
@@ -828,12 +1064,7 @@ export default function HelpDesk() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setStatusFilter("all");
-                    setSearchTerm("");
-                    setMobileChatViewActive(false);
-                  }}
+                  onClick={() => switchHelpDeskTab(tab.id)}
                   className={`flex items-center justify-between py-1.5 px-2 rounded-md transition-all text-left min-w-0 ${
                     active
                       ? tab.activeTabClass
@@ -958,10 +1189,17 @@ export default function HelpDesk() {
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
-              All ({items.length})
+              All (
+              {activeTab === "kapchat"
+                ? kapchatThreadCounts.all
+                : items.length}
+              )
             </button>
             {currentStatusOptions.map((opt) => {
-              const count = items.filter((i) => i.status === opt.value).length;
+              const count =
+                activeTab === "kapchat"
+                  ? kapchatThreadCounts[opt.value] ?? 0
+                  : items.filter((i) => i.status === opt.value).length;
               const isSelected = statusFilter === opt.value;
               return (
                 <button
@@ -992,30 +1230,50 @@ export default function HelpDesk() {
           </div>
         ) : activeTab === "kapchat" && kapchatViewMode === "messenger" ? (
           /* Live KapChat Split Messenger Workspace (Mobile slide between threads & active chat) */
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[420px] max-h-[680px]">
-            {/* Left Column: Conversation Threads (4 cols on lg; hidden on mobile if chat is active) */}
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col lg:flex-row min-h-[480px] h-[min(72vh,780px)] max-h-[780px]">
+            {/* Left Column: conversation list — fixed width on desktop so all threads stay readable */}
             <div
-              className={`lg:col-span-4 border-r border-gray-200 flex flex-col bg-slate-50/50 min-h-0 ${
+              className={`w-full lg:w-[340px] xl:w-[380px] shrink-0 border-r border-gray-200 flex flex-col bg-slate-50/50 min-h-0 min-h-[240px] lg:min-h-0 ${
                 mobileChatViewActive ? "hidden lg:flex" : "flex"
               }`}
             >
               {/* Threads Header */}
-              <div className="p-3 sm:p-3.5 border-b border-gray-200 bg-white space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-blue-600" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-gray-900">
+              <div className="p-2.5 sm:p-3 border-b border-gray-200 bg-white space-y-2 shrink-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MessageCircle className="w-4 h-4 text-blue-600 shrink-0" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 truncate">
                       Conversations
                     </h3>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                    {kapchatThreads.length}
+                  <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
+                    {filteredThreads.length}/{kapchatThreads.length}
                   </span>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search residents..."
+                    className="w-full pl-8 pr-7 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-[11px] text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 focus:bg-white"
+                  />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
 
               {/* Threads List */}
-              <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain divide-y divide-gray-100">
                 {filteredThreads.length === 0 ? (
                   <div className="p-10 text-center text-gray-400 space-y-2">
                     <MessageCircle className="w-8 h-8 mx-auto text-gray-300" />
@@ -1031,30 +1289,30 @@ export default function HelpDesk() {
                           setActiveThreadKey(thread.threadKey);
                           setMobileChatViewActive(true);
                         }}
-                        className={`p-3 sm:p-3.5 cursor-pointer transition-all flex items-start gap-3 relative ${
+                        className={`px-2.5 py-2 sm:px-3 sm:py-2.5 cursor-pointer transition-all flex items-start gap-2.5 relative ${
                           isSelected
                             ? "bg-blue-50/90 border-l-4 border-blue-600 shadow-2xs"
                             : "hover:bg-white bg-transparent active:bg-gray-100"
                         }`}
                       >
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 shadow-xs">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0 shadow-xs">
                           {(thread.sender_name || "R")[0].toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <h5 className="text-xs font-bold text-gray-900 truncate">
+                          <div className="flex items-start justify-between gap-1 mb-0.5">
+                            <h5 className="text-[11px] sm:text-xs font-bold text-gray-900 leading-tight line-clamp-2">
                               {thread.sender_name}
                             </h5>
-                            <span className="text-[10px] text-gray-400 font-medium shrink-0">
+                            <span className="text-[9px] text-gray-400 font-medium shrink-0 pt-0.5">
                               {formatDate(thread.lastMessageTime)}
                             </span>
                           </div>
                           {thread.contact && (
-                            <p className="text-[10px] font-mono text-gray-500 mb-1">
+                            <p className="text-[9px] font-mono text-gray-500 truncate mb-0.5">
                               {thread.contact}
                             </p>
                           )}
-                          <p className="text-xs text-gray-600 truncate font-normal">
+                          <p className="text-[10px] sm:text-[11px] text-gray-600 line-clamp-2 leading-snug font-normal">
                             {thread.lastMessage}
                           </p>
                         </div>
@@ -1073,7 +1331,7 @@ export default function HelpDesk() {
             {/* Right Column: Active Conversation Stream (8 cols on lg; hidden on mobile if threads list is active) */}
             {activeThread ? (
               <div
-                className={`lg:col-span-8 flex flex-col bg-white min-h-0 ${
+                className={`flex-1 min-w-0 flex flex-col bg-white min-h-0 ${
                   !mobileChatViewActive ? "hidden lg:flex" : "flex"
                 }`}
               >
@@ -1180,24 +1438,6 @@ export default function HelpDesk() {
                     );
                   })}
                   <div ref={messengerEndRef} />
-                </div>
-
-                {/* Canned Quick Response Chips */}
-                <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-gray-50 border-t border-gray-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                  <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-500" />
-                    Quick:
-                  </span>
-                  {CANNED_RESPONSES.map((chip, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSendMessengerReply(chip)}
-                      className="px-2 sm:px-2.5 py-1 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 text-gray-700 hover:text-blue-800 text-[10px] sm:text-[11px] font-semibold rounded-lg shrink-0 transition-colors shadow-2xs"
-                    >
-                      {chip.substring(0, 24)}...
-                    </button>
-                  ))}
                 </div>
 
                 {/* Input Bar */}
@@ -1324,6 +1564,11 @@ export default function HelpDesk() {
                                   {(item.complainant_name || "C")[0].toUpperCase()}
                                 </div>
                                 <span className="truncate max-w-[160px]">{item.complainant_name}</span>
+                                {item.intake_source === "walk_in" && (
+                                  <span className="shrink-0 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide bg-amber-100 text-amber-900 border border-amber-200">
+                                    Walk-in
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="py-1.5 px-2.5 font-bold text-slate-700 text-[11px]">
@@ -1433,13 +1678,28 @@ export default function HelpDesk() {
                         <td className="py-1.5 px-2.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
                             {activeTab === "esumbong" && (
-                              <button
-                                onClick={() => handlePrintBlotterSlip(item)}
-                                className="p-1.5 text-gray-500 hover:text-slate-900 hover:bg-gray-100 rounded-lg transition-colors"
-                                title="Print Blotter Slip"
-                              >
-                                <Printer className="w-4 h-4" />
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadBlotterPdf(item)}
+                                  disabled={
+                                    blotterPdfDownloadingKey ===
+                                    `${item.id}:${BLOTTER_DOC_VARIANT.BLOTTER}`
+                                  }
+                                  className="p-1.5 text-gray-500 hover:text-slate-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40"
+                                  title="Download PDF"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handlePrintBlotterSlip(item)}
+                                  className="p-1.5 text-gray-500 hover:text-slate-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                  title="Print Blotter Slip"
+                                >
+                                  <Printer className="w-4 h-4" />
+                                </button>
+                              </>
                             )}
 
                             <button
@@ -1555,13 +1815,28 @@ export default function HelpDesk() {
 
                       <div className="flex items-center gap-1">
                         {activeTab === "esumbong" && (
-                          <button
-                            onClick={() => handlePrintBlotterSlip(item)}
-                            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"
-                            title="Print Slip"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadBlotterPdf(item)}
+                              disabled={
+                                blotterPdfDownloadingKey ===
+                                `${item.id}:${BLOTTER_DOC_VARIANT.BLOTTER}`
+                              }
+                              className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-40"
+                              title="Download PDF"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handlePrintBlotterSlip(item)}
+                              className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"
+                              title="Print Slip"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                          </>
                         )}
                         <button
                           onClick={() => {
@@ -1591,105 +1866,312 @@ export default function HelpDesk() {
             }}
             title={
               activeTab === "esumbong"
-                ? `E-Sumbong Blotter Record (#${selectedItem.id.substring(0, 8).toUpperCase()})`
+                ? `E-Sumbong #${selectedItem.id.substring(0, 8).toUpperCase()}`
                 : activeTab === "assistance"
-                ? `Barangay Assistance Request (#${selectedItem.id.substring(0, 8).toUpperCase()})`
-                : `KapChat Community Thread (#${selectedItem.id.substring(0, 8).toUpperCase()})`
+                ? `Assistance #${selectedItem.id.substring(0, 8).toUpperCase()}`
+                : `KapChat #${selectedItem.id.substring(0, 8).toUpperCase()}`
             }
-            size="lg"
-          >
-            <div className="space-y-5">
-              {/* Header Status Bar inside modal */}
-              <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Current Status:</span>
-                  <select
-                    value={selectedItem.status}
-                    onChange={(e) => handleStatusChange(selectedItem.id, e.target.value)}
-                    className="px-3 py-1 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-800 focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm"
-                  >
-                    {currentStatusOptions.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {activeTab === "esumbong" && (
-                    <button
-                      onClick={() => handlePrintBlotterSlip(selectedItem)}
-                      className="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+            size={activeTab === "esumbong" ? "xl" : "md"}
+            dense={activeTab !== "esumbong"}
+            headerActions={
+              activeTab === "esumbong" ? (
+                <>
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600 shrink-0">
+                    <span className="font-medium hidden sm:inline">Status</span>
+                    <select
+                      value={selectedItem.status}
+                      onChange={(e) =>
+                        handleStatusChange(selectedItem.id, e.target.value)
+                      }
+                      className="pl-2 pr-7 py-1 text-xs sm:text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] cursor-pointer max-w-[7.5rem] sm:max-w-none"
                     >
-                      <Printer className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Print Blotter Slip</span>
+                      {currentStatusOptions.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="flex items-center gap-0.5 border-l border-gray-200 pl-2 ml-0.5">
+                    <button
+                      type="button"
+                      onClick={() => handlePreviewBlotterSlip(selectedItem)}
+                      className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Preview"
+                    >
+                      <Eye className="w-4 h-4" />
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadBlotterPdf(selectedItem)}
+                      disabled={
+                        blotterPdfDownloadingKey ===
+                        `${selectedItem.id}:${BLOTTER_DOC_VARIANT.BLOTTER}`
+                      }
+                      className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40"
+                      title="Download PDF"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePrintBlotterSlip(selectedItem)}
+                      className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Print"
+                    >
+                      <Printer className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmItem(selectedItem)}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              ) : null
+            }
+            footer={
+              activeTab === "esumbong" &&
+              !isBlotterVerified(selectedItem) &&
+              selectedItem.status !== "dismissed" ? (
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+                  <p className="text-xs text-gray-500 leading-snug">
+                    Verify to assign usaping barangay number and hearing date.
+                  </p>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRejectConfirmItem(selectedItem)}
+                      disabled={
+                        isVerifyingBlotter || updating === selectedItem.id
+                      }
+                      className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 inline-flex items-center gap-2"
+                    >
+                      <XCircle className="w-4 h-4 text-red-600" />
+                      Reject
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleVerifyEsumbong}
+                      disabled={
+                        isVerifyingBlotter || updating === selectedItem.id
+                      }
+                      className="px-4 py-2 text-sm font-semibold text-white bg-[#03254c] hover:bg-[#021c38] rounded-lg disabled:opacity-50 inline-flex items-center gap-2"
+                    >
+                      {isVerifyingBlotter ? (
+                        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <BadgeCheck className="w-4 h-4" />
+                      )}
+                      Verify E-Sumbong
+                    </button>
+                  </div>
+                </div>
+              ) : null
+            }
+          >
+            <div className={activeTab === "esumbong" ? "space-y-5" : "space-y-3"}>
+              {activeTab !== "esumbong" ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">
+                      Status
+                    </span>
+                    <select
+                      value={selectedItem.status}
+                      onChange={(e) =>
+                        handleStatusChange(selectedItem.id, e.target.value)
+                      }
+                      className="px-2 py-0.5 bg-white border border-gray-300 rounded-md text-[11px] font-bold text-gray-800 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                      {currentStatusOptions.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <button
                     onClick={() => setDeleteConfirmItem(selectedItem)}
-                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                    className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-[10px] font-bold transition-all flex items-center gap-1"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3" />
                     <span>Delete</span>
                   </button>
                 </div>
-              </div>
+              ) : null}
 
-              {/* Specific Content for E-Sumbong */}
               {activeTab === "esumbong" && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Complainant Card */}
-                    <div className="bg-red-50/50 border border-red-100 rounded-xl p-4 space-y-2">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-red-600 flex items-center gap-1">
-                        <User className="w-3 h-3" /> Complainant Information
-                      </p>
-                      <p className="text-base font-bold text-gray-900">{selectedItem.complainant_name}</p>
-                      {selectedItem.contact_number && (
-                        <p className="text-xs text-gray-600 flex items-center gap-1.5 font-mono">
-                          <Phone className="w-3 h-3 text-red-500" />
-                          <a href={`tel:${selectedItem.contact_number}`} className="text-blue-600 hover:underline">
-                            {selectedItem.contact_number}
-                          </a>
+                <div className="space-y-5">
+                  {isBlotterVerified(selectedItem) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-gray-50/80 border border-gray-200">
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">
+                          Usaping barangay no.
                         </p>
-                      )}
-                      {selectedItem.email && (
-                        <p className="text-xs text-gray-600 flex items-center gap-1.5">
-                          <Mail className="w-3 h-3 text-red-500" />
-                          <a href={`mailto:${selectedItem.email}`} className="text-blue-600 hover:underline">
-                            {selectedItem.email}
-                          </a>
+                        <p className="text-base font-semibold text-gray-900 font-mono tracking-tight">
+                          {selectedItem.usaping_barangay_number}
+                        </p>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="petsa-ng-paghaharap"
+                          className="text-xs font-medium text-gray-500 mb-1 block"
+                        >
+                          Petsa ng paghaharap
+                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            id="petsa-ng-paghaharap"
+                            type="date"
+                            value={petsaDraft}
+                            onChange={(e) => setPetsaDraft(e.target.value)}
+                            disabled={isSavingPetsa}
+                            className="px-2 py-1.5 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50"
+                          />
+                          <input
+                            id="oras-ng-paghaharap"
+                            type="time"
+                            value={petsaTimeDraft}
+                            onChange={(e) => setPetsaTimeDraft(e.target.value)}
+                            disabled={isSavingPetsa}
+                            className="px-2 py-1.5 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50"
+                            aria-label="Oras ng paghaharap"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleSavePetsaNgPaghaharap()}
+                            disabled={
+                              isSavingPetsa ||
+                              !petsaDraft ||
+                              (petsaDraft ===
+                                String(selectedItem.petsa_ng_paghaharap || "").slice(
+                                  0,
+                                  10,
+                                ) &&
+                                petsaTimeDraft ===
+                                  (orasNgPaghaharapInputValue(
+                                    selectedItem.oras_ng_paghaharap,
+                                  ) || "09:00"))
+                            }
+                            className="px-2.5 py-1.5 text-xs font-semibold text-[#03254c] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+                          >
+                            {isSavingPetsa ? "Saving…" : "Save"}
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1.5 leading-snug">
+                          {formatHearingScheduleDisplay({
+                            petsa_ng_paghaharap:
+                              petsaDraft || selectedItem.petsa_ng_paghaharap,
+                            oras_ng_paghaharap:
+                              petsaTimeDraft || selectedItem.oras_ng_paghaharap,
+                          })}
+                        </p>
+                      </div>
+                      {selectedItem.verified_at && (
+                        <p className="sm:col-span-2 text-xs text-gray-500">
+                          Verified {formatDate(selectedItem.verified_at)}
                         </p>
                       )}
                     </div>
+                  )}
 
-                    {/* Respondent Card */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-600 flex items-center gap-1">
-                        <ShieldAlert className="w-3 h-3" /> Respondent / Accused
+                  {isBlotterVerified(selectedItem) && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Documents
                       </p>
-                      <p className="text-base font-bold text-gray-900">{selectedItem.respondent_name}</p>
-                      <div className="text-xs text-gray-500 space-y-1">
-                        <p className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-slate-400" />
-                          <span>Incident Date: {selectedItem.incident_date || "Not specified"}</span>
-                        </p>
-                        <p className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          <span>Incident Time: {selectedItem.incident_time || "Not specified"}</span>
-                        </p>
+                      <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                        {renderEsumbongDocActions(
+                          selectedItem,
+                          BLOTTER_DOC_VARIANT.BLOTTER,
+                          "Barangay Blotter Record",
+                        )}
+                        {renderEsumbongDocActions(
+                          selectedItem,
+                          BLOTTER_DOC_VARIANT.SUMMONS,
+                          "Paanyaya sa Paghaharap",
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedItem.status === "dismissed" &&
+                    !isBlotterVerified(selectedItem) && (
+                      <p className="text-sm text-gray-600 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200">
+                        This report was{" "}
+                        <span className="font-semibold text-red-700">
+                          rejected
+                        </span>
+                        . No usaping barangay number was issued.
+                      </p>
+                    )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-px rounded-lg border border-gray-200 overflow-hidden bg-gray-200 text-[11px] leading-snug">
+                    <div className="bg-white px-3 py-2 space-y-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                        Nagsusumbong
+                      </p>
+                      <p className="text-xs font-semibold text-gray-900 flex flex-wrap items-center gap-2">
+                        {selectedItem.complainant_name}
+                        {selectedItem.intake_source === "walk_in" && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-amber-100 text-amber-900 border border-amber-200">
+                            Walk-in intake
+                          </span>
+                        )}
+                      </p>
+                      <div className="space-y-0.5 text-[11px] text-gray-600">
+                        {selectedItem.contact_number && (
+                          <a
+                            href={`tel:${selectedItem.contact_number}`}
+                            className="flex items-center gap-1.5 hover:text-[#03254c] font-mono"
+                          >
+                            <Phone className="w-3 h-3 shrink-0 text-gray-400" />
+                            {selectedItem.contact_number}
+                          </a>
+                        )}
+                        {selectedItem.email && (
+                          <a
+                            href={`mailto:${selectedItem.email}`}
+                            className="flex items-center gap-1.5 break-all hover:text-[#03254c]"
+                          >
+                            <Mail className="w-3 h-3 shrink-0 text-gray-400" />
+                            {selectedItem.email}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-white px-3 py-2 space-y-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                        Inirereklamo
+                      </p>
+                      <p className="text-xs font-semibold text-gray-900">
+                        {selectedItem.respondent_name}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-gray-600">
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar className="w-3 h-3 shrink-0 text-gray-400" />
+                          {selectedItem.incident_date || "—"}
+                        </span>
+                        {selectedItem.incident_time ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3 shrink-0 text-gray-400" />
+                            {selectedItem.incident_time}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </div>
 
-                  {/* Incident Narrative */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-gray-500 flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5 text-gray-400" /> Incident Narrative & Statement of Facts
+                  <div className="flex flex-col min-h-0 flex-1">
+                    <p className="text-xs font-medium text-gray-500 mb-2">
+                      Detalye ng sumbong
                     </p>
-                    <div className="p-3.5 bg-gray-50 rounded-lg text-sm text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
-                      {selectedItem.details || "No narrative details provided."}
+                    <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 sm:p-5 text-sm sm:text-[15px] text-gray-800 leading-relaxed min-h-[14rem] max-h-[min(28rem,50vh)] overflow-y-auto whitespace-pre-wrap [overflow-wrap:anywhere]">
+                      {selectedItem.details || "No narrative provided."}
                     </div>
                   </div>
                 </div>
@@ -1697,39 +2179,107 @@ export default function HelpDesk() {
 
               {/* Specific Content for Assistance */}
               {activeTab === "assistance" && (
-                <div className="space-y-4">
-                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
-                      <User className="w-3.5 h-3.5" /> Citizen Information
+                <div className="space-y-2.5">
+                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-3 space-y-1.5">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+                      <User className="w-3 h-3" /> Resident
                     </p>
-                    <p className="text-base font-bold text-gray-900">
+                    <p className="text-sm font-bold text-gray-900 leading-snug">
                       {selectedItem.first_name} {selectedItem.last_name}
                     </p>
-                    <div className="flex flex-wrap gap-4 text-xs font-medium text-gray-600 pt-1">
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-medium text-gray-600">
                       {selectedItem.phone && (
                         <a href={`tel:${selectedItem.phone}`} className="text-blue-600 hover:underline flex items-center gap-1">
-                          <Phone className="w-3 h-3" />
+                          <Phone className="w-3 h-3 shrink-0" />
                           <span>{selectedItem.phone}</span>
                         </a>
                       )}
                       {selectedItem.email && (
-                        <a href={`mailto:${selectedItem.email}`} className="text-blue-600 hover:underline flex items-center gap-1">
-                          <Mail className="w-3 h-3" />
+                        <a href={`mailto:${selectedItem.email}`} className="text-blue-600 hover:underline flex items-center gap-1 break-all">
+                          <Mail className="w-3 h-3 shrink-0" />
                           <span>{selectedItem.email}</span>
                         </a>
                       )}
-                      <span className="text-gray-400">
-                        Date: {formatDate(selectedItem.created_at)}
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 shrink-0" />
+                        {formatDate(selectedItem.created_at)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-gray-500 flex items-center gap-1">
-                      <HeadphonesIcon className="w-3.5 h-3.5 text-gray-400" /> Inquiry / Assistance Message
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-1.5">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-gray-500 flex items-center gap-1">
+                      <HeadphonesIcon className="w-3 h-3 text-gray-400" /> Resident message
                     </p>
-                    <div className="p-3.5 bg-gray-50 rounded-lg text-sm text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
+                    <div className="p-2.5 bg-gray-50 rounded-md text-xs text-gray-800 leading-relaxed max-h-44 overflow-y-auto whitespace-pre-wrap">
                       {selectedItem.message}
+                    </div>
+                  </div>
+
+                  {selectedItem.staff_response && (
+                    <div className="bg-emerald-50/80 border border-emerald-200 rounded-lg p-3 space-y-1.5">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Last barangay reply
+                        {selectedItem.responded_at && (
+                          <span className="font-normal normal-case text-emerald-700/80 ml-1">
+                            · {formatDate(selectedItem.responded_at)}
+                          </span>
+                        )}
+                      </p>
+                      <div className="p-2.5 bg-white/80 rounded-md text-xs text-gray-800 leading-relaxed max-h-32 overflow-y-auto whitespace-pre-wrap">
+                        {selectedItem.staff_response}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-slate-900 text-white rounded-lg p-3 space-y-2">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-300 flex items-center gap-1">
+                      <Send className="w-3 h-3 text-emerald-400" /> Reply to resident
+                    </p>
+                    <p className="text-[10px] text-slate-400 leading-snug">
+                      Sent by email when an address is on file; use the phone number for SMS if needed.
+                    </p>
+                    <textarea
+                      rows={3}
+                      value={assistanceReplyMessage}
+                      onChange={(e) => setAssistanceReplyMessage(e.target.value)}
+                      placeholder="Type your official reply (requirements, schedule, next steps)…"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+                    />
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      {selectedItem.phone && (
+                        <a
+                          href={`sms:${selectedItem.phone}?body=${encodeURIComponent(assistanceReplyMessage.trim() || "Message from Barangay Help Desk: ")}`}
+                          className="px-2.5 py-1.5 bg-slate-800 border border-slate-600 text-slate-200 rounded-md text-[10px] font-bold hover:bg-slate-700"
+                        >
+                          Open SMS
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleSendAssistanceReply(false)}
+                        disabled={
+                          isSendingAssistanceReply || !assistanceReplyMessage.trim()
+                        }
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-[10px] font-bold transition-all flex items-center gap-1 disabled:opacity-40"
+                      >
+                        {isSendingAssistanceReply ? (
+                          <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <Send className="w-3 h-3" />
+                        )}
+                        Send reply
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSendAssistanceReply(true)}
+                        disabled={
+                          isSendingAssistanceReply || !assistanceReplyMessage.trim()
+                        }
+                        className="px-3 py-1.5 bg-white text-slate-900 rounded-md text-[10px] font-bold transition-all disabled:opacity-40"
+                      >
+                        Send & resolve
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1737,59 +2287,59 @@ export default function HelpDesk() {
 
               {/* Specific Content for KapChat */}
               {activeTab === "kapchat" && (
-                <div className="space-y-4">
-                  <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-blue-700 flex items-center gap-1">
-                      <MessageCircle className="w-3.5 h-3.5" /> Sender Information
+                <div className="space-y-2.5">
+                  <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 space-y-1.5">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-blue-700 flex items-center gap-1">
+                      <MessageCircle className="w-3 h-3" /> Sender
                     </p>
-                    <p className="text-base font-bold text-gray-900">
+                    <p className="text-sm font-bold text-gray-900 leading-snug">
                       {selectedItem.sender_name || "Anonymous Resident"}
                     </p>
-                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-600">
                       {selectedItem.contact && (
                         <a href={`tel:${selectedItem.contact}`} className="text-blue-600 hover:underline flex items-center gap-1 font-mono">
-                          <Phone className="w-3 h-3" />
+                          <Phone className="w-3 h-3 shrink-0" />
                           <span>{selectedItem.contact}</span>
                         </a>
                       )}
-                      <span className="text-gray-400">Sent on: {formatDate(selectedItem.created_at)}</span>
+                      <span className="text-gray-400">{formatDate(selectedItem.created_at)}</span>
                     </div>
                   </div>
 
                   {/* Message Thread */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">
-                      Citizen Message
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-1.5">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-gray-500">
+                      Message
                     </p>
-                    <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-xl text-sm text-gray-800 leading-relaxed font-medium">
+                    <div className="p-2.5 bg-blue-50/70 border border-blue-100 rounded-md text-xs text-gray-800 leading-relaxed max-h-36 overflow-y-auto">
                       {selectedItem.message}
                     </div>
                   </div>
 
                   {/* Official Reply Box */}
-                  <div className="bg-slate-900 text-white rounded-xl p-4 space-y-2.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                      <Send className="w-3.5 h-3.5 text-blue-400" /> Send Official Response
+                  <div className="bg-slate-900 text-white rounded-lg p-3 space-y-2">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-300 flex items-center gap-1">
+                      <Send className="w-3 h-3 text-blue-400" /> Reply
                     </p>
                     <textarea
-                      rows={3}
+                      rows={2}
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
-                      placeholder="Type official response note here (e.g., Action taken, resolution notice, or follow-up instructions)..."
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-medium"
+                      placeholder="Official response…"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-[11px] text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
                     />
                     <div className="flex justify-end">
                       <button
                         onClick={handleSendKapChatReply}
                         disabled={isSendingReply || !replyMessage.trim()}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-40 shadow"
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-[10px] font-bold transition-all flex items-center gap-1 disabled:opacity-40"
                       >
                         {isSendingReply ? (
                           <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                         ) : (
                           <Send className="w-3.5 h-3.5" />
                         )}
-                        <span>Send Reply & Mark Replied</span>
+                        <span>Send & mark replied</span>
                       </button>
                     </div>
                   </div>
@@ -1807,129 +2357,67 @@ export default function HelpDesk() {
               setIsNewEntryModalOpen(false);
               resetNewEntryForm();
             }}
-            title="Log New Help Desk Record"
-            size="lg"
+            title={
+              newEntryType === "esumbong"
+                ? "Walk-in E-Sumbong intake"
+                : "Log New Help Desk Record"
+            }
+            size={newEntryType === "esumbong" ? "lg" : "lg"}
+            dense={newEntryType === "esumbong"}
+            bodyScroll={newEntryType !== "esumbong"}
           >
-            <form onSubmit={handleCreateNewEntry} className="space-y-4">
+            <div
+              className={
+                newEntryType === "esumbong"
+                  ? "flex flex-col flex-1 min-h-0 gap-2.5"
+                  : "space-y-4"
+              }
+            >
               {/* Channel Selector */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Select Channel
+              <div className="shrink-0">
+                {newEntryType === "esumbong" && (
+                  <p className="text-[11px] text-gray-500 leading-snug mb-2">
+                    Log a complaint for a walk-in resident. Link census optionally to prefill contact info.
+                  </p>
+                )}
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                  Channel
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {TABS.map((tab) => (
                     <button
                       key={tab.id}
                       type="button"
                       onClick={() => setNewEntryType(tab.id)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                      className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
                         newEntryType === tab.id
-                          ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                          ? "bg-[#03254c] text-white border-[#03254c]"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
                       }`}
                     >
-                      <tab.icon className="w-3.5 h-3.5" />
+                      <tab.icon className="w-3.5 h-3.5 shrink-0" />
                       <span>{tab.shortLabel}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Form Fields for E-Sumbong Blotter */}
-              {newEntryType === "esumbong" && (
-                <div className="space-y-3 pt-2 border-t border-gray-100">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">
-                        Complainant Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newEntryData.complainant_name}
-                        onChange={(e) => setNewEntryData({ ...newEntryData, complainant_name: e.target.value })}
-                        placeholder="Full Name of Complainant"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none uppercase"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">
-                        Respondent / Accused <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newEntryData.respondent_name}
-                        onChange={(e) => setNewEntryData({ ...newEntryData, respondent_name: e.target.value })}
-                        placeholder="Name of Respondent"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none uppercase"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">
-                        Contact Phone <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={newEntryData.contact_number}
-                        onChange={(e) => setNewEntryData({ ...newEntryData, contact_number: e.target.value })}
-                        placeholder="09XX XXX XXXX"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Email (Optional)</label>
-                      <input
-                        type="email"
-                        value={newEntryData.email}
-                        onChange={(e) => setNewEntryData({ ...newEntryData, email: e.target.value })}
-                        placeholder="email@example.com"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Incident Date</label>
-                      <input
-                        type="date"
-                        value={newEntryData.incident_date}
-                        onChange={(e) => setNewEntryData({ ...newEntryData, incident_date: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Incident Time</label>
-                      <input
-                        type="time"
-                        value={newEntryData.incident_time}
-                        onChange={(e) => setNewEntryData({ ...newEntryData, incident_time: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      Incident Details & Narrative <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={newEntryData.details}
-                      onChange={(e) => setNewEntryData({ ...newEntryData, details: e.target.value })}
-                      placeholder="State complete facts, location of incident, and damages/injuries..."
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none resize-none"
-                    />
-                  </div>
+              {newEntryType === "esumbong" ? (
+                <div className="flex flex-col flex-1 min-h-0 pt-1 border-t border-gray-100">
+                  <ESumbongForm
+                    walkInMode
+                    variant="modal"
+                    isActive={isNewEntryModalOpen}
+                    tenantId={staffTenantId || "ibaoeste"}
+                    onSuccess={handleWalkInEsumbongSaved}
+                    onCancel={() => {
+                      setIsNewEntryModalOpen(false);
+                      resetNewEntryForm();
+                    }}
+                  />
                 </div>
-              )}
-
+              ) : (
+            <form onSubmit={handleCreateNewEntry} className="space-y-4 pt-2 border-t border-gray-100">
               {/* Form Fields for Assistance */}
               {newEntryType === "assistance" && (
                 <div className="space-y-3 pt-2 border-t border-gray-100">
@@ -2066,6 +2554,8 @@ export default function HelpDesk() {
                 </button>
               </div>
             </form>
+              )}
+            </div>
           </Modal>
         )}
 
@@ -2081,6 +2571,37 @@ export default function HelpDesk() {
             type="danger"
           />
         )}
+
+        {rejectConfirmItem && (
+          <ConfirmModal
+            isOpen={!!rejectConfirmItem}
+            onClose={() => setRejectConfirmItem(null)}
+            onConfirm={() => handleRejectEsumbong(rejectConfirmItem)}
+            title="Reject E-Sumbong"
+            message="Mark this report as rejected (dismissed)? No usaping barangay number will be generated. The complainant may be notified by email if an address is on file."
+            confirmText="Reject Sumbong"
+            type="danger"
+          />
+        )}
+
+        <BlotterDocumentPreviewModal
+          report={blotterPreviewReport}
+          officials={certificateOfficials}
+          variant={blotterPreviewVariant}
+          onVariantChange={setBlotterPreviewVariant}
+          isOpen={!!blotterPreviewReport}
+          onClose={() => {
+            setBlotterPreviewReport(null);
+            setBlotterPreviewVariant(BLOTTER_DOC_VARIANT.BLOTTER);
+          }}
+          onPrint={handlePrintFromBlotterPreview}
+          onDownload={handleDownloadFromBlotterPreview}
+          downloading={
+            blotterPreviewReport?.id != null &&
+            blotterPdfDownloadingKey ===
+              `${blotterPreviewReport.id}:${blotterPreviewVariant}`
+          }
+        />
       </div>
     </Layout>
   );

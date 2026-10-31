@@ -171,7 +171,7 @@ BEGIN
                     '379898b5-06e9-43a7-b51d-213aec975825'
                 ] INTO next_assigned_users;
             WHEN 3 THEN 
-                next_step_name := 'Barangay Captain Approval';
+                next_step_name := 'Barangay Chairman Approval';
                 SELECT ARRAY[
                     'aaa242af-6ef2-4c72-8729-f8e8d68ec1fa',
                     '2a6054aa-d73d-4f52-876f-efa95f77add9'

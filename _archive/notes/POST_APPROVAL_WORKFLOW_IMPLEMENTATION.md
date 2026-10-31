@@ -2,7 +2,7 @@
 
 ## ✅ **Complete Certificate Lifecycle Management System**
 
-When a **Barangay Captain approves** a certificate request, the following automated workflow is now triggered:
+When a **Barangay Chairman approves** a certificate request, the following automated workflow is now triggered:
 
 ### 🚀 **Automated Post-Approval Process**
 
@@ -196,7 +196,7 @@ The system now provides a **complete end-to-end certificate management experienc
 
 1. **Application Submission** → Online forms with PDF preview
 2. **Staff Review** → Assigned to Noriel Cruz for verification
-3. **Captain Approval** → Assigned to John Doe for final approval
+3. **Chairman Approval** → Assigned to John Doe for final approval
 4. **🆕 Automatic Processing** → Certificate generation and QR codes
 5. **🆕 Secure Pickup** → QR code verification and tracking
 6. **🆕 Complete Audit Trail** → Full history of certificate lifecycle

@@ -117,7 +117,7 @@ LIMIT 1;
 
 ---
 
-### Test 4: Captain Approval Notifications
+### Test 4: Chairman Approval Notifications
 
 #### ☐ Captain Approves Request
 1. Login as captain

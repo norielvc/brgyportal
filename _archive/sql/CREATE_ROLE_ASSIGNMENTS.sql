@@ -11,14 +11,14 @@
 
 CREATE TABLE IF NOT EXISTS official_role_assignments (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    role_key VARCHAR(50) NOT NULL UNIQUE, -- e.g., 'Brgy. Captain', 'Brgy. Secretary'
+    role_key VARCHAR(50) NOT NULL UNIQUE, -- e.g., 'Brgy. Chairman', 'Brgy. Secretary'
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Insert default role slots (you will need to map these to real user IDs in the database)
 INSERT INTO official_role_assignments (role_key) VALUES 
-('Brgy. Captain'), 
+('Brgy. Chairman'), 
 ('Brgy. Secretary'), 
 ('Brgy. Treasurer'),
 ('Brgy. Clerk'),

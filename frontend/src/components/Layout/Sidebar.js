@@ -30,9 +30,10 @@ import {
   AlertCircle,
   CreditCard,
   PanelLeftClose,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { logout, getUserData } from "@/lib/auth";
+import { logout, getUserData, getAuthToken } from "@/lib/auth";
 
 const mainMenuItems = [
   {
@@ -64,6 +65,14 @@ const mainMenuItems = [
     href: "/help-desk",
     icon: AlertCircle,
     description: "E-Sumbong, Assistance, KapChat",
+    navBadge: "helpDesk",
+  },
+  {
+    name: "KapChat",
+    href: "/help-desk?tab=kapchat",
+    icon: MessageCircle,
+    description: "Resident live chat",
+    navBadge: "kapchat",
   },
   {
     name: "Pickup Management",
@@ -253,6 +262,72 @@ export default function Sidebar({
   const [lockedFeatureName, setLockedFeatureName] = useState("");
   const [requiredPlanType, setRequiredPlanType] = useState("Pro"); // "Pro" or "Standard"
   
+  const [helpDeskNavCounts, setHelpDeskNavCounts] = useState({
+    esumbong: 0,
+    assistance: 0,
+    kapchat: 0,
+    total: 0,
+  });
+
+  useEffect(() => {
+    const fetchHelpDeskNavCounts = async () => {
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        const res = await fetch("/api/help-desk/nav-counts", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.status === 401 || res.status === 403) {
+          setHelpDeskNavCounts({
+            esumbong: 0,
+            assistance: 0,
+            kapchat: 0,
+            total: 0,
+          });
+          return;
+        }
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            setHelpDeskNavCounts(json.data);
+          }
+        }
+      } catch (e) {
+        /* silent */
+      }
+    };
+    fetchHelpDeskNavCounts();
+    const interval = setInterval(fetchHelpDeskNavCounts, 30000);
+    const onRefresh = () => fetchHelpDeskNavCounts();
+    window.addEventListener("help-desk-nav-refresh", onRefresh);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("help-desk-nav-refresh", onRefresh);
+    };
+  }, []);
+
+  const getNavBadgeCount = (item) => {
+    if (!item.navBadge) return 0;
+    if (item.navBadge === "kapchat") return helpDeskNavCounts.kapchat;
+    if (item.navBadge === "helpDesk") return helpDeskNavCounts.total;
+    return 0;
+  };
+
+  const isNavItemActive = (item) => {
+    if (!item.href) return false;
+    const [path, query = ""] = item.href.split("?");
+    if (router.pathname !== path) return false;
+    if (!query) {
+      return router.pathname === "/help-desk"
+        ? router.query.tab !== "kapchat"
+        : true;
+    }
+    const params = new URLSearchParams(query);
+    const tab = params.get("tab");
+    if (tab) return router.query.tab === tab;
+    return true;
+  };
+
   useEffect(() => {
     const fetchSubscription = async () => {
       try {
@@ -436,7 +511,27 @@ export default function Sidebar({
         {filteredMenuItems.map((item) => {
           const isExpanded = getExpandedState(item);
           const hasChildren = item.children && item.children.length > 0;
-          const isDirectActive = router.pathname === item.href;
+          const isDirectActive = isNavItemActive(item);
+          const badgeCount = getNavBadgeCount(item);
+
+          const renderNavBadge = () => {
+            if (badgeCount <= 0) return null;
+            const label = badgeCount > 99 ? "99+" : String(badgeCount);
+            return (
+              <span className="ml-auto flex items-center gap-1 shrink-0">
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"
+                  aria-hidden
+                />
+                <span
+                  className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black leading-none flex items-center justify-center shadow-sm ring-2 ring-[#03254c]"
+                  aria-label={`${label} new`}
+                >
+                  {label}
+                </span>
+              </span>
+            );
+          };
 
           return (
             <div key={item.name} className="space-y-0.5">
@@ -478,15 +573,24 @@ export default function Sidebar({
                   )}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <item.icon
-                    className={cn(
-                      "w-3.5 h-3.5 mr-2 transition-all shrink-0",
-                      isDirectActive
-                        ? "text-white"
-                        : "text-white/30 group-hover:text-blue-300",
+                  <span className="relative mr-2 shrink-0">
+                    <item.icon
+                      className={cn(
+                        "w-3.5 h-3.5 transition-all",
+                        isDirectActive
+                          ? "text-white"
+                          : "text-white/30 group-hover:text-blue-300",
+                      )}
+                    />
+                    {badgeCount > 0 && (
+                      <span
+                        className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#03254c]"
+                        aria-hidden
+                      />
                     )}
-                  />
+                  </span>
                   <span className="flex-1 min-w-0 truncate">{item.name}</span>
+                  {renderNavBadge()}
                 </Link>
               )}
 

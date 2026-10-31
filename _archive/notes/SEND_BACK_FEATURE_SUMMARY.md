@@ -7,11 +7,11 @@ Added "Send Back" button to all workflow stages (except staff_review which has n
 
 ### 1. Physical Inspection Stage
 - **Button**: "Send Back to Staff" (orange)
-- **Position**: Between "Reject Application" and "Submit & Forward to Captain"
+- **Position**: Between "Reject Application" and "Submit & Forward to Chairman"
 - **Action**: Returns request to staff_review stage
 - **Use Case**: Inspector needs staff to make corrections before proceeding
 
-### 2. Captain Approval Stage
+### 2. Chairman Approval Stage
 - **Button**: "Send Back" (amber)
 - **Position**: Before the main action button
 - **Action**: Returns request to previous stage (physical_inspection or staff_review)

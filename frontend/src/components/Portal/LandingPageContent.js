@@ -152,8 +152,8 @@ const WORKFLOW_STEPS = [
   },
   {
     num: "03",
-    title: "Secretary & Captain Approve",
-    desc: "Barangay Secretary and Captain review and sign off digitally.",
+    title: "Secretary & Chairman Approve",
+    desc: "Barangay Secretary and Chairman review and sign off digitally.",
   },
   {
     num: "04",

@@ -48,7 +48,7 @@ Added a **"Save & Sync Assignments"** button to the Workflows page that:
 
 #### Workflow Assignment System:
 - **Staff Assignments**: Noriel Cruz handles Step 2 (Staff Review)
-- **Captain Assignments**: John Doe handles Step 3 (Captain Approval)
+- **Captain Assignments**: John Doe handles Step 3 (Chairman Approval)
 - **Automatic Progression**: Requests move through workflow steps automatically
 - **Status Tracking**: Proper status updates as requests progress
 

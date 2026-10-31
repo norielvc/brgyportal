@@ -19,7 +19,7 @@ async function verifyUIWorkflowSync() {
     
     console.log('UI Workflow Configuration:');
     console.log(`✅ Staff Review (Step 2): Noriel Cruz (${norielCruz?.id})`);
-    console.log(`✅ Captain Approval (Step 3): John Doe (${johnDoe?.id})`);
+    console.log(`✅ Chairman Approval (Step 3): John Doe (${johnDoe?.id})`);
     
     // Check current assignments
     console.log('\n=== CURRENT WORKFLOW ASSIGNMENTS ===');
@@ -44,7 +44,7 @@ async function verifyUIWorkflowSync() {
       console.log(`   ... and ${norielAssignments.length - 5} more`);
     }
     
-    // John's assignments (Captain Approval - Step 3)
+    // John's assignments (Chairman Approval - Step 3)
     const { data: johnAssignments } = await supabase
       .from('workflow_assignments')
       .select(`
@@ -55,7 +55,7 @@ async function verifyUIWorkflowSync() {
       .eq('step_id', 3)
       .eq('status', 'pending');
     
-    console.log(`\n2. John Doe (Captain Approval) - ${johnAssignments?.length || 0} assignments:`);
+    console.log(`\n2. John Doe (Chairman Approval) - ${johnAssignments?.length || 0} assignments:`);
     johnAssignments?.forEach(assignment => {
       const request = assignment.certificate_requests;
       console.log(`   - ${request.reference_number}: ${request.full_name} (${request.status})`);
@@ -99,7 +99,7 @@ async function verifyUIWorkflowSync() {
     
     console.log('\n🎉 WORKFLOW SYSTEM SYNCHRONIZED WITH UI!');
     console.log('   - Noriel Cruz will see Staff Review assignments');
-    console.log('   - John Doe will see Captain Approval assignments');
+    console.log('   - John Doe will see Chairman Approval assignments');
     console.log('   - Workflow progression follows UI configuration');
     
   } catch (error) {

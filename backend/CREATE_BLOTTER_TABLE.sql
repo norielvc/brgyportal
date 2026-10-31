@@ -10,7 +10,12 @@ CREATE TABLE IF NOT EXISTS blotter_reports (
   incident_time TIME,
   contact_number TEXT NOT NULL,
   email TEXT,
+  intake_source TEXT NOT NULL DEFAULT 'portal' CHECK (intake_source IN ('portal', 'walk_in')),
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'under_review', 'resolved', 'dismissed')),
+  verified_at TIMESTAMPTZ,
+  usaping_barangay_number TEXT,
+  petsa_ng_paghaharap DATE,
+  oras_ng_paghaharap TIME,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

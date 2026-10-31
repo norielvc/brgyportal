@@ -1318,7 +1318,7 @@ export default function CertificateLayoutPage() {
 
             <div
               className="bg-white shadow-2xl relative flex flex-col mx-auto"
-              style={{ width: "210mm", minHeight: "297mm" }}
+              style={{ width: "215.9mm", minHeight: "279.4mm" }}
             >
               {/* Header Section */}
               <div
@@ -1437,7 +1437,7 @@ export default function CertificateLayoutPage() {
                         <img
                           src={officials.logos.captainImage}
                           className="w-full h-full object-cover"
-                          alt="Captain"
+                          alt="Barangay Chairman"
                         />
                       )}
                     </div>
@@ -1668,13 +1668,6 @@ export default function CertificateLayoutPage() {
                             </div>
                           </div>
 
-                          {/* Reference Number Section */}
-                          <div className="w-full text-right mt-auto mb-2 text-xs">
-                            <p>
-                              Ref No: <strong>BRGY-2026-00001</strong>
-                            </p>
-                          </div>
-
                           <div className="clear-both pt-1 border-t border-gray-400 w-full text-xs text-left">
                             <p>
                               <strong>Address:</strong>{" "}
@@ -1785,13 +1778,6 @@ export default function CertificateLayoutPage() {
                               </p>
                               <p className="text-xs font-bold">
                                 BARANGAY CHAIRMAN
-                              </p>
-                            </div>
-
-                            {/* Reference Number Section */}
-                            <div className="w-full text-right mt-auto mb-2 text-xs">
-                              <p>
-                                Ref No: <strong>BRGY-2026-00001</strong>
                               </p>
                             </div>
 

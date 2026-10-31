@@ -1,4 +1,5 @@
 import { supabase, isSupabaseServerConfigured } from "../../lib/supabase";
+import { filterKapchatMessagesForResident } from "../../src/lib/kapchatThread";
 
 export default async function handler(req, res) {
   const tenantId = req.headers["x-tenant-id"];
@@ -17,7 +18,8 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "POST") {
-      const { name, sender_name, contact, message, is_admin, status } = req.body;
+      const { name, sender_name, contact, message, is_admin, status, resident_id } =
+        req.body;
 
       if (!message || !message.trim()) {
         return res.status(400).json({
@@ -27,24 +29,81 @@ export default async function handler(req, res) {
       }
 
       const isAdminMsg = Boolean(is_admin);
-      const sName = sender_name ? sender_name.trim() : (name ? name.trim() : (isAdminMsg ? "Barangay Captain" : "Resident"));
-      const sContact = contact ? contact.trim() : null;
+      let sName = sender_name
+        ? sender_name.trim()
+        : name
+          ? name.trim()
+          : isAdminMsg
+            ? "Barangay Chairman"
+            : "Resident";
+      let sContact = contact ? contact.trim() : null;
       const initialStatus = status || (isAdminMsg ? "replied" : "unread");
+      let verifiedResidentId = null;
 
-      const { data, error } = await supabase
+      if (!isAdminMsg) {
+        const residentId = resident_id != null ? String(resident_id).trim() : "";
+        if (!residentId) {
+          return res.status(403).json({
+            success: false,
+            message:
+              "KapChat is available to registered barangay residents only. Select your record from the census directory.",
+          });
+        }
+
+        const { data: resident, error: residentErr } = await supabase
+          .from("residents")
+          .select("id, full_name, contact_number, tenant_id, is_deceased")
+          .eq("tenant_id", tenantId)
+          .eq("id", residentId)
+          .maybeSingle();
+
+        if (residentErr) throw residentErr;
+        if (!resident || resident.is_deceased) {
+          return res.status(403).json({
+            success: false,
+            message: "Invalid or inactive resident record for KapChat.",
+          });
+        }
+
+        sName = (resident.full_name || sName).trim();
+        verifiedResidentId = String(resident.id);
+        if (!sContact && resident.contact_number) {
+          sContact = String(resident.contact_number).trim();
+        }
+      }
+
+      const insertRow = {
+        tenant_id: tenantId,
+        sender_name: sName,
+        contact: sContact,
+        message: message.trim(),
+        is_admin: isAdminMsg,
+        status: initialStatus,
+      };
+      const adminResidentId =
+        isAdminMsg && resident_id != null
+          ? String(resident_id).trim()
+          : "";
+      if (verifiedResidentId) {
+        insertRow.resident_id = verifiedResidentId;
+      } else if (adminResidentId) {
+        insertRow.resident_id = adminResidentId;
+      }
+
+      let { data, error } = await supabase
         .from("kapchat_messages")
-        .insert([
-          {
-            tenant_id: tenantId,
-            sender_name: sName,
-            contact: sContact,
-            message: message.trim(),
-            is_admin: isAdminMsg,
-            status: initialStatus,
-          },
-        ])
+        .insert([insertRow])
         .select()
         .single();
+
+      if (error && verifiedResidentId && /resident_id/i.test(error.message || "")) {
+        const { resident_id: _drop, ...withoutResident } = insertRow;
+        ({ data, error } = await supabase
+          .from("kapchat_messages")
+          .insert([withoutResident])
+          .select()
+          .single());
+      }
 
       if (error) throw error;
 
@@ -66,7 +125,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "GET") {
-      const { status, contact, order } = req.query;
+      const { status, contact, order, resident_id } = req.query;
 
       const isAsc = order === "asc" || Boolean(contact);
       let query = supabase
@@ -83,7 +142,19 @@ export default async function handler(req, res) {
         query = query.eq("status", status);
       }
 
-      const { data, error, count } = await query;
+      let { data, error, count } = await query;
+
+      const residentFilter =
+        resident_id != null ? String(resident_id).trim() : "";
+      if (data && residentFilter && contact) {
+        const residentName = (req.query.resident_name || "").toString();
+        data = filterKapchatMessagesForResident(
+          data,
+          residentFilter,
+          residentName,
+        );
+        count = data.length;
+      }
 
       if (error) throw error;
 

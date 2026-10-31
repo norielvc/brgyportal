@@ -201,7 +201,7 @@ All emails include:
 5. Check captain email: Should receive "Request Waiting for You"
 ```
 
-#### Step 4: Captain Approval
+#### Step 4: Chairman Approval
 ```
 1. Login as captain
 2. Go to "My Assignments"

@@ -25,15 +25,15 @@
     },
     {
       "id": 3,
-      "name": "Barangay Captain Approval",
-      "description": "Awaiting Barangay Captain approval",
+      "name": "Barangay Chairman Approval",
+      "description": "Awaiting Barangay Chairman approval",
       "status": "captain_approval",
       "icon": "UserCheck",
       "autoApprove": false,
       "assignedUsers": [],
       "requiresApproval": true,
       "sendEmail": true,
-      "officialRole": "Brgy. Captain"
+      "officialRole": "Brgy. Chairman"
     },
     {
       "id": 999,
@@ -73,15 +73,15 @@
     },
     {
       "id": 3,
-      "name": "Barangay Captain Approval",
-      "description": "Awaiting Barangay Captain approval",
+      "name": "Barangay Chairman Approval",
+      "description": "Awaiting Barangay Chairman approval",
       "status": "captain_approval",
       "icon": "UserCheck",
       "autoApprove": false,
       "assignedUsers": [],
       "requiresApproval": true,
       "sendEmail": true,
-      "officialRole": "Brgy. Captain"
+      "officialRole": "Brgy. Chairman"
     },
     {
       "id": 999,
@@ -121,15 +121,15 @@
     },
     {
       "id": 3,
-      "name": "Barangay Captain Approval",
-      "description": "Awaiting Barangay Captain approval",
+      "name": "Barangay Chairman Approval",
+      "description": "Awaiting Barangay Chairman approval",
       "status": "captain_approval",
       "icon": "UserCheck",
       "autoApprove": false,
       "assignedUsers": [],
       "requiresApproval": true,
       "sendEmail": true,
-      "officialRole": "Brgy. Captain"
+      "officialRole": "Brgy. Chairman"
     },
     {
       "id": 999,
@@ -169,15 +169,15 @@
     },
     {
       "id": 3,
-      "name": "Barangay Captain Approval",
-      "description": "Awaiting Barangay Captain approval",
+      "name": "Barangay Chairman Approval",
+      "description": "Awaiting Barangay Chairman approval",
       "status": "captain_approval",
       "icon": "UserCheck",
       "autoApprove": false,
       "assignedUsers": [],
       "requiresApproval": true,
       "sendEmail": true,
-      "officialRole": "Brgy. Captain"
+      "officialRole": "Brgy. Chairman"
     },
     {
       "id": 999,

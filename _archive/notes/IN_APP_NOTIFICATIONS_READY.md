@@ -101,7 +101,7 @@ npm run dev
    - Check notification bell
    - See "Request Waiting for You" notification
 
-#### Test 4: Captain Approval
+#### Test 4: Chairman Approval
 1. Login as captain
 2. Approve the request
 3. **Expected:**

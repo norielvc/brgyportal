@@ -19,8 +19,8 @@ The Barangay Certificate Management System is now **100% complete** with full en
 - **Actions**: Approve, Reject, or Return for corrections
 - **Status**: `pending` → `processing` (when approved)
 
-### **3. Captain Approval** 👨‍💼
-- **Assigned to**: John Doe (Captain Approval - Step 3)
+### **3. Chairman Approval** 👨‍💼
+- **Assigned to**: John Doe (Chairman Approval - Step 3)
 - **Actions**: Final approval or rejection
 - **Status**: `processing` → `approved` (when approved)
 
@@ -142,7 +142,7 @@ The Barangay Certificate Management System is now **100% complete** with full en
    Review and approve application
    ```
 
-3. **Captain Approval**:
+3. **Chairman Approval**:
    ```
    Login as captain
    Go to "My Assignments"
