@@ -30,12 +30,14 @@ import useMobileModalViewport, {
   certModalBackdropClass,
   certModalBackdropHeavyClass,
   certModalPanelClass,
+  certModalBodyClass,
   certModalScrollClass,
   certModalScrollPurposeClass,
   certModalFooterClass,
   certModalFooterBackClass,
   certModalFooterPrimaryClass,
 } from "@/lib/useMobileModalViewport";
+import LanguageGate from "./LanguageGate";
 import CertSearchableDropdown from "./CertSearchableDropdown";
 import CertificateVerifyQR from "@/components/UI/CertificateVerifyQR";
 
@@ -328,8 +330,8 @@ export default function BarangayClearanceModal({
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const accentColor = tenantConfig.primaryColor || '#059669';
-  const lang = "tl";
-  const t = getStrings(lang);
+  const [lang, setLang] = useState(null);
+  const t = getStrings(lang || "tl");
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -394,6 +396,17 @@ export default function BarangayClearanceModal({
   };
 
   useEffect(() => {
+    if (!isOpen) {
+      setLang(null);
+      setCurrentStep(1);
+      setShowConfirmationPopup(false);
+      setShowSuccessModal(false);
+      setErrors({});
+      setNotification(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     const now = new Date();
     const options = { year: "numeric", month: "long", day: "numeric" };
     setCurrentDate(now.toLocaleDateString("en-US", options));
@@ -435,8 +448,10 @@ export default function BarangayClearanceModal({
       }
     };
 
+    if (!isOpen) return;
+    if (!showConfirmationPopup && !showSuccessModal) return;
     loadOfficials();
-  }, [isOpen, tenantConfig?.tenant_id]);
+  }, [isOpen, showConfirmationPopup, showSuccessModal, tenantConfig?.tenant_id]);
 
   useEffect(() => {
     if (notification) {
@@ -529,6 +544,23 @@ export default function BarangayClearanceModal({
     }
   };
 
+  const handleWizardBack = (e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
+      setErrors({});
+      return;
+    }
+    if (lang) {
+      setLang(null);
+      setCurrentStep(1);
+      setErrors({});
+      return;
+    }
+    onClose();
+  };
+
   const resetForm = () => {
     setFormData({
       fullName: "",
@@ -608,8 +640,20 @@ export default function BarangayClearanceModal({
                   </button>
                 </div>
 
+                {!lang && (
+                  <div className={`${certModalScrollClass} flex flex-col justify-center`}>
+                    <LanguageGate
+                      accentColor={accentColor}
+                      lang={lang}
+                      onSelect={setLang}
+                    />
+                  </div>
+                )}
+
+                {lang && (
+                <div className={certModalBodyClass}>
                 {notification && (
-                  <div className="px-8 pt-4">
+                  <div className="px-4 sm:px-8 pt-3 sm:pt-4 shrink-0">
                     <Notification
                       type={notification.type}
                       title={notification.title}
@@ -655,7 +699,7 @@ export default function BarangayClearanceModal({
                 <div className={currentStep === 3 ? certModalScrollPurposeClass : certModalScrollClass}>
                   <div>
                     {currentStep === 1 && (
-                      <div className="space-y-4 animate-in fade-in duration-300">
+                      <div className="space-y-4">
                         <div>
                           <h3 className="text-base font-bold text-gray-900 mb-1">
                             {t.identityHeading}
@@ -871,31 +915,29 @@ export default function BarangayClearanceModal({
                     )}
                   </div>
                 </div>
+                </div>
+                )}
 
                 {/* Footer Nav */}
-                <div className={certModalFooterClass}>
-                  {currentStep > 1 ? (
+                {lang && (
+                <div
+                  className={certModalFooterClass}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <button
                       type="button"
-                      onClick={() => setCurrentStep((prev) => prev - 1)}
+                      onClick={handleWizardBack}
                       className={certModalFooterBackClass}
                     >
                       {t.back}
                     </button>
-                  ) : (
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <button
-                        type="button"
-                        onClick={onClose}
-                        className={certModalFooterBackClass}
-                      >
-                        {t.back}
-                      </button>
+                    {currentStep === 1 && (
                       <p className="hidden sm:block text-xs text-gray-500 truncate">
                         <span className="text-red-600">*</span> {t.requiredFields}
                       </p>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {currentStep < totalSteps ? (
                     <button
@@ -928,6 +970,7 @@ export default function BarangayClearanceModal({
                     </button>
                   )}
                 </div>
+                )}
               </div>
           </div>
         )}

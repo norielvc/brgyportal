@@ -100,17 +100,21 @@ export const certModalBackdropHeavyClass =
   "absolute inset-0 z-0 bg-black/80 backdrop-blur-md";
 
 export const certModalPanelClass =
-  "relative z-10 pointer-events-auto w-full flex flex-col min-h-0 bg-white overflow-hidden shadow-2xl max-sm:fixed max-sm:z-[51] max-sm:inset-0 max-sm:h-[100dvh] max-sm:max-h-[100dvh] sm:static sm:inset-auto sm:max-w-2xl sm:max-h-[92vh] sm:rounded-2xl sm:animate-in sm:zoom-in-95 sm:fade-in sm:duration-300";
+  "relative z-10 pointer-events-auto w-full flex flex-col min-h-0 bg-white overflow-hidden shadow-2xl max-sm:fixed max-sm:z-[51] max-sm:inset-0 max-sm:h-[100dvh] max-sm:max-h-[100dvh] sm:static sm:inset-auto sm:max-w-2xl sm:max-h-[min(92vh,100dvh)] sm:rounded-2xl sm:animate-in sm:zoom-in-95 sm:fade-in sm:duration-300";
+
+/** Scrollable middle; flex-1 + min-h-0 keeps footer visible when panel hits max-height. */
+export const certModalBodyClass =
+  "flex flex-col flex-1 min-h-0 overflow-hidden w-full";
 
 export const certModalScrollClass =
-  "min-h-0 overscroll-contain overflow-y-auto px-4 sm:px-8 py-3 sm:py-6 max-sm:flex-1 sm:flex-none sm:max-h-[calc(92vh-13rem)]";
+  "flex-1 min-h-0 overscroll-contain overflow-y-auto px-4 sm:px-8 py-3 sm:py-6";
 
 /** Extra bottom space on purpose step (dropdowns use portal; padding helps scroll). */
 export const certModalScrollPurposeClass =
   `${certModalScrollClass} max-sm:pb-28 sm:pb-8`;
 
 export const certModalFooterClass =
-  "relative border-t border-gray-200 bg-white px-3 sm:px-8 py-2 sm:py-4 flex flex-row items-center justify-between gap-2 sm:gap-4 shrink-0 max-sm:mt-auto shadow-[0_-2px_8px_rgba(0,0,0,0.05)] pb-[max(0.375rem,env(safe-area-inset-bottom))]";
+  "relative z-20 border-t border-gray-200 bg-white px-3 sm:px-8 py-2 sm:py-4 flex flex-row items-center justify-between gap-2 sm:gap-4 shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.05)] pb-[max(0.375rem,env(safe-area-inset-bottom))]";
 
 export const certModalFooterBackClass =
   "shrink-0 px-3 py-2 sm:px-5 sm:py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-xs sm:text-sm hover:bg-gray-100 transition-colors touch-manipulation min-h-[40px] sm:min-h-0";

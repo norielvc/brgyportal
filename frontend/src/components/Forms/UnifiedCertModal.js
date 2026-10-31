@@ -10,12 +10,14 @@ import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, Aler
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 import CertSearchableDropdown from './CertSearchableDropdown';
 import { getStrings } from '../../lib/certLang';
+import LanguageGate from './LanguageGate';
 import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
   certModalOverlayClass,
   certModalBackdropClass,
   certModalBackdropHeavyClass,
   certModalPanelClass,
+  certModalBodyClass,
   certModalScrollClass,
   certModalScrollPurposeClass,
   certModalFooterClass,
@@ -79,8 +81,8 @@ export default function UnifiedCertModal({
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const lang = "tl";
-  const t = getStrings(lang);
+  const [lang, setLang] = useState(null);
+  const t = getStrings(lang || "tl");
 
   const [formData, setFormData] = useState({
     fullName: '', residentId: null, age: '', sex: '', civilStatus: '',
@@ -101,12 +103,30 @@ export default function UnifiedCertModal({
 
   useEffect(() => {
     if (!isOpen) {
+      setLang(null);
       setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
       setErrors({}); setNotification(null); setConsentChecked(false); setConsentExpanded(false); setShowPrivacyModal(false);
       setFormData({ fullName: '', residentId: null, age: '', sex: '', civilStatus: '', address: '', dateOfBirth: '', placeOfBirth: '', contactNumber: '', email: '', purpose: '', pickupMethod: 'pickup' });
       setPickupError('');
     }
   }, [isOpen]);
+
+  const handleWizardBack = (e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
+      setErrors({});
+      return;
+    }
+    if (lang) {
+      setLang(null);
+      setCurrentStep(1);
+      setErrors({});
+      return;
+    }
+    onClose();
+  };
 
   const handleResidentSelect = (resident) => {
     setFormData(prev => ({
@@ -413,6 +433,14 @@ export default function UnifiedCertModal({
             </button>
           </div>
 
+          {!lang && (
+            <div className={`${certModalScrollClass} flex flex-col justify-center`}>
+              <LanguageGate accentColor={accentColor} lang={lang} onSelect={setLang} />
+            </div>
+          )}
+
+          {lang && (
+          <div className={certModalBodyClass}>
           {/* Notification */}
           {notification && (
             <div className="px-4 sm:px-8 pt-3 sm:pt-4 shrink-0">
@@ -590,21 +618,23 @@ export default function UnifiedCertModal({
               )}
             </div>
           </div>
+          </div>
+          )}
 
           {/* Footer */}
-          <div className={certModalFooterClass}>
-            {currentStep > 1 ? (
-              <button type="button" onClick={() => setCurrentStep(p => p - 1)} className={certModalFooterBackClass}>
+          {lang && (
+          <div
+            className={certModalFooterClass}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <button type="button" onClick={handleWizardBack} className={certModalFooterBackClass}>
                 {t.back}
               </button>
-            ) : (
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <button type="button" onClick={onClose} className={certModalFooterBackClass}>
-                  {t.back}
-                </button>
+              {currentStep === 1 && (
                 <p className="hidden sm:block text-xs text-gray-500 truncate"><span className="text-red-600">*</span> {t.requiredFields}</p>
-              </div>
-            )}
+              )}
+            </div>
 
             {(() => {
               const totalSteps = extraStep4 ? 4 : 3;
@@ -629,6 +659,7 @@ export default function UnifiedCertModal({
               );
             })()}
           </div>
+          )}
         </div>
       </div>
 

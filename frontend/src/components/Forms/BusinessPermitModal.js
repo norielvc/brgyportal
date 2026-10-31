@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, AlertCircle, Building2, MapPin, Store } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 import { getStrings } from '../../lib/certLang';
+import LanguageGate from './LanguageGate';
 import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
   certModalOverlayClass,
   certModalBackdropClass,
   certModalPanelClass,
+  certModalBodyClass,
   certModalScrollClass,
   certModalFooterClass,
   certModalFooterBackClass,
@@ -34,8 +36,8 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const lang = "tl";
-  const t = getStrings(lang);
+  const [lang, setLang] = useState(null);
+  const t = getStrings(lang || "tl");
 
   const [formData, setFormData] = useState({
     // Owner info
@@ -58,6 +60,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
 
   useEffect(() => {
     if (!isOpen) {
+      setLang(null);
       setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
       setErrors({}); setNotification(null); setConsentChecked(false); setConsentExpanded(false); setShowPrivacyModal(false);
       setFormData({
@@ -72,6 +75,23 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
       setPickupError('');
     }
   }, [isOpen]);
+
+  const handleWizardBack = (e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
+      setErrors({});
+      return;
+    }
+    if (lang) {
+      setLang(null);
+      setCurrentStep(1);
+      setErrors({});
+      return;
+    }
+    onClose();
+  };
 
   const handleResidentSelect = (resident) => {
     setFormData(prev => ({
@@ -286,6 +306,14 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
             </button>
           </div>
 
+          {!lang && (
+            <div className={`${certModalScrollClass} flex flex-col justify-center`}>
+              <LanguageGate accentColor={accentColor} lang={lang} onSelect={setLang} />
+            </div>
+          )}
+
+          {lang && (
+          <div className={certModalBodyClass}>
           {/* Notification */}
           {notification && (
             <div className="px-4 sm:px-8 pt-3 sm:pt-4 shrink-0">
@@ -514,21 +542,23 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               )}
             </div>
           </div>
+          </div>
+          )}
 
           {/* Footer */}
-          <div className={certModalFooterClass}>
-            {currentStep > 1 ? (
-              <button type="button" onClick={() => setCurrentStep(p => p - 1)} className={certModalFooterBackClass}>
+          {lang && (
+          <div
+            className={certModalFooterClass}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <button type="button" onClick={handleWizardBack} className={certModalFooterBackClass}>
                 {t.back}
               </button>
-            ) : (
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <button type="button" onClick={onClose} className={certModalFooterBackClass}>
-                  {t.back}
-                </button>
+              {currentStep === 1 && (
                 <p className="hidden sm:block text-xs text-gray-500 truncate"><span className="text-red-600">*</span> {t.requiredFields}</p>
-              </div>
-            )}
+              )}
+            </div>
 
             {currentStep < 3 ? (
               <button type="button" onClick={() => {
@@ -555,6 +585,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               </button>
             )}
           </div>
+          )}
         </div>
       </div>
 
