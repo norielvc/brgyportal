@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useScrollLock from "@/lib/useScrollLock";
+import useMobileModalViewport from "@/lib/useMobileModalViewport";
 
 export default function Modal({
   isOpen,
@@ -25,7 +26,9 @@ export default function Modal({
     full: "max-w-screen-2xl",
   };
 
+  const panelRef = useRef(null);
   useScrollLock(isOpen);
+  useMobileModalViewport(panelRef, isOpen);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -56,8 +59,9 @@ export default function Modal({
 
       {/* Modal panel */}
       <div
+        ref={panelRef}
         className={cn(
-          "relative w-full overflow-hidden text-left bg-white shadow-2xl rounded-2xl flex flex-col max-h-[96dvh] sm:max-h-[90vh]",
+          "relative z-10 w-full overflow-hidden text-left bg-white shadow-2xl rounded-2xl flex flex-col max-h-[96dvh] sm:max-h-[90vh] max-sm:max-h-[100dvh]",
           sizeClasses[size],
         )}
       >

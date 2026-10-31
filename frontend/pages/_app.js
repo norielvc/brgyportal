@@ -3,8 +3,11 @@ import { useEffect } from "react";
 import Head from "next/head";
 import OfflineBanner from "@/components/UI/OfflineBanner";
 import { tenantFromHostname } from "@/lib/tenantHost";
+import useIosKeyboardZoomFix from "@/lib/useIosKeyboardZoomFix";
 
 export default function App({ Component, pageProps }) {
+  useIosKeyboardZoomFix();
+
   useEffect(() => {
     // 0. Register Service Worker for PWA Offline & Native Experience
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {

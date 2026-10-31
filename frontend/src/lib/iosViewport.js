@@ -31,3 +31,50 @@ export function resetIosViewportAfterKeyboard() {
     window.scrollTo(0, 0);
   }, 120);
 }
+
+export function isFormControlElement(el) {
+  if (!el || el === document.body) return false;
+  const tag = el.tagName;
+  if (tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (tag === "INPUT") {
+    const type = (el.type || "text").toLowerCase();
+    return ![
+      "button",
+      "submit",
+      "checkbox",
+      "radio",
+      "file",
+      "hidden",
+      "image",
+      "reset",
+    ].includes(type);
+  }
+  if (el.isContentEditable) return true;
+  return false;
+}
+
+/**
+ * Reset viewport when leaving a text field (global, iOS only).
+ * @returns {() => void} cleanup
+ */
+export function attachIosKeyboardZoomFixListeners() {
+  if (typeof document === "undefined" || !isIosBrowser()) {
+    return () => {};
+  }
+
+  const onFocusOut = (e) => {
+    const t = e.target;
+    if (!isFormControlElement(t)) return;
+    window.setTimeout(() => {
+      if (!isFormControlElement(document.activeElement)) {
+        resetIosViewportAfterKeyboard();
+      }
+    }, 80);
+  };
+
+  document.addEventListener("focusout", onFocusOut, true);
+
+  return () => {
+    document.removeEventListener("focusout", onFocusOut, true);
+  };
+}

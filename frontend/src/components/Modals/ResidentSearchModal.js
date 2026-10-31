@@ -38,6 +38,13 @@ export default function ResidentSearchModal({
   const [showPendingCaseModal, setShowPendingCaseModal] = useState(false);
   const panelRef = useRef(null);
   const searchInputRef = useRef(null);
+  const [mobileSearchFocused, setMobileSearchFocused] = useState(false);
+
+  const dismissModal = () => {
+    searchInputRef.current?.blur();
+    setMobileSearchFocused(false);
+    onClose();
+  };
 
   const handleResidentClick = (resident) => {
     if (blockPendingCase && resident.pending_case) {
@@ -130,15 +137,16 @@ export default function ResidentSearchModal({
     <div className="fixed inset-0 z-[100] sm:flex sm:items-center sm:justify-center sm:p-4">
       <div
         className={`${certModalBackdropClass} bg-black/70 backdrop-blur-sm`}
-        onClick={onClose}
+        onClick={dismissModal}
         onTouchMove={(e) => e.preventDefault()}
         aria-hidden
       />
 
       <div ref={panelRef} className={certModalPanelClass}>
+        <div className="shrink-0 max-sm:sticky max-sm:top-0 max-sm:z-30">
         {/* Header */}
         <div
-          className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between shrink-0"
+          className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between"
           style={{ backgroundColor: accentColor }}
         >
           <div className="flex items-center gap-3 sm:gap-3.5">
@@ -155,32 +163,45 @@ export default function ResidentSearchModal({
             </div>
           </div>
           <button
-            onClick={onClose}
+            type="button"
+            onClick={dismissModal}
             aria-label={t.close}
-            className="text-white/70 hover:text-white p-1.5 sm:p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0"
+            className="text-white hover:text-white p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/15 rounded-lg transition-colors shrink-0 touch-manipulation"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Search Field */}
-        <div className="px-4 sm:px-8 py-3.5 sm:py-5 border-b border-gray-200 bg-gray-50 shrink-0">
-          <label htmlFor="resident-search" className="block text-sm font-semibold text-gray-800 mb-1.5">
+        <div className="px-4 sm:px-8 py-3.5 sm:py-5 border-b border-gray-200 bg-gray-50">
+          <label htmlFor="resident-search" className="block text-sm font-semibold text-gray-800 mb-1.5 max-sm:sr-only">
             {t.dirTitle}
           </label>
-          <div className="relative">
+          <div className="flex gap-2 items-stretch max-sm:gap-2.5">
+            <button
+              type="button"
+              onClick={dismissModal}
+              aria-label={t.close}
+              className="sm:hidden shrink-0 px-3 min-h-[44px] rounded-lg border border-gray-300 bg-white text-gray-800 font-semibold text-sm touch-manipulation active:bg-gray-100"
+            >
+              {t.close}
+            </button>
+            <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
               ref={searchInputRef}
               id="resident-search"
               type="search"
+              inputMode="search"
               enterKeyHint="search"
               autoComplete="off"
               autoCorrect="off"
               placeholder={t.dirPlaceholder}
-              className="w-full pl-10 pr-11 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg text-base sm:text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+              className="w-full pl-10 pr-11 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg text-base sm:text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200 min-h-[44px]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setMobileSearchFocused(true)}
+              onBlur={() => setMobileSearchFocused(false)}
             />
             {isLoading && (
               <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
@@ -190,12 +211,16 @@ export default function ResidentSearchModal({
                 />
               </div>
             )}
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1.5">{t.dirEmptyBody}</p>
+          <p className={`text-xs text-gray-500 mt-1.5 ${mobileSearchFocused ? "max-sm:hidden" : ""}`}>
+            {t.dirEmptyBody}
+          </p>
+        </div>
         </div>
 
         {/* Results Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-8 py-4 sm:py-6 bg-white">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-8 py-4 sm:py-6 bg-white max-sm:py-2">
           {error ? (
             <div className="py-8 flex flex-col items-center justify-center text-center max-w-sm mx-auto">
               <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4 border border-amber-200">
@@ -281,7 +306,11 @@ export default function ResidentSearchModal({
               <p className="mt-3 text-xs text-gray-400">{t.dirManualNote}</p>
             </div>
           ) : (
-            <div className="py-10 text-center max-w-sm mx-auto">
+            <div
+              className={`py-10 text-center max-w-sm mx-auto ${
+                mobileSearchFocused ? "max-sm:hidden" : ""
+              }`}
+            >
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
                 style={{ backgroundColor: `${accentColor}12`, color: accentColor }}
@@ -298,14 +327,17 @@ export default function ResidentSearchModal({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-4 sm:px-8 py-3 sm:py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-4 shrink-0">
-          <span className="text-xs text-gray-500 truncate">
+        {/* Footer — hidden on mobile while typing (close is beside search) */}
+        <div className="px-4 sm:px-8 py-3 sm:py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-4 shrink-0 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <span className="text-xs text-gray-500 truncate max-sm:hidden sm:inline">
             {tenantConfig.shortName || "Barangay"} official records
           </span>
           <button
-            onClick={onClose}
-            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors shrink-0"
+            type="button"
+            onClick={dismissModal}
+            className={`px-4 py-2 min-h-[44px] bg-white text-gray-700 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors shrink-0 touch-manipulation ${
+              mobileSearchFocused ? "max-sm:hidden" : "max-sm:flex-1 max-sm:justify-center"
+            }`}
           >
             {t.close}
           </button>

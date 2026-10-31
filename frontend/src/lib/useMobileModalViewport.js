@@ -1,5 +1,8 @@
 import { useEffect } from "react";
-import { resetIosViewportAfterKeyboard } from "./iosViewport";
+import {
+  isFormControlElement,
+  resetIosViewportAfterKeyboard,
+} from "./iosViewport";
 
 function clearPanelViewportStyles(panel) {
   if (!panel) return;
@@ -13,17 +16,7 @@ function clearPanelViewportStyles(panel) {
 
 function isFormFieldFocused() {
   if (typeof document === "undefined") return false;
-  const el = document.activeElement;
-  if (!el || el === document.body) return false;
-  const tag = el.tagName;
-  if (tag === "TEXTAREA" || tag === "SELECT") return true;
-  if (tag === "INPUT") {
-    const type = (el.type || "text").toLowerCase();
-    return !["button", "submit", "checkbox", "radio", "file", "hidden", "image"].includes(
-      type,
-    );
-  }
-  return Boolean(el.isContentEditable);
+  return isFormControlElement(document.activeElement);
 }
 
 /**
