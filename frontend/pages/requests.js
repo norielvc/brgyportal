@@ -2118,6 +2118,40 @@ function RequestDetailsModal({
       "PEACE & ORDER": { name: "", date: "" },
     },
   });
+  const [konsehalList, setKonsehalList] = useState(defaultOfficials.councilors);
+
+  useEffect(() => {
+    if (!requiresPhysicalInspection) return;
+    let cancelled = false;
+    const loadKonsehal = async () => {
+      try {
+        const token = getAuthToken();
+        const response = await fetch(`${API_URL}/officials`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-tenant-id": request?.tenant_id || "ibaoeste",
+          },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        const names = [
+          ...new Set(
+            (data.data || [])
+              .filter((official) => official.position_type === "kagawad" && official.name)
+              .map((official) => String(official.name).trim().toUpperCase())
+              .filter(Boolean),
+          ),
+        ];
+        if (!cancelled && names.length) setKonsehalList(names);
+      } catch (error) {
+        console.error("Error loading konsehal list:", error);
+      }
+    };
+    loadKonsehal();
+    return () => {
+      cancelled = true;
+    };
+  }, [requiresPhysicalInspection, request?.tenant_id]);
   const [showInspectionStartModal, setShowInspectionStartModal] =
     useState(false);
   const [inspectionStartComment, setInspectionStartComment] = useState("");
@@ -3745,12 +3779,11 @@ function RequestDetailsModal({
                                           {comm}
                                         </td>
                                         <td className="py-2 px-2">
-                                          <input
-                                            type="text"
+                                          <select
                                             className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 focus:ring-2 focus:ring-emerald-500 font-bold uppercase transition-all"
                                             value={
                                               inspectionData.recommendations[comm]
-                                                .name
+                                                .name || ""
                                             }
                                             onChange={(e) =>
                                               handleRecommendationChange(
@@ -3759,8 +3792,26 @@ function RequestDetailsModal({
                                                 e.target.value,
                                               )
                                             }
-                                            placeholder="Enter name..."
-                                          />
+                                          >
+                                            <option value="">Select kagawad</option>
+                                            {konsehalList.map((name) => (
+                                              <option key={name} value={name}>
+                                                {name}
+                                              </option>
+                                            ))}
+                                            {inspectionData.recommendations[comm].name &&
+                                              !konsehalList.includes(
+                                                inspectionData.recommendations[comm].name,
+                                              ) && (
+                                                <option
+                                                  value={
+                                                    inspectionData.recommendations[comm].name
+                                                  }
+                                                >
+                                                  {inspectionData.recommendations[comm].name}
+                                                </option>
+                                              )}
+                                          </select>
                                         </td>
                                         <td className="py-2 px-2">
                                           <input
