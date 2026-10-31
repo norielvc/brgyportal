@@ -140,6 +140,7 @@ export default async function handler(req, res) {
     returned: "secretary_approval",
     processing: "secretary_approval",  // Legacy: processing = waiting for secretary
     secretary_approval: "captain_approval",
+    physical_inspection: "captain_approval",
     captain_approval: "oic_review",
     Treasury: "oic_review",
     oic_review: "ready",
@@ -151,6 +152,26 @@ export default async function handler(req, res) {
   let inspectionNextStep = null;
   if (action === "approve") {
     newCertStatus = statusFlow[cert.status] || cert.status;
+    if (cert.status === "physical_inspection") {
+      const { data: permitWf } = await supabase
+        .from("workflow_configurations")
+        .select("workflow_config")
+        .eq("certificate_type", certType || cert.certificate_type)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      const permitSteps = permitWf?.workflow_config?.steps || [];
+      const inspectionIndex = permitSteps.findIndex(
+        (step) => step.status === "physical_inspection",
+      );
+      const followingStep =
+        inspectionIndex !== -1 ? permitSteps[inspectionIndex + 1] : null;
+      if (followingStep?.status && followingStep.status !== "physical_inspection") {
+        newCertStatus = followingStep.status;
+        inspectionNextStep = followingStep;
+      } else {
+        newCertStatus = "captain_approval";
+      }
+    }
     console.log(`[WORKFLOW-ASSIGNMENT] Status flow: ${cert.status} -> ${newCertStatus}`);
   } else if (action === "reject") {
     newCertStatus = "rejected";

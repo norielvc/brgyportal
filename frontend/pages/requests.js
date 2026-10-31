@@ -864,6 +864,7 @@ export default function RequestsPage() {
         submitted: "secretary_approval",
         processing: "secretary_approval",  // Legacy: processing = waiting for secretary
         secretary_approval: "captain_approval",
+        physical_inspection: "captain_approval",
         captain_approval: "oic_review",
         oic_review: "ready",
         Treasury: "oic_review",
@@ -1028,7 +1029,9 @@ export default function RequestsPage() {
         // Also reload for secretary_approval and captain_approval to ensure proper step transition
         const isStaffReviewStage = req.status === "staff_review";
         const isReturnedStatus = req.status === "returned";
-        const isPhysicalInspectionAction = act === "physical_inspection" && req.certificate_type === "business_permit";
+        const isPhysicalInspectionAction =
+          (act === "physical_inspection" || (act === "approve" && req.status === "physical_inspection")) &&
+          req.certificate_type === "business_permit";
         const isSecretaryApproval = req.status === "secretary_approval";
         const isCaptainApproval = req.status === "captain_approval";
 
