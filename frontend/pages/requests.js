@@ -2386,20 +2386,38 @@ function RequestDetailsModal({
   };
 
   const handleInspectionChange = (area, field, value) => {
-    setInspectionData((prev) => ({
-      ...prev,
-      areas: {
-        ...prev.areas,
-        [area]: {
-          ...prev.areas[area],
-          [field]: value,
+    setInspectionData((prev) => {
+      if (field === "date") {
+        const areas = { ...prev.areas };
+        Object.keys(areas).forEach((key) => {
+          areas[key] = { ...areas[key], date: value };
+        });
+        return { ...prev, areas };
+      }
+      return {
+        ...prev,
+        areas: {
+          ...prev.areas,
+          [area]: {
+            ...prev.areas[area],
+            [field]: value,
+          },
         },
-      },
-    }));
+      };
+    });
   };
 
   const handleInspectionMetaChange = (field, value) => {
-    setInspectionData((prev) => ({ ...prev, [field]: value }));
+    setInspectionData((prev) => {
+      if (field !== "visitDateTime") return { ...prev, [field]: value };
+      const dateOnly = value ? String(value).slice(0, 10) : "";
+      if (!dateOnly) return { ...prev, visitDateTime: value };
+      const areas = { ...prev.areas };
+      Object.keys(areas).forEach((key) => {
+        areas[key] = { ...areas[key], date: dateOnly };
+      });
+      return { ...prev, visitDateTime: value, areas };
+    });
   };
 
   const handleRecommendationChange = (committee, field, value) => {
@@ -2416,6 +2434,20 @@ function RequestDetailsModal({
   };
 
   const handleSaveInspectionResults = async (andForward = false) => {
+    const missingRemarks = Object.entries(inspectionData.areas || {})
+      .filter(
+        ([, row]) =>
+          row?.findings === "FAILED" && !String(row?.remarks || "").trim(),
+      )
+      .map(([area]) => area);
+
+    if (missingRemarks.length) {
+      toast.error(
+        `Remarks are required for failed areas: ${missingRemarks.join(", ")}`,
+      );
+      return;
+    }
+
     setIsUpdatingInspection(true);
     try {
       const token = getAuthToken();
@@ -3548,8 +3580,8 @@ function RequestDetailsModal({
                                     <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">
                                       Findings & Recommendations
                                     </th>
-                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 w-[150px]">
-                                      Date
+                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 w-[170px]">
+                                      Date of Inspection
                                     </th>
                                     <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">
                                       Remarks
@@ -3569,11 +3601,16 @@ function RequestDetailsModal({
                                           </p>
                                         </td>
                                         <td className="py-3 px-2">
-                                          <input
-                                            type="text"
-                                            className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 transition-all font-bold"
+                                          <select
+                                            className={`w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-amber-500 transition-all ${
+                                              inspectionData.areas[area].findings === "PASSED"
+                                                ? "text-emerald-700"
+                                                : inspectionData.areas[area].findings === "FAILED"
+                                                  ? "text-red-700"
+                                                  : "text-gray-500"
+                                            }`}
                                             value={
-                                              inspectionData.areas[area].findings
+                                              inspectionData.areas[area].findings || ""
                                             }
                                             onChange={(e) =>
                                               handleInspectionChange(
@@ -3582,8 +3619,11 @@ function RequestDetailsModal({
                                                 e.target.value,
                                               )
                                             }
-                                            placeholder="Enter findings..."
-                                          />
+                                          >
+                                            <option value="">Select</option>
+                                            <option value="PASSED">PASSED</option>
+                                            <option value="FAILED">FAILED</option>
+                                          </select>
                                         </td>
                                         <td className="py-3 px-2">
                                           <input
@@ -3604,7 +3644,15 @@ function RequestDetailsModal({
                                         <td className="py-3 px-2">
                                           <input
                                             type="text"
-                                            className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 font-bold"
+                                            required={
+                                              inspectionData.areas[area].findings === "FAILED"
+                                            }
+                                            className={`w-full bg-white border rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 font-bold ${
+                                              inspectionData.areas[area].findings === "FAILED" &&
+                                              !String(inspectionData.areas[area].remarks || "").trim()
+                                                ? "border-red-400 placeholder:text-red-400"
+                                                : "border-gray-200"
+                                            }`}
                                             value={
                                               inspectionData.areas[area].remarks
                                             }
@@ -3615,7 +3663,11 @@ function RequestDetailsModal({
                                                 e.target.value,
                                               )
                                             }
-                                            placeholder="Add remarks..."
+                                            placeholder={
+                                              inspectionData.areas[area].findings === "FAILED"
+                                                ? "Remarks required"
+                                                : "Add remarks..."
+                                            }
                                           />
                                         </td>
                                       </tr>
