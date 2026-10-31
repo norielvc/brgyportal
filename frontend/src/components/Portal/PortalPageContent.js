@@ -4079,7 +4079,7 @@ export default function PortalPageContent({ initialTenantId }) {
                     style={{ backgroundColor: tenantConfig.accentColor }}
                   ></div>
                   <span className="text-white font-semibold text-[10px] tracking-wide uppercase">
-                    {p.leadershipTeam}
+                    {p.navOfficials}
                   </span>
                   <div
                     className="w-1.5 h-1.5 rounded-full"
@@ -4087,15 +4087,15 @@ export default function PortalPageContent({ initialTenantId }) {
                   ></div>
                 </div>
 
-                <h4 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-3 leading-none uppercase tracking-tight">
-                  {tenantConfig.name}
+                <h4 className="text-2xl md:text-3xl lg:text-4xl font-black mb-3 leading-tight uppercase tracking-tight">
+                  <span className="block text-white">{p.officialsHeroLead}</span>
                   <span
-                    className="block text-transparent bg-clip-text"
+                    className="block text-transparent bg-clip-text mt-1"
                     style={{
                       backgroundImage: `linear-gradient(to right, ${tenantConfig.accentColor}, #ebd78c, ${tenantConfig.accentColor})`,
                     }}
                   >
-                    {p.leadershipTeam}
+                    {tenantConfig.shortName || tenantConfig.name}
                   </span>
                 </h4>
 
