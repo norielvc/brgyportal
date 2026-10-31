@@ -6254,7 +6254,7 @@ function normalizeCloneForCanvasCapture(clonedDoc) {
 
 const CAPTAIN_SIGNATURE_ROLES = [
   "BRGY. CHAIRMAN",
-  "BRGY. CAPTAIN",
+  "BRGY. CHAIRMAN",
   "CHAIRMAN",
   "BARANGAY CHAIRMAN",
   "PUNONG BARANGAY",
@@ -7316,7 +7316,7 @@ function ClearancePreviewForRequests({
   // Determine Issued Date (Final Approval Date or Current Date)
   const CAPTAIN_ROLES = [
     "BRGY. CHAIRMAN",
-    "BRGY. CAPTAIN",
+    "BRGY. CHAIRMAN",
     "CHAIRMAN",
     "BARANGAY CHAIRMAN",
     "PUNONG BARANGAY",

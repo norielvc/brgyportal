@@ -123,6 +123,10 @@ export const certModalBodyClass =
 export const certModalScrollClass =
   "flex-1 min-h-0 overscroll-contain overflow-y-auto px-4 sm:px-8 py-3 sm:py-6";
 
+/** Language gate: no extra horizontal padding (inner component owns spacing). */
+export const certModalLangGateClass =
+  "flex-1 min-h-0 overscroll-contain overflow-y-auto flex flex-col bg-white";
+
 /** Extra bottom space on purpose step (dropdowns use portal; padding helps scroll). */
 export const certModalScrollPurposeClass =
   `${certModalScrollClass} max-sm:pb-28 sm:pb-8`;

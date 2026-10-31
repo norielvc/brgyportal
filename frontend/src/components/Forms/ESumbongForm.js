@@ -18,17 +18,15 @@ import {
   FieldLabel,
   inputClass,
   DETAILS_MAX_CHARS,
-  ESUMBONG_UPPERCASE_FIELDS,
-  toEsumbongUppercase,
 } from "./esumbongFieldUtils";
 import ResidentSearchModal from "@/components/Modals/ResidentSearchModal";
 import { formatResidentPurokForPortal } from "@/lib/addressHelper";
 
 const textareaModalClass =
-  "w-full min-w-0 px-3 py-2.5 text-sm font-medium uppercase text-gray-900 placeholder:text-gray-400 placeholder:uppercase bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500/25 focus:border-red-400 outline-none transition-shadow overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed min-h-[6rem] max-h-[9.5rem] resize-none sm:min-h-[7.5rem] sm:max-h-[17.5rem] sm:resize-y md:max-h-[20rem]";
+  "w-full min-w-0 px-3 py-2.5 text-sm font-medium text-gray-900 placeholder:text-gray-400 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500/25 focus:border-red-400 outline-none transition-shadow overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed min-h-[6rem] max-h-[9.5rem] resize-none sm:min-h-[7.5rem] sm:max-h-[17.5rem] sm:resize-y md:max-h-[20rem]";
 
 const textareaPageClass =
-  "w-full min-w-0 px-3 py-2.5 text-sm sm:text-[15px] font-medium uppercase text-gray-900 placeholder:text-gray-400 placeholder:uppercase bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500/25 focus:border-red-400 outline-none transition-[height,box-shadow] overflow-x-hidden whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed min-h-[12rem] sm:min-h-[14rem] resize-y max-h-none";
+  "w-full min-w-0 px-3 py-2.5 text-sm sm:text-[15px] font-medium text-gray-900 placeholder:text-gray-400 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500/25 focus:border-red-400 outline-none transition-[height,box-shadow] overflow-x-hidden whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed min-h-[12rem] sm:min-h-[14rem] resize-y max-h-none";
 
 function defaultIncidentDateIso() {
   return new Date().toISOString().split("T")[0];
@@ -117,11 +115,9 @@ export default function ESumbongForm({
     setForm((prev) => ({
       ...prev,
       complainant_resident_id: resident.id,
-      complainant_name: toEsumbongUppercase(name),
-      contact_number: toEsumbongUppercase(
-        resident.contact_number || prev.contact_number,
-      ),
-      email: toEsumbongUppercase(resident.email || prev.email),
+      complainant_name: name,
+      contact_number: resident.contact_number || prev.contact_number,
+      email: resident.email || prev.email,
     }));
     setComplainantPurok(
       formatResidentPurokForPortal({
@@ -210,10 +206,7 @@ export default function ESumbongForm({
   };
 
   const handleChange = (field, value) => {
-    const next = ESUMBONG_UPPERCASE_FIELDS.has(field)
-      ? toEsumbongUppercase(value)
-      : value;
-    setForm((prev) => ({ ...prev, [field]: next }));
+    setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -232,7 +225,7 @@ export default function ESumbongForm({
       : "flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-4 py-3 sm:px-5 sm:py-5 space-y-4 sm:space-y-5 [scrollbar-gutter:stable]";
 
   const walkInTextareaClass =
-    "w-full min-w-0 px-3 py-2 text-sm font-medium uppercase text-gray-900 placeholder:text-gray-400 placeholder:normal-case bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none resize-y min-h-[5.5rem] max-h-[9rem] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]";
+    "w-full min-w-0 px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-400 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none resize-y min-h-[5.5rem] max-h-[9rem] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]";
 
   return (
     <form
@@ -310,11 +303,11 @@ export default function ESumbongForm({
                 >
                   <CheckCircle className="w-4 h-4 text-red-600 shrink-0" aria-hidden />
                   <div className="min-w-0 flex-1 grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-0">
-                    <span className="text-sm font-bold uppercase text-gray-900 leading-snug min-w-0 break-words col-start-1">
+                    <span className="text-sm font-bold text-gray-900 leading-snug min-w-0 break-words col-start-1">
                       {form.complainant_name}
                     </span>
                     {complainantPurok ? (
-                      <span className="text-xs font-semibold uppercase text-gray-600 whitespace-nowrap col-start-2 row-start-1">
+                      <span className="text-xs font-semibold text-gray-600 whitespace-nowrap col-start-2 row-start-1">
                         {complainantPurok}
                       </span>
                     ) : null}
@@ -374,7 +367,7 @@ export default function ESumbongForm({
                 placeholder={
                   isStaffWalkIn ? "Name of respondent" : "Ilagay ang pangalan ng inirereklamo"
                 }
-                className={`${inputClass} ${isStaffWalkIn ? "min-h-[2.5rem] py-2" : "min-h-[2.75rem]"} text-sm font-bold`}
+                className={`${inputClass} ${isStaffWalkIn ? "min-h-[2.5rem] py-2" : "min-h-[2.75rem]"} text-sm`}
               />
               <FieldError message={errors.respondent_name} />
             </div>
@@ -431,7 +424,7 @@ export default function ESumbongForm({
                   value={form.email}
                   onChange={(e) => handleChange("email", e.target.value)}
                   placeholder="email@example.com"
-                  className={`${inputClass} py-2 text-sm normal-case`}
+                  className={`${inputClass} py-2 text-sm`}
                   autoComplete="email"
                 />
               </div>

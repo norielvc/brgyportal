@@ -401,7 +401,7 @@ export default function UnifiedCertModal({
         <div ref={panelRef} className={certModalPanelClass}>
 
           {/* Header */}
-          <div className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between shrink-0" style={{ backgroundColor: accentColor }}>
+          <div className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between shrink-0 max-sm:sticky max-sm:top-0 max-sm:z-30" style={{ backgroundColor: accentColor }}>
             <div className="flex items-center gap-3 sm:gap-3.5">
               <div className="bg-white/15 p-2 sm:p-2.5 rounded-xl border border-white/25 shrink-0">
                 <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -411,15 +411,34 @@ export default function UnifiedCertModal({
                 <h2 className="text-base sm:text-xl font-bold text-white leading-tight">{title}</h2>
               </div>
             </div>
-            <button onClick={onClose} aria-label="Close" className="text-white/70 hover:text-white p-1.5 sm:p-2 hover:bg-white/15 rounded-lg transition-colors shrink-0">
-              <X className="w-5 h-5" />
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t.close}
+              className={`text-white hover:text-white p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/15 rounded-lg transition-colors shrink-0 touch-manipulation${!lang ? " max-sm:hidden" : ""}`}
+            >
+              <X className="w-6 h-6" />
             </button>
           </div>
 
           {!lang && (
-            <div className={`${certModalScrollClass} flex flex-col justify-center`}>
-              <LanguageGate accentColor={accentColor} lang={lang} onSelect={setLang} />
-            </div>
+            <>
+              <div className={certModalBodyClass}>
+                <div className={`${certModalScrollClass} flex flex-col min-h-0 overflow-y-auto overscroll-contain`}>
+                  <LanguageGate accentColor={accentColor} lang={lang} onSelect={setLang} />
+                </div>
+              </div>
+              <div
+                className={certModalFooterClass}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <button type="button" onClick={onClose} className={certModalFooterBackClass}>
+                    {t.close}
+                  </button>
+                </div>
+              </div>
+            </>
           )}
 
           {lang && (

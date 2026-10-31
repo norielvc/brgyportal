@@ -3,21 +3,8 @@ import { AlertCircle } from "lucide-react";
 /** Keep in sync with src/lib/blotterConstants.js */
 export const DETAILS_MAX_CHARS = 10000;
 
-/** Text fields on E-Sumbong are stored and displayed in ALL CAPS. */
-export const ESUMBONG_UPPERCASE_FIELDS = new Set([
-  "complainant_name",
-  "respondent_name",
-  "details",
-  "contact_number",
-  "email",
-]);
-
-export function toEsumbongUppercase(value) {
-  return String(value ?? "").toUpperCase();
-}
-
 export const inputClass =
-  "w-full min-w-0 px-3 py-2.5 text-sm font-medium uppercase text-gray-900 placeholder:text-gray-400 placeholder:uppercase bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500/25 focus:border-red-400 outline-none transition-shadow break-words [overflow-wrap:anywhere]";
+  "w-full min-w-0 px-3 py-2.5 text-sm font-medium text-gray-900 placeholder:text-gray-400 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500/25 focus:border-red-400 outline-none transition-shadow break-words [overflow-wrap:anywhere]";
 
 export function FieldLabel({ icon: Icon, children, optional, optionalLabel = "(opsyonal)" }) {
   return (

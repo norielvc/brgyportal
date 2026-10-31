@@ -83,6 +83,11 @@ import { redirectToStaffLogin } from "@/lib/staffLogin";
 import { blotterAPI, assistanceAPI, kapchatAPI } from "@/lib/api";
 import ResidentSearchModal from "@/components/Modals/ResidentSearchModal";
 import { filterKapchatMessagesForResident } from "@/lib/kapchatThread";
+import {
+  getKapchatClosedMessage,
+  getKapchatScheduleSummary,
+  isKapchatOpenForResidents,
+} from "@/lib/kapchatSchedule";
 
 export default function PortalPageContent({ initialTenantId }) {
   const p = getPortalStrings();
@@ -324,6 +329,10 @@ export default function PortalPageContent({ initialTenantId }) {
   const [kapchatResidentError, setKapchatResidentError] = useState(false);
   const [isKapchatResidentModalOpen, setIsKapchatResidentModalOpen] = useState(false);
   const [showKapchatResetConfirm, setShowKapchatResetConfirm] = useState(false);
+  const [kapchatOpenNow, setKapchatOpenNow] = useState(() =>
+    isKapchatOpenForResidents(),
+  );
+  const kapchatLang = p.kapchatStart === "Simulan ang Usapan" ? "tl" : "en";
   const [isChatSyncing, setIsChatSyncing] = useState(false);
   const chatMessagesEndRef = useRef(null);
   const [assistanceFormData, setAssistanceFormData] = useState({
@@ -1054,6 +1063,13 @@ export default function PortalPageContent({ initialTenantId }) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   })();
 
+  useEffect(() => {
+    const tick = () => setKapchatOpenNow(isKapchatOpenForResidents());
+    tick();
+    const id = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   // Load saved KapChat identity from localStorage on mount
   useEffect(() => {
     try {
@@ -1182,6 +1198,7 @@ export default function PortalPageContent({ initialTenantId }) {
   // KapChat — Start chat session handler
   const handleStartChat = (e) => {
     e.preventDefault();
+    if (!kapchatOpenNow) return;
     if (!chatUserInfo.residentId) {
       setKapchatResidentError(true);
       return;
@@ -1230,6 +1247,11 @@ export default function PortalPageContent({ initialTenantId }) {
     if (e && e.preventDefault) e.preventDefault();
     const messageText = chatInput.trim();
     if (!messageText) return;
+
+    if (!kapchatOpenNow) {
+      alert(getKapchatClosedMessage(kapchatLang).title);
+      return;
+    }
 
     setChatInput("");
     setChatSending(true);
@@ -2302,8 +2324,12 @@ export default function PortalPageContent({ initialTenantId }) {
                 className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"
                 aria-hidden
               />
-              <span className="text-[9px] font-black uppercase tracking-widest mb-3 min-h-[1.125rem] text-emerald-100/90">
-                {p.kapchatLive}
+              <span
+                className={`text-[9px] font-black uppercase tracking-widest mb-3 min-h-[1.125rem] ${
+                  kapchatOpenNow ? "text-emerald-100/90" : "text-amber-100/90"
+                }`}
+              >
+                {kapchatOpenNow ? p.kapchatLive : kapchatLang === "tl" ? "Sarado ngayon" : "Closed now"}
               </span>
               <div className="flex items-center gap-3 mb-3 min-h-[2.75rem]">
                 <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center bg-white/15 border border-white/20 group-hover:bg-white/20 transition-colors">
@@ -2313,6 +2339,9 @@ export default function PortalPageContent({ initialTenantId }) {
               </div>
               <p className="text-sm text-white/75 leading-snug flex-1 min-h-[4.5rem] line-clamp-4 md:line-clamp-3">
                 {p.kapchatDesc}
+              </p>
+              <p className="text-[10px] text-white/60 leading-snug mt-2 line-clamp-2">
+                {getKapchatScheduleSummary(kapchatLang)}
               </p>
               <span className="mt-4 inline-flex items-center justify-center gap-1.5 w-full min-h-[2.5rem] py-2.5 rounded-lg text-xs font-bold text-white border border-white/25 bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-all">
                 {p.openKapchat}
@@ -5189,7 +5218,11 @@ export default function PortalPageContent({ initialTenantId }) {
                   <div className="w-11 h-11 rounded-full bg-white/15 ring-1 ring-white/25 flex items-center justify-center text-sm font-bold tracking-wide">
                     {kapchatInitials}
                   </div>
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-900 rounded-full" />
+                  <span
+                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-slate-900 rounded-full ${
+                      kapchatOpenNow ? "bg-emerald-400" : "bg-slate-400"
+                    }`}
+                  />
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 leading-none mb-1">
@@ -5231,7 +5264,23 @@ export default function PortalPageContent({ initialTenantId }) {
             {/* Pre-chat: Name & Contact Form */}
             {!chatStarted ? (
               <div className="p-5 flex-1 flex flex-col justify-between overflow-y-auto bg-slate-50">
-                <div className="space-y-4">
+                {!kapchatOpenNow ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center px-2 py-4">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-200/80 flex items-center justify-center mb-4">
+                      <Clock className="w-7 h-7 text-slate-600" />
+                    </div>
+                    <h4 className="text-base font-bold text-slate-900 mb-2">
+                      {getKapchatClosedMessage(kapchatLang).title}
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed mb-3 max-w-[16rem]">
+                      {getKapchatClosedMessage(kapchatLang).body}
+                    </p>
+                    <p className="text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-xl px-3 py-2.5 leading-relaxed">
+                      {getKapchatScheduleSummary(kapchatLang)}
+                    </p>
+                  </div>
+                ) : (
+                <div className="space-y-4 flex-1 flex flex-col">
                   <div className="text-center pt-1">
                     <h4 className="text-base font-bold text-slate-900 mb-1.5 tracking-tight">
                       {p.kapchatWelcome}
@@ -5331,8 +5380,9 @@ export default function PortalPageContent({ initialTenantId }) {
                     </button>
                   </form>
                 </div>
+                )}
 
-                <div className="pt-3 text-center border-t border-slate-200 mt-4">
+                <div className="pt-3 text-center border-t border-slate-200 mt-4 shrink-0">
                   <p className="text-[10px] text-slate-500 font-medium flex items-center justify-center gap-1.5">
                     <Shield className="w-3 h-3 text-slate-400 shrink-0" />
                     {p.kapchatFooterNote}
@@ -5357,7 +5407,9 @@ export default function PortalPageContent({ initialTenantId }) {
                   </button>
                 </div>
                 <p className="px-4 py-1.5 text-[9px] text-slate-500 bg-slate-100/80 border-b border-slate-200/80 shrink-0">
-                  {p.kapchatOnline}
+                  {kapchatOpenNow
+                    ? p.kapchatOnline
+                    : getKapchatScheduleSummary(kapchatLang)}
                 </p>
 
                 {/* Messages Feed */}
@@ -5456,13 +5508,20 @@ export default function PortalPageContent({ initialTenantId }) {
                         handleChatSend(e);
                       }
                     }}
-                    placeholder={p.kapchatInputPlaceholder}
-                    className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all"
+                    disabled={!kapchatOpenNow}
+                    placeholder={
+                      kapchatOpenNow
+                        ? p.kapchatInputPlaceholder
+                        : kapchatLang === "tl"
+                          ? "Sarado ang KapChat — tingnan ang oras sa itaas"
+                          : "KapChat closed — see hours above"
+                    }
+                    className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     style={{ "--tw-ring-color": tenantConfig.primaryColor }}
                   />
                   <button
                     type="submit"
-                    disabled={!chatInput.trim() || chatSending}
+                    disabled={!kapchatOpenNow || !chatInput.trim() || chatSending}
                     className="w-10 h-10 text-white rounded-lg font-bold transition-all shrink-0 disabled:opacity-40 flex items-center justify-center shadow-sm hover:opacity-95 active:scale-[0.98]"
                     style={{ backgroundColor: tenantConfig.primaryColor }}
                     aria-label="Send message"

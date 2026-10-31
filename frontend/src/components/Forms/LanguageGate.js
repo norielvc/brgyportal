@@ -1,7 +1,5 @@
 /**
  * LanguageGate — First screen of every certificate request modal.
- * The resident chooses English or Tagalog before the wizard begins,
- * so all downstream copy renders in their preferred language.
  */
 import React from "react";
 import { Check, Globe } from "lucide-react";
@@ -10,15 +8,19 @@ import { LANGUAGES, getStrings } from "../../lib/certLang";
 export default function LanguageGate({ accentColor, onSelect, lang }) {
   const t = getStrings(lang || "tl");
 
+  const globeIcon = (
+    <div
+      className="w-12 h-12 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+    >
+      <Globe className="w-6 h-6" aria-hidden />
+    </div>
+  );
+
   return (
-    <div className="px-4 sm:px-8 py-5 sm:py-8">
-      <div className="flex flex-col items-center text-center mb-7">
-        <div
-          className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
-          style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
-        >
-          <Globe className="w-6 h-6" />
-        </div>
+    <div className="px-4 sm:px-8 py-5 sm:py-8 max-w-lg mx-auto w-full">
+      <div className="flex flex-col items-center text-center mb-6 sm:mb-7">
+        <div className="hidden sm:block mb-4">{globeIcon}</div>
         <h3 className="text-lg font-bold text-gray-900 mb-1.5">
           Pumili ng wika / Choose your language
         </h3>
@@ -28,7 +30,7 @@ export default function LanguageGate({ accentColor, onSelect, lang }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto w-full">
         {LANGUAGES.map(({ code, label, hint }) => {
           const selected = lang === code;
           return (
@@ -36,7 +38,7 @@ export default function LanguageGate({ accentColor, onSelect, lang }) {
               key={code}
               type="button"
               onClick={() => onSelect(code)}
-              className={`p-5 rounded-xl border-2 text-left transition-colors ${
+              className={`p-5 rounded-xl border-2 text-left transition-colors touch-manipulation ${
                 selected ? "bg-white" : "bg-white border-gray-200 hover:border-gray-300"
               }`}
               style={
@@ -62,7 +64,13 @@ export default function LanguageGate({ accentColor, onSelect, lang }) {
         })}
       </div>
 
-      <p className="text-xs text-gray-400 text-center mt-6">{t.langNote}</p>
+      <div className="flex sm:hidden justify-center mt-5" aria-hidden>
+        {globeIcon}
+      </div>
+
+      <p className="text-xs text-gray-400 text-center mt-5 sm:mt-6 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        {t.langNote}
+      </p>
     </div>
   );
 }

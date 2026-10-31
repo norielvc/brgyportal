@@ -1,5 +1,6 @@
 import { supabase, isSupabaseServerConfigured } from "../../lib/supabase";
 import { filterKapchatMessagesForResident } from "../../src/lib/kapchatThread";
+import { isKapchatOpenForResidents } from "../../src/lib/kapchatSchedule";
 
 export default async function handler(req, res) {
   const tenantId = req.headers["x-tenant-id"];
@@ -29,6 +30,16 @@ export default async function handler(req, res) {
       }
 
       const isAdminMsg = Boolean(is_admin);
+
+      if (!isAdminMsg && !isKapchatOpenForResidents()) {
+        return res.status(403).json({
+          success: false,
+          code: "KAPCHAT_CLOSED",
+          message:
+            "KapChat is closed. Resident hours: Mon–Fri 9:00–10:00 AM and 3:00–4:00 PM, Sat 9:00–10:00 AM (Philippine Time).",
+        });
+      }
+
       let sName = sender_name
         ? sender_name.trim()
         : name
