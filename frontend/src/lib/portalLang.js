@@ -280,6 +280,8 @@ const STRINGS = {
     kapchatFooterNote: "Official & Confidential Barangay Messaging",
     kapchatChattingAs: "Chatting as:",
     kapchatChange: "Change",
+    kapchatInputPlaceholder: "Write your message to the Punong Barangay…",
+    kapchatOnline: "Official channel · typically replies during office hours",
   },
   tl: {
     navNews: "Balita at Anunsyo",
@@ -560,23 +562,25 @@ const STRINGS = {
     kapchatFooterNote: "Opisyal at Kumpidensyal na Mensahe ng Barangay",
     kapchatChattingAs: "Nakikipag-chat bilang:",
     kapchatChange: "Palitan",
+    kapchatInputPlaceholder: "Isulat ang mensahe para kay Punong Barangay…",
+    kapchatOnline: "Opisyal na linya · karaniwang sumasagot sa oras ng opisina",
   },
 };
 
 export function getKapchatPrompts(lang = DEFAULT_PORTAL_LANG) {
   if (lang === "en") {
     return [
-      { label: "📄 Barangay Clearance Requirements", text: "Good day Kap! May I ask what the requirements and process are for Barangay Clearance?" },
-      { label: "🕒 Barangay Hall Office Hours", text: "Good day Kap! What are the official office hours and working days of the Barangay Hall?" },
-      { label: "🚨 Emergency Barangay Assistance", text: "Good day Kap! Where can I call for emergency barangay assistance and patrol tanod?" },
-      { label: "📑 Track Document Request", text: "Good day Kap! I would like to follow up on the status of my submitted barangay document request." },
+      { label: "Barangay Clearance requirements", text: "Good day Kap! May I ask what the requirements and process are for Barangay Clearance?" },
+      { label: "Barangay Hall office hours", text: "Good day Kap! What are the official office hours and working days of the Barangay Hall?" },
+      { label: "Emergency barangay assistance", text: "Good day Kap! Where can I call for emergency barangay assistance and patrol tanod?" },
+      { label: "Track document request", text: "Good day Kap! I would like to follow up on the status of my submitted barangay document request." },
     ];
   }
   return [
-    { label: "📄 Mga Kailangan sa Barangay Clearance", text: "Magandang araw po Kap! Ano po ang mga requirement at proseso para sa Barangay Clearance?" },
-    { label: "🕒 Oras ng Opisina ng Barangay Hall", text: "Magandang araw po Kap! Ano po ang opisyal na oras at araw ng trabaho ng Barangay Hall?" },
-    { label: "🚨 Emergency na Tulong sa Barangay", text: "Magandang araw po Kap! Saan po pwedeng tumawag para sa emergency na tulong ng barangay at tanod?" },
-    { label: "📑 Subaybayan ang Kahilingang Dokumento", text: "Magandang araw po Kap! Gusto ko pong mag-follow up sa status ng aking naisumiteng dokumento sa barangay." },
+    { label: "Mga kailangan sa Barangay Clearance", text: "Magandang araw po Kap! Ano po ang mga requirement at proseso para sa Barangay Clearance?" },
+    { label: "Oras ng opisina ng Barangay Hall", text: "Magandang araw po Kap! Ano po ang opisyal na oras at araw ng trabaho ng Barangay Hall?" },
+    { label: "Emergency na tulong sa barangay", text: "Magandang araw po Kap! Saan po pwedeng tumawag para sa emergency na tulong ng barangay at tanod?" },
+    { label: "Subaybayan ang kahilingang dokumento", text: "Magandang araw po Kap! Gusto ko pong mag-follow up sa status ng aking naisumiteng dokumento sa barangay." },
   ];
 }
 

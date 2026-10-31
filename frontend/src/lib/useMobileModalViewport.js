@@ -105,9 +105,9 @@ export const certModalPanelClass =
 export const certModalScrollClass =
   "min-h-0 overscroll-contain overflow-y-auto px-4 sm:px-8 py-3 sm:py-6 max-sm:flex-1 sm:flex-none sm:max-h-[calc(92vh-13rem)]";
 
-/** Extra bottom space on small screens so purpose dropdowns clear the action bar. */
+/** Extra bottom space on purpose step (dropdowns use portal; padding helps scroll). */
 export const certModalScrollPurposeClass =
-  `${certModalScrollClass} max-sm:pb-28`;
+  `${certModalScrollClass} max-sm:pb-28 sm:pb-8`;
 
 export const certModalFooterClass =
   "relative border-t border-gray-200 bg-white px-3 sm:px-8 py-2 sm:py-4 flex flex-row items-center justify-between gap-2 sm:gap-4 shrink-0 max-sm:mt-auto shadow-[0_-2px_8px_rgba(0,0,0,0.05)] pb-[max(0.375rem,env(safe-area-inset-bottom))]";

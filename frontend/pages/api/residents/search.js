@@ -81,7 +81,17 @@ export default async function handler(req, res) {
 
     if (!error && residents) {
       const enriched = residents.map((r) => {
-        const fullName = [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean).join(" ") || r.full_name || "Unknown Resident";
+        const fromParts = [r.first_name, r.middle_name, r.last_name, r.suffix]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        const fullName = (
+          fromParts ||
+          r.full_name ||
+          "Unknown Resident"
+        )
+          .trim()
+          .toUpperCase();
         if (!r.residential_address && (r.house_number || r.purok || r.barangay || r.municipality || r.province)) {
           const parts = [
             r.house_number ? `HOUSE NO. ${r.house_number.trim()}` : null,

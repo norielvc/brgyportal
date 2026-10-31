@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Search,
   X,
@@ -12,7 +13,10 @@ import {
 } from "lucide-react";
 import { getStrings } from "../../lib/certLang";
 import useScrollLock from "@/lib/useScrollLock";
-import useMobileModalViewport from "@/lib/useMobileModalViewport";
+import useMobileModalViewport, {
+  certModalBackdropClass,
+  certModalPanelClass,
+} from "@/lib/useMobileModalViewport";
 
 export default function ResidentSearchModal({
   isOpen,
@@ -117,22 +121,20 @@ export default function ResidentSearchModal({
     onClose();
   };
 
-  if (!isOpen) return null;
-
   const accentColor = tenantConfig.primaryColor || (isDemo ? "#111111" : "#059669");
 
-  return (
+  if (!isOpen || typeof document === "undefined") return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] sm:flex sm:items-center sm:justify-center sm:p-4">
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+        className={`${certModalBackdropClass} bg-black/70 backdrop-blur-sm`}
         onClick={onClose}
         onTouchMove={(e) => e.preventDefault()}
+        aria-hidden
       />
 
-      <div
-        ref={panelRef}
-        className="fixed z-[101] inset-0 flex flex-col bg-white overflow-hidden shadow-2xl sm:static sm:z-auto sm:inset-auto sm:w-full sm:max-w-2xl sm:max-h-[92vh] sm:rounded-2xl sm:animate-in sm:zoom-in-95 sm:fade-in sm:duration-300"
-      >
+      <div ref={panelRef} className={certModalPanelClass}>
         {/* Header */}
         <div
           className="px-4 sm:px-8 py-3.5 sm:py-5 flex items-start justify-between shrink-0"
@@ -311,8 +313,13 @@ export default function ResidentSearchModal({
 
       {/* Pending Case Modal */}
       {showPendingCaseModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-8 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+          <div
+            className={`${certModalBackdropClass} bg-black/70 backdrop-blur-sm`}
+            onClick={() => setShowPendingCaseModal(false)}
+            aria-hidden
+          />
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-8 animate-in zoom-in-95 duration-300 pointer-events-auto">
             <div className="flex flex-col items-center text-center">
               <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4 border border-amber-200">
                 <ShieldAlert className="w-7 h-7 text-amber-600" />
@@ -352,6 +359,7 @@ export default function ResidentSearchModal({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

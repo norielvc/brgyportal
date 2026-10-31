@@ -1029,6 +1029,15 @@ export default function PortalPageContent({ initialTenantId }) {
   // Get the Barangay Captain from officials data
   const captain = officials.find((o) => o.position_type === "captain");
   const captainDisplayName = captain?.name || p.kapchatCaptainFallback;
+  const kapchatInitials = (() => {
+    const parts = String(captainDisplayName || "PB")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (parts.length === 0) return "PB";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  })();
 
   // Load saved KapChat identity from localStorage on mount
   useEffect(() => {
@@ -4944,50 +4953,56 @@ export default function PortalPageContent({ initialTenantId }) {
           </div>
         )}
 
-        {/* KapChat Panel — Modern Live Two-Way Chat Messenger */}
+        {/* KapChat Panel — official resident messaging */}
         {showAssistance && assistanceMode === "kapchat" && (
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[calc(100vw-32px)] sm:w-96 max-w-[420px] overflow-hidden animate-fade-in flex flex-col transition-all" style={{ height: "540px", maxHeight: "88vh" }}>
-            {/* Chat Header */}
+          <div
+            className="bg-white rounded-2xl shadow-[0_24px_48px_-12px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/80 w-[calc(100vw-24px)] sm:w-[400px] max-w-[420px] overflow-hidden animate-fade-in flex flex-col transition-all font-[family-name:var(--font-portal,sans-serif)]"
+            style={{ height: "560px", maxHeight: "88vh" }}
+          >
             <div
-              className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between text-white"
-              style={{ background: tenantConfig.colorStyle?.background || tenantConfig.primaryColor }}
+              className="px-4 py-3.5 flex items-center justify-between text-white shrink-0"
+              style={{
+                background: `linear-gradient(135deg, ${tenantConfig.primaryColor} 0%, #0f172a 72%)`,
+              }}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-white/20 ring-2 ring-white/30 flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
-                    <Shield className="w-5 h-5 text-white" />
+                <div className="relative shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-white/15 ring-1 ring-white/25 flex items-center justify-center text-sm font-bold tracking-wide">
+                    {kapchatInitials}
                   </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full animate-pulse" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-900 rounded-full" />
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-black text-white truncate leading-tight">
-                      {captainDisplayName}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-white/80 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 leading-none mb-1">
+                    KapChat
+                  </p>
+                  <p className="text-sm font-bold text-white truncate leading-tight">
+                    {captainDisplayName}
+                  </p>
+                  <p className="text-[10px] text-white/75 font-medium truncate mt-0.5 flex items-center gap-1.5">
                     <span>{p.kapchatHeaderSubtitle}</span>
                     {isChatSyncing && (
-                      <RefreshCw className="w-2.5 h-2.5 animate-spin text-white/70" />
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin text-white/60 shrink-0" />
                     )}
-                  </div>
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 {chatStarted && (
                   <button
+                    type="button"
                     onClick={handleResetChatSession}
                     title="Switch user identity or reset chat"
-                    className="w-7 h-7 bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center transition-colors shrink-0"
+                    className="w-8 h-8 bg-white/10 hover:bg-white/15 text-white rounded-lg flex items-center justify-center transition-colors"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => closeAssistance()}
-                  className="w-7 h-7 bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center transition-colors shrink-0"
+                  className="w-8 h-8 bg-white/10 hover:bg-white/15 text-white rounded-lg flex items-center justify-center transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -4996,24 +5011,18 @@ export default function PortalPageContent({ initialTenantId }) {
 
             {/* Pre-chat: Name & Contact Form */}
             {!chatStarted ? (
-              <div className="p-5 flex-1 flex flex-col justify-between overflow-y-auto bg-slate-50/50">
+              <div className="p-5 flex-1 flex flex-col justify-between overflow-y-auto bg-slate-50">
                 <div className="space-y-4">
-                  <div className="text-center pt-2">
-                    <div
-                      className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center shadow-sm"
-                      style={{ backgroundColor: `${tenantConfig.primaryColor}18`, color: tenantConfig.primaryColor }}
-                    >
-                      <MessageCircle className="w-6 h-6" />
-                    </div>
-                    <h4 className="text-sm font-bold text-gray-900 mb-1">
+                  <div className="text-center pt-1">
+                    <h4 className="text-base font-bold text-slate-900 mb-1.5 tracking-tight">
                       {p.kapchatWelcome}
                     </h4>
-                    <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
+                    <p className="text-xs text-slate-600 leading-relaxed max-w-[18rem] mx-auto">
                       {p.kapchatWelcomeDesc.replace("{captain}", captainDisplayName)}
                     </p>
                   </div>
 
-                  <form onSubmit={handleStartChat} className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm">
+                  <form onSubmit={handleStartChat} className="space-y-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1">
                         {p.kapchatFullName} <span className="text-red-500">*</span>
@@ -5053,59 +5062,57 @@ export default function PortalPageContent({ initialTenantId }) {
                   </form>
                 </div>
 
-                <div className="pt-3 text-center border-t border-gray-200/60 mt-4">
-                  <p className="text-[10px] text-gray-400 font-medium flex items-center justify-center gap-1">
-                    <Shield className="w-3 h-3 text-gray-400" />
+                <div className="pt-3 text-center border-t border-slate-200 mt-4">
+                  <p className="text-[10px] text-slate-500 font-medium flex items-center justify-center gap-1.5">
+                    <Shield className="w-3 h-3 text-slate-400 shrink-0" />
                     {p.kapchatFooterNote}
                   </p>
                 </div>
               </div>
             ) : (
-              /* Two-way Chat Messages & Input Stream */
-              <div className="flex-1 flex flex-col min-h-0 bg-slate-50">
-                {/* User Session Bar */}
-                <div className="px-3.5 py-1.5 bg-gray-100/80 border-b border-gray-200 flex items-center justify-between text-[11px] text-gray-600">
-                  <span className="font-semibold truncate">
-                    {p.kapchatChattingAs} <strong className="text-gray-900">{chatUserInfo.name}</strong> ({chatUserInfo.contact})
+              <div className="flex-1 flex flex-col min-h-0 bg-[#f1f5f9]">
+                <div className="px-4 py-2 bg-white border-b border-slate-200 flex items-center justify-between gap-2 text-[11px] text-slate-600 shrink-0">
+                  <span className="truncate min-w-0">
+                    {p.kapchatChattingAs}{" "}
+                    <span className="font-semibold text-slate-900">{chatUserInfo.name}</span>
+                    <span className="text-slate-400 font-mono text-[10px] ml-1">{chatUserInfo.contact}</span>
                   </span>
                   <button
+                    type="button"
                     onClick={handleResetChatSession}
-                    className="text-[10px] font-bold text-blue-600 hover:underline shrink-0 ml-2"
+                    className="text-[10px] font-semibold shrink-0 hover:underline"
+                    style={{ color: tenantConfig.primaryColor }}
                   >
                     {p.kapchatChange}
                   </button>
                 </div>
+                <p className="px-4 py-1.5 text-[9px] text-slate-500 bg-slate-100/80 border-b border-slate-200/80 shrink-0">
+                  {p.kapchatOnline}
+                </p>
 
                 {/* Messages Feed */}
-                <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
-                  {/* Default Warm Welcome Bubble */}
-                  <div className="flex items-start gap-2">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  <div className="flex items-start gap-2.5">
                     <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 shadow-sm mt-0.5"
-                      style={{ backgroundColor: `${tenantConfig.primaryColor}20`, color: tenantConfig.primaryColor }}
+                      className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold mt-0.5 bg-white ring-1 ring-slate-200 text-slate-700"
                     >
-                      <Shield className="w-3.5 h-3.5" />
+                      {kapchatInitials}
                     </div>
-                    <div className="max-w-[85%] bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 border border-gray-200/90 shadow-sm">
-                      <p className="text-[10px] font-bold text-gray-500 mb-0.5">
-                        {captainDisplayName}
+                    <div className="max-w-[88%] bg-white rounded-2xl rounded-tl-md px-3.5 py-2.5 border border-slate-200/90 shadow-sm">
+                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                        {p.kapchatOfficialBadge}
                       </p>
-                      <p className="text-xs text-gray-800 leading-relaxed font-normal">
+                      <p className="text-[13px] text-slate-800 leading-relaxed">
                         {p.kapchatWelcomeGreeting
                           .replace("{firstName}", chatUserInfo.name.split(" ")[0] || "")
                           .replace("{captain}", captainDisplayName)}
                       </p>
-                      <span className="text-[9px] text-gray-400 font-medium block mt-1">
-                        {p.kapchatOfficialBadge}
-                      </span>
                     </div>
                   </div>
 
-                  {/* Quick Suggested Inquiries if user hasn't sent many messages */}
                   {chatMessages.length === 0 && (
-                    <div className="pt-2 pb-1 space-y-1.5">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-amber-500" />
+                    <div className="pt-1 pb-1 space-y-2">
+                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-0.5">
                         {p.kapchatQuickInquiries}
                       </p>
                       <div className="grid grid-cols-1 gap-1.5">
@@ -5114,10 +5121,10 @@ export default function PortalPageContent({ initialTenantId }) {
                             key={idx}
                             type="button"
                             onClick={() => handleChatSend(null, prompt.text)}
-                            className="text-left px-3 py-2 bg-white hover:bg-emerald-50/80 border border-gray-200 hover:border-emerald-300 rounded-xl text-xs font-semibold text-gray-700 hover:text-emerald-900 transition-all shadow-2xs active:scale-[0.99] flex items-center justify-between group"
+                            className="text-left px-3 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center justify-between gap-2 group"
                           >
-                            <span>{prompt.label}</span>
-                            <Send className="w-3 h-3 text-gray-300 group-hover:text-emerald-600 transition-colors shrink-0" />
+                            <span className="leading-snug">{prompt.label}</span>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-600 shrink-0" />
                           </button>
                         ))}
                       </div>
@@ -5133,37 +5140,34 @@ export default function PortalPageContent({ initialTenantId }) {
                         className={`flex items-end gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}
                       >
                         {!isUser && (
-                          <div
-                            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 shadow-2xs mb-0.5"
-                            style={{ backgroundColor: `${tenantConfig.primaryColor}20`, color: tenantConfig.primaryColor }}
-                          >
-                            <Shield className="w-3 h-3" />
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mb-0.5 bg-white ring-1 ring-slate-200 text-[9px] font-bold text-slate-600">
+                            {kapchatInitials}
                           </div>
                         )}
                         <div
-                          className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-2xs ${
+                          className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 ${
                             isUser
-                              ? "rounded-br-xs text-white"
-                              : "rounded-bl-xs bg-white border border-gray-200 text-gray-800"
+                              ? "rounded-br-md text-white shadow-sm"
+                              : "rounded-bl-md bg-white border border-slate-200 text-slate-800 shadow-sm"
                           }`}
                           style={isUser ? { backgroundColor: tenantConfig.primaryColor } : {}}
                         >
                           {!isUser && (
-                            <p className="text-[10px] font-bold text-emerald-700 mb-0.5">
+                            <p className="text-[10px] font-semibold text-slate-500 mb-0.5">
                               {msg.sender_name || captainDisplayName}
                             </p>
                           )}
-                          <p className="text-xs leading-relaxed font-normal whitespace-pre-wrap">
+                          <p className="text-[13px] leading-relaxed whitespace-pre-wrap">
                             {msg.text}
                           </p>
                           <div
-                            className={`flex items-center justify-end gap-1 text-[9px] mt-1 ${
-                              isUser ? "text-white/70" : "text-gray-400"
+                            className={`flex items-center justify-end gap-1 text-[9px] mt-1.5 ${
+                              isUser ? "text-white/75" : "text-slate-400"
                             }`}
                           >
                             <span>{msg.time}</span>
                             {isUser && (
-                              <CheckCheck className="w-3 h-3 text-white/90" />
+                              <CheckCheck className="w-3 h-3 text-white/85" />
                             )}
                           </div>
                         </div>
@@ -5191,7 +5195,7 @@ export default function PortalPageContent({ initialTenantId }) {
                 {/* Chat Input Bar */}
                 <form
                   onSubmit={handleChatSend}
-                  className="p-3 border-t border-gray-200 bg-white flex items-center gap-2"
+                  className="p-3 border-t border-slate-200 bg-white flex items-end gap-2 shrink-0"
                 >
                   <input
                     type="text"
@@ -5203,15 +5207,16 @@ export default function PortalPageContent({ initialTenantId }) {
                         handleChatSend(e);
                       }
                     }}
-                    placeholder="Type your message to Kap..."
-                    className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all"
+                    placeholder={p.kapchatInputPlaceholder}
+                    className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all"
                     style={{ "--tw-ring-color": tenantConfig.primaryColor }}
                   />
                   <button
                     type="submit"
                     disabled={!chatInput.trim() || chatSending}
-                    className="w-10 h-10 text-white rounded-xl font-bold transition-all shrink-0 disabled:opacity-40 flex items-center justify-center shadow-md active:scale-95"
+                    className="w-10 h-10 text-white rounded-lg font-bold transition-all shrink-0 disabled:opacity-40 flex items-center justify-center shadow-sm hover:opacity-95 active:scale-[0.98]"
                     style={{ backgroundColor: tenantConfig.primaryColor }}
+                    aria-label="Send message"
                   >
                     <Send className="w-4 h-4" />
                   </button>
