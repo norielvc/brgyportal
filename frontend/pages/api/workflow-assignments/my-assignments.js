@@ -51,8 +51,18 @@ export default async function handler(req, res) {
         stepName.includes('verifying')
       ) {
         isStale = String(certStatus).toLowerCase() !== 'verifying';
-      } else if (stepName.includes('captain')) {
-        isStale = certStatus !== 'captain_approval';
+      } else if (
+        stepName.includes('captain') ||
+        stepName.includes('chairman') ||
+        stepName.includes('punong')
+      ) {
+        const statusKey = String(certStatus).toLowerCase();
+        isStale = !(
+          statusKey === 'captain_approval' ||
+          statusKey.includes('captain') ||
+          statusKey.includes('chairman') ||
+          statusKey.includes('punong')
+        );
       } else if (stepName.includes('treasury') || stepName.includes('or prep')) {
         isStale = certStatus !== 'Treasury';
       } else if (stepName.includes('releasing') || stepName.includes('oic')) {

@@ -45,6 +45,19 @@ export function normalizeCertificateStatus(status, options = {}) {
     return "oic_review";
   }
 
+  // Custom labels such as "Awaiting Barangay Chairman Approval" must stay
+  // on the allowed captain_approval status so the chairman queue keeps the request.
+  if (
+    name.includes("captain") ||
+    name.includes("chairman") ||
+    name.includes("punong") ||
+    key.includes("captain") ||
+    key.includes("chairman") ||
+    key.includes("punong")
+  ) {
+    return "captain_approval";
+  }
+
   return raw;
 }
 
