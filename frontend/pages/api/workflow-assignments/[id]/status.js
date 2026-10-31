@@ -271,8 +271,6 @@ export default async function handler(req, res) {
 
   // 9. Send Email Notifications & In-App Notifications
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5005';
-    
     // Get resident/applicant info
     const { data: resident } = await supabase
       .from('residents')
@@ -289,12 +287,8 @@ export default async function handler(req, res) {
     // Helper function to send email
     const sendEmail = async (emailData) => {
       try {
-        const response = await fetch(`${backendUrl}/api/email/send-notification`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(emailData)
-        });
-        const result = await response.json();
+        const { sendProcessNotification } = await import("@/lib/mailer");
+        const result = await sendProcessNotification(emailData);
         if (result.success) {
           console.log(`📧 Email sent to ${emailData.recipientEmail}: ${emailData.eventType}`);
         } else {

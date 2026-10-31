@@ -319,22 +319,17 @@ export default async function handler(req, res) {
       // Send email notification to applicant
       try {
         if (formData.email) {
-          const backendUrl = process.env.BACKEND_URL || 'http://localhost:5005';
-          const emailResponse = await fetch(`${backendUrl}/api/email/send-notification`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              recipientEmail: formData.email,
-              recipientName: formData.fullName || formData.ownerFullName || 'Applicant',
-              eventType: 'RECEIVED',
-              certificateType: canonicalType,
-              referenceNumber: refNumber,
-              applicantName: formData.fullName || formData.ownerFullName || 'Applicant',
-              comments: '',
-              requestId: data.id
-            })
+          const { sendProcessNotification } = await import("@/lib/mailer");
+          const emailResult = await sendProcessNotification({
+            recipientEmail: formData.email,
+            recipientName: formData.fullName || formData.ownerFullName || "Applicant",
+            eventType: "RECEIVED",
+            certificateType: canonicalType,
+            referenceNumber: refNumber,
+            applicantName: formData.fullName || formData.ownerFullName || "Applicant",
+            comments: "",
+            requestId: data.id,
           });
-          const emailResult = await emailResponse.json();
           if (emailResult.success) {
             console.log(`📧 Confirmation email sent to ${formData.email}`);
           } else {
@@ -396,8 +391,6 @@ export default async function handler(req, res) {
 
         // Send email notifications & in-app notifications to assigned staff
         try {
-          const backendUrl = process.env.BACKEND_URL || 'http://localhost:5005';
-          
           console.log(`📋 Staff User IDs to notify:`, staffUserIds);
           
           const { data: staffUsers, error: staffQueryError } = await supabase
@@ -417,19 +410,16 @@ export default async function handler(req, res) {
             
             // Send email
             if (staff.email) {
-              await fetch(`${backendUrl}/api/email/send-notification`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  recipientEmail: staff.email,
-                  recipientName: `${staff.first_name} ${staff.last_name}`,
-                  eventType: 'SUBMITTED',
-                  certificateType: canonicalType,
-                  referenceNumber: refNumber,
-                  applicantName: formData.fullName || formData.ownerFullName || 'Applicant',
-                  comments: '',
-                  requestId: data.id
-                })
+              const { sendProcessNotification } = await import("@/lib/mailer");
+              await sendProcessNotification({
+                recipientEmail: staff.email,
+                recipientName: `${staff.first_name} ${staff.last_name}`,
+                eventType: "SUBMITTED",
+                certificateType: canonicalType,
+                referenceNumber: refNumber,
+                applicantName: formData.fullName || formData.ownerFullName || "Applicant",
+                comments: "",
+                requestId: data.id,
               });
               console.log(`📧 Assignment email sent to ${staff.email}`);
             }

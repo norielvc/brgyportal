@@ -28,12 +28,13 @@ export default async function handler(req, res) {
   const resendApiKey = process.env.RESEND_API_KEY;
   const resendFrom =
     process.env.RESEND_FROM || "BrgyDesk <noreply@brgydesk.app>";
-  if (!resendApiKey) {
+  const gmailReady = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+  if (!resendApiKey && !gmailReady) {
     return res.status(503).json({
       success: false,
       code: "EMAIL_NOT_CONFIGURED",
       message:
-        "Email is not configured on this server (missing RESEND_API_KEY). Pickup/release still works; add the key in frontend .env.local to enable sending.",
+        "Email is not configured. Set SMTP_USER and SMTP_PASS (Gmail app password) in the Vercel project environment.",
     });
   }
 
@@ -79,6 +80,29 @@ export default async function handler(req, res) {
   const text = `Hi ${name},\n\nYour ${typeLabel} (Reference: ${ref}) is now ready.\n\nIf you selected online delivery, you may download and print your certificate from the portal using your reference number. Otherwise, you can claim it at the barangay office.\n\nRegards,\nBrgyDesk`;
 
   try {
+    if (!resendApiKey) {
+      const { sendProcessNotification } = await import("@/lib/mailer");
+      const sent = await sendProcessNotification({
+        recipientEmail: to,
+        recipientName: name,
+        eventType: "READY_FOR_PICKUP",
+        certificateType: cert.certificate_type,
+        referenceNumber: ref,
+        applicantName: name,
+        requestId: id,
+      });
+      if (!sent.success) {
+        return res.status(502).json({
+          success: false,
+          message: sent.error || "Failed to send email",
+        });
+      }
+      return res.json({
+        success: true,
+        message: `Certificate sent to ${to}`,
+      });
+    }
+
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
