@@ -70,7 +70,7 @@
   }
 
   .input {
-    @apply block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-colors;
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base sm:text-sm transition-colors;
   }
 
   .input-error {
@@ -347,6 +347,20 @@ body.modal-open {
 
 .mb-safe {
   margin-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+/*
+ * iOS Safari auto-zooms focused fields when font-size < 16px.
+ * Applies on small screens only; does not affect desktop layout.
+ */
+@media screen and (max-width: 639px) {
+  @supports (-webkit-touch-callout: none) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="image"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
 }
 
 /* Standalone PWA display adjustments */

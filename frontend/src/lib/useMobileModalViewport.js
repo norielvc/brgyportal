@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { resetIosViewportAfterKeyboard } from "./iosViewport";
 
 function clearPanelViewportStyles(panel) {
   if (!panel) return;
@@ -65,8 +66,28 @@ export default function useMobileModalViewport(panelRef, isActive) {
       panel.style.bottom = "auto";
     };
 
+    let keyboardWasOpen = false;
+
     const onFocusChange = () => {
-      requestAnimationFrame(syncPanelToViewport);
+      requestAnimationFrame(() => {
+        const mobile = window.matchMedia("(max-width: 639px)").matches;
+        const layoutH = window.innerHeight || vv.height;
+        const heightLost = Math.max(0, layoutH - vv.height);
+        const focusedField = isFormFieldFocused();
+        const keyboardLikelyOpen =
+          mobile &&
+          focusedField &&
+          (heightLost > 120 || (vv.offsetTop > 28 && heightLost > 48));
+
+        if (keyboardLikelyOpen) {
+          keyboardWasOpen = true;
+        } else if (keyboardWasOpen) {
+          keyboardWasOpen = false;
+          resetIosViewportAfterKeyboard();
+        }
+
+        syncPanelToViewport();
+      });
     };
 
     syncPanelToViewport();
