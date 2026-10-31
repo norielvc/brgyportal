@@ -15,6 +15,13 @@ ALTER TABLE official_receipts
 ALTER TABLE official_receipts
   ADD COLUMN IF NOT EXISTS html_content TEXT;
 
+-- Optional payor columns (some projects use payer_* naming)
+ALTER TABLE official_receipts
+  ADD COLUMN IF NOT EXISTS payer_name TEXT;
+
+ALTER TABLE official_receipts
+  ADD COLUMN IF NOT EXISTS payer_address TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_official_receipts_tenant_id
   ON official_receipts (tenant_id);
 

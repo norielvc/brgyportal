@@ -81,10 +81,16 @@ async function persistOrAssignment({
   let payload = { ...row };
   let orRecord = null;
   let saveError = null;
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
     ({ data: orRecord, error: saveError } = await persistOrRow(payload));
     if (!saveError) break;
     const msg = saveError.message || "";
+    const missingCol = msg.match(/Could not find the '([^']+)' column/i);
+    if (missingCol?.[1] && missingCol[1] in payload) {
+      const { [missingCol[1]]: _drop, ...next } = payload;
+      payload = next;
+      continue;
+    }
     if (/tenant_id/i.test(msg) && "tenant_id" in payload) {
       const { tenant_id: _t, ...next } = payload;
       payload = next;
