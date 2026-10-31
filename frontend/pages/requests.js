@@ -937,7 +937,10 @@ export default function RequestsPage() {
     if (action === "approve") {
       const steps = workflows?.[request?.certificate_type] || [];
       const certType = request?.certificate_type;
-      if (certType === "business_permit") {
+      if (
+        certType === "business_permit" &&
+        typeof resolveBusinessPermitApproveTarget === "function"
+      ) {
         const target = resolveBusinessPermitApproveTarget(steps, {
           status: currentStatus,
           assignmentStepId: request?.workflow_assignment?.step_id,
