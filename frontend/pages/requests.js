@@ -2335,8 +2335,9 @@ function RequestDetailsModal({
         }
 
         const activeData = await activeRes.json();
-        if (activeData.success && activeData.assignment) {
-          assignmentId = activeData.assignment.id;
+        const foundAssignment = activeData.assignment || activeData.data;
+        if (activeData.success && foundAssignment?.id) {
+          assignmentId = foundAssignment.id;
         } else {
           throw new Error(activeData.message || "No active assignment found.");
         }
@@ -6505,6 +6506,36 @@ function CertificatePreviewModal({ request, onClose, onBack, getTypeLabel, curre
   );
 }
 
+function pendingCaseRows(history) {
+  const lines = String(history || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 20);
+
+  if (!lines.length) {
+    return [{ sn: 1, caseNo: "—", description: "Not recorded", status: "PENDING" }];
+  }
+
+  return lines.map((line, index) => {
+    const parts = line.split(/\s*\|\s*/);
+    if (parts.length >= 2) {
+      return {
+        sn: index + 1,
+        caseNo: parts[0] || "—",
+        description: parts[1] || "—",
+        status: (parts[2] || "PENDING").toUpperCase(),
+      };
+    }
+    return {
+      sn: index + 1,
+      caseNo: "—",
+      description: line,
+      status: "PENDING",
+    };
+  });
+}
+
 // Certificate Preview Component - Exact copy from BarangayClearanceModal
 function ClearancePreviewForRequests({
   request,
@@ -7938,10 +7969,50 @@ function ClearancePreviewForRequests({
                           </div>
                         </div>
 
-                        <p className="mb-10 text-left">
+                        <p className={`${request.residents?.pending_case ? "mb-3" : "mb-10"} text-left`}>
                           Issued this {issuedDate} at Barangay Iba O' Este,
                           Calumpit, Bulacan.
                         </p>
+                        {request.residents?.pending_case && (
+                          <div className="flex justify-end mb-8">
+                          <table className="border-collapse text-left text-[15px] leading-snug text-red-700 w-1/2">
+                            <thead>
+                              <tr>
+                                <th className="border border-red-700 px-2 py-1 font-bold w-[72px]">
+                                  SN No.
+                                </th>
+                                <th className="border border-red-700 px-2 py-1 font-bold w-[110px]">
+                                  Case No.
+                                </th>
+                                <th className="border border-red-700 px-2 py-1 font-bold">
+                                  Case Description
+                                </th>
+                                <th className="border border-red-700 px-2 py-1 font-bold w-[100px]">
+                                  Status
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {pendingCaseRows(request.residents.case_record_history).map((row) => (
+                                <tr key={row.sn}>
+                                  <td className="border border-red-700 px-2 py-1 align-top whitespace-nowrap">
+                                    {row.sn}
+                                  </td>
+                                  <td className="border border-red-700 px-2 py-1 align-top whitespace-nowrap">
+                                    {row.caseNo}
+                                  </td>
+                                  <td className="border border-red-700 px-2 py-1 align-top">
+                                    {row.description}
+                                  </td>
+                                  <td className="border border-red-700 px-2 py-1 align-top font-bold whitespace-nowrap">
+                                    {row.status}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          </div>
+                        )}
                       </>
                     )}
 
@@ -7965,7 +8036,7 @@ function ClearancePreviewForRequests({
                         !isCohabitation &&
                         !isMedicoLegal &&
                         !isSamePerson && (
-                          <div className="mb-4">
+                          <div className="mb-4 relative top-[1.5em]">
                             <div className="h-6"></div>
                             <div className="border-t border-black w-64 pt-1">
                               <p className="text-[15px]">
@@ -7977,36 +8048,11 @@ function ClearancePreviewForRequests({
 
                       <div className="text-left mb-4 self-start cert-captain-signature-block">
                         <div
-                          className={`flex items-start justify-between gap-4 ${isSamePerson ? "mb-44" : request.certificate_type === "certificate_of_indigency" ? "mb-20" : "mb-32"}`}
+                          className={`relative flex items-start justify-between gap-4 ${isSamePerson ? "mb-44" : request.certificate_type === "certificate_of_indigency" ? "mb-20" : "mb-32"}`}
                         >
-                          <p className="font-bold text-[15px] shrink-0 relative top-[1.5em]">
+                          <p className="font-bold text-[15px] shrink-0 relative top-[3em]">
                             TRULY YOURS,
                           </p>
-                          {request.residents?.pending_case && (
-                            <div className="border border-black px-2 py-1.5 text-left max-w-[230px] leading-tight">
-                              <p className="text-[9px] font-bold uppercase tracking-wide">
-                                Pending case
-                              </p>
-                              <p className="text-[8px] mt-1">
-                                <span className="font-bold">Case: </span>
-                                {request.residents.case_record_history || "Not recorded"}
-                              </p>
-                              <p className="text-[8px] mt-0.5">
-                                <span className="font-bold">Date recorded: </span>
-                                {request.residents.updated_at
-                                  ? new Date(request.residents.updated_at).toLocaleDateString("en-PH", {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                    })
-                                  : "Not recorded"}
-                              </p>
-                              <p className="text-[8px] mt-0.5">
-                                <span className="font-bold">Status: </span>
-                                PENDING
-                              </p>
-                            </div>
-                          )}
                         </div>
 
                         <div className="relative inline-block">

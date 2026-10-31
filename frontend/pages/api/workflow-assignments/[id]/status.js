@@ -115,10 +115,19 @@ export default async function handler(req, res) {
 
   console.log(`[WORKFLOW-ASSIGNMENT] Certificate found: ${cert.reference_number}, Current status: ${cert.status}, Type: ${certType}`);
 
+  const closedAssignmentStatus =
+    action === "approve"
+      ? "approved"
+      : action === "reject"
+        ? "rejected"
+        : action === "physical_inspection"
+          ? "completed"
+          : action;
+
   // 3. Mark ALL pending assignments for this request as completed
   await supabase
     .from("workflow_assignments")
-    .update({ status: action === "approve" ? "approved" : action === "reject" ? "rejected" : action, updated_at: new Date().toISOString() })
+    .update({ status: closedAssignmentStatus, updated_at: new Date().toISOString(), ...(action === "physical_inspection" ? { completed_at: new Date().toISOString() } : {}) })
     .eq("request_id", requestId)
     .eq("tenant_id", tenantId)
     .eq("status", "pending");
@@ -139,6 +148,7 @@ export default async function handler(req, res) {
   };
 
   let newCertStatus = cert.status;
+  let inspectionNextStep = null;
   if (action === "approve") {
     newCertStatus = statusFlow[cert.status] || cert.status;
     console.log(`[WORKFLOW-ASSIGNMENT] Status flow: ${cert.status} -> ${newCertStatus}`);
@@ -148,6 +158,24 @@ export default async function handler(req, res) {
     newCertStatus = "returned"; // stays in returned, but Step 1 gets reassigned
   } else if (action === "send_back_to_start") {
     newCertStatus = "staff_review";
+  } else if (action === "physical_inspection") {
+    newCertStatus = "physical_inspection";
+    if ((certType || cert.certificate_type) === "business_permit") {
+      const { data: inspectionWf } = await supabase
+        .from("workflow_configurations")
+        .select("workflow_config")
+        .eq("certificate_type", certType)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      const inspectionSteps = inspectionWf?.workflow_config?.steps || [];
+      const currentIndex = inspectionSteps.findIndex(
+        (step) => String(step.id) === String(assignment.step_id),
+      );
+      if (currentIndex !== -1 && currentIndex < inspectionSteps.length - 1) {
+        inspectionNextStep = inspectionSteps[currentIndex + 1];
+        newCertStatus = inspectionNextStep.status || "physical_inspection";
+      }
+    }
   }
 
   // 5. Update certificate status
@@ -240,6 +268,20 @@ export default async function handler(req, res) {
       }
     } else {
       console.warn(`[WORKFLOW-ASSIGNMENT] No next step found or no users assigned for status: ${newCertStatus}`);
+    }
+  }
+
+  if (action === "physical_inspection" && inspectionNextStep?.assignedUsers?.length) {
+    for (const userId of inspectionNextStep.assignedUsers) {
+      await supabase.from("workflow_assignments").insert([{
+        request_id: requestId,
+        tenant_id: tenantId,
+        request_type: certType,
+        step_id: inspectionNextStep.id.toString(),
+        step_name: inspectionNextStep.name,
+        assigned_user_id: userId,
+        status: "pending",
+      }]);
     }
   }
 
