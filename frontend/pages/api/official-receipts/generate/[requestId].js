@@ -36,8 +36,8 @@ async function persistOrAssignment({
     console.warn("[OR] Disk write skipped:", err?.message || err);
   }
 
-  const payorLabel = request.full_name || request.applicant_name || "—";
-  const payorAddr = request.address || "";
+  const payorLabel = request.full_name || request.applicant_name || "Applicant";
+  const payorAddr = request.address || "—";
 
   const row = {
     or_number: orNumber,
@@ -45,7 +45,9 @@ async function persistOrAssignment({
     amount,
     payment_method: "CASH",
     payment_for: "BUSINESS PERMIT PROCESSING FEE",
+    payor_name: payorLabel,
     payer_name: payorLabel,
+    payor_address: payorAddr,
     payer_address: payorAddr,
     business_name:
       businessDetails.businessName || businessDetails.business_name || "",
@@ -78,69 +80,33 @@ async function persistOrAssignment({
       .single();
   };
 
+  const nameFallback = (column) => {
+    if (/name$/i.test(column)) return payorLabel;
+    if (/address$/i.test(column)) return payorAddr;
+    return "—";
+  };
+
   let payload = { ...row };
   let orRecord = null;
   let saveError = null;
-  for (let attempt = 0; attempt < 12; attempt += 1) {
+  for (let attempt = 0; attempt < 16; attempt += 1) {
     ({ data: orRecord, error: saveError } = await persistOrRow(payload));
     if (!saveError) break;
     const msg = saveError.message || "";
+
     const missingCol = msg.match(/Could not find the '([^']+)' column/i);
     if (missingCol?.[1] && missingCol[1] in payload) {
       const { [missingCol[1]]: _drop, ...next } = payload;
       payload = next;
       continue;
     }
-    if (/tenant_id/i.test(msg) && "tenant_id" in payload) {
-      const { tenant_id: _t, ...next } = payload;
-      payload = next;
+
+    const nullCol = msg.match(/null value in column "([^"]+)"/i);
+    if (nullCol?.[1]) {
+      payload = { ...payload, [nullCol[1]]: nameFallback(nullCol[1]) };
       continue;
     }
-    if (/control_number/i.test(msg) && "control_number" in payload) {
-      const { control_number: _c, ...next } = payload;
-      payload = next;
-      continue;
-    }
-    if (/file_path/i.test(msg) && "file_path" in payload) {
-      const { file_path: _f, ...next } = payload;
-      payload = next;
-      continue;
-    }
-    if (/html_content/i.test(msg) && "html_content" in payload) {
-      const { html_content: _h, ...next } = payload;
-      payload = next;
-      continue;
-    }
-    if (/payer_name/i.test(msg) && "payer_name" in payload) {
-      const {
-        payer_name,
-        payer_address,
-        payor_name: _pn,
-        payor_address: _pa,
-        ...next
-      } = payload;
-      payload = {
-        ...next,
-        payor_name: payer_name,
-        payor_address: payer_address,
-      };
-      continue;
-    }
-    if (/payor_name/i.test(msg) && "payor_name" in payload) {
-      const {
-        payor_name,
-        payor_address,
-        payer_name: _pn2,
-        payer_address: _pa2,
-        ...next
-      } = payload;
-      payload = {
-        ...next,
-        payer_name: payor_name,
-        payer_address: payor_address,
-      };
-      continue;
-    }
+
     break;
   }
   if (saveError) {
