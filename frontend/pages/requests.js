@@ -580,15 +580,18 @@ export default function RequestsPage() {
     setDateRange({ start: "", end: "" });
   };
 
+  const [openPdfFromQuery, setOpenPdfFromQuery] = useState(false);
+
   // Handle Deep Linking from URL
   useEffect(() => {
     if (router.query.id && requests.length > 0 && !selectedRequest) {
       const target = requests.find((r) => r.id === router.query.id);
       if (target) {
         setSelectedRequest(target);
+        setOpenPdfFromQuery(router.query.pdf === "1");
       }
     }
-  }, [router.query.id, requests]);
+  }, [router.query.id, router.query.pdf, requests]);
 
   // Check if current user is assigned to approve a request at its current step
   const isUserAssignedToRequest = (
@@ -1792,8 +1795,9 @@ export default function RequestsPage() {
           request={selectedRequest}
           onClose={() => {
             setSelectedRequest(null);
-            const { id, ...rest } = router.query;
-            if (id) {
+            const { id, pdf, ...rest } = router.query;
+            setOpenPdfFromQuery(false);
+            if (id || pdf) {
               router.push(
                 { pathname: router.pathname, query: rest },
                 undefined,
@@ -1813,6 +1817,7 @@ export default function RequestsPage() {
           onHistoryRefresh={(newHistory) => setRequestHistory(newHistory)}
           currentUser={currentUser}
           userSignature={userSignature}
+          openPdf={openPdfFromQuery}
         />
       )}
 
@@ -1933,6 +1938,7 @@ function RequestDetailsModal({
   onHistoryRefresh,
   currentUser,
   userSignature,
+  openPdf = false,
 }) {
   useScrollLock(true);
   const currentStep = getCurrentWorkflowStep(request);
@@ -1986,7 +1992,7 @@ function RequestDetailsModal({
   };
 
   const displayAge = calculateAge(request.date_of_birth) || request.age;
-  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(openPdf);
   const [showResidentDb, setShowResidentDb] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const [isEditResidentMode, setIsEditResidentMode] = useState(false);

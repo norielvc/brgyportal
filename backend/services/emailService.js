@@ -10,8 +10,8 @@ const createTransporter = () => {
       user: process.env.SMTP_USER,
       pass: pass
     },
-    logger: true,
-    debug: true
+    logger: process.env.NODE_ENV !== 'production',
+    debug: false
   });
 };
 

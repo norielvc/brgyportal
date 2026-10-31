@@ -6,7 +6,7 @@ const workflowService = require('../services/workflowService');
 const certificateGenerationService = require('../services/certificateGenerationService');
 
 // Helper function to send workflow notifications
-const notifyNextStepApprovers = async (certificateType, referenceNumber, applicantName, requestId, applicantEmail = null) => {
+const notifyNextStepApprovers = async (certificateType, referenceNumber, applicantName, requestId, applicantEmail = null, tenantId = null) => {
   try {
     // 1. Send confirmation to applicant if email is provided
     if (applicantEmail) {
@@ -27,10 +27,23 @@ const notifyNextStepApprovers = async (certificateType, referenceNumber, applica
       }
     }
 
-    // 2. Notify staff approvers
-    const { data: workflowConfig } = await supabase
-      .from('workflow_configurations').select('workflow_config').eq('certificate_type', certificateType).eq('tenant_id', tenantId)
-      .single();
+    // 2. Notify staff approvers (unified certs share master_certificate_flow)
+    let { data: workflowConfig } = await supabase
+      .from('workflow_configurations')
+      .select('workflow_config')
+      .eq('certificate_type', certificateType)
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+
+    if (!workflowConfig && certificateType !== 'business_permit' && tenantId) {
+      const master = await supabase
+        .from('workflow_configurations')
+        .select('workflow_config')
+        .eq('certificate_type', 'master_certificate_flow')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+      workflowConfig = master.data;
+    }
 
     let approverIds = [];
     let stepTitle = 'Initial Review';
@@ -423,7 +436,7 @@ router.post('/clearance', async (req, res) => {
     }]);
 
     // Send email notifications to next step approvers (Background process)
-    notifyNextStepApprovers('barangay_clearance', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
+    notifyNextStepApprovers('barangay_clearance', refNumber, fullName, data.id, req.body.email, tenantId).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -578,7 +591,7 @@ router.post('/indigency', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('certificate_of_indigency', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
+    notifyNextStepApprovers('certificate_of_indigency', refNumber, fullName, data.id, req.body.email, tenantId).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -718,7 +731,7 @@ router.post('/residency', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('barangay_residency', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
+    notifyNextStepApprovers('barangay_residency', refNumber, fullName, data.id, req.body.email, tenantId).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -844,7 +857,7 @@ router.post('/natural-death', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('natural_death', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
+    notifyNextStepApprovers('natural_death', refNumber, fullName, data.id, req.body.email, tenantId).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -972,7 +985,7 @@ router.post('/medico-legal', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('medico_legal', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
+    notifyNextStepApprovers('medico_legal', refNumber, fullName, data.id, req.body.email, tenantId).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -1101,7 +1114,7 @@ router.post('/guardianship', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('barangay_guardianship', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
+    notifyNextStepApprovers('barangay_guardianship', refNumber, fullName, data.id, req.body.email, tenantId).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -1237,7 +1250,7 @@ router.post('/cohabitation', async (req, res) => {
       new_status: 'staff_review'
     }]);
 
-    notifyNextStepApprovers('barangay_cohabitation', refNumber, fullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
+    notifyNextStepApprovers('barangay_cohabitation', refNumber, fullName, data.id, req.body.email, tenantId).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -1355,7 +1368,7 @@ router.post('/business-permit', async (req, res) => {
       performed_by: residentId || null
     }]);
 
-    notifyNextStepApprovers('business_permit', refNumber, ownerFullName, data.id, req.body.email).catch(err => console.error('Background email error:', err));
+    notifyNextStepApprovers('business_permit', refNumber, ownerFullName, data.id, req.body.email, tenantId).catch(err => console.error('Background email error:', err));
 
     res.status(201).json({
       success: true,
@@ -1882,7 +1895,7 @@ router.post('/create', async (req, res) => {
         new_status: 'staff_review'
       }]);
 
-      notifyNextStepApprovers('certification_same_person', refNumber, full_name, data.id, req.body.email).catch(err => console.error('Background email error:', err));
+      notifyNextStepApprovers('certification_same_person', refNumber, full_name, data.id, req.body.email, tenantId).catch(err => console.error('Background email error:', err));
 
       return res.status(201).json({
         success: true,
