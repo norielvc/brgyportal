@@ -2,6 +2,10 @@ import { supabase, isSupabaseServerConfigured } from "../../lib/supabase";
 import { BLOTTER_DETAILS_MAX_CHARS } from "../../src/lib/blotterConstants";
 import { authenticateToken } from "../../src/lib/api-auth";
 import { defaultPetsaNgPaghaharap } from "../../src/lib/blotterVerify";
+import {
+  getEsumbongSettings,
+  userHasEsumbongAccess,
+} from "../../src/lib/esumbongAccess";
 
 export const config = {
   api: {
@@ -36,6 +40,21 @@ function normalizeTime(value) {
   const t = String(value).trim();
   if (/^\d{2}:\d{2}(:\d{2})?$/.test(t)) return t.length === 5 ? `${t}:00` : t;
   return null;
+}
+
+async function assertEsumbongStaffAccess(req, res, tenantId) {
+  const user = await authenticateToken(req, res);
+  if (!user) return null;
+  const settings = await getEsumbongSettings(supabase, tenantId);
+  if (!userHasEsumbongAccess(user, settings)) {
+    res.status(403).json({
+      success: false,
+      message:
+        "You do not have access to E-Sumbong. Ask an admin to assign you under Workflow → E-Sumbong.",
+    });
+    return null;
+  }
+  return user;
 }
 
 function mapSupabaseError(error) {
@@ -296,7 +315,7 @@ export default async function handler(req, res) {
           : "portal";
 
       if (intake_source === "walk_in") {
-        const user = await authenticateToken(req, res);
+        const user = await assertEsumbongStaffAccess(req, res, tenantId);
         if (!user) return;
         const staffTenant = normalizeTenantId(user.tenant_id || user.tenantId);
         if (staffTenant && staffTenant !== tenantId) {
@@ -387,6 +406,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "GET") {
+      const staffUser = await assertEsumbongStaffAccess(req, res, tenantId);
+      if (!staffUser) return;
+
       const { status } = req.query;
 
       let query = supabase
@@ -428,7 +450,7 @@ export default async function handler(req, res) {
       }
 
       if (action === "verify") {
-        const user = await authenticateToken(req, res);
+        const user = await assertEsumbongStaffAccess(req, res, tenantId);
         if (!user) return;
 
         try {
@@ -439,22 +461,6 @@ export default async function handler(req, res) {
             petsaOverride,
           });
           const { report, alreadyVerified } = result;
-
-          if (!alreadyVerified) {
-            try {
-              const { notifyBlotterStatusChange } = await import(
-                "../../src/lib/blotterNotificationHelper"
-              );
-              await notifyBlotterStatusChange({
-                supabase,
-                report,
-                newStatus: report.status,
-                previousStatus: "pending",
-              });
-            } catch (notifyErr) {
-              console.error("[blotter] verify notification error:", notifyErr);
-            }
-          }
 
           return res.json({
             success: true,
@@ -481,7 +487,7 @@ export default async function handler(req, res) {
       }
 
       if (action === "update_petsa") {
-        const user = await authenticateToken(req, res);
+        const user = await assertEsumbongStaffAccess(req, res, tenantId);
         if (!user) return;
 
         try {
@@ -527,6 +533,9 @@ export default async function handler(req, res) {
         });
       }
 
+      const statusUser = await assertEsumbongStaffAccess(req, res, tenantId);
+      if (!statusUser) return;
+
       const { data: before, error: beforeErr } = await supabase
         .from("blotter_reports")
         .select("status, email, complainant_name, incident_date, id, respondent_name")
@@ -546,21 +555,6 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
-      try {
-        const { notifyBlotterStatusChange } = await import(
-          "../../src/lib/blotterNotificationHelper"
-        );
-        const statusNotify = await notifyBlotterStatusChange({
-          supabase,
-          report: data,
-          newStatus: status,
-          previousStatus: before?.status,
-        });
-        console.log("[blotter] status notifications:", statusNotify);
-      } catch (notifyErr) {
-        console.error("[blotter] status notification error:", notifyErr);
-      }
-
       return res.json({
         success: true,
         message: "Blotter report updated",
@@ -573,6 +567,9 @@ export default async function handler(req, res) {
       if (!id) {
         return res.status(400).json({ success: false, message: "id is required" });
       }
+      const deleteUser = await assertEsumbongStaffAccess(req, res, tenantId);
+      if (!deleteUser) return;
+
       const { error } = await supabase
         .from("blotter_reports")
         .delete()

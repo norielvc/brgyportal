@@ -553,20 +553,7 @@ export default async function handler(req, res) {
     // Determine email notifications based on action
     if (action === 'approve') {
       if (['ready', 'ready_for_pickup', 'released'].includes(newCertStatus)) {
-        // Final approval - notify applicant that certificate is ready
-        if (applicantEmail) {
-          await sendEmail({
-            recipientEmail: applicantEmail,
-            recipientName: applicantName,
-            eventType: 'READY_FOR_PICKUP',
-            certificateType: certType,
-            referenceNumber: cert.reference_number,
-            applicantName: applicantName,
-            comments: note,
-            requestId: requestId
-          });
-        }
-        
+        // Ready-for-pickup email is manual only (Pickup Management / send-email API).
         // In-app notification for applicant (if they have a user account)
         if (cert.resident_id) {
           const { data: residentUser } = await supabase

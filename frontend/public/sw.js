@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brgydesk-pwa-v1.0.1';
+const CACHE_NAME = 'brgydesk-pwa-v1.0.2';
 const OFFLINE_URL = '/offline.html';
 
 const PRECACHE_ASSETS = [
@@ -47,8 +47,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Ignore non-GET requests or browser extension requests
-  if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
+  // Ignore non-GET requests, browser extension requests, or local development server
+  if (
+    request.method !== 'GET' ||
+    !url.protocol.startsWith('http') ||
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1'
+  ) {
     return;
   }
 

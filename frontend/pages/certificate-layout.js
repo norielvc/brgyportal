@@ -1640,17 +1640,8 @@ export default function CertificateLayoutPage() {
                             {officials.headerInfo?.province}.
                           </p>
 
-                          {/* Unified Signature Section (Left Aligned for All) - MATCHING MODAL */}
+                          {/* Indigency: chairman signature only (no resident thumb mark) */}
                           <div className="mt-8 relative">
-                            <div className="mb-4">
-                              <div className="h-4"></div>
-                              <div className="border-t border-black w-64 pt-1">
-                                <p className="text-sm">
-                                  Resident's Signature / Thumb Mark
-                                </p>
-                              </div>
-                            </div>
-
                             <div className="text-left mb-8 self-start">
                               <p className="font-bold mb-20">TRULY YOURS,</p>
                               <p

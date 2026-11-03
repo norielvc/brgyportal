@@ -47,7 +47,10 @@ export function generateFullAddress(addressData) {
 
   // Determine subdivision and parent purok if purok is a subdivision key
   const subInfo = getSubdivisionInfo(purok || subdivision);
-  const effectiveSubdivision = subInfo?.subdivision || (subdivision ? subdivision.trim().toUpperCase() : null);
+  const rawSub =
+    subInfo?.subdivision ||
+    (subdivision ? normalizeNorthvilleSubdivision(subdivision) : null);
+  const effectiveSubdivision = rawSub || null;
   const effectivePurok = subInfo?.parentPurok || purok;
 
   if (effectiveSubdivision) {
@@ -109,9 +112,11 @@ export function resolveRequestResidentialAddress(request) {
     }
   }
 
-  if (stored) return stored;
-  if (r?.residential_address?.trim()) return r.residential_address.trim();
-  return fromStructured;
+  if (stored) return normalizeNorthvilleInText(stored);
+  if (r?.residential_address?.trim()) {
+    return normalizeNorthvilleInText(r.residential_address.trim());
+  }
+  return normalizeNorthvilleInText(fromStructured);
 }
 
 /**
@@ -199,9 +204,9 @@ export function validateAddress(addressData) {
 export const SUBDIVISIONS_CONFIG = {
   'HAZEL HEIGHTS': { subdivision: 'HAZEL HEIGHTS', parentPurok: 'Purok 1', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 1 - HAZEL HEIGHTS' },
   'CREEKSTONE': { subdivision: 'CREEKSTONE', parentPurok: 'Purok 1', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 1 - CREEKSTONE' },
-  'NORTH VILLE 9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTH VILLE 9' },
-  'NORTHVILLE 9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTH VILLE 9' },
-  'NV9': { subdivision: 'NORTH VILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTH VILLE 9' },
+  'NORTH VILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTHVILLE 9' },
+  'NORTHVILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTHVILLE 9' },
+  'NV9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTHVILLE 9' },
   'SITIO BANAWE': { subdivision: 'SITIO BANAWE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 2 - SITIO BANAWE' },
   'BANAWE': { subdivision: 'SITIO BANAWE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 2 - SITIO BANAWE' },
   'SITIO BANAUE': { subdivision: 'SITIO BANAWE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 2 - SITIO BANAWE' },
@@ -209,11 +214,32 @@ export const SUBDIVISIONS_CONFIG = {
 };
 
 export const SUBDIVISION_PUROKS = [
-  'NORTH VILLE 9',
   'NORTHVILLE 9',
+  'NORTH VILLE 9',
   'NV9',
   'CREEKSTONE',
 ];
+
+/** Canonical display/storage label for Northville 9 (handles legacy "North Ville 9"). */
+export function normalizeNorthvilleSubdivision(value) {
+  const upper = String(value || "").trim().toUpperCase();
+  if (!upper) return "";
+  if (
+    upper === "NV9" ||
+    upper.replace(/\s+/g, " ") === "NORTH VILLE 9" ||
+    upper.replace(/\s+/g, "") === "NORTHVILLE9" ||
+    upper === "NORTHVILLE 9"
+  ) {
+    return "NORTHVILLE 9";
+  }
+  return upper;
+}
+
+/** Replace legacy "North Ville 9" spelling inside a full address string. */
+export function normalizeNorthvilleInText(text) {
+  if (text == null || text === "") return text;
+  return String(text).replace(/\bNORTH\s+VILLE\s+9\b/gi, "NORTHVILLE 9");
+}
 
 /**
  * Get subdivision details and assigned parent purok
@@ -226,7 +252,7 @@ export function getSubdivisionInfo(val) {
   if (SUBDIVISIONS_CONFIG[upper]) return SUBDIVISIONS_CONFIG[upper];
   if (upper.includes('HAZEL')) return SUBDIVISIONS_CONFIG['HAZEL HEIGHTS'];
   if (upper.includes('CREEKSTONE')) return SUBDIVISIONS_CONFIG['CREEKSTONE'];
-  if (upper.includes('NORTH') || upper.includes('NV9')) return SUBDIVISIONS_CONFIG['NORTH VILLE 9'];
+  if (upper.includes('NORTH') || upper.includes('NV9')) return SUBDIVISIONS_CONFIG['NORTHVILLE 9'];
   if (upper.includes('BANAWE') || upper.includes('BANAUE')) return SUBDIVISIONS_CONFIG['SITIO BANAWE'];
   return null;
 }
@@ -283,7 +309,7 @@ export const PUROK_OPTIONS = [
   { value: 'HAZEL HEIGHTS', label: 'PUROK 1 - HAZEL HEIGHTS' },
   { value: 'CREEKSTONE', label: 'PUROK 1 - CREEKSTONE' },
   { value: 'Purok 2', label: 'PUROK 2' },
-  { value: 'NORTH VILLE 9', label: 'PUROK 2 - NORTH VILLE 9' },
+  { value: 'NORTHVILLE 9', label: 'PUROK 2 - NORTHVILLE 9' },
   { value: 'SITIO BANAWE', label: 'PUROK 2 - SITIO BANAWE' },
   { value: 'Purok 3', label: 'PUROK 3' },
   { value: 'Purok 4', label: 'PUROK 4' },

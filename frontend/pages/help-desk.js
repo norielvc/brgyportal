@@ -54,7 +54,8 @@ import {
   DEFAULT_CERTIFICATE_OFFICIALS,
 } from "@/lib/certificateLetterhead";
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
-import { getAuthToken } from "@/lib/auth";
+import { getAuthToken, getUserData } from "@/lib/auth";
+import { userHasEsumbongAccess } from "@/lib/esumbongAccess";
 import {
   formatHearingScheduleDisplay,
   isBlotterVerified,
@@ -155,6 +156,7 @@ export default function HelpDesk() {
 
   // New entry form state
   const [staffTenantId, setStaffTenantId] = useState("");
+  const [canAccessEsumbong, setCanAccessEsumbong] = useState(true);
 
   const [newEntryData, setNewEntryData] = useState({
     // Assistance
@@ -181,6 +183,36 @@ export default function HelpDesk() {
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    const loadEsumbongAccess = async () => {
+      try {
+        const token = getAuthToken();
+        const user = getUserData();
+        if (!token || !user) return;
+        const res = await fetch(`${API_URL}/workflows/esumbong-settings`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        const settings = data?.data || {};
+        setCanAccessEsumbong(userHasEsumbongAccess(user, settings));
+      } catch {
+        setCanAccessEsumbong(true);
+      }
+    };
+    loadEsumbongAccess();
+  }, []);
+
+  const visibleTabs = useMemo(
+    () => TABS.filter((tab) => tab.id !== "esumbong" || canAccessEsumbong),
+    [canAccessEsumbong],
+  );
+
+  useEffect(() => {
+    if (!canAccessEsumbong && activeTab === "esumbong") {
+      setActiveTab("assistance");
+    }
+  }, [canAccessEsumbong, activeTab]);
 
   // KapChat Messenger Specific States
   const [kapchatViewMode, setKapchatViewMode] = useState("messenger"); // 'messenger' | 'table'
@@ -1051,7 +1083,7 @@ export default function HelpDesk() {
         {/* Tab Selection Row (Touch-friendly & Horizontal Scroll on Mobile) */}
         <div className="bg-white rounded-lg border border-gray-200 p-0.5">
           <div className="grid grid-cols-3 gap-0.5">
-            {TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
               const pendingCount =

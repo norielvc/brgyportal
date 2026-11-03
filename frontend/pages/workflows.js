@@ -29,6 +29,7 @@ import useScrollLock from "@/lib/useScrollLock";
 // API Configuration
 const API_URL = "/api";
 const MASTER_WORKFLOW_ID = "master_certificate_flow";
+const ESUMBONG_SETTINGS_ID = "esumbong_help_desk";
 
 // Certificate types
 const certificateTypes = [
@@ -172,6 +173,11 @@ export default function WorkflowsPage() {
   const [users, setUsers] = useState([]);
   const [showAssignModal, setShowAssignModal] = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [esumbongSettings, setEsumbongSettings] = useState({
+    notificationReceiverIds: [],
+    accessUserIds: [],
+  });
+  const [savingEsumbong, setSavingEsumbong] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -195,8 +201,68 @@ export default function WorkflowsPage() {
     }
     loadWorkflows();
     loadUsers();
+    loadEsumbongSettings();
     setLoading(false);
   }, []);
+
+  const loadEsumbongSettings = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      const response = await fetch(`${API_URL}/workflows/esumbong-settings`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        setEsumbongSettings({
+          notificationReceiverIds: data.data.notificationReceiverIds || [],
+          accessUserIds: data.data.accessUserIds || [],
+        });
+      }
+    } catch (error) {
+      console.error("Error loading E-Sumbong settings:", error);
+    }
+  };
+
+  const saveEsumbongSettings = async () => {
+    setSavingEsumbong(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/workflows/esumbong-settings`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ settings: esumbongSettings }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        showNotificationMsg("error", data.message || "Failed to save E-Sumbong settings");
+        return;
+      }
+      setEsumbongSettings(data.data || esumbongSettings);
+      showNotificationMsg("success", "E-Sumbong access and email receivers saved.");
+    } catch (error) {
+      showNotificationMsg("error", error.message || "Failed to save E-Sumbong settings");
+    } finally {
+      setSavingEsumbong(false);
+    }
+  };
+
+  const toggleEsumbongUser = (field, userId) => {
+    const id = String(userId);
+    setEsumbongSettings((prev) => {
+      const list = prev[field] || [];
+      const next = list.includes(id)
+        ? list.filter((x) => x !== id)
+        : [...list, id];
+      return { ...prev, [field]: next };
+    });
+  };
 
   const loadUsers = async () => {
     try {
@@ -746,31 +812,63 @@ export default function WorkflowsPage() {
           >
             Business Permit
           </button>
+          <button
+            onClick={() => setSelectedCertificate(ESUMBONG_SETTINGS_ID)}
+            className={`flex-1 sm:flex-none px-2.5 py-1.5 rounded-[5px] font-semibold text-[11px] transition-colors ${
+              selectedCertificate === ESUMBONG_SETTINGS_ID
+                ? "bg-red-700 text-white"
+                : "text-gray-600 hover:text-gray-900 hover:bg-white/80"
+            }`}
+          >
+            E-Sumbong
+          </button>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={syncWorkflowAssignments}
-            disabled={syncing}
-            className="flex-1 sm:flex-initial justify-center px-2.5 py-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-[11px] font-semibold transition-colors"
-          >
-            {syncing ? (
-              <>
-                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Syncing…
-              </>
-            ) : (
-              <>
-                <Save className="w-3.5 h-3.5 shrink-0" />
-                Save & Sync
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleResetToDefault}
-            className="flex-1 sm:flex-initial justify-center px-2.5 py-1.5 text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            Reset
-          </button>
+          {selectedCertificate === ESUMBONG_SETTINGS_ID ? (
+            <button
+              onClick={saveEsumbongSettings}
+              disabled={savingEsumbong}
+              className="flex-1 sm:flex-initial justify-center px-2.5 py-1.5 bg-red-700 text-white rounded-md hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-[11px] font-semibold transition-colors"
+            >
+              {savingEsumbong ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5 shrink-0" />
+                  Save E-Sumbong
+                </>
+              )}
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={syncWorkflowAssignments}
+                disabled={syncing}
+                className="flex-1 sm:flex-initial justify-center px-2.5 py-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-[11px] font-semibold transition-colors"
+              >
+                {syncing ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Syncing…
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5 shrink-0" />
+                    Save & Sync
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleResetToDefault}
+                className="flex-1 sm:flex-initial justify-center px-2.5 py-1.5 text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Reset
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -795,7 +893,16 @@ export default function WorkflowsPage() {
       )}
 
       {/* Flow scope note */}
-      {selectedCertificate === MASTER_WORKFLOW_ID ? (
+      {selectedCertificate === ESUMBONG_SETTINGS_ID ? (
+        <div className="flex items-start gap-2 px-2.5 py-2 rounded-md border border-red-200/80 bg-red-50/80">
+          <AlertCircle className="w-3.5 h-3.5 text-red-700 shrink-0 mt-px" />
+          <p className="text-[10px] text-red-900 leading-snug">
+            <span className="font-bold">E-Sumbong (Help Desk)</span>
+            {" — "}
+            choose who gets email when a new blotter is filed and who may open the E-Sumbong tab. If lists are empty, new reports email the Barangay Captain and all help-desk staff roles keep access.
+          </p>
+        </div>
+      ) : selectedCertificate === MASTER_WORKFLOW_ID ? (
         <div className="flex items-start gap-2 px-2.5 py-2 rounded-md border border-blue-200/80 bg-blue-50/80">
           <Settings className="w-3.5 h-3.5 text-blue-700 shrink-0 mt-px" />
           <p className="text-[10px] text-blue-900 leading-snug">
@@ -815,6 +922,90 @@ export default function WorkflowsPage() {
         </div>
       )}
 
+      {selectedCertificate === ESUMBONG_SETTINGS_ID ? (
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+              <Mail className="w-3.5 h-3.5 text-red-700" />
+              <h2 className="text-[11px] font-bold text-gray-800 uppercase tracking-wide">
+                New report email receivers
+              </h2>
+            </div>
+            <p className="px-3 pt-2 text-[10px] text-gray-500 leading-snug">
+              Staff who receive email when a resident submits E-Sumbong (resident still gets confirmation). Leave empty to notify Barangay Captain/Chairman only.
+            </p>
+            <div className="p-3 max-h-[420px] overflow-y-auto space-y-1">
+              {users.map((u) => {
+                const uid = String(u.id);
+                const checked = esumbongSettings.notificationReceiverIds.includes(uid);
+                const label =
+                  `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email;
+                return (
+                  <label
+                    key={`notify-${uid}`}
+                    className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer text-[11px] ${
+                      checked ? "border-red-300 bg-red-50" : "border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleEsumbongUser("notificationReceiverIds", uid)}
+                      className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span className="font-semibold text-gray-900 block truncate">{label}</span>
+                      <span className="text-gray-500 truncate block">{u.email}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+              <Shield className="w-3.5 h-3.5 text-red-700" />
+              <h2 className="text-[11px] font-bold text-gray-800 uppercase tracking-wide">
+                Who can access E-Sumbong
+              </h2>
+            </div>
+            <p className="px-3 pt-2 text-[10px] text-gray-500 leading-snug">
+              Help Desk → E-Sumbong tab and blotter API. Admin and superadmin always have access. Leave empty to allow all help-desk staff roles (captain, secretary, staff, etc.).
+            </p>
+            <div className="p-3 max-h-[420px] overflow-y-auto space-y-1">
+              {users.map((u) => {
+                const uid = String(u.id);
+                const checked = esumbongSettings.accessUserIds.includes(uid);
+                const label =
+                  `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email;
+                return (
+                  <label
+                    key={`access-${uid}`}
+                    className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer text-[11px] ${
+                      checked ? "border-red-300 bg-red-50" : "border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleEsumbongUser("accessUserIds", uid)}
+                      className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span className="font-semibold text-gray-900 block truncate">{label}</span>
+                      <span className="text-gray-500 truncate block">
+                        {u.role}{u.position ? ` · ${u.position}` : ""}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Review Request Team */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div
@@ -1207,6 +1398,8 @@ export default function WorkflowsPage() {
           })}
         </div>
       </div>
+        </>
+      )}
 
       {/* Add Step Modal */}
       {showAddStep && (

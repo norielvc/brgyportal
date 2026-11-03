@@ -4,9 +4,10 @@ import {
   sendTransactionalEmail,
 } from "./sendTransactionalEmail";
 import {
-  fetchTenantReviewStaff,
-  isEmailNotificationsEnabled,
-} from "./requestNotificationHelper";
+  fetchEsumbongNotificationRecipients,
+  getEsumbongSettings,
+} from "./esumbongAccess";
+import { isEmailNotificationsEnabled } from "./requestNotificationHelper";
 
 function reportRef(report) {
   const id = String(report?.id || "");
@@ -96,9 +97,18 @@ export async function notifyNewBlotterReport({ supabase, tenantId, report }) {
     else errors.push(result.error || "resident email failed");
   }
 
-  const staffList = await fetchTenantReviewStaff(supabase, tenantId);
+  const esumbongSettings = await getEsumbongSettings(supabase, tenantId);
+  const staffList = await fetchEsumbongNotificationRecipients(
+    supabase,
+    tenantId,
+    esumbongSettings,
+  );
   const ref = reportRef(report);
+  const seenStaffEmails = new Set();
   for (const staff of staffList) {
+    const staffKey = String(staff.email || "").trim().toLowerCase();
+    if (!staffKey || seenStaffEmails.has(staffKey)) continue;
+    seenStaffEmails.add(staffKey);
     if (!isValidEmail(staff.email)) continue;
     const name =
       `${staff.first_name || ""} ${staff.last_name || ""}`.trim() || "Staff";

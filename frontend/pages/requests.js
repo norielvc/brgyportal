@@ -7449,6 +7449,9 @@ function ClearancePreviewForRequests({
 
   const isBusinessPermit =
     String(request.certificate_type || "").toLowerCase() === "business_permit";
+  const isIndigencyCert =
+    String(request.certificate_type || "").toLowerCase() ===
+    "certificate_of_indigency";
   const isBusinessClearanceDoc =
     isBusinessPermit && businessPreviewVariant === "permit";
 
@@ -7821,6 +7824,7 @@ function ClearancePreviewForRequests({
           width: `${pageSpec.widthMm}mm`,
           minHeight: isBusinessClearanceDoc ? "auto" : `${pageSpec.heightMm}mm`,
           padding: "0",
+          paddingTop: isIndigencyCert ? "5mm" : "0",
           boxSizing: "border-box",
         }}
       >
@@ -7829,9 +7833,11 @@ function ClearancePreviewForRequests({
           className={`cert-header-section w-full border-b-2 flex justify-center items-center flex-shrink-0 ${getFontClass(headerStyle.fontFamily)} ${
             isBusinessClearanceDoc
               ? "pt-3 pb-4 px-10 sm:px-12"
-              : isLetterPage
-                ? "pt-3 pb-4 px-7"
-                : "pt-4 pb-6 px-8"
+              : isIndigencyCert
+                ? "pt-2 pb-4 px-7"
+                : isLetterPage
+                  ? "pt-3 pb-4 px-7"
+                  : "pt-4 pb-6 px-8"
           }`}
           style={{
             backgroundColor: headerStyle.bgColor,
@@ -9143,7 +9149,8 @@ function ClearancePreviewForRequests({
                         !isGuardianship &&
                         !isCohabitation &&
                         !isMedicoLegal &&
-                        !isSamePerson && (
+                        !isSamePerson &&
+                        request.certificate_type !== "certificate_of_indigency" && (
                           <div className="mb-4 relative top-[1.5em]">
                             <div className="h-6"></div>
                             <div className="border-t border-black w-64 pt-1">

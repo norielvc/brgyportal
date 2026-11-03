@@ -41,7 +41,16 @@ import BirthPlaceSelect, {
 import IssueIDModal from "@/components/Modals/IssueIDModal";
 import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
-import { generateFullAddress, PUROK_OPTIONS, PHASE_OPTIONS, isSubdivisionPurok, getSubdivisionInfo, hasPhaseField } from "@/lib/addressHelper";
+import {
+  generateFullAddress,
+  PUROK_OPTIONS,
+  PHASE_OPTIONS,
+  isSubdivisionPurok,
+  getSubdivisionInfo,
+  hasPhaseField,
+  normalizeNorthvilleSubdivision,
+  normalizeNorthvilleInText,
+} from "@/lib/addressHelper";
 import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
 import {
   pendingCaseRows,
@@ -580,7 +589,7 @@ export default function Residents() {
     } else if (/CREEKSTONE/i.test(addr) || /CREEKSTONE/i.test(selectedResident.purok)) {
       detectedPurokValue = "CREEKSTONE";
     } else if (/NORTH\s*VILLE\s*9|NORTHVILLE\s*9|NV9/i.test(addr) || /NORTH\s*VILLE\s*9|NORTHVILLE\s*9|NV9/i.test(selectedResident.purok)) {
-      detectedPurokValue = "NORTH VILLE 9";
+      detectedPurokValue = "NORTHVILLE 9";
     } else if (/BANAWE|BANAUE/i.test(addr) || /BANAWE|BANAUE/i.test(selectedResident.purok)) {
       detectedPurokValue = "SITIO BANAWE";
     }
@@ -1173,21 +1182,22 @@ export default function Residents() {
         dense
       >
         {selectedResident && (() => {
-          const displayAddress =
+          const displayAddress = normalizeNorthvilleInText(
             selectedResident.residential_address ||
-            generateFullAddress({
-              house_number: selectedResident.house_number,
-              purok: selectedResident.purok,
-              subdivision: selectedResident.subdivision,
-              barangay:
-                selectedResident.barangay || tenantAddressDefaults.barangay,
-              municipality:
-                selectedResident.municipality ||
-                tenantAddressDefaults.municipality,
-              province:
-                selectedResident.province || tenantAddressDefaults.province,
-            }) ||
-            "—";
+              generateFullAddress({
+                house_number: selectedResident.house_number,
+                purok: selectedResident.purok,
+                subdivision: selectedResident.subdivision,
+                barangay:
+                  selectedResident.barangay || tenantAddressDefaults.barangay,
+                municipality:
+                  selectedResident.municipality ||
+                  tenantAddressDefaults.municipality,
+                province:
+                  selectedResident.province || tenantAddressDefaults.province,
+              }) ||
+              "—",
+          );
 
           const householdLinkLabel = selectedResident.household_head_id
             ? "Linked as family member"
@@ -1267,7 +1277,9 @@ export default function Residents() {
                     { label: "Purok", value: selectedResident.purok },
                     {
                       label: "Subdivision",
-                      value: selectedResident.subdivision,
+                      value: normalizeNorthvilleSubdivision(
+                        selectedResident.subdivision,
+                      ),
                     },
                   ]}
                 />

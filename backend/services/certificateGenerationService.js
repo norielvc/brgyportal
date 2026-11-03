@@ -532,11 +532,7 @@ class CertificateGenerationService {
                     Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName}, ${config.headerInfo.municipality}, ${config.headerInfo.province}.
                 </p>
 
-                <div class="signature-section" style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px;">
-                    <div class="sig-block" style="text-align: left;">
-                        <div class="sig-line" style="border-bottom: 1px solid #000; width: 250px; height: 30px; margin: 0 0 5px 0;"></div>
-                        <p style="font-size: 11px; margin: 0;">Resident's Signature / Thumb Mark</p>
-                    </div>
+                <div class="signature-section" style="margin-top: 20px;">
                     <div class="sig-block" style="text-align: left; position: relative; min-width: 320px;">
                         ${this.renderTrulyYours(captainApproval, officials)}
                     </div>
@@ -544,7 +540,13 @@ class CertificateGenerationService {
             </div>
         `;
 
-        return this.generateDocument('CERTIFICATE OF INDIGENCY', bodyHtml, request, config);
+        return this.generateDocument(
+            'CERTIFICATE OF INDIGENCY',
+            bodyHtml,
+            request,
+            config,
+            { containerPaddingTop: '5mm' },
+        );
     }
 
     generateResidencyContent(request, config, captainApproval = null) {
@@ -770,7 +772,10 @@ class CertificateGenerationService {
         `;
     }
 
-    generateDocument(title, bodyHtml, request, config) {
+    generateDocument(title, bodyHtml, request, config, options = {}) {
+        const containerExtraStyle = options.containerPaddingTop
+            ? `padding-top: ${options.containerPaddingTop};`
+            : "";
         return `
         <!DOCTYPE html>
         <html lang="en">
@@ -793,6 +798,7 @@ class CertificateGenerationService {
                     background: white; 
                     border: 2px solid #000;
                     padding: 20px;
+                    ${containerExtraStyle}
                 }
                 .title { 
                     font-size: 24px; 

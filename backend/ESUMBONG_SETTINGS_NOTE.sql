@@ -1,0 +1,8 @@
+-- E-Sumbong access / email receivers are stored in barangay_settings, not workflow_configurations.
+-- No change to chk_config_certificate_type is required.
+--
+-- Key: esumbong_help_desk
+-- Value JSON example:
+-- { "esumbongSettings": { "notificationReceiverIds": ["uuid..."], "accessUserIds": ["uuid..."] } }
+--
+-- Configure in the app: Workflows → E-Sumbong → Save E-Sumbong.
