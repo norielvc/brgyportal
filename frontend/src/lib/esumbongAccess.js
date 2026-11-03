@@ -4,7 +4,10 @@
  * so we avoid certificate_type check constraints.
  */
 
-import { fetchBarangayCaptainUsers, fetchUsersByIds } from "./requestNotificationHelper";
+import {
+  fetchBarangayCaptainUsers,
+  fetchUsersByIds,
+} from "./staffUserQueries";
 
 export const ESUMBONG_WORKFLOW_TYPE = "esumbong_help_desk";
 export const ESUMBONG_SETTINGS_KEY = "esumbong_help_desk";
