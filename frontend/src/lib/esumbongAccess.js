@@ -86,15 +86,22 @@ export function userIdFromAuthUser(user) {
   return String(user?._id || user?.id || "").trim();
 }
 
-/** Admin roles that always manage E-Sumbong settings and access when list is restricted. */
+/** Admin and Captain roles that always manage E-Sumbong settings and access when list is restricted. */
 export function canAlwaysAccessEsumbong(user) {
   const role = String(user?.role || "").toLowerCase();
-  return role === "superadmin" || role === "admin";
+  const pos = String(user?.position || "").toLowerCase();
+  return (
+    role === "superadmin" ||
+    role === "super_admin" ||
+    role === "admin" ||
+    role === "captain" ||
+    /captain|chairman|punong/i.test(pos)
+  );
 }
 
 /**
  * When accessUserIds is empty, any help-desk staff role may view E-Sumbong.
- * When set, only listed users plus superadmin/admin.
+ * When set, only listed users plus superadmin/admin/captain.
  */
 export function userHasEsumbongAccess(user, settings) {
   if (!user) return false;

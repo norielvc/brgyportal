@@ -156,7 +156,8 @@ export default function HelpDesk() {
 
   // New entry form state
   const [staffTenantId, setStaffTenantId] = useState("");
-  const [canAccessEsumbong, setCanAccessEsumbong] = useState(true);
+  const [canAccessEsumbong, setCanAccessEsumbong] = useState(false);
+  const [esumbongAccessLoaded, setEsumbongAccessLoaded] = useState(false);
 
   const [newEntryData, setNewEntryData] = useState({
     // Assistance
@@ -189,15 +190,24 @@ export default function HelpDesk() {
       try {
         const token = getAuthToken();
         const user = getUserData();
-        if (!token || !user) return;
+        if (!token || !user) {
+          setEsumbongAccessLoaded(true);
+          return;
+        }
         const res = await fetch(`${API_URL}/workflows/esumbong-settings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         const settings = data?.data || {};
-        setCanAccessEsumbong(userHasEsumbongAccess(user, settings));
+        const allowed = userHasEsumbongAccess(user, settings);
+        setCanAccessEsumbong(allowed);
+        if (!allowed) {
+          setActiveTab((prev) => (prev === "esumbong" ? "assistance" : prev));
+        }
       } catch {
         setCanAccessEsumbong(true);
+      } finally {
+        setEsumbongAccessLoaded(true);
       }
     };
     loadEsumbongAccess();
@@ -251,15 +261,11 @@ export default function HelpDesk() {
     return () => clearInterval(interval);
   }, [activeTab]);
 
-  // Fetch data on tab change
+  // Fetch data on tab change once E-Sumbong access check completes
   useEffect(() => {
+    if (!esumbongAccessLoaded) return;
     fetchCurrentTabData();
-  }, [activeTab]);
-
-  // Initial load of counts across all channels
-  useEffect(() => {
-    fetchAllChannelCounts();
-  }, []);
+  }, [activeTab, esumbongAccessLoaded, canAccessEsumbong]);
 
   useEffect(() => {
     const loadCertificateOfficials = async () => {
@@ -338,10 +344,12 @@ export default function HelpDesk() {
     });
   };
 
-  const fetchAllChannelCounts = async () => {
+  const fetchAllChannelCounts = async (allowEsumbong = canAccessEsumbong) => {
     try {
       const [esumbongRes, assistanceRes, kapchatRes] = await Promise.allSettled([
-        blotterAPI.getReports(),
+        allowEsumbong
+          ? blotterAPI.getReports()
+          : Promise.resolve({ reports: [] }),
         assistanceAPI.getInquiries(),
         kapchatAPI.getMessages(),
       ]);
@@ -383,6 +391,11 @@ export default function HelpDesk() {
   };
 
   const fetchCurrentTabData = async () => {
+    if (!esumbongAccessLoaded) return;
+    if (activeTab === "esumbong" && !canAccessEsumbong) {
+      setActiveTab("assistance");
+      return;
+    }
     setLoading(true);
     try {
       if (activeTab === "esumbong") {
@@ -395,10 +408,12 @@ export default function HelpDesk() {
         const res = await kapchatAPI.getMessages();
         setItems(res.messages || []);
       }
-      fetchAllChannelCounts();
+      fetchAllChannelCounts(canAccessEsumbong);
     } catch (error) {
       console.error("Error fetching help desk data:", error);
-      toast.error("Failed to load records. Please refresh.");
+      if (error?.response?.status !== 403) {
+        toast.error("Failed to load records. Please refresh.");
+      }
     } finally {
       setLoading(false);
     }
@@ -981,32 +996,38 @@ export default function HelpDesk() {
     >
       <div className="max-w-[1600px] mx-auto space-y-2.5 text-[13px] pb-6">
         {/* Top Summary Metric Cards (2x2 on mobile, 4 columns on desktop) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div
+          className={`grid grid-cols-2 ${
+            canAccessEsumbong ? "lg:grid-cols-4" : "lg:grid-cols-2"
+          } gap-2`}
+        >
           {/* Card 1: E-Sumbong */}
-          <div
-            onClick={() => switchHelpDeskTab("esumbong")}
-            className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
-              activeTab === "esumbong" ? "border-red-400 ring-1 ring-red-100" : "border-gray-200/80"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">E-Sumbong</span>
-              <div className="p-1 bg-red-50 text-red-600 rounded-md">
-                <AlertCircle className="w-3.5 h-3.5" />
+          {canAccessEsumbong && (
+            <div
+              onClick={() => switchHelpDeskTab("esumbong")}
+              className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
+                activeTab === "esumbong" ? "border-red-400 ring-1 ring-red-100" : "border-gray-200/80"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">E-Sumbong</span>
+                <div className="p-1 bg-red-50 text-red-600 rounded-md">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                </div>
               </div>
+              <div className="mt-0.5 flex items-baseline justify-between gap-1">
+                <span className="text-lg font-black text-gray-900 tabular-nums">{channelCounts.esumbong.total}</span>
+                {channelCounts.esumbong.pending > 0 && (
+                  <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-red-100 text-red-800 animate-pulse truncate">
+                    {channelCounts.esumbong.pending} Pend
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5 sm:mt-1 font-medium truncate">
+                {channelCounts.esumbong.resolved} resolved
+              </p>
             </div>
-            <div className="mt-0.5 flex items-baseline justify-between gap-1">
-              <span className="text-lg font-black text-gray-900 tabular-nums">{channelCounts.esumbong.total}</span>
-              {channelCounts.esumbong.pending > 0 && (
-                <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-red-100 text-red-800 animate-pulse truncate">
-                  {channelCounts.esumbong.pending} Pend
-                </span>
-              )}
-            </div>
-            <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5 sm:mt-1 font-medium truncate">
-              {channelCounts.esumbong.resolved} resolved
-            </p>
-          </div>
+          )}
 
           {/* Card 2: Assistance */}
           <div
@@ -1061,23 +1082,25 @@ export default function HelpDesk() {
           </div>
 
           {/* Card 4: Quick Action & Intake */}
-          <div className="bg-gradient-to-br from-[#021b38] to-[#03254c] text-white rounded-lg p-2.5 flex flex-col justify-between min-h-[72px]">
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] font-bold uppercase tracking-wide text-slate-300">Intake</span>
-              <span className="text-[8px] font-bold px-1 py-px rounded bg-white/10 text-emerald-300">LIVE</span>
+          {canAccessEsumbong && (
+            <div className="bg-gradient-to-br from-[#021b38] to-[#03254c] text-white rounded-lg p-2.5 flex flex-col justify-between min-h-[72px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-bold uppercase tracking-wide text-slate-300">Intake</span>
+                <span className="text-[8px] font-bold px-1 py-px rounded bg-white/10 text-emerald-300">LIVE</span>
+              </div>
+              <button
+                onClick={() => {
+                  setNewEntryType("esumbong");
+                  setIsNewEntryModalOpen(true);
+                }}
+                className="mt-1.5 w-full py-1.5 px-2 bg-white/15 hover:bg-white/25 text-white rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1"
+                title="Log walk-in E-Sumbong at the help desk"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Walk-in E-Sumbong</span>
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setNewEntryType("esumbong");
-                setIsNewEntryModalOpen(true);
-              }}
-              className="mt-1.5 w-full py-1.5 px-2 bg-white/15 hover:bg-white/25 text-white rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1"
-              title="Log walk-in E-Sumbong at the help desk"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Walk-in E-Sumbong</span>
-            </button>
-          </div>
+          )}
         </div>
 
         {/* Tab Selection Row (Touch-friendly & Horizontal Scroll on Mobile) */}

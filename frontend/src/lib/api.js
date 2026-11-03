@@ -125,7 +125,11 @@ api.interceptors.response.use(
             "Server error. Please try again later.",
         );
       } else if (status === 403) {
-        toast.error("Access denied. Insufficient permissions.");
+        const reqUrl = String(error?.config?.url || "");
+        const reqMethod = String(error?.config?.method || "get").toLowerCase();
+        if (!(reqMethod === "get" && reqUrl.includes("/blotter"))) {
+          toast.error("Access denied. Insufficient permissions.");
+        }
       } else if (status === 404) {
         toast.error("Resource not found.");
       } else {
