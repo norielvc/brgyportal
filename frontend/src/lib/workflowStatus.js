@@ -35,14 +35,23 @@ export function normalizeCertificateStatus(status, options = {}) {
   if (key === "treasury") return "Treasury";
   if (key === "physical_inspection") return "physical_inspection";
   if (key === "captain_approval") return "captain_approval";
-  if (key === "oic_review") return "oic_review";
   if (key === "staff_review") return "staff_review";
 
   if (
     certificateType === "business_permit" &&
-    (key === "staff_clerk" || name.includes("business permit preparation"))
+    (key === "staff_clerk" ||
+      name.includes("business permit preparation") ||
+      (key === "oic_review" && !name.includes("releasing")))
   ) {
     return "oic_review";
+  }
+
+  if (name.includes("releasing") || key === "oic_review") {
+    return "ready";
+  }
+
+  if (key === "ready" || key === "ready_for_pickup") {
+    return "ready";
   }
 
   // Custom labels such as "Awaiting Barangay Chairman Approval" must stay
@@ -98,8 +107,8 @@ export function isBusinessPermitFinalChairmanStep(step) {
 
 /**
  * Business permit approve target.
- * Preparation always advances to the chairman. Ready is only allowed from
- * Releasing, and only after the chairman step was approved.
+ * Preparation always advances to the chairman. Ready is reached directly when
+ * the final chairman step is approved (Releasing Team is handled in Pickup Management).
  */
 export function resolveBusinessPermitApproveTarget(
   steps,
@@ -143,6 +152,13 @@ export function resolveBusinessPermitApproveTarget(
       current: steps[currentIdx],
       next: null,
       status: releaseIdx === currentIdx ? "ready" : status,
+    };
+  }
+  if (isReleasingTeamStep(next)) {
+    return {
+      current: steps[currentIdx],
+      next,
+      status: "ready",
     };
   }
 

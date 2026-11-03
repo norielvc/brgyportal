@@ -6,9 +6,11 @@ const TYPE_NAMES = {
   barangay_residency: "Barangay Residency Certificate",
   medico_legal: "Medico-Legal Certificate",
   certification_same_person: "Certification of Same Person",
+  same_person: "Certification of Same Person",
   natural_death: "Natural Death Certificate",
   barangay_guardianship: "Guardianship Certificate",
   barangay_cohabitation: "Cohabitation Certificate",
+  cohabitation: "Cohabitation Certificate",
   educational_assistance: "Educational Assistance",
   business_permit: "Business Permit",
 };
@@ -135,9 +137,9 @@ export function buildProcessNotificationEmail({
 }
 
 /**
- * Send a bilingual process email via Gmail SMTP.
- * Used by Vercel API routes (no separate Express server).
- */
+  * Send a bilingual process email via Gmail SMTP.
+  * Used by Vercel API routes (no separate Express server).
+  */
 export async function sendProcessNotification({
   recipientEmail,
   recipientName,
@@ -161,6 +163,76 @@ export async function sendProcessNotification({
     comments,
     requestId,
   });
+
+  const sent = await sendTransactionalEmail({
+    to: recipientEmail,
+    subject,
+    html,
+    text,
+  });
+  if (!sent.success) {
+    return { success: false, error: sent.error, code: sent.code };
+  }
+  return { success: true, messageId: sent.messageId };
+}
+
+/**
+  * Send a bilingual KapChat notification email to the Barangay Captain.
+  */
+export async function sendKapchatNotification({
+  recipientEmail,
+  recipientName,
+  senderName,
+  contactNumber = "",
+  message = "",
+}) {
+  if (!recipientEmail) {
+    return { success: false, error: "Recipient email missing" };
+  }
+
+  const baseUrl = (process.env.FRONTEND_URL || "https://brgydesk.com").replace(
+    /\/$/,
+    "",
+  );
+  const link = `${baseUrl}/help-desk?tab=kapchat`;
+  const cleanSender = senderName || "Resident";
+  const subject = `New KapChat Message from ${cleanSender} / Bagong Mensahe sa KapChat`;
+
+  const html = `
+    <div style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a">
+      <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
+        <div style="background:#065f46;padding:24px 20px;color:#fff">
+          <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.8">Barangay Iba O' Este • KapChat</div>
+          <h1 style="margin:8px 0 0;font-size:20px">New KapChat Message</h1>
+          <p style="margin:4px 0 0;font-size:14px;opacity:.9">Bagong Mensahe sa KapChat (Rekta kay Kap!)</p>
+        </div>
+        <div style="padding:24px 20px;font-size:14px;line-height:1.6">
+          <p>Hello ${recipientName || "Kap"},</p>
+          <p>You have received a new KapChat message from a resident.</p>
+          <p>May natanggap kang bagong mensahe sa KapChat mula sa isang residente.</p>
+          <table style="width:100%;background:#f8fafc;border-radius:8px;margin:16px 0">
+            <tr><td style="padding:8px 12px;color:#64748b">Resident</td><td style="padding:8px 12px;font-weight:600">${cleanSender}</td></tr>
+            <tr><td style="padding:8px 12px;color:#64748b">Contact No.</td><td style="padding:8px 12px;font-weight:600">${contactNumber || "—"}</td></tr>
+          </table>
+          <div style="background:#f1f5f9;border-left:4px solid #065f46;padding:12px 16px;border-radius:6px;margin:16px 0;white-space:pre-wrap">${message || "—"}</div>
+          <p><a href="${link}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600">Open KapChat</a></p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const text = [
+    `Hello ${recipientName || "Kap"},`,
+    "",
+    "You have received a new KapChat message from a resident.",
+    "May natanggap kang bagong mensahe sa KapChat mula sa isang residente.",
+    "",
+    `Resident: ${cleanSender}`,
+    `Contact No.: ${contactNumber || "—"}`,
+    `Message: ${message || "—"}`,
+    "",
+    link,
+  ].join("\n");
 
   const sent = await sendTransactionalEmail({
     to: recipientEmail,

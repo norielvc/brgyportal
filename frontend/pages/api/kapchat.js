@@ -128,6 +128,61 @@ export default async function handler(req, res) {
           .eq("is_admin", false);
       }
 
+      // If this is a resident message, notify ONLY the Barangay Captain via email & in-app notification
+      if (!isAdminMsg) {
+        try {
+          const {
+            fetchBarangayCaptainUsers,
+            isEmailNotificationsEnabled,
+          } = await import("../../src/lib/requestNotificationHelper");
+          const { sendKapchatNotification } = await import("../../src/lib/mailer");
+
+          const captainUsers = await fetchBarangayCaptainUsers(supabase, tenantId);
+          const emailEnabled = await isEmailNotificationsEnabled(supabase);
+          const seenEmails = new Set();
+
+          for (const cap of captainUsers) {
+            if (emailEnabled && cap.email) {
+              const emailKey = String(cap.email).trim().toLowerCase();
+              if (!seenEmails.has(emailKey)) {
+                seenEmails.add(emailKey);
+                const recipientName =
+                  `${cap.first_name || ""} ${cap.last_name || ""}`.trim() ||
+                  "Brgy. Captain";
+                const sent = await sendKapchatNotification({
+                  recipientEmail: cap.email,
+                  recipientName,
+                  senderName: sName,
+                  contactNumber: sContact || "",
+                  message: message.trim(),
+                });
+                if (sent.success) {
+                  console.log(`📧 KapChat email sent to Brgy. Captain (${cap.email})`);
+                } else {
+                  console.warn(`⚠️ KapChat email failed (${cap.email}):`, sent.error);
+                }
+              }
+            }
+
+            await supabase.from("notifications").insert([
+              {
+                tenant_id: tenantId,
+                user_id: cap.id,
+                title: "New KapChat Message",
+                message: `New KapChat message from ${sName}: "${message.trim().slice(0, 80)}"`,
+                type: "info",
+                category: "kapchat",
+                link: "/help-desk?tab=kapchat",
+                read: false,
+                created_at: new Date().toISOString(),
+              },
+            ]);
+          }
+        } catch (notifyErr) {
+          console.error("❌ KapChat captain notification error:", notifyErr.message);
+        }
+      }
+
       return res.status(201).json({
         success: true,
         message: "Chat message submitted successfully",

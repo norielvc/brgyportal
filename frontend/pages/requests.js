@@ -64,10 +64,12 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  Trash2,
 } from "lucide-react";
 import { getAuthToken, getUserData } from "@/lib/auth";
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
 import Modal from "@/components/UI/Modal";
+import DeleteConfirmModal from "@/components/Modals/DeleteConfirmModal";
 import CertificateVerifyQR from "@/components/UI/CertificateVerifyQR";
 import useScrollLock from "@/lib/useScrollLock";
 import {
@@ -384,6 +386,12 @@ export default function RequestsPage() {
   const [userSignature, setUserSignature] = useState(null);
   const [requestHistory, setRequestHistory] = useState([]);
   const [pendingActionCount, setPendingActionCount] = useState(0);
+  const [requestToDelete, setRequestToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const isAdminUser = ["admin", "superadmin", "super_admin"].includes(
+    String(currentUser?.role || "").toLowerCase()
+  );
 
   // Handle clicking outside of dropdowns
   useEffect(() => {
@@ -646,12 +654,9 @@ export default function RequestsPage() {
     activeWorkflows = workflows,
     activeUser = currentUser,
   ) => {
-    if (!activeUser) return false;
-    // Only superadmin and admin see all requests regardless of assignment
-    const bypassRoles = ["superadmin", "super_admin", "admin"];
-    if (bypassRoles.includes(activeUser.role?.toLowerCase())) return true;
+    if (!activeUser || !request) return false;
 
-    // If request is in a completed/final status, no one should have action buttons
+    // Requests in Pickup Management (ready/ready_for_pickup or Releasing Team oic_review) or final statuses do not belong in /requests My Assignments
     const completedStatuses = [
       "ready",
       "ready_for_pickup",
@@ -662,6 +667,21 @@ export default function RequestsPage() {
     if (completedStatuses.includes(request.status)) {
       return false;
     }
+    if (request.status === "oic_review") {
+      if (request.certificate_type !== "business_permit") {
+        return false;
+      }
+      const stepName = String(
+        request.workflow_assignment?.step_name || "",
+      ).toLowerCase();
+      if (stepName.includes("releasing")) {
+        return false;
+      }
+    }
+
+    // Only superadmin and admin see all active workflow requests regardless of assignment
+    const bypassRoles = ["superadmin", "super_admin", "admin"];
+    if (bypassRoles.includes(activeUser.role?.toLowerCase())) return true;
 
     // Use the workflow_assignment data attached by the backend if available
     if (request.workflow_assignment) {
@@ -815,7 +835,6 @@ export default function RequestsPage() {
   // Check if user can take action on request
   const canUserTakeAction = (request) => {
     if (!currentUser) return false;
-    if (currentUser.role === "admin") return true;
     return isUserAssignedToRequest(request);
   };
 
@@ -926,7 +945,33 @@ export default function RequestsPage() {
       const comment = `Manually released to: ${pickupName}`;
       await submitAction(null, selectedRequest, "approve", comment);
     } else {
-      const comment = `Certificate sent via email to: ${selectedRequest.email}`;
+      const recipientEmail =
+        selectedRequest?.email || selectedRequest?.residents?.email;
+      try {
+        const token = getAuthToken();
+        const emailRes = await fetch(
+          `${API_URL}/certificates/${selectedRequest.id}/send-email`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const emailData = await emailRes.json().catch(() => ({}));
+        if (emailRes.ok && emailData.success) {
+          toast.success(
+            emailData.message ||
+              `Certificate email sent to ${recipientEmail || "applicant"}`
+          );
+        } else {
+          console.warn("[PICKUP-EMAIL] send-email returned:", emailData);
+        }
+      } catch (err) {
+        console.warn("[PICKUP-EMAIL] Error calling send-email:", err);
+      }
+      const comment = `Certificate sent via email to: ${recipientEmail || ""}`;
       await submitAction(null, selectedRequest, "approve", comment);
     }
 
@@ -975,7 +1020,7 @@ export default function RequestsPage() {
         secretary_approval: "captain_approval",
         physical_inspection: "verifying",
         verifying: "captain_approval",
-        captain_approval: "oic_review",
+        captain_approval: "ready",
         oic_review: "ready",
         Treasury: "oic_review",
         approved: "released",
@@ -1025,7 +1070,8 @@ export default function RequestsPage() {
             else if (req.status === "physical_inspection")
               defaultComment = "Inspection completed and forwarded to Chairman";
             else if (req.status === "captain_approval")
-              defaultComment = "Request approved and forwarded to Treasury";
+              defaultComment =
+                "Request approved by Barangay Chairman and forwarded to Pickup Management";
             else if (req.status === "Treasury")
               defaultComment =
                 "Payment processed and forwarded to Releasing Team";
@@ -1150,7 +1196,10 @@ export default function RequestsPage() {
             successMessage =
               "Inspection completed and forwarded to the next workflow step";
           } else if (req.status === "captain_approval") {
-            successMessage = "Request approved and forwarded to Treasury";
+            successMessage =
+              confirmedStatus === "ready" || confirmedStatus === "ready_for_pickup"
+                ? "Request approved and forwarded to Pickup Management"
+                : "Request approved and forwarded to the next workflow step";
           } else if (req.status === "Treasury") {
             successMessage =
               "Payment processed and forwarded to Releasing Team";
@@ -1305,6 +1354,52 @@ export default function RequestsPage() {
       console.error("Error updating certificate:", error);
       alert("Error updating certificate");
       return false;
+    }
+  };
+
+  const confirmDeleteRequest = async () => {
+    if (!requestToDelete) return;
+    setIsDeleting(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(
+        `${API_URL}/certificates/${requestToDelete.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const data = await response.json();
+      if (response.ok && data.success) {
+        toast.success(
+          `Request ${requestToDelete.reference_number || ""} deleted successfully`
+        );
+        const deletedId = requestToDelete.id;
+        setRequests((prev) => prev.filter((r) => r.id !== deletedId));
+        if (selectedRequest?.id === deletedId) {
+          setSelectedRequest(null);
+          const { id, pdf, ...rest } = router.query;
+          setOpenPdfFromQuery(false);
+          if (id || pdf) {
+            router.push(
+              { pathname: router.pathname, query: rest },
+              undefined,
+              { shallow: true }
+            );
+          }
+        }
+        setRequestToDelete(null);
+        fetchRequests(workflows, currentUser);
+      } else {
+        toast.error(data.message || "Failed to delete request");
+      }
+    } catch (error) {
+      console.error("Error deleting request:", error);
+      toast.error("Error deleting request");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1763,18 +1858,33 @@ export default function RequestsPage() {
                           </span>
                         )}
                       </div>
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${getStatusColor(
-                          request.status
-                        )}`}
-                      >
-                        {formatRequestStatus(
-                          request.status,
-                          request.certificate_type,
-                          currentStep?.name ||
-                            request.workflow_assignment?.step_name,
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${getStatusColor(
+                            request.status
+                          )}`}
+                        >
+                          {formatRequestStatus(
+                            request.status,
+                            request.certificate_type,
+                            currentStep?.name ||
+                              request.workflow_assignment?.step_name,
+                          )}
+                        </span>
+                        {isAdminUser && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRequestToDelete(request);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Delete Request"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         )}
-                      </span>
+                      </div>
                     </div>
 
                     {/* Middle Row: Applicant Profile */}
@@ -1807,9 +1917,15 @@ export default function RequestsPage() {
                       </div>
 
                       <div className="flex items-center gap-2 text-[11px] text-gray-400 shrink-0 ml-auto">
-                        {currentStep && (
-                          <span className="bg-slate-100 text-slate-700 font-medium px-1.5 py-0.5 rounded text-[10px] max-w-[110px] truncate">
-                            {currentStep.name}
+                        {String(request.pickup_method || "").toLowerCase() === "online" ? (
+                          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                            <Mail className="w-2.5 h-2.5 shrink-0" />
+                            Online
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                            <MapPin className="w-2.5 h-2.5 shrink-0" />
+                            For Pick Up
                           </span>
                         )}
                         <span className="flex items-center gap-0.5 text-[10px]">
@@ -1841,11 +1957,16 @@ export default function RequestsPage() {
                       Status
                     </th>
                     <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
-                      Step
+                      Pickup Mode
                     </th>
                     <th className="px-2.5 py-2 text-left text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                       Updated
                     </th>
+                    {isAdminUser && (
+                      <th className="px-2.5 py-2 text-right text-[9px] font-bold text-gray-500 uppercase tracking-wide">
+                        Actions
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1932,11 +2053,17 @@ export default function RequestsPage() {
                             )}
                           </span>
                         </td>
-                        <td className="px-2.5 py-1.5 text-[11px] text-gray-600 max-w-[140px] truncate">
-                          {currentStep ? (
-                            currentStep.name
+                        <td className="px-2.5 py-1.5 text-[11px] text-gray-600 whitespace-nowrap">
+                          {String(request.pickup_method || "").toLowerCase() === "online" ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              <Mail className="w-3 h-3 shrink-0" />
+                              Online
+                            </span>
                           ) : (
-                            <span className="text-gray-400">—</span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                              <MapPin className="w-3 h-3 shrink-0" />
+                              For Pick Up
+                            </span>
                           )}
                         </td>
                         <td className="px-2.5 py-1.5 text-[10px] text-gray-500 tabular-nums whitespace-nowrap">
@@ -1944,6 +2071,21 @@ export default function RequestsPage() {
                             request.updated_at || request.created_at
                           )}
                         </td>
+                        {isAdminUser && (
+                          <td className="px-2.5 py-1.5 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRequestToDelete(request);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center"
+                              title="Delete Request"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -1972,6 +2114,9 @@ export default function RequestsPage() {
           }}
           onAction={handleAction}
           onUpdate={handleUpdateDetails}
+          onDelete={
+            isAdminUser ? (req) => setRequestToDelete(req) : undefined
+          }
           setSelectedRequest={setSelectedRequest}
           getStatusColor={getStatusColor}
           getTypeLabel={getTypeLabel}
@@ -2015,6 +2160,20 @@ export default function RequestsPage() {
           getTypeLabel={getTypeLabel}
         />
       )}
+
+      {/* Delete Confirmation Modal (Admin Only) */}
+      <DeleteConfirmModal
+        isOpen={Boolean(requestToDelete)}
+        title="Delete Request"
+        message={
+          requestToDelete
+            ? `Are you sure you want to permanently delete request ${requestToDelete.reference_number || ""} (${requestToDelete.applicant_name || requestToDelete.full_name || "Applicant"})? This will also remove its workflow history and cannot be undone.`
+            : ""
+        }
+        onConfirm={confirmDeleteRequest}
+        onCancel={() => !isDeleting && setRequestToDelete(null)}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
@@ -2088,6 +2247,7 @@ function RequestDetailsModal({
   onClose,
   onAction,
   onUpdate,
+  onDelete,
   setSelectedRequest,
   getStatusColor,
   getTypeLabel,
@@ -2959,6 +3119,17 @@ function RequestDetailsModal({
               </span>
               <span className="sm:hidden">PDF</span>
             </button>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(request)}
+                className="px-2.5 sm:px-3 py-1.5 bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-rose-500/30"
+                title="Delete Request"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Delete</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg transition-colors ml-0.5"
@@ -3000,28 +3171,37 @@ function RequestDetailsModal({
           {activeTab === "details" && (
             <>
               {/* Ready / Released Guidance Banner */}
-              {["ready", "ready_for_pickup"].includes(
-                request.status,
-              ) && (
+              {(["ready", "ready_for_pickup"].includes(request.status) ||
+                (request.status === "oic_review" &&
+                  !isBusinessPermitPreparationStage)) && (
                   <div className="bg-emerald-600 p-2.5 rounded-xl shadow-sm border border-emerald-400 text-white">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-white/20 p-1.5 rounded-lg">
-                        <Printer className="w-4 h-4 text-white" />
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white/20 p-1.5 rounded-lg">
+                          <Printer className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-xs font-black uppercase leading-tight">
+                            READY FOR PICKUP MANAGEMENT (RELEASING TEAM)
+                          </h4>
+                          <p className="text-[11px] font-medium opacity-90">
+                            Approved by Barangay Chairman. Release or email this certificate in Pickup Management.
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="text-xs font-black uppercase leading-tight">
-                          APPROVED REQUEST
-                        </h4>
-                        <p className="text-[11px] font-medium opacity-90">
-                          Print the certificate and contact the requestor for collection.
-                        </p>
-                      </div>
+                      <Link
+                        href="/pickup-management"
+                        className="px-3 py-1.5 bg-white text-emerald-700 hover:bg-emerald-50 rounded-lg text-[11px] font-bold shrink-0 text-center transition-colors"
+                      >
+                        Go to Pickup Management
+                      </Link>
                     </div>
                   </div>
                 )}
 
-              {/* Releasing Team Guidance Banner */}
-              {request.status === "oic_review" && (
+              {/* Business Permit Preparation Guidance Banner */}
+              {request.status === "oic_review" &&
+                isBusinessPermitPreparationStage && (
                   <div className="bg-indigo-600 p-2.5 rounded-xl shadow-sm border border-indigo-400 text-white">
                     <div className="flex items-center gap-3">
                       <div className="bg-white/20 p-1.5 rounded-lg">
@@ -3029,20 +3209,10 @@ function RequestDetailsModal({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-xs font-black uppercase leading-tight">
-                          {isBusinessPermitPreparationStage
-                            ? "BUSINESS PERMIT PREPARATION"
-                            : isBusinessPermitReleasingStage
-                              ? "RELEASING TEAM REVIEW"
-                              : request.certificate_type === "business_permit"
-                                ? "BUSINESS PERMIT PREPARATION"
-                                : "RELEASING TEAM REVIEW"}
+                          BUSINESS PERMIT PREPARATION
                         </h4>
                         <p className="text-[11px] font-medium opacity-90">
-                          {isBusinessPermitPreparationStage ||
-                          (request.certificate_type === "business_permit" &&
-                            !isBusinessPermitReleasingStage)
-                            ? "Assign the OR number, amount, and BC control no., preview both documents, then forward to the Barangay Chairman."
-                            : "Review the certificate and click Set as Ready once approved for release."}
+                          Assign the OR number, amount, and BC control no., preview both documents, then forward to the Barangay Chairman.
                         </p>
                       </div>
                     </div>
@@ -5741,7 +5911,11 @@ function ActionModal({
   history = [],
 }) {
   // Dynamic config based on current step
-  const isReviewStep = currentStep?.status === "staff_review";
+  const isReviewStep =
+    currentStep?.status === "staff_review" ||
+    ["staff_review", "pending", "submitted", "returned"].includes(
+      request.status,
+    );
 
   const isEsignRole =
     currentStep &&
@@ -5749,6 +5923,7 @@ function ActionModal({
     currentStep.officialRole !== "None";
   const canUseEsign =
     actionType === "approve" &&
+    !isReviewStep &&
     !["oic_review", "ready", "ready_for_pickup", "Treasury", "physical_inspection"].includes(
       request.status,
     );
@@ -5774,7 +5949,7 @@ function ActionModal({
           iconBg: "bg-blue-100",
           iconColor: "text-blue-600",
           buttonBg: "bg-blue-600 hover:bg-blue-700",
-          buttonText: "Verify & Forward",
+          buttonText: "Verify & Forward Without Signature",
         }
       : request.status === "oic_review"
         ? {
@@ -9129,6 +9304,7 @@ function ConfirmPickupModal({
 }) {
   useScrollLock(true);
   const isOnlineDelivery = certificate.pickup_method === "online";
+  const recipientEmail = certificate.email || certificate.residents?.email || "";
   const [deliveryMode, setDeliveryMode] = useState(isOnlineDelivery ? "email" : "pickup");
 
   const handleConfirm = () => {
@@ -9189,13 +9365,13 @@ function ConfirmPickupModal({
                   {certificate.full_name || certificate.applicant_name}
                 </p>
               </div>
-              {isOnlineDelivery && certificate.email && (
+              {isOnlineDelivery && recipientEmail && (
                 <div className="col-span-2 pt-3 border-t border-blue-200">
                   <p className="text-xs text-blue-600 uppercase font-black tracking-wider mb-1">
                     Email Address
                   </p>
                   <p className="text-sm font-bold text-blue-900 font-sans">
-                    {certificate.email}
+                    {recipientEmail}
                   </p>
                 </div>
               )}
@@ -9258,13 +9434,13 @@ function ConfirmPickupModal({
             </div>
           ) : (
             <div className="space-y-2">
-              {certificate.email ? (
+              {recipientEmail ? (
                 <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                   <p className="text-xs text-blue-700 font-bold uppercase tracking-wide mb-1">
-                    The certificate PDF will be sent to:
+                    The certificate notification will be sent to:
                   </p>
                   <p className="text-sm font-bold text-blue-900 font-sans">
-                    {certificate.email}
+                    {recipientEmail}
                   </p>
                 </div>
               ) : (
@@ -9287,7 +9463,7 @@ function ConfirmPickupModal({
             </button>
             <button
               onClick={handleConfirm}
-              disabled={confirming || (deliveryMode === "pickup" ? !pickupName.trim() : !certificate.email)}
+              disabled={confirming || (deliveryMode === "pickup" ? !pickupName.trim() : !recipientEmail)}
               className={`flex-[2] px-4 py-3.5 text-white rounded-xl font-bold active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg transition-all ${deliveryMode === "email" ? "bg-blue-600 hover:bg-blue-700 shadow-blue-200" : "bg-green-600 hover:bg-green-700 shadow-green-200"}`}
             >
               {confirming ? (

@@ -76,6 +76,12 @@ const certificateTypes = [
     color: "yellow",
     isUnified: true,
   },
+  {
+    id: "educational_assistance",
+    name: "Educational Assistance",
+    color: "cyan",
+    isUnified: true,
+  },
 ];
 
 // Default workflow steps

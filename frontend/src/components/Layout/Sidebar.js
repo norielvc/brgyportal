@@ -258,6 +258,9 @@ export default function Sidebar({
 
   // Fetch subscription data to check plan
   const [subscription, setSubscription] = useState(null);
+  const [isReleasingTeamMember, setIsReleasingTeamMember] = useState(() =>
+    ["superadmin", "super_admin", "admin"].includes(role),
+  );
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [lockedFeatureName, setLockedFeatureName] = useState("");
   const [requiredPlanType, setRequiredPlanType] = useState("Pro"); // "Pro" or "Standard"
@@ -440,7 +443,53 @@ export default function Sidebar({
     return isParentActive(item);
   };
 
+  useEffect(() => {
+    const checkReleasingTeam = async () => {
+      if (["superadmin", "super_admin", "admin"].includes(role)) {
+        setIsReleasingTeamMember(true);
+        return;
+      }
+      const userId = String(user?._id || user?.id || "");
+      if (!userId) {
+        setIsReleasingTeamMember(false);
+        return;
+      }
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        const res = await fetch("/api/workflows", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        const wfMap = json?.data || {};
+        const assigned = Object.values(wfMap).some((steps) =>
+          (steps || []).some((step) => {
+            const name = String(step?.name || "").toLowerCase();
+            const status = String(step?.status || "").toLowerCase();
+            const isRelStep =
+              name.includes("releasing") ||
+              (status === "oic_review" && !name.includes("preparation")) ||
+              ["ready", "ready_for_pickup", "released"].includes(status);
+            return (
+              isRelStep &&
+              Array.isArray(step?.assignedUsers) &&
+              step.assignedUsers.some((id) => String(id) === userId)
+            );
+          }),
+        );
+        setIsReleasingTeamMember(assigned);
+      } catch (e) {
+        /* ignore */
+      }
+    };
+    checkReleasingTeam();
+  }, [role, user?._id, user?.id]);
+
   const filteredMenuItems = mainMenuItems.filter((item) => {
+    if (item.href === "/pickup-management" && !isReleasingTeamMember) {
+      return false;
+    }
     if (item.adminOnly && (!role || !adminRoles.includes(role))) {
       return false;
     }

@@ -1636,10 +1636,22 @@ router.delete('/:id', async (req, res) => {
   try {
     const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
     if (!tenantId) return res.status(403).json({ success: false, message: 'Tenant context required' });
+    const role = String(req.user?.role || '').toLowerCase();
+    if (!['admin', 'superadmin', 'super_admin'].includes(role)) {
+      return res.status(403).json({ success: false, message: 'Only administrators can delete certificate requests' });
+    }
+    const requestId = req.params.id;
+    await Promise.allSettled([
+      supabase.from('workflow_assignments').delete().eq('request_id', requestId).eq('tenant_id', tenantId),
+      supabase.from('workflow_history').delete().eq('request_id', requestId).eq('tenant_id', tenantId),
+      supabase.from('certificate_pickups').delete().eq('request_id', requestId).eq('tenant_id', tenantId),
+      supabase.from('official_receipts').delete().eq('request_id', requestId),
+      supabase.from('physical_inspection_reports').delete().eq('request_id', requestId),
+    ]);
     const { error } = await supabase
       .from('certificate_requests')
       .delete()
-      .eq('id', req.params.id).eq('tenant_id', tenantId);
+      .eq('id', requestId).eq('tenant_id', tenantId);
 
     if (error) throw error;
 

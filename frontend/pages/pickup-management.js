@@ -7,7 +7,7 @@ import {
   Shield, Clock, CheckCircle, AlertTriangle, QrCode,
   ExternalLink, RefreshCw, Package, History, XCircle, X, ChevronDown, ShieldCheck, Heart, FileText, Skull, Activity, Info, Mail
 } from 'lucide-react';
-import { getAuthToken } from '@/lib/auth';
+import { getAuthToken, getUserData } from '@/lib/auth';
 import useScrollLock from '@/lib/useScrollLock';
 
 // API Configuration
@@ -16,6 +16,8 @@ const API_URL = '/api';
 export default function PickupManagementPage() {
   const router = useRouter();
   const [certificates, setCertificates] = useState([]);
+  const [workflows, setWorkflows] = useState({});
+  const [currentUser, setCurrentUser] = useState(null);
   const [pickupRecords, setPickupRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,6 +91,8 @@ export default function PickupManagementPage() {
   };
 
   useEffect(() => {
+    const user = getUserData();
+    setCurrentUser(user);
     fetchCertificates();
     fetchPickupRecords();
   }, []);
@@ -97,10 +101,21 @@ export default function PickupManagementPage() {
     setLoading(true);
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/certificates`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+      const [certRes, wfRes] = await Promise.all([
+        fetch(`${API_URL}/certificates`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${API_URL}/workflows`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => null),
+      ]);
+      if (wfRes && wfRes.ok) {
+        const wfData = await wfRes.json().catch(() => ({}));
+        if (wfData.success && wfData.data) {
+          setWorkflows(wfData.data);
+        }
+      }
+      const data = await certRes.json();
       if (data.success) {
         setCertificates(data.certificates || []);
       }
@@ -289,15 +304,64 @@ export default function PickupManagementPage() {
     }
   };
 
+  const isReadyForPickup = (cert) =>
+    ['ready', 'ready_for_pickup'].includes(cert?.status) ||
+    (cert?.status === 'oic_review' && cert?.certificate_type !== 'business_permit');
+
+  // Only show certificates assigned to the current user in the Releasing Team step (or admin/superadmin)
+  const isAssignedToReleasingTeam = (cert) => {
+    if (!cert) return false;
+    if (!isReadyForPickup(cert) && cert.status !== 'released') return false;
+
+    const user = currentUser || getUserData();
+    if (!user) return false;
+
+    const role = String(user.role || '').toLowerCase();
+    if (['superadmin', 'super_admin', 'admin'].includes(role)) {
+      return true;
+    }
+
+    const userId = String(user._id || user.id || '');
+    if (!userId) return false;
+
+    if (Array.isArray(cert.releasing_user_ids) && cert.releasing_user_ids.length > 0) {
+      return cert.releasing_user_ids.some((id) => String(id) === userId);
+    }
+
+    const steps = workflows?.[cert.certificate_type] || [];
+    const relStep =
+      steps.find((s) => String(s.name || '').toLowerCase().includes('releasing')) ||
+      steps.find(
+        (s) =>
+          String(s.status || '').toLowerCase() === 'oic_review' &&
+          !String(s.name || '').toLowerCase().includes('preparation'),
+      ) ||
+      steps.find((s) =>
+        ['ready', 'ready_for_pickup', 'released'].includes(
+          String(s.status || '').toLowerCase(),
+        ),
+      );
+
+    if (relStep && Array.isArray(relStep.assignedUsers)) {
+      return relStep.assignedUsers.some((id) => String(id) === userId);
+    }
+
+    return false;
+  };
+
+  const releasingTeamCertificates = certificates.filter((cert) =>
+    isAssignedToReleasingTeam(cert),
+  );
+
   // Filter certificates
-  const filteredCertificates = certificates.filter(cert => {
+  const filteredCertificates = releasingTeamCertificates.filter(cert => {
     const matchesSearch =
       cert.reference_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cert.applicant_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cert.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'ready' ? ['ready', 'ready_for_pickup'].includes(cert.status) : cert.status === statusFilter);
+      (statusFilter === 'ready' ? isReadyForPickup(cert) : cert.status === statusFilter);
 
     const matchesType = typeFilter === 'all' || cert.certificate_type === typeFilter;
 
@@ -306,9 +370,9 @@ export default function PickupManagementPage() {
 
   // Get statistics
   const stats = {
-    readyForPickup: certificates.filter(c => ['ready', 'ready_for_pickup'].includes(c.status)).length,
-    released: certificates.filter(c => c.status === 'released').length,
-    totalProcessed: certificates.filter(c => ['ready', 'ready_for_pickup', 'released'].includes(c.status)).length
+    readyForPickup: releasingTeamCertificates.filter(c => isReadyForPickup(c)).length,
+    released: releasingTeamCertificates.filter(c => c.status === 'released').length,
+    totalProcessed: releasingTeamCertificates.filter(c => isReadyForPickup(c) || c.status === 'released').length
   };
 
   const successRate =
@@ -484,7 +548,7 @@ export default function PickupManagementPage() {
                       PDF
                     </button>
 
-                    {["ready", "ready_for_pickup"].includes(certificate.status) &&
+                    {isReadyForPickup(certificate) &&
                       (certificate.email || certificate.residents?.email) && (
                         <button
                           onClick={() => openSendCertificate(certificate)}
@@ -495,7 +559,7 @@ export default function PickupManagementPage() {
                         </button>
                       )}
 
-                    {["ready", "ready_for_pickup"].includes(certificate.status) && (
+                    {isReadyForPickup(certificate) && (
                       <button
                         onClick={() => openPickupVerification(certificate)}
                         className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[10px] font-bold flex items-center gap-1 transition-colors"
@@ -618,9 +682,7 @@ export default function PickupManagementPage() {
                             PDF
                           </button>
 
-                          {["ready", "ready_for_pickup"].includes(
-                            certificate.status
-                          ) &&
+                          {isReadyForPickup(certificate) &&
                             (certificate.email ||
                               certificate.residents?.email) && (
                               <button
@@ -633,9 +695,7 @@ export default function PickupManagementPage() {
                               </button>
                             )}
 
-                          {["ready", "ready_for_pickup"].includes(
-                            certificate.status
-                          ) && (
+                          {isReadyForPickup(certificate) && (
                             <button
                               onClick={() =>
                                 openPickupVerification(certificate)

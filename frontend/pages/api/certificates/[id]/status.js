@@ -78,7 +78,7 @@ const statusFlow = {
   returned: "secretary_approval",
   processing: "secretary_approval",  // Legacy: processing = waiting for secretary
   secretary_approval: "captain_approval",
-  captain_approval: "oic_review",
+  captain_approval: "ready",
   Treasury: "oic_review",
   oic_review: "ready",
   ready: "released",
@@ -193,7 +193,7 @@ export default async function handler(req, res) {
 
   // Create next-step assignments if this is an approval moving forward
   const isApproval = action === "approve" || (!["rejected", "cancelled", "returned", "staff_review"].includes(status));
-  if (isApproval && !["released", "rejected", "cancelled", "ready"].includes(status)) {
+  if (isApproval && !["released", "rejected", "cancelled"].includes(status)) {
     try {
       const { data: wfConfig } = await supabase
         .from("workflow_configurations")
@@ -203,8 +203,18 @@ export default async function handler(req, res) {
         .single();
 
       const steps = wfConfig?.workflow_config?.steps || [];
-      // Find the step that matches the NEW status
-      const nextStep = steps.find(s => s.status === status);
+      // Find the step that matches the NEW status (or Releasing Team when moving to ready/ready_for_pickup)
+      const nextStep = ["ready", "ready_for_pickup"].includes(status)
+        ? steps.find((s) =>
+            String(s.name || "").toLowerCase().includes("releasing"),
+          ) ||
+          steps.find(
+            (s) =>
+              String(s.status || "").toLowerCase() === "oic_review" &&
+              !String(s.name || "").toLowerCase().includes("preparation"),
+          ) ||
+          steps.find((s) => s.status === status)
+        : steps.find((s) => s.status === status);
 
       if (nextStep?.assignedUsers?.length) {
         for (const userId of nextStep.assignedUsers) {
@@ -218,6 +228,25 @@ export default async function handler(req, res) {
             status: "pending",
           }]);
         }
+      }
+
+      if (
+        status === "captain_approval" ||
+        String(status || "").toLowerCase().includes("captain")
+      ) {
+        const { notifyBarangayCaptainStep } = await import(
+          "@/lib/requestNotificationHelper"
+        );
+        await notifyBarangayCaptainStep({
+          supabase,
+          tenantId,
+          requestId: id,
+          referenceNumber: data.reference_number,
+          certificateType: data.certificate_type,
+          applicantName: data.full_name || "Applicant",
+          comments: comments || "",
+          captainUserIds: nextStep?.assignedUsers || [],
+        });
       }
     } catch (wfErr) {
       console.warn("Could not create next-step assignments:", wfErr.message);

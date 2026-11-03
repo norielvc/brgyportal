@@ -179,7 +179,7 @@ export default async function handler(req, res) {
     secretary_approval: "captain_approval",
     physical_inspection: "verifying",
     verifying: "captain_approval",
-    captain_approval: "oic_review", // BP: overridden by workflow next step (Business Permit Preparation)
+    captain_approval: "ready", // Goes directly to Pickup Management (BP overridden by resolveBusinessPermitApproveTarget)
     Treasury: "oic_review",
     oic_review: "ready",
     ready: "released",
@@ -314,7 +314,7 @@ export default async function handler(req, res) {
       .eq("tenant_id", tenantId);
   }
 
-  // 7. If approved, create next-step assignments from workflow config
+  // 7. If approved, create next-step assignments from workflow config (including Releasing Team assignments for ready/ready_for_pickup)
   if (action === "approve" && !["released", "rejected", "cancelled"].includes(newCertStatus)) {
     const { data: wfConfig } = await supabase
       .from("workflow_configurations")
@@ -330,6 +330,23 @@ export default async function handler(req, res) {
 
     const isBusinessPermit = (certType || cert.certificate_type) === "business_permit";
     let nextStep = inspectionNextStep;
+    if (!nextStep && ["ready", "ready_for_pickup"].includes(newCertStatus)) {
+      nextStep =
+        steps.find((s) =>
+          String(s.name || "").toLowerCase().includes("releasing"),
+        ) ||
+        steps.find(
+          (s) =>
+            String(s.status || "").toLowerCase() === "oic_review" &&
+            !String(s.name || "").toLowerCase().includes("preparation"),
+        ) ||
+        steps.find((s) =>
+          ["ready", "ready_for_pickup", "released"].includes(
+            String(s.status || "").toLowerCase(),
+          ),
+        ) ||
+        null;
+    }
     if (!nextStep) {
       const currentIdx = steps.findIndex(
         (s) => String(s.id) === String(assignment.step_id),
@@ -401,9 +418,20 @@ export default async function handler(req, res) {
 
     console.log(`[WORKFLOW-ASSIGNMENT] Next step found:`, nextStep ? { name: nextStep.name, status: nextStep.status, users: nextStep.assignedUsers?.length || 0 } : 'NONE');
 
-    if (nextStep?.assignedUsers?.length) {
-      console.log(`[WORKFLOW-ASSIGNMENT] Creating ${nextStep.assignedUsers.length} assignments for step: ${nextStep.name}`);
-      for (const userId of nextStep.assignedUsers) {
+    let assignedNextUsers = nextStep?.assignedUsers || [];
+    if (!assignedNextUsers.length && workflowStatusesMatch(newCertStatus, "captain_approval")) {
+      try {
+        const { fetchBarangayCaptainUsers } = await import("@/lib/requestNotificationHelper");
+        const captainUsers = await fetchBarangayCaptainUsers(supabase, tenantId, certType);
+        assignedNextUsers = captainUsers.map((u) => u.id);
+      } catch (capErr) {
+        console.warn("[WORKFLOW-ASSIGNMENT] Fallback captain lookup failed:", capErr.message);
+      }
+    }
+
+    if (nextStep && assignedNextUsers.length) {
+      console.log(`[WORKFLOW-ASSIGNMENT] Creating ${assignedNextUsers.length} assignments for step: ${nextStep.name}`);
+      for (const userId of assignedNextUsers) {
         await supabase.from("workflow_assignments").insert([{
           request_id: requestId,
           tenant_id: tenantId,
@@ -524,7 +552,7 @@ export default async function handler(req, res) {
 
     // Determine email notifications based on action
     if (action === 'approve') {
-      if (newCertStatus === 'released') {
+      if (['ready', 'ready_for_pickup', 'released'].includes(newCertStatus)) {
         // Final approval - notify applicant that certificate is ready
         if (applicantEmail) {
           await sendEmail({
@@ -568,8 +596,11 @@ export default async function handler(req, res) {
           .eq('tenant_id', tenantId)
           .eq('status', 'pending');
 
-        if (nextAssignments?.length > 0) {
-          const userIds = [...new Set(nextAssignments.map(a => a.assigned_user_id))];
+        const userIds = nextAssignments?.length > 0
+          ? [...new Set(nextAssignments.map(a => a.assigned_user_id))]
+          : [];
+
+        if (userIds.length > 0) {
           const { data: nextUsers } = await supabase
             .from('users')
             .select('id, email, first_name, last_name')
@@ -577,7 +608,6 @@ export default async function handler(req, res) {
             .eq('tenant_id', tenantId);
 
           for (const nextUser of nextUsers || []) {
-            // In-app only. Mid-workflow email is disabled.
             await createNotification({
               userId: nextUser.id,
               title: 'Request Waiting for You',
@@ -586,6 +616,28 @@ export default async function handler(req, res) {
               category: 'assignment',
               link: `/requests/${requestId}`
             });
+          }
+        }
+
+        // Send email notification ONLY when the request reaches the Barangay Captain step
+        if (
+          workflowStatusesMatch(newCertStatus, 'captain_approval') ||
+          String(newCertStatus || '').toLowerCase().includes('captain')
+        ) {
+          try {
+            const { notifyBarangayCaptainStep } = await import('@/lib/requestNotificationHelper');
+            await notifyBarangayCaptainStep({
+              supabase,
+              tenantId,
+              requestId,
+              referenceNumber: cert.reference_number,
+              certificateType: certType,
+              applicantName,
+              comments: note,
+              captainUserIds: userIds,
+            });
+          } catch (capEmailErr) {
+            console.error('❌ Captain step email notification error:', capEmailErr.message);
           }
         }
       }

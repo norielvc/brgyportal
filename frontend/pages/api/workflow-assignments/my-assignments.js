@@ -66,7 +66,32 @@ export default async function handler(req, res) {
       } else if (stepName.includes('treasury') || stepName.includes('or prep')) {
         isStale = certStatus !== 'Treasury';
       } else if (stepName.includes('releasing') || stepName.includes('oic')) {
-        isStale = !['oic_review', 'ready', 'ready_for_pickup'].includes(certStatus);
+        const isBpPrep =
+          cert.certificate_type === 'business_permit' &&
+          !stepName.includes('releasing');
+        if (isBpPrep) {
+          isStale = certStatus !== 'oic_review';
+        } else {
+          // Releasing Team assignments are handled in Pickup Management (/pickup-management).
+          // Keep the assignment pending while the certificate is ready, and only mark approved once released/closed.
+          if (certStatus === 'oic_review') {
+            supabase
+              .from('certificate_requests')
+              .update({ status: 'ready', updated_at: new Date().toISOString() })
+              .eq('id', cert.id)
+              .eq('tenant_id', tenantId)
+              .then(() => {});
+          }
+          if (['released', 'rejected', 'cancelled'].includes(certStatus)) {
+            supabase
+              .from('workflow_assignments')
+              .update({ status: 'approved', updated_at: new Date().toISOString() })
+              .eq('id', assignment.id)
+              .eq('tenant_id', tenantId)
+              .then(() => {});
+          }
+          return null;
+        }
       }
 
       if (isStale) {
