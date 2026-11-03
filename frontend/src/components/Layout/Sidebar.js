@@ -70,13 +70,6 @@ const mainMenuItems = [
     navBadge: "helpDesk",
   },
   {
-    name: "KapChat",
-    href: "/help-desk?tab=kapchat",
-    icon: MessageCircle,
-    description: "Resident live chat",
-    navBadge: "kapchat",
-  },
-  {
     name: "Pickup Management",
     href: "/pickup-management",
     icon: Package,
@@ -523,17 +516,8 @@ export default function Sidebar({
 
   const isNavItemActive = (item) => {
     if (!item.href) return false;
-    const [path, query = ""] = item.href.split("?");
-    if (router.pathname !== path) return false;
-    if (!query) {
-      return router.pathname === "/help-desk"
-        ? router.query.tab !== "kapchat"
-        : true;
-    }
-    const params = new URLSearchParams(query);
-    const tab = params.get("tab");
-    if (tab) return router.query.tab === tab;
-    return true;
+    const [path] = item.href.split("?");
+    return router.pathname === path;
   };
 
   useEffect(() => {
@@ -712,9 +696,6 @@ export default function Sidebar({
 
   const filteredMenuItems = mainMenuItems.filter((item) => {
     if (item.href === "/pickup-management" && !isReleasingTeamMember) {
-      return false;
-    }
-    if (item.href === "/help-desk?tab=kapchat" && !canAccessKapchat) {
       return false;
     }
     if (item.adminOnly && (!role || !adminRoles.includes(role))) {
