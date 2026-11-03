@@ -2,6 +2,7 @@
  * Gmail SMTP for help-desk / portal transactional email.
  * All notification types share this sender and the same Gmail daily quota.
  */
+import crypto from "crypto";
 
 /** Pause further SMTP attempts after Gmail returns 550 5.4.5. */
 let smtpQuotaBlockedUntil = 0;
@@ -79,18 +80,25 @@ export async function sendTransactionalEmail({ to, subject, html, text }) {
   const nodemailer = (await import("nodemailer")).default;
   const pass = String(process.env.SMTP_PASS).replace(/\s+/g, "");
   const transport = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: { user: process.env.SMTP_USER, pass },
   });
   const fromAddress = process.env.SMTP_USER;
+  const entityRefId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
   try {
     const info = await transport.sendMail({
       from: `"Barangay Iba O' Este" <${fromAddress}>`,
       replyTo: fromAddress,
       to: recipient,
       subject,
-      html,
       text: plainText,
+      html,
+      headers: {
+        "X-Entity-Ref-ID": entityRefId,
+      },
     });
     const rejected = info.rejected || [];
     if (rejected.length > 0) {

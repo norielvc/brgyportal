@@ -82,9 +82,7 @@ const TEMPLATES = {
 };
 
 /**
- * Build clean, spam-filter-safe bilingual email content (sent via Gmail SMTP).
- * Avoids phishing trigger words ("Action Required") and external CTA button links
- * that cause Gmail's outbound filter to block messages as suspicious.
+ * Build clean, native-Gmail-style email content so Gmail delivers directly to Primary Inbox.
  */
 export function buildProcessNotificationEmail({
   recipientName,
@@ -97,8 +95,8 @@ export function buildProcessNotificationEmail({
   const template = TEMPLATES[eventType] || TEMPLATES.SUBMITTED;
   const certificateName =
     TYPE_NAMES[certificateType] || certificateType || "Certificate";
-  const refLabel = referenceNumber ? ` [${referenceNumber}]` : "";
-  const subject = `Barangay Iba O' Este - ${template.subjectPrefix}${refLabel} (${certificateName})`;
+  const refLabel = referenceNumber ? ` - ${referenceNumber}` : "";
+  const subject = `${certificateName}${refLabel} (${applicantName || "Barangay Iba O' Este"})`;
 
   const safeRecipient = escapeHtml(recipientName || "Good day");
   const safeRef = escapeHtml(referenceNumber || "—");
@@ -106,41 +104,35 @@ export function buildProcessNotificationEmail({
   const safeCert = escapeHtml(certificateName);
   const safeComments = comments ? escapeHtml(comments) : "";
 
-  const html = `
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1e293b;max-width:560px;margin:0 auto;padding:16px">
-      <p style="margin:0 0 4px;font-size:12px;color:#475569;font-weight:bold">Tanggapan ng Barangay Iba O' Este, Calumpit, Bulacan</p>
-      <h2 style="margin:0 0 12px;font-size:18px;color:#0f172a">${template.titleEN} / ${template.titleTL}</h2>
-      <p>Hello ${safeRecipient},</p>
-      <p>${template.messageEN}</p>
-      <p style="color:#334155">${template.messageTL}</p>
-      ${safeComments ? `<p style="background:#f8fafc;border-left:3px solid #64748b;padding:10px 12px;margin:12px 0"><strong>Remarks:</strong> ${safeComments}</p>` : ""}
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:16px 0">
-        <p style="margin:4px 0"><strong>Reference No.:</strong> ${safeRef}</p>
-        <p style="margin:4px 0"><strong>Applicant Name:</strong> ${safeApplicant}</p>
-        <p style="margin:4px 0"><strong>Document Type:</strong> ${safeCert}</p>
-      </div>
-      <p style="margin-top:16px;font-size:12px;color:#64748b">Thank you,<br/>Barangay Iba O' Este Office</p>
-    </div>
-  `;
+  const html = `<div dir="ltr">
+<p>Hello ${safeRecipient},</p>
+<p>${template.messageEN}</p>
+<p>${template.messageTL}</p>
+${safeComments ? `<p><b>Remarks:</b> ${safeComments}</p>` : ""}
+<p>
+<b>Reference No.:</b> ${safeRef}<br>
+<b>Applicant Name:</b> ${safeApplicant}<br>
+<b>Document Type:</b> ${safeCert}
+</p>
+<p>Thank you,<br>Barangay Iba O' Este, Calumpit, Bulacan</p>
+</div>`;
 
   const text = [
-    "Tanggapan ng Barangay Iba O' Este, Calumpit, Bulacan",
-    `${template.titleEN} / ${template.titleTL}`,
-    "",
     `Hello ${recipientName || "Good day"},`,
     "",
     template.messageEN,
+    "",
     template.messageTL,
-    comments ? `Remarks: ${comments}` : "",
+    comments ? `\nRemarks: ${comments}` : "",
     "",
     `Reference No.: ${referenceNumber || "—"}`,
     `Applicant Name: ${applicantName || "—"}`,
     `Document Type: ${certificateName}`,
     "",
     "Thank you,",
-    "Barangay Iba O' Este Office",
+    "Barangay Iba O' Este, Calumpit, Bulacan",
   ]
-    .filter(Boolean)
+    .filter((line) => line !== undefined)
     .join("\n");
 
   return { subject, html, text };
@@ -200,37 +192,29 @@ export async function sendKapchatNotification({
   }
 
   const cleanSender = senderName || "Resident";
-  const subject = `Barangay Iba O' Este KapChat - Message from ${cleanSender}`;
+  const subject = `KapChat Message from ${cleanSender} (Barangay Iba O' Este)`;
 
   const safeRecipient = escapeHtml(recipientName || "Kap");
   const safeSender = escapeHtml(cleanSender);
   const safeContact = escapeHtml(contactNumber || "—");
   const safeMessage = escapeHtml(message || "—");
 
-  const html = `
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1e293b;max-width:560px;margin:0 auto;padding:16px">
-      <p style="margin:0 0 4px;font-size:12px;color:#475569;font-weight:bold">Tanggapan ng Barangay Iba O' Este • KapChat (Rekta kay Kap)</p>
-      <h2 style="margin:0 0 12px;font-size:18px;color:#0f172a">New KapChat Message / Bagong Mensahe sa KapChat</h2>
-      <p>Hello ${safeRecipient},</p>
-      <p>Good day Kap! A resident sent a message through KapChat:</p>
-      <p style="color:#334155">Magandang araw Kap! May nagpadala po ng mensahe sa KapChat:</p>
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:16px 0">
-        <p style="margin:4px 0"><strong>Resident:</strong> ${safeSender}</p>
-        <p style="margin:4px 0"><strong>Contact No.:</strong> ${safeContact}</p>
-        <p style="margin:8px 0 4px"><strong>Message:</strong></p>
-        <p style="margin:0;white-space:pre-wrap;color:#0f172a">${safeMessage}</p>
-      </div>
-      <p style="margin-top:16px;font-size:12px;color:#64748b">Thank you,<br/>Barangay Iba O' Este Office</p>
-    </div>
-  `;
+  const html = `<div dir="ltr">
+<p>Hello ${safeRecipient},</p>
+<p>Good day Kap! A resident sent a message through KapChat (Rekta kay Kap):</p>
+<p>Magandang araw Kap! May nagpadala po ng mensahe sa KapChat:</p>
+<p>
+<b>Resident:</b> ${safeSender}<br>
+<b>Contact No.:</b> ${safeContact}<br>
+<b>Message:</b> ${safeMessage}
+</p>
+<p>Thank you,<br>Barangay Iba O' Este, Calumpit, Bulacan</p>
+</div>`;
 
   const text = [
-    "Tanggapan ng Barangay Iba O' Este • KapChat (Rekta kay Kap)",
-    "New KapChat Message / Bagong Mensahe sa KapChat",
-    "",
     `Hello ${recipientName || "Kap"},`,
     "",
-    "Good day Kap! A resident sent a message through KapChat:",
+    "Good day Kap! A resident sent a message through KapChat (Rekta kay Kap):",
     "Magandang araw Kap! May nagpadala po ng mensahe sa KapChat:",
     "",
     `Resident: ${cleanSender}`,
@@ -238,7 +222,7 @@ export async function sendKapchatNotification({
     `Message: ${message || "—"}`,
     "",
     "Thank you,",
-    "Barangay Iba O' Este Office",
+    "Barangay Iba O' Este, Calumpit, Bulacan",
   ].join("\n");
 
   const sent = await sendTransactionalEmail({
