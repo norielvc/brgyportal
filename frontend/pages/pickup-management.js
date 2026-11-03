@@ -290,6 +290,9 @@ export default function PickupManagementPage() {
       }
 
       if (response.ok && data.success) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("email-sent"));
+        }
         const fromHint = data.from ? ` from ${data.from}` : '';
         toast.success(data.message || `Email sent${fromHint}. Check Spam/Promotions if you do not see it.`, {
           duration: 8000,
