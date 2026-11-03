@@ -81,6 +81,7 @@ const mainMenuItems = [
     href: "/pickup-management",
     icon: Package,
     description: "Certificate pickups",
+    navBadge: "pickupManagement",
   },
   {
     name: "My Signature",
@@ -275,8 +276,47 @@ export default function Sidebar({
     total: 0,
   });
   const [certificateRequestsCount, setCertificateRequestsCount] = useState(0);
+  const [pickupManagementCount, setPickupManagementCount] = useState(0);
 
   useEffect(() => {
+    const isCertReadyForPickup = (cert, wfMap, activeUser) => {
+      if (!cert || !activeUser) return false;
+      const isReady =
+        ["ready", "ready_for_pickup"].includes(cert.status) ||
+        (cert.status === "oic_review" && cert.certificate_type !== "business_permit");
+      if (!isReady) return false;
+
+      const role = String(activeUser.role || "").toLowerCase();
+      if (["superadmin", "super_admin", "admin"].includes(role)) {
+        return true;
+      }
+      const userId = String(activeUser._id || activeUser.id || "");
+      if (!userId) return false;
+
+      if (Array.isArray(cert.releasing_user_ids) && cert.releasing_user_ids.length > 0) {
+        return cert.releasing_user_ids.some((id) => String(id) === userId);
+      }
+
+      const steps = wfMap?.[cert.certificate_type] || [];
+      const relStep =
+        steps.find((s) => String(s.name || "").toLowerCase().includes("releasing")) ||
+        steps.find(
+          (s) =>
+            String(s.status || "").toLowerCase() === "oic_review" &&
+            !String(s.name || "").toLowerCase().includes("preparation"),
+        ) ||
+        steps.find((s) =>
+          ["ready", "ready_for_pickup", "released"].includes(
+            String(s.status || "").toLowerCase(),
+          ),
+        );
+
+      if (relStep && Array.isArray(relStep.assignedUsers)) {
+        return relStep.assignedUsers.some((id) => String(id) === userId);
+      }
+      return false;
+    };
+
     const isRequestAssignedToUser = (request, wfMap, activeUser) => {
       if (!activeUser || !request) return false;
       const completedStatuses = [
@@ -392,6 +432,7 @@ export default function Sidebar({
         const wfMap = wfJson?.success ? wfJson.data || {} : {};
 
         const combined = [...myAssigned];
+        let pickupCount = 0;
         for (const cert of allCerts) {
           if (
             !combined.some((c) => c.id === cert.id) &&
@@ -399,8 +440,12 @@ export default function Sidebar({
           ) {
             combined.push(cert);
           }
+          if (isCertReadyForPickup(cert, wfMap, activeUser)) {
+            pickupCount++;
+          }
         }
         setCertificateRequestsCount(combined.length);
+        setPickupManagementCount(pickupCount);
       } catch (e) {
         /* silent */
       }
@@ -414,12 +459,19 @@ export default function Sidebar({
         setCertificateRequestsCount(e.detail.count);
       }
     };
+    const onPickupDirectCount = (e) => {
+      if (typeof e?.detail?.count === "number") {
+        setPickupManagementCount(e.detail.count);
+      }
+    };
     window.addEventListener("certificate-requests-nav-refresh", onRefresh);
     window.addEventListener("certificate-requests-count", onDirectCount);
+    window.addEventListener("pickup-management-count", onPickupDirectCount);
     return () => {
       clearInterval(interval);
       window.removeEventListener("certificate-requests-nav-refresh", onRefresh);
       window.removeEventListener("certificate-requests-count", onDirectCount);
+      window.removeEventListener("pickup-management-count", onPickupDirectCount);
     };
   }, [router.pathname]);
 
@@ -463,6 +515,7 @@ export default function Sidebar({
   const getNavBadgeCount = (item) => {
     if (!item.navBadge) return 0;
     if (item.navBadge === "certificateRequests") return certificateRequestsCount;
+    if (item.navBadge === "pickupManagement") return pickupManagementCount;
     if (item.navBadge === "kapchat") return helpDeskNavCounts.kapchat;
     if (item.navBadge === "helpDesk") return helpDeskNavCounts.total;
     return 0;

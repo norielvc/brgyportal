@@ -392,6 +392,17 @@ export default function PickupManagementPage() {
       ? Math.round((stats.released / stats.totalProcessed) * 100)
       : 0;
 
+  // Broadcast pickup ready count to Sidebar navBadge
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("pickup-management-count", {
+          detail: { count: stats.readyForPickup },
+        }),
+      );
+    }
+  }, [stats.readyForPickup]);
+
   return (
     <div className="max-w-[1600px] mx-auto space-y-2 text-[13px] pb-4">
       {/* Toolbar: filters + compact inline stats (single address block — no duplicate KPI banners) */}
