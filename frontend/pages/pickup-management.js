@@ -238,6 +238,18 @@ export default function PickupManagementPage() {
     setIsSendModalOpen(true);
   };
 
+  const openCertificatePdfInNewTab = (certificate) => {
+    if (!certificate?.id) return;
+    try {
+      const serialized = JSON.stringify(certificate);
+      sessionStorage.setItem(`brgydesk_pdf_cert_${certificate.id}`, serialized);
+      localStorage.setItem(`brgydesk_pdf_cert_${certificate.id}`, serialized);
+    } catch {
+      /* ignore storage quota errors */
+    }
+    window.open(`/requests?id=${certificate.id}&pdf=1&directPdf=1`, "_blank");
+  };
+
   const handleSendCertificate = async (certificate) => {
     const email = certificate.email || certificate.residents?.email;
     if (!email?.trim()) {
@@ -539,9 +551,7 @@ export default function PickupManagementPage() {
                       Details
                     </button>
                     <button
-                      onClick={() =>
-                        router.push(`/requests?id=${certificate.id}&pdf=1`)
-                      }
+                      onClick={() => openCertificatePdfInNewTab(certificate)}
                       className="px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 text-[#03254c] rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors"
                     >
                       <FileText className="w-3.5 h-3.5" />
@@ -672,11 +682,9 @@ export default function PickupManagementPage() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() =>
-                              router.push(`/requests?id=${certificate.id}&pdf=1`)
-                            }
+                            onClick={() => openCertificatePdfInNewTab(certificate)}
                             className="px-2 py-1 bg-white border border-gray-200 text-[#03254c] rounded-md font-semibold hover:bg-gray-50 flex items-center gap-1 text-[10px] transition-all"
-                            title="Open certificate PDF"
+                            title="Open certificate PDF in new tab"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             PDF

@@ -353,7 +353,17 @@ const MultiSelectDropdown = ({
 export default function RequestsPage() {
   const router = useRouter();
   const [requests, setRequests] = useState([]);
-  const [workflows, setWorkflows] = useState({});
+  const [allRequests, setAllRequests] = useState([]);
+  const [workflows, setWorkflows] = useState(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const saved = localStorage.getItem("certificateWorkflows");
+      if (saved) return JSON.parse(saved);
+    } catch {
+      /* ignore */
+    }
+    return {};
+  });
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -583,6 +593,7 @@ export default function RequestsPage() {
       });
       const allData = await allRes.json();
       const allCertificates = allData.success ? allData.certificates || [] : [];
+      setAllRequests(allCertificates);
       setTotalCount(allCertificates.length);
 
       // 3. Smart Merge: Always calculate total assignments to keep the badge universally accurate
@@ -643,17 +654,67 @@ export default function RequestsPage() {
   };
 
   const [openPdfFromQuery, setOpenPdfFromQuery] = useState(false);
+  const [directPdfFromQuery, setDirectPdfFromQuery] = useState(false);
 
-  // Handle Deep Linking from URL
+  // Handle Deep Linking from URL - Instant Fast-Path (loads in <100ms instead of waiting for all requests)
   useEffect(() => {
-    if (router.query.id && requests.length > 0 && !selectedRequest) {
-      const target = requests.find((r) => r.id === router.query.id);
+    if (!router.isReady) return;
+    const certId = router.query.id;
+    if (!certId || selectedRequest) return;
+
+    if (router.query.pdf === "1") setOpenPdfFromQuery(true);
+    if (router.query.directPdf === "1") setDirectPdfFromQuery(true);
+
+    // Fast-path 1: Instant load from sessionStorage / localStorage (from Pickup Management click)
+    try {
+      const cached =
+        sessionStorage.getItem(`brgydesk_pdf_cert_${certId}`) ||
+        localStorage.getItem(`brgydesk_pdf_cert_${certId}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (
+          parsed &&
+          (String(parsed.id) === String(certId) ||
+            String(parsed.reference_number) === String(certId))
+        ) {
+          setSelectedRequest(parsed);
+          return;
+        }
+      }
+    } catch {
+      /* ignore storage errors */
+    }
+
+    // Fast-path 2: Check current requests/allRequests pool if already loaded
+    const pool = allRequests.length > 0 ? allRequests : requests;
+    if (pool.length > 0) {
+      const target = pool.find(
+        (r) =>
+          String(r.id) === String(certId) ||
+          String(r.reference_number) === String(certId),
+      );
       if (target) {
         setSelectedRequest(target);
-        setOpenPdfFromQuery(router.query.pdf === "1");
+        return;
       }
     }
-  }, [router.query.id, router.query.pdf, requests]);
+
+    // Fast-path 3: Fetch ONLY this single certificate from API immediately
+    const token = getAuthToken();
+    fetch(`${API_URL}/certificates/${certId}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && (data.certificate || data.data)) {
+          setSelectedRequest(data.certificate || data.data);
+        }
+      })
+      .catch((err) => console.error("Error direct loading cert for deep link:", err));
+  }, [router.isReady, router.query.id, router.query.pdf, router.query.directPdf, selectedRequest]);
 
   // Check if current user is assigned to approve a request at its current step
   const isUserAssignedToRequest = (
@@ -777,29 +838,36 @@ export default function RequestsPage() {
 
   // Get the current workflow step for a request
   const getCurrentWorkflowStep = (request) => {
-    // 🛡️ ENFORCED SEQUENTIAL FLOW: Initial requests ALWAYS go to the first step
+    if (!request) return null;
     const currentStatus = (request.status || "pending").toLowerCase();
     const workflowSteps =
-      workflows[request.certificate_type] || Object.values(workflows)[0];
+      workflows?.[request.certificate_type] ||
+      (workflows && Object.values(workflows)[0]);
 
+    if (!Array.isArray(workflowSteps) || workflowSteps.length === 0) {
+      if (request.workflow_assignment?.step_name) {
+        return { name: request.workflow_assignment.step_name };
+      }
+      return null;
+    }
+
+    // 🛡️ ENFORCED SEQUENTIAL FLOW: Initial requests ALWAYS go to the first step
     if (
-      workflowSteps &&
-      Array.isArray(workflowSteps) &&
       ["pending", "submitted", "staff_review", "returned"].includes(
         currentStatus,
       )
     ) {
-      return workflowSteps[0];
+      return workflowSteps[0] || null;
     }
 
     if (
-      workflowSteps &&
       request?.certificate_type === "business_permit" &&
       ["ready", "ready_for_pickup", "released"].includes(currentStatus)
     ) {
       return (
         workflowSteps.find((step) => isReleasingTeamStep(step)) ||
-        workflowSteps[workflowSteps.length - 1]
+        workflowSteps[workflowSteps.length - 1] ||
+        null
       );
     }
 
@@ -820,11 +888,6 @@ export default function RequestsPage() {
     }
 
     // 2. Fallback to status-based search
-    // Note: workflowSteps and currentStatus are already defined above
-
-    // Special case: if processing, we might be at secretary or captain
-    // This part is hard to guess without assignment data, but we look for the first step
-    // that is NOT staff_review and not oic_review
     if (currentStatus === "processing") {
       const activeStep = workflowSteps.find(
         (s) =>
@@ -832,7 +895,7 @@ export default function RequestsPage() {
           s.status !== "oic_review" &&
           s.requiresApproval,
       );
-      return activeStep || workflowSteps[1] || null;
+      return activeStep || workflowSteps[1] || workflowSteps[0] || null;
     }
 
     const matchingStep = findWorkflowStepForCertificate(workflowSteps, request);
@@ -1544,6 +1607,12 @@ export default function RequestsPage() {
 
   return (
     <div className="space-y-2.5 max-w-[1600px] mx-auto text-[13px]">
+      {router.query.directPdf === "1" && !selectedRequest && (
+        <div className="fixed inset-0 z-[100000] bg-neutral-900 flex flex-col items-center justify-center text-white">
+          <div className="w-10 h-10 border-3 border-white/25 border-t-blue-400 rounded-full animate-spin mb-3" />
+          <p className="text-sm font-bold tracking-wide">Loading Certificate PDF...</p>
+        </div>
+      )}
       {/* Pending Action Banner on Mobile & Desktop */}
       {pendingActionCount > 0 && (
         <div className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-lg text-amber-900">
@@ -2136,6 +2205,7 @@ export default function RequestsPage() {
           currentUser={currentUser}
           userSignature={userSignature}
           openPdf={openPdfFromQuery}
+          directPdf={directPdfFromQuery}
         />
       )}
 
@@ -2267,6 +2337,7 @@ function RequestDetailsModal({
   currentUser,
   userSignature,
   openPdf = false,
+  directPdf = false,
 }) {
   useScrollLock(true);
   const currentStep = getCurrentWorkflowStep(request);
@@ -3049,6 +3120,7 @@ function RequestDetailsModal({
         currentUser={currentUser}
         userSignature={userSignature}
         orRefreshKey={orSectionRefreshKey}
+        directPdf={directPdf}
       />
     );
   }
@@ -6360,7 +6432,7 @@ const defaultOfficials = {
 
 // Certificate Preview Modal Component
 /** Wait for certificate images (signatures, logos) before html2canvas capture. */
-function waitForDocumentImages(root, timeoutMs = 8000) {
+function waitForDocumentImages(root, timeoutMs = 2000) {
   if (!root) return Promise.resolve();
   const imgs = Array.from(root.querySelectorAll("img"));
   return Promise.all(
@@ -6591,8 +6663,8 @@ async function buildCertificatePdfFromElement(
   iframeDoc.close();
 
   await new Promise((resolve) => {
-    iframe.onload = () => setTimeout(resolve, 800);
-    setTimeout(resolve, 1500);
+    iframe.onload = () => setTimeout(resolve, 150);
+    setTimeout(resolve, 350);
   });
 
   const captureTarget =
@@ -6719,6 +6791,7 @@ function CertificatePreviewModal({
   currentUser,
   userSignature,
   orRefreshKey = 0,
+  directPdf = false,
 }) {
   useScrollLock(true);
   const certificateRef = useRef(null);
@@ -6726,16 +6799,42 @@ function CertificatePreviewModal({
   const containerRef = useRef(null);
   const isBusinessPermitRequest =
     String(request.certificate_type || "").toLowerCase() === "business_permit";
-  const [businessPreviewTab, setBusinessPreviewTab] = useState("inspection");
+  const isCompletedOrReady = ["ready", "ready_for_pickup", "released", "oic_review"].includes(
+    String(request.status || "").toLowerCase(),
+  );
+  const [businessPreviewTab, setBusinessPreviewTab] = useState(
+    isBusinessPermitRequest && (directPdf || isCompletedOrReady)
+      ? "permit"
+      : "inspection",
+  );
   const activeCertificateRef = isBusinessPermitRequest
     ? businessPreviewTab === "permit"
       ? businessPermitCertRef
       : certificateRef
     : certificateRef;
-  const [officials, setOfficials] = useState(null); // null = loading, prevents flash of wrong data
+  const [officials, setOfficials] = useState(() => {
+    if (typeof window === "undefined") return defaultOfficials;
+    try {
+      const saved = localStorage.getItem("barangayOfficials");
+      if (saved) return mergeOfficialsConfig(defaultOfficials, JSON.parse(saved));
+    } catch {}
+    return defaultOfficials;
+  });
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [history, setHistory] = useState([]);
+  const [historyLoaded, setHistoryLoaded] = useState(() => {
+    let details = request?.details;
+    if (typeof details === "string") {
+      try {
+        details = JSON.parse(details);
+      } catch {}
+    }
+    return Boolean(details?.captain_signature);
+  });
+  const [requestLoaded, setRequestLoaded] = useState(() => Boolean(request?.reference_number));
+  const [directPdfBlobUrl, setDirectPdfBlobUrl] = useState(null);
+  const directPdfStartedRef = useRef(false);
   const [workflowAssignments, setWorkflowAssignments] = useState([]);
   const [tenantUsers, setTenantUsers] = useState([]);
   const [financeTeamUsers, setFinanceTeamUsers] = useState([]);
@@ -6826,6 +6925,8 @@ function CertificatePreviewModal({
       }
     } catch (error) {
       console.error("Error refreshing certificate for preview:", error);
+    } finally {
+      setRequestLoaded(true);
     }
   };
 
@@ -6851,6 +6952,8 @@ function CertificatePreviewModal({
       }
     } catch (error) {
       console.error("Error fetching history:", error);
+    } finally {
+      setHistoryLoaded(true);
     }
   };
 
@@ -7075,6 +7178,40 @@ function CertificatePreviewModal({
     );
   }, [request.id, orRefreshKey]);
 
+  // Automatically generate and open PDF in the current tab when directPdf=1
+  useEffect(() => {
+    if (
+      !directPdf ||
+      directPdfStartedRef.current ||
+      !officials
+    ) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      if (!activeCertificateRef.current || directPdfStartedRef.current) return;
+      directPdfStartedRef.current = true;
+      try {
+        await waitForDocumentImages(activeCertificateRef.current, 2000);
+        const pdf = await buildCertificatePdfFromElement(
+          activeCertificateRef.current,
+          previewPageSpec,
+        );
+        const blob = pdf.output("blob");
+        const url = URL.createObjectURL(blob);
+        setDirectPdfBlobUrl(url);
+        if (typeof document !== "undefined") {
+          document.title = `${request.reference_number || "Certificate"}.pdf`;
+        }
+      } catch (error) {
+        console.error("Error auto-generating direct PDF:", error);
+        directPdfStartedRef.current = false;
+      }
+    }, 180);
+
+    return () => clearTimeout(timer);
+  }, [directPdf, officials, previewPageSpec, request.reference_number]);
+
   // ── Print: same A4 PDF as Download, then browser print on that PDF ──
   const handlePrintPDF = async () => {
     if (!activeCertificateRef.current || isPrinting || isDownloading) return;
@@ -7127,6 +7264,27 @@ function CertificatePreviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-gray-900/80" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
+      {directPdf && (
+        <div className="fixed inset-0 z-[100000] bg-neutral-900 flex flex-col items-center justify-center">
+          {directPdfBlobUrl ? (
+            <iframe
+              src={directPdfBlobUrl}
+              title={`${request.reference_number || "Certificate"}.pdf`}
+              className="w-screen h-screen border-0 bg-neutral-800"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-3 text-white">
+              <div className="w-10 h-10 border-3 border-white/25 border-t-blue-400 rounded-full animate-spin" />
+              <p className="text-sm font-bold tracking-wide">
+                Generating PDF ({request.reference_number || "Certificate"})...
+              </p>
+              <p className="text-xs text-slate-400">
+                Preparing official document with signatures and verification QR
+              </p>
+            </div>
+          )}
+        </div>
+      )}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[96vh] h-[96dvh] sm:h-[96vh]">
         {/* Header */}
         <div className="bg-slate-900 border-b border-slate-800 px-3.5 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between shrink-0 z-10">
