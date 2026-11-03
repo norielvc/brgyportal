@@ -23,6 +23,7 @@ import {
   Mail,
   Shield,
   Briefcase,
+  MessageCircle,
 } from "lucide-react";
 import { isAuthenticated, getUserData, getAuthToken } from "@/lib/auth";
 import useScrollLock from "@/lib/useScrollLock";
@@ -30,6 +31,7 @@ import useScrollLock from "@/lib/useScrollLock";
 const API_URL = "/api";
 const MASTER_WORKFLOW_ID = "master_certificate_flow";
 const ESUMBONG_SETTINGS_ID = "esumbong_help_desk";
+const KAPCHAT_SETTINGS_ID = "kapchat_help_desk";
 
 // Certificate types
 const certificateTypes = [
@@ -178,6 +180,11 @@ export default function WorkflowsPage() {
     accessUserIds: [],
   });
   const [savingEsumbong, setSavingEsumbong] = useState(false);
+  const [kapchatSettings, setKapchatSettings] = useState({
+    notificationReceiverIds: [],
+    accessUserIds: [],
+  });
+  const [savingKapchat, setSavingKapchat] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -202,8 +209,68 @@ export default function WorkflowsPage() {
     loadWorkflows();
     loadUsers();
     loadEsumbongSettings();
+    loadKapchatSettings();
     setLoading(false);
   }, []);
+
+  const loadKapchatSettings = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      const response = await fetch(`${API_URL}/workflows/kapchat-settings`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        setKapchatSettings({
+          notificationReceiverIds: data.data.notificationReceiverIds || [],
+          accessUserIds: data.data.accessUserIds || [],
+        });
+      }
+    } catch (error) {
+      console.error("Error loading KapChat settings:", error);
+    }
+  };
+
+  const saveKapchatSettings = async () => {
+    setSavingKapchat(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/workflows/kapchat-settings`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ settings: kapchatSettings }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        showNotificationMsg("error", data.message || "Failed to save KapChat settings");
+        return;
+      }
+      setKapchatSettings(data.data || kapchatSettings);
+      showNotificationMsg("success", "KapChat access and email receivers saved.");
+    } catch (error) {
+      showNotificationMsg("error", error.message || "Failed to save KapChat settings");
+    } finally {
+      setSavingKapchat(false);
+    }
+  };
+
+  const toggleKapchatUser = (field, userId) => {
+    const id = String(userId);
+    setKapchatSettings((prev) => {
+      const list = prev[field] || [];
+      const next = list.includes(id)
+        ? list.filter((x) => x !== id)
+        : [...list, id];
+      return { ...prev, [field]: next };
+    });
+  };
 
   const loadEsumbongSettings = async () => {
     try {
@@ -822,6 +889,16 @@ export default function WorkflowsPage() {
           >
             E-Sumbong
           </button>
+          <button
+            onClick={() => setSelectedCertificate(KAPCHAT_SETTINGS_ID)}
+            className={`flex-1 sm:flex-none px-2.5 py-1.5 rounded-[5px] font-semibold text-[11px] transition-colors ${
+              selectedCertificate === KAPCHAT_SETTINGS_ID
+                ? "bg-blue-700 text-white"
+                : "text-gray-600 hover:text-gray-900 hover:bg-white/80"
+            }`}
+          >
+            KapChat
+          </button>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {selectedCertificate === ESUMBONG_SETTINGS_ID ? (
@@ -839,6 +916,24 @@ export default function WorkflowsPage() {
                 <>
                   <Save className="w-3.5 h-3.5 shrink-0" />
                   Save E-Sumbong
+                </>
+              )}
+            </button>
+          ) : selectedCertificate === KAPCHAT_SETTINGS_ID ? (
+            <button
+              onClick={saveKapchatSettings}
+              disabled={savingKapchat}
+              className="flex-1 sm:flex-initial justify-center px-2.5 py-1.5 bg-blue-700 text-white rounded-md hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-[11px] font-semibold transition-colors"
+            >
+              {savingKapchat ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5 shrink-0" />
+                  Save KapChat
                 </>
               )}
             </button>
@@ -900,6 +995,15 @@ export default function WorkflowsPage() {
             <span className="font-bold">E-Sumbong (Help Desk)</span>
             {" — "}
             choose who gets email when a new blotter is filed and who may open the E-Sumbong tab. If lists are empty, new reports email the Barangay Captain and all help-desk staff roles keep access.
+          </p>
+        </div>
+      ) : selectedCertificate === KAPCHAT_SETTINGS_ID ? (
+        <div className="flex items-start gap-2 px-2.5 py-2 rounded-md border border-blue-200/80 bg-blue-50/80">
+          <MessageCircle className="w-3.5 h-3.5 text-blue-700 shrink-0 mt-px" />
+          <p className="text-[10px] text-blue-900 leading-snug">
+            <span className="font-bold">KapChat (Help Desk)</span>
+            {" — "}
+            choose who gets email when a resident sends a message in KapChat and who may open the KapChat tab. If lists are empty, new messages email the Barangay Captain and all help-desk staff roles keep access.
           </p>
         </div>
       ) : selectedCertificate === MASTER_WORKFLOW_ID ? (
@@ -991,6 +1095,88 @@ export default function WorkflowsPage() {
                       checked={checked}
                       onChange={() => toggleEsumbongUser("accessUserIds", uid)}
                       className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span className="font-semibold text-gray-900 block truncate">{label}</span>
+                      <span className="text-gray-500 truncate block">
+                        {u.role}{u.position ? ` · ${u.position}` : ""}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : selectedCertificate === KAPCHAT_SETTINGS_ID ? (
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+              <Mail className="w-3.5 h-3.5 text-blue-700" />
+              <h2 className="text-[11px] font-bold text-gray-800 uppercase tracking-wide">
+                New message email receivers
+              </h2>
+            </div>
+            <p className="px-3 pt-2 text-[10px] text-gray-500 leading-snug">
+              Staff who receive email when a resident sends a message in KapChat. Leave empty to notify Barangay Captain/Chairman only.
+            </p>
+            <div className="p-3 max-h-[420px] overflow-y-auto space-y-1">
+              {users.map((u) => {
+                const uid = String(u.id);
+                const checked = kapchatSettings.notificationReceiverIds.includes(uid);
+                const label =
+                  `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email;
+                return (
+                  <label
+                    key={`kapchat-notify-${uid}`}
+                    className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer text-[11px] ${
+                      checked ? "border-blue-300 bg-blue-50" : "border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleKapchatUser("notificationReceiverIds", uid)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span className="font-semibold text-gray-900 block truncate">{label}</span>
+                      <span className="text-gray-500 truncate block">{u.email}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+              <Shield className="w-3.5 h-3.5 text-blue-700" />
+              <h2 className="text-[11px] font-bold text-gray-800 uppercase tracking-wide">
+                Who can access KapChat
+              </h2>
+            </div>
+            <p className="px-3 pt-2 text-[10px] text-gray-500 leading-snug">
+              Help Desk → KapChat tab and sidebar link. Admin and superadmin always have access. Leave empty to allow all help-desk staff roles (captain, secretary, staff, etc.).
+            </p>
+            <div className="p-3 max-h-[420px] overflow-y-auto space-y-1">
+              {users.map((u) => {
+                const uid = String(u.id);
+                const checked = kapchatSettings.accessUserIds.includes(uid);
+                const label =
+                  `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email;
+                return (
+                  <label
+                    key={`kapchat-access-${uid}`}
+                    className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer text-[11px] ${
+                      checked ? "border-blue-300 bg-blue-50" : "border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleKapchatUser("accessUserIds", uid)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="flex-1 min-w-0">
                       <span className="font-semibold text-gray-900 block truncate">{label}</span>

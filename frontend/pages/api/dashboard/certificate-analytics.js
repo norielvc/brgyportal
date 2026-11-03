@@ -1,5 +1,24 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
+import { buildKapchatHelpDeskThreads } from "../../../src/lib/kapchatThread";
+
+const ESUMBONG_OPEN = ["pending", "under_review"];
+const ASSISTANCE_OPEN = ["pending", "in_progress"];
+
+function getManilaDayBounds(reference = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(reference);
+  const y = parts.find((p) => p.type === "year").value;
+  const m = parts.find((p) => p.type === "month").value;
+  const d = parts.find((p) => p.type === "day").value;
+  const start = new Date(`${y}-${m}-${d}T00:00:00+08:00`);
+  const end = new Date(start.getTime() + 86400000);
+  return { start, end };
+}
 
 export default async function handler(req, res) {
   if (req.method !== "GET")
@@ -89,9 +108,9 @@ export default async function handler(req, res) {
   });
 
   const now = new Date();
+  const manilaToday = getManilaDayBounds(now);
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const thisMonth = all.filter(
     (r) => new Date(r.created_at) >= currentMonthStart,
@@ -280,6 +299,86 @@ export default async function handler(req, res) {
     return d >= yesterdayStart && d < yesterdayEnd;
   }).length;
 
+  const { data: todayRowsRaw } = await supabase
+    .from("certificate_requests")
+    .select(
+      "id, certificate_type, status, created_at, full_name, reference_number",
+    )
+    .eq("tenant_id", tenantId)
+    .gte("created_at", manilaToday.start.toISOString())
+    .lt("created_at", manilaToday.end.toISOString())
+    .order("created_at", { ascending: false });
+
+  const todayNewRequests = (todayRowsRaw || []).map((r) => ({
+    id: r.id,
+    referenceNumber: r.reference_number,
+    applicantName: r.full_name,
+    certificateType: r.certificate_type,
+    status: r.status,
+    currentStep: requestToStepMap[r.id] || "Pending Review",
+    createdAt: r.created_at,
+  }));
+
+  const readyForPickup = all.filter((r) =>
+    ["ready", "ready_for_pickup"].includes(r.status),
+  ).length;
+  const approvedOnly = all.filter((r) => r.status === "approved").length;
+
+  let peakHour = 0;
+  let peakHourCount = 0;
+  hourlyDistribution.forEach((count, hour) => {
+    if (count > peakHourCount) {
+      peakHourCount = count;
+      peakHour = hour;
+    }
+  });
+
+  if (topStaff.length > 0) {
+    const staffIds = topStaff.map((s) => s.userId);
+    const { data: staffRows } = await supabase
+      .from("users")
+      .select("id, first_name, last_name")
+      .eq("tenant_id", tenantId)
+      .in("id", staffIds);
+    const nameById = Object.fromEntries(
+      (staffRows || []).map((u) => [
+        String(u.id),
+        `${u.first_name || ""} ${u.last_name || ""}`.trim(),
+      ]),
+    );
+    topStaff.forEach((s) => {
+      s.displayName = nameById[s.userId] || "Staff member";
+    });
+  }
+
+  const [esumbongRes, assistanceRes, kapchatRes] = await Promise.all([
+    supabase
+      .from("blotter_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .in("status", ESUMBONG_OPEN),
+    supabase
+      .from("assistance_inquiries")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .in("status", ASSISTANCE_OPEN),
+    supabase
+      .from("kapchat_messages")
+      .select(
+        "id, contact, sender_name, message, status, is_admin, resident_id, created_at",
+      )
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  const helpDeskEsumbong = esumbongRes.error ? 0 : esumbongRes.count ?? 0;
+  const helpDeskAssistance = assistanceRes.error ? 0 : assistanceRes.count ?? 0;
+  let helpDeskKapchat = 0;
+  if (!kapchatRes.error && Array.isArray(kapchatRes.data)) {
+    const threads = buildKapchatHelpDeskThreads(kapchatRes.data);
+    helpDeskKapchat = threads.reduce((sum, t) => sum + (t.unreadCount || 0), 0);
+  }
+
   return res.status(200).json({
     success: true,
     data: {
@@ -305,8 +404,7 @@ export default async function handler(req, res) {
                 (((thisMonth - lastMonth) / lastMonth) * 100).toFixed(1),
               )
             : 0,
-        todayCount: all.filter((r) => new Date(r.created_at) >= todayStart)
-          .length,
+        todayCount: todayNewRequests.length,
         yesterdayCount,
         avgProcessingDays: parseFloat(avgProcessingDays),
         avgAssignmentHours: parseFloat(avgAssignmentTime),
@@ -316,6 +414,16 @@ export default async function handler(req, res) {
         residentsCount: residentsCount || 0,
         usersCount: usersCount || 0,
         overdueCount: overdueRequests.length,
+        readyForPickup,
+        approvedOnly,
+        peakHour,
+        peakHourCount,
+      },
+      helpDesk: {
+        esumbong: helpDeskEsumbong,
+        assistance: helpDeskAssistance,
+        kapchat: helpDeskKapchat,
+        total: helpDeskEsumbong + helpDeskAssistance + helpDeskKapchat,
       },
       byType: Object.entries(typeMap)
         .sort((a, b) => b[1] - a[1])
@@ -329,6 +437,7 @@ export default async function handler(req, res) {
         .map(([step, count]) => ({ step, count })),
       monthlyTrend,
       dailyTrend,
+      todayNewRequests,
       topStaff,
       rejectionReasons: Object.entries(rejectionReasons)
         .sort((a, b) => b[1] - a[1])

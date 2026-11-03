@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout, getUserData, getAuthToken } from "@/lib/auth";
+import { userHasKapchatAccess } from "@/lib/kapchatAccess";
 
 const mainMenuItems = [
   {
@@ -59,6 +60,7 @@ const mainMenuItems = [
     href: "/requests",
     icon: ClipboardList,
     description: "Manage requests",
+    navBadge: "certificateRequests",
   },
   {
     name: "Help Desk",
@@ -261,6 +263,7 @@ export default function Sidebar({
   const [isReleasingTeamMember, setIsReleasingTeamMember] = useState(() =>
     ["superadmin", "super_admin", "admin"].includes(role),
   );
+  const [canAccessKapchat, setCanAccessKapchat] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [lockedFeatureName, setLockedFeatureName] = useState("");
   const [requiredPlanType, setRequiredPlanType] = useState("Pro"); // "Pro" or "Standard"
@@ -271,6 +274,154 @@ export default function Sidebar({
     kapchat: 0,
     total: 0,
   });
+  const [certificateRequestsCount, setCertificateRequestsCount] = useState(0);
+
+  useEffect(() => {
+    const isRequestAssignedToUser = (request, wfMap, activeUser) => {
+      if (!activeUser || !request) return false;
+      const completedStatuses = [
+        "ready",
+        "ready_for_pickup",
+        "released",
+        "cancelled",
+        "rejected",
+      ];
+      if (completedStatuses.includes(request.status)) return false;
+      if (request.status === "oic_review") {
+        if (request.certificate_type !== "business_permit") return false;
+        const stepName = String(
+          request.workflow_assignment?.step_name || "",
+        ).toLowerCase();
+        if (stepName.includes("releasing")) return false;
+      }
+
+      const bypassRoles = ["superadmin", "super_admin", "admin"];
+      if (bypassRoles.includes(String(activeUser.role || "").toLowerCase())) {
+        return true;
+      }
+
+      const currentUserId = String(activeUser._id || activeUser.id || "");
+      if (!currentUserId) return false;
+
+      if (request.workflow_assignment) {
+        const assignedId = String(
+          request.workflow_assignment.assigned_user_id ||
+            request.workflow_assignment.userId ||
+            "",
+        );
+        if (assignedId === currentUserId) return true;
+      }
+
+      if (!wfMap) return false;
+      const steps =
+        wfMap[request.certificate_type] || Object.values(wfMap)[0] || [];
+      if (!Array.isArray(steps) || !steps.length) return false;
+
+      const s = String(request.status || "").toLowerCase();
+      let currentStep = null;
+      if (
+        ["staff_review", "staff review", "pending", "returned", "submitted"].some(
+          (st) => s.includes(st),
+        )
+      ) {
+        currentStep = steps.find((st) => st.status === "staff_review");
+      } else if (s.includes("physical_inspection")) {
+        currentStep = steps.find(
+          (st) => String(st.status || "").toLowerCase() === "physical_inspection",
+        );
+      } else if (s === "verifying" || s.includes("finance")) {
+        currentStep = steps.find(
+          (st) => String(st.status || "").toLowerCase() === "verifying",
+        );
+      } else if (s.includes("treasury")) {
+        currentStep = steps.find(
+          (st) => String(st.status || "").toLowerCase() === "treasury",
+        );
+      } else if (s.includes("captain") || s === "captain_approval") {
+        currentStep = steps.find(
+          (st) =>
+            String(st.status || "").toLowerCase() === "captain_approval" ||
+            String(st.name || "").toLowerCase().includes("captain") ||
+            String(st.name || "").toLowerCase().includes("chairman"),
+        );
+      } else if (s.includes("secretary")) {
+        currentStep = steps.find(
+          (st) => String(st.status || "").toLowerCase() === "secretary_approval",
+        );
+      } else if (s.includes("oic_review")) {
+        currentStep = steps.find(
+          (st) =>
+            String(st.status || "").toLowerCase() === "oic_review" &&
+            !String(st.name || "").toLowerCase().includes("releasing"),
+        );
+      }
+
+      if (!currentStep) return false;
+      return (currentStep.assignedUsers || []).some(
+        (id) => String(id) === currentUserId,
+      );
+    };
+
+    const fetchCertificateRequestsCount = async () => {
+      try {
+        const token = getAuthToken();
+        const activeUser = getUserData();
+        if (!token || !activeUser) return;
+
+        const [assignedRes, allRes, wfRes] = await Promise.all([
+          fetch("/api/workflow-assignments/my-assignments", {
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => null),
+          fetch("/api/certificates", {
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => null),
+          fetch("/api/workflows", {
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => null),
+        ]);
+
+        const assignedJson =
+          assignedRes && assignedRes.ok ? await assignedRes.json() : {};
+        const allJson = allRes && allRes.ok ? await allRes.json() : {};
+        const wfJson = wfRes && wfRes.ok ? await wfRes.json() : {};
+
+        const myAssigned = assignedJson?.success
+          ? assignedJson.data || assignedJson.certificates || []
+          : [];
+        const allCerts = allJson?.success ? allJson.certificates || [] : [];
+        const wfMap = wfJson?.success ? wfJson.data || {} : {};
+
+        const combined = [...myAssigned];
+        for (const cert of allCerts) {
+          if (
+            !combined.some((c) => c.id === cert.id) &&
+            isRequestAssignedToUser(cert, wfMap, activeUser)
+          ) {
+            combined.push(cert);
+          }
+        }
+        setCertificateRequestsCount(combined.length);
+      } catch (e) {
+        /* silent */
+      }
+    };
+
+    fetchCertificateRequestsCount();
+    const interval = setInterval(fetchCertificateRequestsCount, 30000);
+    const onRefresh = () => fetchCertificateRequestsCount();
+    const onDirectCount = (e) => {
+      if (typeof e?.detail?.count === "number") {
+        setCertificateRequestsCount(e.detail.count);
+      }
+    };
+    window.addEventListener("certificate-requests-nav-refresh", onRefresh);
+    window.addEventListener("certificate-requests-count", onDirectCount);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("certificate-requests-nav-refresh", onRefresh);
+      window.removeEventListener("certificate-requests-count", onDirectCount);
+    };
+  }, [router.pathname]);
 
   useEffect(() => {
     const fetchHelpDeskNavCounts = async () => {
@@ -311,6 +462,7 @@ export default function Sidebar({
 
   const getNavBadgeCount = (item) => {
     if (!item.navBadge) return 0;
+    if (item.navBadge === "certificateRequests") return certificateRequestsCount;
     if (item.navBadge === "kapchat") return helpDeskNavCounts.kapchat;
     if (item.navBadge === "helpDesk") return helpDeskNavCounts.total;
     return 0;
@@ -486,8 +638,30 @@ export default function Sidebar({
     checkReleasingTeam();
   }, [role, user?._id, user?.id]);
 
+  useEffect(() => {
+    const checkKapchatAccess = async () => {
+      try {
+        const token = getAuthToken();
+        const activeUser = getUserData();
+        if (!token || !activeUser) return;
+        const res = await fetch("/api/workflows/kapchat-settings", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        setCanAccessKapchat(userHasKapchatAccess(activeUser, json?.data || {}));
+      } catch {
+        setCanAccessKapchat(true);
+      }
+    };
+    checkKapchatAccess();
+  }, [role, user?._id, user?.id, router.pathname]);
+
   const filteredMenuItems = mainMenuItems.filter((item) => {
     if (item.href === "/pickup-management" && !isReleasingTeamMember) {
+      return false;
+    }
+    if (item.href === "/help-desk?tab=kapchat" && !canAccessKapchat) {
       return false;
     }
     if (item.adminOnly && (!role || !adminRoles.includes(role))) {

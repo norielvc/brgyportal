@@ -23,6 +23,8 @@ import {
   Clock3,
   CheckCircle,
   X,
+  MessageCircle,
+  Inbox,
 } from "lucide-react";
 
 const API_URL = "/api";
@@ -84,6 +86,27 @@ function formatPSTDate(iso) {
     month: "short",
     day: "numeric",
     year: "numeric",
+  });
+}
+
+function formatPeakHour(hour24) {
+  if (hour24 == null) return "—";
+  const d = new Date();
+  d.setHours(hour24, 0, 0, 0);
+  return d.toLocaleTimeString("en-PH", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function formatManilaTime(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleTimeString("en-PH", {
+    timeZone: "Asia/Manila",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
 }
 
@@ -208,8 +231,18 @@ export default function Dashboard() {
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const ov = data?.overview || {};
+  const hd = data?.helpDesk || {};
   const maxDaily = Math.max(...(data?.dailyTrend || []).map((d) => d.count), 1);
+  const maxMonthly = Math.max(
+    ...(data?.monthlyTrend || []).map((m) => m.total),
+    1,
+  );
   const maxType = Math.max(...(data?.byType || []).map((t) => t.count), 1);
+  const maxStatus = Math.max(...(data?.byStatus || []).map((s) => s.count), 1);
+  const sortedByStatus = [...(data?.byStatus || [])].sort(
+    (a, b) => b.count - a.count,
+  );
+  const todayRequests = data?.todayNewRequests || [];
   const growthBadge =
     ov.monthGrowth != null
       ? `${ov.monthGrowth >= 0 ? "+" : ""}${ov.monthGrowth}%`
@@ -456,6 +489,182 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* BARANGAY PULSE — census, help desk, pickup queue */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+        <button
+          type="button"
+          onClick={() => router.push("/residents")}
+          className="text-left bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
+        >
+          <p className="text-[10px] font-bold uppercase text-gray-500 flex items-center gap-1">
+            <Users className="w-3 h-3" /> Registered residents
+          </p>
+          <p className="text-2xl font-black text-gray-900 tabular-nums mt-1">
+            {ov.residentsCount ?? 0}
+          </p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Census database</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/employees")}
+          className="text-left bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
+        >
+          <p className="text-[10px] font-bold uppercase text-gray-500 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3" /> Staff accounts
+          </p>
+          <p className="text-2xl font-black text-gray-900 tabular-nums mt-1">
+            {ov.usersCount ?? 0}
+          </p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Portal users</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/pickup-management")}
+          className="text-left bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
+        >
+          <p className="text-[10px] font-bold uppercase text-gray-500 flex items-center gap-1">
+            <PackageCheck className="w-3 h-3" /> Ready for pickup
+          </p>
+          <p className="text-2xl font-black text-[#03254c] tabular-nums mt-1">
+            {ov.readyForPickup ?? 0}
+          </p>
+          <p className="text-[10px] text-gray-400 mt-0.5">At releasing counter</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/help-desk")}
+          className="text-left bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
+        >
+          <p className="text-[10px] font-bold uppercase text-gray-500 flex items-center gap-1">
+            <Inbox className="w-3 h-3" /> Help desk open
+          </p>
+          <p className="text-2xl font-black text-gray-900 tabular-nums mt-1">
+            {hd.total ?? 0}
+          </p>
+          <p className="text-[10px] text-gray-500 mt-0.5 truncate">
+            E-Sumbong {hd.esumbong ?? 0} · Assistance {hd.assistance ?? 0} · KapChat{" "}
+            {hd.kapchat ?? 0}
+          </p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/help-desk?tab=kapchat")}
+          className="text-left bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors col-span-2 md:col-span-1"
+        >
+          <p className="text-[10px] font-bold uppercase text-gray-500 flex items-center gap-1">
+            <MessageCircle className="w-3 h-3" /> Peak portal activity
+          </p>
+          <p className="text-lg font-black text-gray-900 mt-1">
+            {formatPeakHour(ov.peakHour)}
+          </p>
+          <p className="text-[10px] text-gray-400 mt-0.5">
+            {ov.peakHourCount ?? 0} requests filed at busiest hour (all time)
+          </p>
+        </button>
+      </div>
+
+      {/* TODAY'S NEW REQUESTS — quick open in Certificate Requests */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-[#03254c]/5 to-transparent">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#03254c] text-white flex items-center justify-center flex-shrink-0">
+              <FilePlus2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-gray-900">
+                Today&apos;s new requests
+              </h3>
+              <p className="text-xs text-gray-500 font-medium">
+                Filed today (Philippine time) — tap to review
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-[#03254c] text-white tabular-nums">
+              {todayRequests.length} today
+            </span>
+            <button
+              type="button"
+              onClick={() => router.push("/requests")}
+              className="text-xs font-bold text-[#03254c] hover:underline flex items-center gap-1 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
+            >
+              All requests <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {todayRequests.length > 0 ? (
+          <div className="divide-y divide-gray-50">
+            {todayRequests.slice(0, 8).map((r) => {
+              const cfg = STATUS_CONFIG[r.status] || {
+                label: r.status,
+                badgeClass: "text-gray-600 bg-gray-100",
+                dotClass: "bg-gray-400",
+              };
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() =>
+                    router.push({ pathname: "/requests", query: { id: r.id } })
+                  }
+                  className="w-full text-left px-5 py-3.5 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 truncate group-hover:text-[#03254c]">
+                      {r.applicantName || "Applicant"}
+                    </p>
+                    <p className="text-[11px] text-gray-500 font-medium truncate mt-0.5">
+                      <span className="font-mono font-bold text-[#03254c]">
+                        {r.referenceNumber}
+                      </span>
+                      {" · "}
+                      {TYPE_LABELS[r.certificateType] || r.certificateType}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end flex-shrink-0">
+                    <span className="text-[10px] font-semibold text-gray-500 tabular-nums">
+                      {formatManilaTime(r.createdAt)}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${cfg.badgeClass}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dotClass}`} />
+                      {cfg.label}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#03254c] hidden sm:block" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="px-5 py-10 text-center">
+            <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm font-bold text-gray-600">No new requests yet today</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Portal and walk-in filings will appear here automatically.
+            </p>
+          </div>
+        )}
+
+        {todayRequests.length > 8 && (
+          <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-center">
+            <button
+              type="button"
+              onClick={() => router.push("/requests")}
+              className="text-xs font-bold text-[#03254c] hover:underline"
+            >
+              View {todayRequests.length - 8} more filed today
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* 3. STRUCTURED GOVERNANCE KPI COMMAND GRID (Clean Refined Neutral Theme) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* DOMAIN A: CIVIL REGISTRY & INTAKE STREAM */}
@@ -568,19 +777,19 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              {/* Approved */}
+              {/* Certified, awaiting pickup */}
               <div
                 onClick={() => router.push("/requests?status=approved")}
                 className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 cursor-pointer transition-all"
               >
                 <p className="text-[10px] font-bold text-gray-700 uppercase">
-                  Approved
+                  Certified
                 </p>
                 <p className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">
-                  {ov.approved ?? 0}
+                  {ov.approvedOnly ?? 0}
                 </p>
                 <p className="text-[10px] text-gray-500 mt-1 font-medium truncate">
-                  Finalized seals
+                  Awaiting release
                 </p>
               </div>
 
@@ -619,7 +828,7 @@ export default function Dashboard() {
             <span className="text-gray-500 font-medium">Completion Rate:</span>
             <span className="font-bold text-gray-900 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              {ov.completionRate ?? 0}% Citizen Satisfaction
+              {ov.completionRate ?? 0}% completion (certified or released)
             </span>
           </div>
         </div>
@@ -716,6 +925,104 @@ export default function Dashboard() {
             <span className="font-bold text-gray-800">
               {ov.returnRate ?? 0}% Follow-up rate
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 12-MONTH INTAKE & STATUS MIX */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-gray-700" />
+                12-Month Certificate Intake
+              </h3>
+              <p className="text-xs text-gray-400 font-medium">
+                Monthly volume vs certified output (filtered range applies)
+              </p>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-semibold text-gray-500">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#03254c]" />
+                Filed
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
+                Certified
+              </span>
+            </div>
+          </div>
+          <div className="h-40 flex items-end justify-between gap-1 px-1 border-b border-gray-100 pb-2">
+            {(data?.monthlyTrend || []).map((m, i) => {
+              const totalPct = Math.round((m.total / maxMonthly) * 100);
+              const approvedPct = Math.round(
+                ((m.approved || 0) / maxMonthly) * 100,
+              );
+              return (
+                <div
+                  key={i}
+                  className="flex-1 flex flex-col items-center justify-end h-full group relative min-w-0"
+                >
+                  <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[9px] font-bold px-2 py-1 rounded z-10 whitespace-nowrap pointer-events-none">
+                    {m.month}: {m.total} filed, {m.approved} certified
+                  </div>
+                  <div className="w-full flex items-end justify-center gap-px h-28">
+                    <div
+                      className="w-1/2 rounded-t-sm bg-[#03254c]"
+                      style={{ height: `${Math.max(totalPct, 4)}%` }}
+                    />
+                    <div
+                      className="w-1/2 rounded-t-sm bg-emerald-400"
+                      style={{ height: `${Math.max(approvedPct, 4)}%` }}
+                    />
+                  </div>
+                  <span className="text-[8px] font-bold text-gray-400 mt-1 truncate w-full text-center">
+                    {m.month.split(" ")[0]}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+          <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 mb-1">
+            Status breakdown
+          </h3>
+          <p className="text-xs text-gray-400 font-medium mb-4">
+            All requests in current filter
+          </p>
+          <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+            {sortedByStatus.map((s, i) => {
+              const cfg = STATUS_CONFIG[s.status] || {
+                label: s.status,
+                dotClass: "bg-gray-400",
+              };
+              const pct = Math.round((s.count / maxStatus) * 100);
+              return (
+                <div key={i}>
+                  <div className="flex justify-between text-[11px] font-bold text-gray-700 mb-1">
+                    <span className="truncate pr-2 flex items-center gap-1.5">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dotClass}`}
+                      />
+                      {cfg.label || s.status}
+                    </span>
+                    <span className="tabular-nums">{s.count}</span>
+                  </div>
+                  <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#03254c] rounded-full"
+                      style={{ width: `${Math.max(pct, 4)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            {sortedByStatus.length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-4">No data</p>
+            )}
           </div>
         </div>
       </div>
@@ -1000,7 +1307,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-gray-800 truncate">
-                      {s.userId?.substring(0, 8) || `Officer ${i + 1}`}
+                      {s.displayName || `Officer ${i + 1}`}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">

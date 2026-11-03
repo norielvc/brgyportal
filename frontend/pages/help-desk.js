@@ -56,6 +56,7 @@ import {
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
 import { getAuthToken, getUserData } from "@/lib/auth";
 import { userHasEsumbongAccess } from "@/lib/esumbongAccess";
+import { userHasKapchatAccess } from "@/lib/kapchatAccess";
 import {
   formatHearingScheduleDisplay,
   isBlotterVerified,
@@ -157,6 +158,7 @@ export default function HelpDesk() {
   // New entry form state
   const [staffTenantId, setStaffTenantId] = useState("");
   const [canAccessEsumbong, setCanAccessEsumbong] = useState(false);
+  const [canAccessKapchat, setCanAccessKapchat] = useState(false);
   const [esumbongAccessLoaded, setEsumbongAccessLoaded] = useState(false);
 
   const [newEntryData, setNewEntryData] = useState({
@@ -194,18 +196,42 @@ export default function HelpDesk() {
           setEsumbongAccessLoaded(true);
           return;
         }
-        const res = await fetch(`${API_URL}/workflows/esumbong-settings`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        const settings = data?.data || {};
-        const allowed = userHasEsumbongAccess(user, settings);
-        setCanAccessEsumbong(allowed);
-        if (!allowed) {
+        const [esumbongRes, kapchatRes] = await Promise.allSettled([
+          fetch(`${API_URL}/workflows/esumbong-settings`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_URL}/workflows/kapchat-settings`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        let allowedEsumbong = true;
+        if (esumbongRes.status === "fulfilled" && esumbongRes.value.ok) {
+          const data = await esumbongRes.value.json();
+          const settings = data?.data || {};
+          allowedEsumbong = userHasEsumbongAccess(user, settings);
+        }
+        setCanAccessEsumbong(allowedEsumbong);
+
+        let allowedKapchat = true;
+        if (kapchatRes.status === "fulfilled" && kapchatRes.value.ok) {
+          const kapData = await kapchatRes.value.json();
+          const kapSettings = kapData?.data || {};
+          allowedKapchat = userHasKapchatAccess(user, kapSettings);
+        }
+        setCanAccessKapchat(allowedKapchat);
+
+        if (!allowedEsumbong) {
           setActiveTab((prev) => (prev === "esumbong" ? "assistance" : prev));
+        }
+        if (!allowedKapchat) {
+          setActiveTab((prev) =>
+            prev === "kapchat" ? (allowedEsumbong ? "esumbong" : "assistance") : prev,
+          );
         }
       } catch {
         setCanAccessEsumbong(true);
+        setCanAccessKapchat(true);
       } finally {
         setEsumbongAccessLoaded(true);
       }
@@ -214,15 +240,23 @@ export default function HelpDesk() {
   }, []);
 
   const visibleTabs = useMemo(
-    () => TABS.filter((tab) => tab.id !== "esumbong" || canAccessEsumbong),
-    [canAccessEsumbong],
+    () =>
+      TABS.filter((tab) => {
+        if (tab.id === "esumbong" && !canAccessEsumbong) return false;
+        if (tab.id === "kapchat" && !canAccessKapchat) return false;
+        return true;
+      }),
+    [canAccessEsumbong, canAccessKapchat],
   );
 
   useEffect(() => {
+    if (!esumbongAccessLoaded) return;
     if (!canAccessEsumbong && activeTab === "esumbong") {
       setActiveTab("assistance");
+    } else if (!canAccessKapchat && activeTab === "kapchat") {
+      setActiveTab(canAccessEsumbong ? "esumbong" : "assistance");
     }
-  }, [canAccessEsumbong, activeTab]);
+  }, [esumbongAccessLoaded, canAccessEsumbong, canAccessKapchat, activeTab]);
 
   // KapChat Messenger Specific States
   const [kapchatViewMode, setKapchatViewMode] = useState("messenger"); // 'messenger' | 'table'
@@ -247,7 +281,7 @@ export default function HelpDesk() {
 
   // Live polling for KapChat (every 4s) to receive incoming resident messages
   useEffect(() => {
-    if (activeTab !== "kapchat") return;
+    if (activeTab !== "kapchat" || !canAccessKapchat) return;
     const interval = setInterval(async () => {
       try {
         const res = await kapchatAPI.getMessages();
@@ -259,13 +293,13 @@ export default function HelpDesk() {
       }
     }, 4000);
     return () => clearInterval(interval);
-  }, [activeTab]);
+  }, [activeTab, canAccessKapchat]);
 
-  // Fetch data on tab change once E-Sumbong access check completes
+  // Fetch data on tab change once E-Sumbong & KapChat access check completes
   useEffect(() => {
     if (!esumbongAccessLoaded) return;
     fetchCurrentTabData();
-  }, [activeTab, esumbongAccessLoaded, canAccessEsumbong]);
+  }, [activeTab, esumbongAccessLoaded, canAccessEsumbong, canAccessKapchat]);
 
   useEffect(() => {
     const loadCertificateOfficials = async () => {
@@ -344,14 +378,19 @@ export default function HelpDesk() {
     });
   };
 
-  const fetchAllChannelCounts = async (allowEsumbong = canAccessEsumbong) => {
+  const fetchAllChannelCounts = async (
+    allowEsumbong = canAccessEsumbong,
+    allowKapchat = canAccessKapchat,
+  ) => {
     try {
       const [esumbongRes, assistanceRes, kapchatRes] = await Promise.allSettled([
         allowEsumbong
           ? blotterAPI.getReports()
           : Promise.resolve({ reports: [] }),
         assistanceAPI.getInquiries(),
-        kapchatAPI.getMessages(),
+        allowKapchat
+          ? kapchatAPI.getMessages()
+          : Promise.resolve({ messages: [] }),
       ]);
 
       const reports = esumbongRes.status === "fulfilled" && esumbongRes.value?.reports ? esumbongRes.value.reports : [];
@@ -396,6 +435,10 @@ export default function HelpDesk() {
       setActiveTab("assistance");
       return;
     }
+    if (activeTab === "kapchat" && !canAccessKapchat) {
+      setActiveTab(canAccessEsumbong ? "esumbong" : "assistance");
+      return;
+    }
     setLoading(true);
     try {
       if (activeTab === "esumbong") {
@@ -408,7 +451,7 @@ export default function HelpDesk() {
         const res = await kapchatAPI.getMessages();
         setItems(res.messages || []);
       }
-      fetchAllChannelCounts(canAccessEsumbong);
+      fetchAllChannelCounts(canAccessEsumbong, canAccessKapchat);
     } catch (error) {
       console.error("Error fetching help desk data:", error);
       if (error?.response?.status !== 403) {
@@ -1056,30 +1099,32 @@ export default function HelpDesk() {
           </div>
 
           {/* Card 3: KapChat */}
-          <div
-            onClick={() => switchHelpDeskTab("kapchat")}
-            className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
-              activeTab === "kapchat" ? "border-blue-400 ring-1 ring-blue-100" : "border-gray-200/80"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">KapChat</span>
-              <div className="p-1 bg-blue-50 text-blue-600 rounded-md">
-                <MessageCircle className="w-3.5 h-3.5" />
+          {canAccessKapchat && (
+            <div
+              onClick={() => switchHelpDeskTab("kapchat")}
+              className={`cursor-pointer bg-white rounded-lg p-2.5 border transition-all hover:shadow-sm ${
+                activeTab === "kapchat" ? "border-blue-400 ring-1 ring-blue-100" : "border-gray-200/80"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">KapChat</span>
+                <div className="p-1 bg-blue-50 text-blue-600 rounded-md">
+                  <MessageCircle className="w-3.5 h-3.5" />
+                </div>
               </div>
+              <div className="mt-0.5 flex items-baseline justify-between gap-1">
+                <span className="text-lg font-black text-gray-900 tabular-nums">{channelCounts.kapchat.total}</span>
+                {channelCounts.kapchat.unread > 0 && (
+                  <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-blue-100 text-blue-800 animate-pulse truncate">
+                    {channelCounts.kapchat.unread} New
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5 sm:mt-1 font-medium truncate">
+                {channelCounts.kapchat.replied} replied
+              </p>
             </div>
-            <div className="mt-0.5 flex items-baseline justify-between gap-1">
-              <span className="text-lg font-black text-gray-900 tabular-nums">{channelCounts.kapchat.total}</span>
-              {channelCounts.kapchat.unread > 0 && (
-                <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-blue-100 text-blue-800 animate-pulse truncate">
-                  {channelCounts.kapchat.unread} New
-                </span>
-              )}
-            </div>
-            <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5 sm:mt-1 font-medium truncate">
-              {channelCounts.kapchat.replied} replied
-            </p>
-          </div>
+          )}
 
           {/* Card 4: Quick Action & Intake */}
           {canAccessEsumbong && (

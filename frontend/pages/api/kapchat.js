@@ -128,58 +128,69 @@ export default async function handler(req, res) {
           .eq("is_admin", false);
       }
 
-      // If this is a resident message, notify ONLY the Barangay Captain via email & in-app notification
+      // If this is a resident message, notify configured KapChat email receivers (or Barangay Captain if empty)
       if (!isAdminMsg) {
         try {
+          const { isEmailNotificationsEnabled } = await import(
+            "../../src/lib/requestNotificationHelper"
+          );
           const {
-            fetchBarangayCaptainUsers,
-            isEmailNotificationsEnabled,
-          } = await import("../../src/lib/requestNotificationHelper");
+            getKapchatSettings,
+            fetchKapchatNotificationRecipients,
+          } = await import("../../src/lib/kapchatAccess");
           const { sendKapchatNotification } = await import("../../src/lib/mailer");
 
-          const captainUsers = await fetchBarangayCaptainUsers(supabase, tenantId);
+          const kapchatSettings = await getKapchatSettings(supabase, tenantId);
+          const recipients = await fetchKapchatNotificationRecipients(
+            supabase,
+            tenantId,
+            kapchatSettings,
+          );
           const emailEnabled = await isEmailNotificationsEnabled(supabase);
           const seenEmails = new Set();
 
-          for (const cap of captainUsers) {
-            if (emailEnabled && cap.email) {
-              const emailKey = String(cap.email).trim().toLowerCase();
+          for (const rec of recipients) {
+            if (emailEnabled && rec.email) {
+              const emailKey = String(rec.email).trim().toLowerCase();
               if (!seenEmails.has(emailKey)) {
                 seenEmails.add(emailKey);
                 const recipientName =
-                  `${cap.first_name || ""} ${cap.last_name || ""}`.trim() ||
+                  `${rec.first_name || ""} ${rec.last_name || ""}`.trim() ||
                   "Brgy. Captain";
                 const sent = await sendKapchatNotification({
-                  recipientEmail: cap.email,
+                  recipientEmail: rec.email,
                   recipientName,
                   senderName: sName,
                   contactNumber: sContact || "",
                   message: message.trim(),
+                  tenantId,
                 });
                 if (sent.success) {
-                  console.log(`📧 KapChat email sent to Brgy. Captain (${cap.email})`);
+                  console.log(`📧 KapChat email sent to ${rec.email}`);
                 } else {
-                  console.warn(`⚠️ KapChat email failed (${cap.email}):`, sent.error);
+                  console.warn(`⚠️ KapChat email failed (${rec.email}):`, sent.error);
                 }
               }
             }
 
-            await supabase.from("notifications").insert([
-              {
-                tenant_id: tenantId,
-                user_id: cap.id,
-                title: "New KapChat Message",
-                message: `New KapChat message from ${sName}: "${message.trim().slice(0, 80)}"`,
-                type: "info",
-                category: "kapchat",
-                link: "/help-desk?tab=kapchat",
-                read: false,
-                created_at: new Date().toISOString(),
-              },
-            ]);
+            if (rec.id) {
+              await supabase.from("notifications").insert([
+                {
+                  tenant_id: tenantId,
+                  user_id: rec.id,
+                  title: "New KapChat Message",
+                  message: `New KapChat message from ${sName}: "${message.trim().slice(0, 80)}"`,
+                  type: "info",
+                  category: "kapchat",
+                  link: "/help-desk?tab=kapchat",
+                  read: false,
+                  created_at: new Date().toISOString(),
+                },
+              ]);
+            }
           }
         } catch (notifyErr) {
-          console.error("❌ KapChat captain notification error:", notifyErr.message);
+          console.error("❌ KapChat notification error:", notifyErr.message);
         }
       }
 

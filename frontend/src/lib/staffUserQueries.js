@@ -90,7 +90,7 @@ export async function fetchBarangayCaptainUsers(
     const targetRows = certificateType
       ? rows.filter((r) => r.certificate_type === certificateType)
       : rows;
-    const rowsToInspect = targetRows.length > 0 ? [...targetRows, ...rows] : rows;
+    const rowsToInspect = targetRows.length > 0 && certificateType ? targetRows : []; // only this cert type's captain step
 
     for (const row of rowsToInspect) {
       const steps = row?.workflow_config?.steps || [];

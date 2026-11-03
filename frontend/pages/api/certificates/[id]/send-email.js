@@ -1,7 +1,10 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
 import { buildProcessNotificationEmail } from "../../../../src/lib/mailer";
-import { sendTransactionalEmail } from "../../../../src/lib/sendTransactionalEmail";
+import {
+  getEmailProvider,
+  sendTransactionalEmail,
+} from "../../../../src/lib/sendTransactionalEmail";
 
 export default async function handler(req, res) {
   const user = await authenticateToken(req, res);
@@ -27,13 +30,13 @@ export default async function handler(req, res) {
       .json({ success: false, message: "Certificate ID required" });
   }
 
-  const gmailReady = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
-  if (!gmailReady) {
+  const emailProvider = getEmailProvider();
+  if (!emailProvider) {
     return res.status(503).json({
       success: false,
       code: "EMAIL_NOT_CONFIGURED",
       message:
-        "Email is not configured. Set SMTP_USER and SMTP_PASS (Gmail app password) in your environment.",
+        "Email is not configured. Set RESEND_API_KEY, BREVO_API_KEY, or SMTP_USER and SMTP_PASS in your environment.",
     });
   }
 
@@ -76,6 +79,7 @@ export default async function handler(req, res) {
     applicantName: name,
     requestId: id,
     portalPath,
+    tenantId,
   });
 
   try {
@@ -84,6 +88,7 @@ export default async function handler(req, res) {
       subject,
       html,
       text,
+      tenantId,
     });
 
     if (sent.skipped || !sent.success) {
@@ -104,6 +109,7 @@ export default async function handler(req, res) {
       channel: sent.channel,
       messageId: sent.messageId,
       from: sent.from,
+      tenantId,
     });
 
     return res.json({

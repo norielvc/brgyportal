@@ -32,21 +32,31 @@ export default async function handler(req, res) {
 
     let subscription = sub;
 
+    const defaultPlan = {
+      id: "starter",
+      name: "Starter",
+      max_requests: -1,
+      max_staff: -1,
+      features: [],
+    };
+
     // 2. Fallback to Starter if no record exists
     if (!subscription || !subscription.plan) {
         const { data: starterPlan } = await supabase
             .from('subscription_plans')
             .eq('id', 'starter')
-            .single();
+            .maybeSingle();
         
         subscription = {
             plan_id: 'starter',
             status: 'active',
             current_period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
             current_period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString(),
-            plan: starterPlan
+            plan: starterPlan || defaultPlan,
         };
     }
+
+    const plan = subscription.plan || defaultPlan;
 
     // 3. Count Monthly Requests
     const { count: requestsCount } = await supabase
@@ -64,20 +74,20 @@ export default async function handler(req, res) {
     return res.status(200).json({
         success: true,
         data: {
-            planName: subscription.plan.name,
-            planId: subscription.plan_id,
+            planName: plan.name || defaultPlan.name,
+            planId: subscription.plan_id || defaultPlan.id,
             requests: {
                 used: requestsCount || 0,
-                total: subscription.plan.max_requests,
-                isUnlimited: subscription.plan.max_requests === -1
+                total: plan.max_requests,
+                isUnlimited: plan.max_requests === -1
             },
             staff: {
                 used: staffCount || 0,
-                total: subscription.plan.max_staff,
-                isUnlimited: subscription.plan.max_staff === -1
+                total: plan.max_staff,
+                isUnlimited: plan.max_staff === -1
             },
             expiryDate: subscription.current_period_end,
-            features: subscription.plan.features || []
+            features: plan.features || []
         }
     });
   } catch (err) {

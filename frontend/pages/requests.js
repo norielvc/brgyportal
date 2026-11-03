@@ -610,6 +610,13 @@ export default function RequestsPage() {
 
       // ALWAYS set the accurate assigned count
       setAssignedCount(combined.length);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("certificate-requests-count", {
+            detail: { count: combined.length },
+          }),
+        );
+      }
 
       // 4. Set the active requests list based on viewMode
       if (viewMode === "assigned") {
