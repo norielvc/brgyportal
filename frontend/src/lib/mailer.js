@@ -1,4 +1,4 @@
-import { sendTransactionalEmail } from "./sendTransactionalEmail";
+import { sendTransactionalEmail, escapeHtml } from "./sendTransactionalEmail";
 
 const TYPE_NAMES = {
   barangay_clearance: "Barangay Clearance",
@@ -17,57 +17,75 @@ const TYPE_NAMES = {
 
 const TEMPLATES = {
   SUBMITTED: {
-    subject: "New Request Submitted / Bagong Request ay Isinumite",
-    titleEN: "New Request Assigned",
-    titleTL: "Bagong Request ay Itinalaga",
-    messageEN: "A new request has been submitted and is waiting for your review.",
-    messageTL: "Mayroong bagong request na isinumite at naghihintay para sa iyong pagsusuri.",
+    subjectPrefix: "New Certificate Request",
+    titleEN: "New Certificate Request",
+    titleTL: "Bagong Request ng Sertipiko",
+    messageEN:
+      "Good day! A new certificate request has been filed at the Barangay Iba O' Este portal.",
+    messageTL:
+      "Magandang araw! May bagong certificate request na isinumite sa portal ng Barangay Iba O' Este.",
   },
   RECEIVED: {
-    subject: "Request Received / Natanggap ang Request",
-    titleEN: "We've Received Your Request",
+    subjectPrefix: "Certificate Request Received",
+    titleEN: "We Have Received Your Request",
     titleTL: "Natanggap na Namin ang Iyong Request",
-    messageEN: "Your request has been received and is being processed by the Barangay staff.",
-    messageTL: "Ang iyong request ay natanggap na at pinoproseso ng mga kawani ng Barangay.",
+    messageEN:
+      "Good day! Your certificate request has been received and is now being processed by the Barangay office.",
+    messageTL:
+      "Magandang araw! Ang iyong request ay natanggap na at kasalukuyang pinoproseso ng tanggapan ng Barangay.",
   },
   REJECTED: {
-    subject: "Request Rejected / Tinanggihan ang Request",
+    subjectPrefix: "Update on Certificate Request",
     titleEN: "Update on Your Request",
     titleTL: "Balita tungkol sa Iyong Request",
-    messageEN: "Your request was not approved for the following reason:",
-    messageTL: "Ang iyong request ay hindi naaprubahan dahil sa sumusunod na dahilan:",
+    messageEN:
+      "Your certificate request could not be approved for the following reason:",
+    messageTL:
+      "Ang iyong request ay hindi naaprubahan dahil sa sumusunod na dahilan:",
   },
   RETURNED: {
-    subject: "Action Required: Request Sent Back / Ibinalik ang Request",
-    titleEN: "Correction Needed",
-    titleTL: "Kailangang Itama",
-    messageEN: "Your request was sent back for corrections. Please review the comments.",
-    messageTL: "Ibinalik ang iyong request para sa pagtatama. Pakibasa ang mga komento.",
+    subjectPrefix: "Update on Certificate Request",
+    titleEN: "Request Returned for Correction",
+    titleTL: "Ibinalik ang Request para sa Pagtatama",
+    messageEN:
+      "Your request was returned for corrections. Please review the note below.",
+    messageTL:
+      "Ibinalik ang iyong request para sa pagtatama. Pakibasa ang tala sa ibaba.",
   },
   RESUBMITTED: {
-    subject: "Request Sent Back for Review / Ibinalik para Suriin",
-    titleEN: "Request Needs Review",
-    titleTL: "Kailangang Suriin ang Request",
-    messageEN: "A request was sent back and needs your review.",
-    messageTL: "May request na ibinalik at kailangan ng iyong pagsusuri.",
+    subjectPrefix: "Resubmitted Certificate Request",
+    titleEN: "Request Resubmitted",
+    titleTL: "Muling Isinumite ang Request",
+    messageEN:
+      "A certificate request has been resubmitted for review at the Barangay office.",
+    messageTL:
+      "May certificate request na muling isinumite para sa pagsusuri.",
   },
   APPROVED_STEP: {
-    subject: "Action Required: Next Approval / Susunod na Approval",
-    titleEN: "Request Waiting for You",
-    titleTL: "Request na Naghihintay sa Iyo",
-    messageEN: "A request has moved to your step and needs your action.",
-    messageTL: "Ang request ay nasa iyong hakbang na at kailangan ng iyong aksyon.",
+    subjectPrefix: "For Punong Barangay Approval",
+    titleEN: "For Punong Barangay Review and Approval",
+    titleTL: "Para sa Pagsusuri at Pag-apruba ng Punong Barangay",
+    messageEN:
+      "Good day Kap! The following certificate request has been reviewed by the Barangay staff and is now ready for your approval in the BrgyDesk dashboard.",
+    messageTL:
+      "Magandang araw Kap! Ang sumusunod na certificate request ay nasuri na at naghihintay na po ng inyong pag-apruba sa BrgyDesk dashboard.",
   },
   READY_FOR_PICKUP: {
-    subject: "Certificate Ready / Handa na ang Sertipiko",
-    titleEN: "Certificate Ready",
-    titleTL: "Handa na ang Sertipiko",
-    messageEN: "Your certificate is ready. If you chose online delivery, use your reference number on the portal. Otherwise, claim it at the Barangay Hall.",
-    messageTL: "Handa na ang iyong sertipiko. Kung online delivery ang pinili, gamitin ang reference number sa portal. Kung hindi, kunin ito sa Barangay Hall.",
+    subjectPrefix: "Certificate Ready",
+    titleEN: "Your Certificate is Ready",
+    titleTL: "Handa na ang Iyong Sertipiko",
+    messageEN:
+      "Good day! Your requested certificate is now ready. If you selected online delivery, you may view it on the Barangay Iba O' Este portal using your reference number. Otherwise, you may claim it at the Barangay Hall.",
+    messageTL:
+      "Magandang araw! Handa na po ang iyong sertipiko. Kung online delivery ang pinili, maaari itong buksan sa portal ng Barangay Iba O' Este gamit ang iyong reference number, o kunin sa Barangay Hall.",
   },
 };
 
-/** Build bilingual process email content (sent via Gmail SMTP). */
+/**
+ * Build clean, spam-filter-safe bilingual email content (sent via Gmail SMTP).
+ * Avoids phishing trigger words ("Action Required") and external CTA button links
+ * that cause Gmail's outbound filter to block messages as suspicious.
+ */
 export function buildProcessNotificationEmail({
   recipientName,
   eventType,
@@ -75,71 +93,62 @@ export function buildProcessNotificationEmail({
   referenceNumber,
   applicantName,
   comments = "",
-  requestId,
-  portalPath = "/ibaoeste",
 }) {
   const template = TEMPLATES[eventType] || TEMPLATES.SUBMITTED;
   const certificateName =
     TYPE_NAMES[certificateType] || certificateType || "Certificate";
-  const baseUrl = (process.env.FRONTEND_URL || "https://brgydesk.com").replace(
-    /\/$/,
-    "",
-  );
-  const isResident = ["RECEIVED", "REJECTED", "RETURNED", "READY_FOR_PICKUP"].includes(
-    eventType,
-  );
-  const link = isResident
-    ? `${baseUrl}${portalPath.startsWith("/") ? portalPath : `/${portalPath}`}`
-    : `${baseUrl}/requests`;
+  const refLabel = referenceNumber ? ` [${referenceNumber}]` : "";
+  const subject = `Barangay Iba O' Este - ${template.subjectPrefix}${refLabel} (${certificateName})`;
+
+  const safeRecipient = escapeHtml(recipientName || "Good day");
+  const safeRef = escapeHtml(referenceNumber || "—");
+  const safeApplicant = escapeHtml(applicantName || "—");
+  const safeCert = escapeHtml(certificateName);
+  const safeComments = comments ? escapeHtml(comments) : "";
 
   const html = `
-    <div style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a">
-      <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
-        <div style="background:#065f46;padding:24px 20px;color:#fff">
-          <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.8">Barangay Iba O' Este</div>
-          <h1 style="margin:8px 0 0;font-size:20px">${template.titleEN}</h1>
-          <p style="margin:4px 0 0;font-size:14px;opacity:.9">${template.titleTL}</p>
-        </div>
-        <div style="padding:24px 20px;font-size:14px;line-height:1.6">
-          <p>Hello ${recipientName || "there"},</p>
-          <p>${template.messageEN}</p>
-          <p>${template.messageTL}</p>
-          ${comments ? `<p style="background:#f1f5f9;padding:12px;border-radius:8px"><strong>Note:</strong> ${comments}</p>` : ""}
-          <table style="width:100%;background:#f8fafc;border-radius:8px;margin:16px 0">
-            <tr><td style="padding:8px 12px;color:#64748b">Reference</td><td style="padding:8px 12px;font-weight:600">${referenceNumber || "—"}</td></tr>
-            <tr><td style="padding:8px 12px;color:#64748b">Name</td><td style="padding:8px 12px;font-weight:600">${applicantName || "—"}</td></tr>
-            <tr><td style="padding:8px 12px;color:#64748b">Certificate</td><td style="padding:8px 12px;font-weight:600">${certificateName}</td></tr>
-          </table>
-          <p><a href="${link}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600">Open BrgyDesk</a></p>
-          <p style="color:#94a3b8;font-size:12px">Request ID: ${requestId || "—"}</p>
-        </div>
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1e293b;max-width:560px;margin:0 auto;padding:16px">
+      <p style="margin:0 0 4px;font-size:12px;color:#475569;font-weight:bold">Tanggapan ng Barangay Iba O' Este, Calumpit, Bulacan</p>
+      <h2 style="margin:0 0 12px;font-size:18px;color:#0f172a">${template.titleEN} / ${template.titleTL}</h2>
+      <p>Hello ${safeRecipient},</p>
+      <p>${template.messageEN}</p>
+      <p style="color:#334155">${template.messageTL}</p>
+      ${safeComments ? `<p style="background:#f8fafc;border-left:3px solid #64748b;padding:10px 12px;margin:12px 0"><strong>Remarks:</strong> ${safeComments}</p>` : ""}
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:16px 0">
+        <p style="margin:4px 0"><strong>Reference No.:</strong> ${safeRef}</p>
+        <p style="margin:4px 0"><strong>Applicant Name:</strong> ${safeApplicant}</p>
+        <p style="margin:4px 0"><strong>Document Type:</strong> ${safeCert}</p>
       </div>
+      <p style="margin-top:16px;font-size:12px;color:#64748b">Thank you,<br/>Barangay Iba O' Este Office</p>
     </div>
   `;
 
   const text = [
-    `Hello ${recipientName || "there"},`,
+    "Tanggapan ng Barangay Iba O' Este, Calumpit, Bulacan",
+    `${template.titleEN} / ${template.titleTL}`,
+    "",
+    `Hello ${recipientName || "Good day"},`,
     "",
     template.messageEN,
     template.messageTL,
-    comments ? `Note: ${comments}` : "",
+    comments ? `Remarks: ${comments}` : "",
     "",
-    `Reference: ${referenceNumber || "—"}`,
-    `Name: ${applicantName || "—"}`,
-    `Certificate: ${certificateName}`,
+    `Reference No.: ${referenceNumber || "—"}`,
+    `Applicant Name: ${applicantName || "—"}`,
+    `Document Type: ${certificateName}`,
     "",
-    link,
+    "Thank you,",
+    "Barangay Iba O' Este Office",
   ]
     .filter(Boolean)
     .join("\n");
 
-  return { subject: template.subject, html, text };
+  return { subject, html, text };
 }
 
 /**
-  * Send a bilingual process email via Gmail SMTP.
-  * Used by Vercel API routes (no separate Express server).
-  */
+ * Send a bilingual process email via Gmail SMTP.
+ */
 export async function sendProcessNotification({
   recipientEmail,
   recipientName,
@@ -177,8 +186,8 @@ export async function sendProcessNotification({
 }
 
 /**
-  * Send a bilingual KapChat notification email to the Barangay Captain.
-  */
+ * Send a bilingual KapChat notification email to the Barangay Captain.
+ */
 export async function sendKapchatNotification({
   recipientEmail,
   recipientName,
@@ -190,48 +199,46 @@ export async function sendKapchatNotification({
     return { success: false, error: "Recipient email missing" };
   }
 
-  const baseUrl = (process.env.FRONTEND_URL || "https://brgydesk.com").replace(
-    /\/$/,
-    "",
-  );
-  const link = `${baseUrl}/help-desk?tab=kapchat`;
   const cleanSender = senderName || "Resident";
-  const subject = `New KapChat Message from ${cleanSender} / Bagong Mensahe sa KapChat`;
+  const subject = `Barangay Iba O' Este KapChat - Message from ${cleanSender}`;
+
+  const safeRecipient = escapeHtml(recipientName || "Kap");
+  const safeSender = escapeHtml(cleanSender);
+  const safeContact = escapeHtml(contactNumber || "—");
+  const safeMessage = escapeHtml(message || "—");
 
   const html = `
-    <div style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a">
-      <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
-        <div style="background:#065f46;padding:24px 20px;color:#fff">
-          <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.8">Barangay Iba O' Este • KapChat</div>
-          <h1 style="margin:8px 0 0;font-size:20px">New KapChat Message</h1>
-          <p style="margin:4px 0 0;font-size:14px;opacity:.9">Bagong Mensahe sa KapChat (Rekta kay Kap!)</p>
-        </div>
-        <div style="padding:24px 20px;font-size:14px;line-height:1.6">
-          <p>Hello ${recipientName || "Kap"},</p>
-          <p>You have received a new KapChat message from a resident.</p>
-          <p>May natanggap kang bagong mensahe sa KapChat mula sa isang residente.</p>
-          <table style="width:100%;background:#f8fafc;border-radius:8px;margin:16px 0">
-            <tr><td style="padding:8px 12px;color:#64748b">Resident</td><td style="padding:8px 12px;font-weight:600">${cleanSender}</td></tr>
-            <tr><td style="padding:8px 12px;color:#64748b">Contact No.</td><td style="padding:8px 12px;font-weight:600">${contactNumber || "—"}</td></tr>
-          </table>
-          <div style="background:#f1f5f9;border-left:4px solid #065f46;padding:12px 16px;border-radius:6px;margin:16px 0;white-space:pre-wrap">${message || "—"}</div>
-          <p><a href="${link}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600">Open KapChat</a></p>
-        </div>
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1e293b;max-width:560px;margin:0 auto;padding:16px">
+      <p style="margin:0 0 4px;font-size:12px;color:#475569;font-weight:bold">Tanggapan ng Barangay Iba O' Este • KapChat (Rekta kay Kap)</p>
+      <h2 style="margin:0 0 12px;font-size:18px;color:#0f172a">New KapChat Message / Bagong Mensahe sa KapChat</h2>
+      <p>Hello ${safeRecipient},</p>
+      <p>Good day Kap! A resident sent a message through KapChat:</p>
+      <p style="color:#334155">Magandang araw Kap! May nagpadala po ng mensahe sa KapChat:</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:16px 0">
+        <p style="margin:4px 0"><strong>Resident:</strong> ${safeSender}</p>
+        <p style="margin:4px 0"><strong>Contact No.:</strong> ${safeContact}</p>
+        <p style="margin:8px 0 4px"><strong>Message:</strong></p>
+        <p style="margin:0;white-space:pre-wrap;color:#0f172a">${safeMessage}</p>
       </div>
+      <p style="margin-top:16px;font-size:12px;color:#64748b">Thank you,<br/>Barangay Iba O' Este Office</p>
     </div>
   `;
 
   const text = [
+    "Tanggapan ng Barangay Iba O' Este • KapChat (Rekta kay Kap)",
+    "New KapChat Message / Bagong Mensahe sa KapChat",
+    "",
     `Hello ${recipientName || "Kap"},`,
     "",
-    "You have received a new KapChat message from a resident.",
-    "May natanggap kang bagong mensahe sa KapChat mula sa isang residente.",
+    "Good day Kap! A resident sent a message through KapChat:",
+    "Magandang araw Kap! May nagpadala po ng mensahe sa KapChat:",
     "",
     `Resident: ${cleanSender}`,
     `Contact No.: ${contactNumber || "—"}`,
     `Message: ${message || "—"}`,
     "",
-    link,
+    "Thank you,",
+    "Barangay Iba O' Este Office",
   ].join("\n");
 
   const sent = await sendTransactionalEmail({

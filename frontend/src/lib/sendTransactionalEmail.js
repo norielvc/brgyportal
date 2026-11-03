@@ -85,7 +85,8 @@ export async function sendTransactionalEmail({ to, subject, html, text }) {
   const fromAddress = process.env.SMTP_USER;
   try {
     const info = await transport.sendMail({
-      from: `"Barangay Help Desk" <${fromAddress}>`,
+      from: `"Barangay Iba O' Este" <${fromAddress}>`,
+      replyTo: fromAddress,
       to: recipient,
       subject,
       html,
