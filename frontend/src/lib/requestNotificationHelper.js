@@ -38,7 +38,8 @@ async function createInAppNotification(supabase, payload) {
 }
 
 /**
- * Send email notification ONLY to the Barangay Captain when a request reaches captain_approval.
+ * Barangay Captain step approval email notification disabled per configuration.
+ * Returns immediately so no emails are sent when requests reach captain approval.
  */
 export async function notifyBarangayCaptainStep({
   supabase,
@@ -50,53 +51,8 @@ export async function notifyBarangayCaptainStep({
   comments = "",
   captainUserIds = [],
 }) {
-  const enabled = await isEmailNotificationsEnabled(supabase);
-  if (!enabled) {
-    return { emailsSent: 0, skipped: true };
-  }
-
-  const { sendProcessNotification } = await import("./mailer");
-  const captainUsers = await fetchBarangayCaptainUsers(
-    supabase,
-    tenantId,
-    certificateType,
-    captainUserIds,
-  );
-
-  let emailsSent = 0;
-  const seenEmails = new Set();
-  for (const cap of captainUsers) {
-    const email = String(cap.email || "").trim().toLowerCase();
-    if (!email || seenEmails.has(email)) continue;
-    seenEmails.add(email);
-
-    const result = await sendProcessNotification({
-      recipientEmail: cap.email,
-      recipientName:
-        `${cap.first_name || ""} ${cap.last_name || ""}`.trim() ||
-        "Brgy. Captain",
-      eventType: "APPROVED_STEP",
-      certificateType,
-      referenceNumber,
-      applicantName: applicantName || "Applicant",
-      comments,
-      requestId,
-      tenantId,
-    });
-    if (result.success) {
-      emailsSent += 1;
-      console.log(
-        `📧 Captain step email sent to ${cap.email} for ${referenceNumber}`,
-      );
-    } else {
-      console.warn(
-        `[notify] captain email ${cap.email}:`,
-        result.error || result.code,
-      );
-    }
-  }
-
-  return { emailsSent, captainsNotified: captainUsers.length };
+  // Captain step approval email notification disabled per configuration
+  return { emailsSent: 0, skipped: true, reason: "captain_step_email_disabled" };
 }
 
 /**
