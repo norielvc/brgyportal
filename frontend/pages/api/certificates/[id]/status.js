@@ -283,5 +283,48 @@ export default async function handler(req, res) {
     }
   }
 
+  // Send rejection email to resident if request was rejected
+  if (status === "rejected" || action === "reject") {
+    try {
+      let applicantEmail = data.email;
+      if (!applicantEmail && data.resident_id) {
+        const { data: resObj } = await supabase
+          .from("residents")
+          .select("email")
+          .eq("id", data.resident_id)
+          .maybeSingle();
+        if (resObj?.email) applicantEmail = resObj.email;
+      }
+      if (applicantEmail) {
+        const { isEmailNotificationsEnabled } = await import(
+          "@/lib/requestNotificationHelper"
+        );
+        const { sendProcessNotification } = await import("@/lib/mailer");
+        const emailEnabled = await isEmailNotificationsEnabled(supabase);
+        if (emailEnabled) {
+          await sendProcessNotification({
+            recipientEmail: applicantEmail,
+            recipientName: data.full_name || "Valued Resident",
+            eventType: "REJECTED",
+            certificateType: data.certificate_type,
+            referenceNumber: data.reference_number,
+            applicantName: data.full_name || "Valued Resident",
+            comments:
+              comment ||
+              comments ||
+              "Your application was reviewed by the barangay and could not be approved at this time.",
+            requestId: id,
+            tenantId,
+          });
+          console.log(
+            `📧 Rejection email sent to resident: ${applicantEmail} for ${data.reference_number}`,
+          );
+        }
+      }
+    } catch (rejectMailErr) {
+      console.warn("Rejection email error:", rejectMailErr.message);
+    }
+  }
+
   return res.json({ success: true, data });
 }

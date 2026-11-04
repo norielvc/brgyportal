@@ -629,7 +629,37 @@ export default async function handler(req, res) {
         }
       }
     } else if (action === 'reject') {
-      // In-app notification for applicant. Rejection email is disabled.
+      // Send rejection notification email to resident applicant if an email exists
+      if (applicantEmail) {
+        try {
+          const { isEmailNotificationsEnabled } = await import(
+            "@/lib/requestNotificationHelper"
+          );
+          const emailEnabled = await isEmailNotificationsEnabled(supabase);
+          if (emailEnabled) {
+            await sendEmail({
+              recipientEmail: applicantEmail,
+              recipientName: applicantName || "Valued Resident",
+              eventType: "REJECTED",
+              certificateType: cert.certificate_type,
+              referenceNumber: cert.reference_number,
+              applicantName: applicantName || "Valued Resident",
+              comments:
+                note ||
+                "Your application was reviewed by the barangay and could not be approved at this time.",
+              requestId,
+              tenantId,
+            });
+            console.log(
+              `📧 Rejection email sent to resident: ${applicantEmail} for ${cert.reference_number}`,
+            );
+          }
+        } catch (rejectMailErr) {
+          console.error("❌ Rejection email error:", rejectMailErr.message);
+        }
+      }
+
+      // In-app notification for applicant
       if (cert.resident_id) {
         const { data: residentUser } = await supabase
           .from('users')
