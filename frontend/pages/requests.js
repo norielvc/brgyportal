@@ -4188,11 +4188,18 @@ function RequestDetailsModal({
                                         <td className="py-3 px-2">
                                           <select
                                             className={`w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-amber-500 transition-all ${
-                                              inspectionData.areas[area].findings === "PASSED"
+                                              ["PASSED", "YES"].includes(
+                                                inspectionData.areas[area].findings,
+                                              )
                                                 ? "text-emerald-700"
-                                                : inspectionData.areas[area].findings === "FAILED"
+                                                : ["FAILED", "NO"].includes(
+                                                      inspectionData.areas[area].findings,
+                                                    )
                                                   ? "text-red-700"
-                                                  : "text-gray-500"
+                                                  : inspectionData.areas[area].findings ===
+                                                      "NOT APPLICABLE"
+                                                    ? "text-blue-700"
+                                                    : "text-gray-500"
                                             }`}
                                             value={
                                               inspectionData.areas[area].findings || ""
@@ -4206,8 +4213,18 @@ function RequestDetailsModal({
                                             }
                                           >
                                             <option value="">Select</option>
-                                            <option value="PASSED">PASSED</option>
-                                            <option value="FAILED">FAILED</option>
+                                            {area?.trim().toUpperCase() === "BUILDING PERMIT" ? (
+                                              <>
+                                                <option value="YES">YES</option>
+                                                <option value="NO">NO</option>
+                                                <option value="NOT APPLICABLE">NOT APPLICABLE</option>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <option value="PASSED">PASSED</option>
+                                                <option value="FAILED">FAILED</option>
+                                              </>
+                                            )}
                                           </select>
                                         </td>
                                         <td className="py-3 px-2">
