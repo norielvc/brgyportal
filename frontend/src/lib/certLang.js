@@ -135,6 +135,8 @@ const STRINGS = {
     successBody: "Your request has been received and is now being processed.",
     referenceNumber: "Reference Number",
     saveReference: "Save this number to track your request.",
+    trackInstruction: "You can monitor the real-time status and approval progress of your request using Request Tracking.",
+    trackAction: "Track Request Now",
 
     // Directory modal
     dirTitle: "Resident Directory",
@@ -317,6 +319,8 @@ const STRINGS = {
     successBody: "Natanggap na ang iyong kahilingan at kasalukuyang pinoproseso.",
     referenceNumber: "Reference Number",
     saveReference: "Itago ang numerong ito upang masubaybayan ang kahilingan.",
+    trackInstruction: "Maaari mong subaybayan ang live na estado at pag-apruba ng iyong kahilingan gamit ang Request Tracking.",
+    trackAction: "Subaybayan ang Kahilingan",
 
     // Directory modal
     dirTitle: "Direktoryo ng Residente",

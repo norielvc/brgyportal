@@ -912,54 +912,72 @@ export default function EducationalAssistanceModal({
           {/* Success Modal Overlay */}
           {showSuccessModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-in zoom-in-95 duration-300">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: `${accentColor}18` }}>
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 text-center animate-in zoom-in-95 duration-300">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${accentColor}18` }}>
                   <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Filing Successful!</h2>
-                <p className="text-sm text-gray-500 mb-6">Application Queued For Review</p>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">Filing Successful!</h2>
+                <p className="text-sm text-gray-500 mb-4">Application Queued For Review</p>
 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Reference ID</p>
-                  <p className="text-2xl font-bold text-gray-900 font-mono">{referenceNumber}</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-4 text-center">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Reference ID</p>
+                  <p className="text-2xl font-bold text-gray-900 font-mono" style={{ color: accentColor }}>{referenceNumber}</p>
                 </div>
 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-left mb-6">
-                  <div className="flex items-center gap-2 text-gray-700 mb-3">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider">Next Procedures</h4>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center border border-gray-100 shrink-0">
-                        <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                      </div>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        System-wide verification of your GWA and Residence status will commence immediately.
-                      </p>
+                <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 mb-5 text-left">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <Search className="w-3.5 h-3.5 text-blue-700" />
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center border border-gray-100 shrink-0">
-                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                      </div>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        Our staff will coordinate via SMS to confirm if you meet the scholarship criteria.
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-blue-950 uppercase tracking-wider mb-0.5">
+                        Request Tracking
+                      </p>
+                      <p className="text-xs text-blue-800 leading-relaxed">
+                        You can monitor the real-time status and verification progress of your application using Request Tracking.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    resetForm();
-                    onClose();
-                  }}
-                  className="w-full text-white py-3 rounded-lg font-semibold text-sm transition-colors hover:opacity-90"
-                  style={{ backgroundColor: accentColor }}
-                >
-                  Return to Dashboard
-                </button>
+                <div className="flex flex-col gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const refToTrack = referenceNumber;
+                      setShowSuccessModal(false);
+                      resetForm();
+                      onClose();
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(
+                          new CustomEvent("brgydesk:auto-track", { detail: { ref: refToTrack } })
+                        );
+                        const trackElem = document.getElementById("track");
+                        if (trackElem) {
+                          trackElem.scrollIntoView({ behavior: "smooth", block: "start" });
+                        } else {
+                          window.location.href = `/track-status?ref=${encodeURIComponent(refToTrack)}`;
+                        }
+                      }
+                    }}
+                    className="w-full py-3.5 px-4 text-white rounded-xl font-bold text-sm shadow-md hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Track Request Now</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSuccessModal(false);
+                      resetForm();
+                      onClose();
+                    }}
+                    className="w-full py-2.5 px-4 text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-sm transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           )}

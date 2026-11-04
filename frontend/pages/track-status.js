@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import {
@@ -18,20 +18,13 @@ export default function TrackStatusLanding() {
   const [refNumber, setRefNumber] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleTrack = async (e) => {
-    e.preventDefault();
-    if (!refNumber.trim()) {
-      toast.error("Please enter a reference number");
-      return;
-    }
-
+  const performTrack = async (targetRef) => {
+    const query = (targetRef || "").trim();
+    if (!query) return;
     setLoading(true);
     try {
-      const response = await certificatesAPI.getRequestByReference(
-        refNumber.trim(),
-      );
+      const response = await certificatesAPI.getRequestByReference(query);
       if (response.success && response.data) {
-        // Redirect to the status page using the ID
         router.push(`/requests/${response.data.id}`);
       } else {
         toast.error("Reference number not found");
@@ -42,6 +35,24 @@ export default function TrackStatusLanding() {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const initialRef = (router.query.ref || router.query.id || "").trim();
+    if (initialRef) {
+      setRefNumber(initialRef.toUpperCase());
+      performTrack(initialRef.toUpperCase());
+    }
+  }, [router.isReady, router.query.ref, router.query.id]);
+
+  const handleTrack = async (e) => {
+    e?.preventDefault();
+    if (!refNumber.trim()) {
+      toast.error("Please enter a reference number");
+      return;
+    }
+    performTrack(refNumber);
   };
 
   return (

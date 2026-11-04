@@ -6451,14 +6451,14 @@ function TrackRequestWidget({ tenantId, tenantConfig, labels: labelsProp }) {
     labels.trackStepReleased,
   ];
 
-  const handleTrack = async (e) => {
-    e.preventDefault();
-    if (!refNumber.trim()) return;
+  const executeTrack = React.useCallback(async (targetRef) => {
+    const query = (targetRef || "").trim();
+    if (!query) return;
     setLoading(true);
     setError('');
     setResult(null);
     try {
-      const res = await fetch(`/api/portal/track?ref=${encodeURIComponent(refNumber.trim())}`, {
+      const res = await fetch(`/api/portal/track?ref=${encodeURIComponent(query)}`, {
         headers: { 'x-tenant-id': tenantId }
       });
       const data = await res.json();
@@ -6472,6 +6472,35 @@ function TrackRequestWidget({ tenantId, tenantConfig, labels: labelsProp }) {
     } finally {
       setLoading(false);
     }
+  }, [tenantId, labels.trackNotFound, labels.trackError]);
+
+  React.useEffect(() => {
+    const handleAutoTrackEvent = (e) => {
+      const targetRef = e?.detail?.ref;
+      if (targetRef) {
+        setRefNumber(targetRef);
+        executeTrack(targetRef);
+      }
+    };
+    window.addEventListener("brgydesk:auto-track", handleAutoTrackEvent);
+
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlRef = urlParams.get("track") || urlParams.get("ref");
+      if (urlRef) {
+        setRefNumber(urlRef);
+        executeTrack(urlRef);
+      }
+    }
+
+    return () => {
+      window.removeEventListener("brgydesk:auto-track", handleAutoTrackEvent);
+    };
+  }, [executeTrack]);
+
+  const handleTrack = async (e) => {
+    e?.preventDefault();
+    executeTrack(refNumber);
   };
 
   const cfg = result ? (statusConfig[result.status] || { label: result.status, color: 'bg-gray-100 text-gray-600', step: 1 }) : null;

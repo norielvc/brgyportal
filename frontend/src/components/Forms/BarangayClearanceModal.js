@@ -1207,39 +1207,85 @@ export default function BarangayClearanceModal({
           <div className="fixed inset-0 z-[70] overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4">
               <div className="fixed inset-0 bg-black/90 backdrop-blur-xl" />
-              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in p-8 text-center">
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in p-6 sm:p-8 text-center">
                 <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
                   style={{ backgroundColor: `${accentColor}18` }}
                 >
                   <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                <h2 className="text-xl font-bold text-gray-900 mb-1.5">
                   {t.successTitle}
                 </h2>
-                <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                <p className="text-sm text-gray-500 leading-relaxed mb-4">
                   {t.successBody}
                 </p>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-4 text-center">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1">
                     {t.referenceNumber}
                   </p>
                   <p className="text-2xl font-bold font-mono tracking-tight" style={{ color: accentColor }}>
                     {submittedReferenceNumber}
                   </p>
-                  <p className="text-xs text-gray-500 mt-2">{t.saveReference}</p>
+                  <p className="text-xs text-gray-500 mt-1.5">{t.saveReference}</p>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    resetForm();
-                    onClose();
-                  }}
-                  className="w-full text-white py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: accentColor }}
-                >
-                  {t.close}
-                </button>
+
+                <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 mb-5 text-left">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <Search className="w-3.5 h-3.5 text-blue-700" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-blue-950 uppercase tracking-wider mb-0.5">
+                        {lang === "tl" ? "Subaybayan ang Kahilingan" : "Request Tracking"}
+                      </p>
+                      <p className="text-xs text-blue-800 leading-relaxed">
+                        {t.trackInstruction || (lang === "tl"
+                          ? "Maaari mong subaybayan ang live na estado at pag-apruba ng iyong kahilingan gamit ang Request Tracking."
+                          : "You can monitor the real-time status and approval progress of your request using Request Tracking.")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const refToTrack = submittedReferenceNumber;
+                      setShowSuccessModal(false);
+                      resetForm();
+                      onClose();
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(
+                          new CustomEvent("brgydesk:auto-track", { detail: { ref: refToTrack } })
+                        );
+                        const trackElem = document.getElementById("track");
+                        if (trackElem) {
+                          trackElem.scrollIntoView({ behavior: "smooth", block: "start" });
+                        } else {
+                          window.location.href = `/track-status?ref=${encodeURIComponent(refToTrack)}`;
+                        }
+                      }
+                    }}
+                    className="w-full py-3.5 px-4 text-white rounded-xl font-bold text-sm shadow-md hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>{t.trackAction || (lang === "tl" ? "Subaybayan ang Kahilingan Ngayon" : "Track Request Now")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSuccessModal(false);
+                      resetForm();
+                      onClose();
+                    }}
+                    className="w-full py-2.5 px-4 text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-sm transition-colors"
+                  >
+                    {t.close}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
