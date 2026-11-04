@@ -127,5 +127,7 @@ export async function fetchEsumbongNotificationRecipients(
   if (ids.length > 0) {
     return fetchUsersByIds(supabase, ids, tenantId);
   }
-  return fetchBarangayCaptainUsers(supabase, tenantId);
+  // Chairman does NOT automatically receive E-Sumbong emails.
+  // Only staff explicitly selected in "New report email receivers" receive emails.
+  return [];
 }

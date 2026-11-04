@@ -994,7 +994,7 @@ export default function WorkflowsPage() {
           <p className="text-[10px] text-red-900 leading-snug">
             <span className="font-bold">E-Sumbong (Help Desk)</span>
             {" — "}
-            choose who gets email when a new blotter is filed and who may open the E-Sumbong tab. If lists are empty, new reports email the Barangay Captain and all help-desk staff roles keep access.
+            choose who gets email when a new blotter is filed and who may open the E-Sumbong tab. Only checked staff receive email alerts (resident always gets confirmation). If empty, no staff emails are sent.
           </p>
         </div>
       ) : selectedCertificate === KAPCHAT_SETTINGS_ID ? (
@@ -1003,7 +1003,7 @@ export default function WorkflowsPage() {
           <p className="text-[10px] text-blue-900 leading-snug">
             <span className="font-bold">KapChat (Help Desk)</span>
             {" — "}
-            choose who gets email when a resident sends a message in KapChat and who may open the KapChat tab. If lists are empty, new messages email the Barangay Captain and all help-desk staff roles keep access.
+            choose who gets email when a resident sends a message in KapChat and who may open the KapChat tab. Only checked staff receive email alerts. If empty, no staff emails are sent.
           </p>
         </div>
       ) : selectedCertificate === MASTER_WORKFLOW_ID ? (
@@ -1036,7 +1036,7 @@ export default function WorkflowsPage() {
               </h2>
             </div>
             <p className="px-3 pt-2 text-[10px] text-gray-500 leading-snug">
-              Staff who receive email when a resident submits E-Sumbong (resident still gets confirmation). Leave empty to notify Barangay Captain/Chairman only.
+              Staff who receive email when a resident submits E-Sumbong (resident always gets confirmation). Leave empty if you do not want to send staff emails.
             </p>
             <div className="p-3 max-h-[420px] overflow-y-auto space-y-1">
               {users.map((u) => {
@@ -1118,7 +1118,7 @@ export default function WorkflowsPage() {
               </h2>
             </div>
             <p className="px-3 pt-2 text-[10px] text-gray-500 leading-snug">
-              Staff who receive email when a resident sends a message in KapChat. Leave empty to notify Barangay Captain/Chairman only.
+              Staff who receive email when a resident sends a message in KapChat. Leave empty if you do not want to send staff emails.
             </p>
             <div className="p-3 max-h-[420px] overflow-y-auto space-y-1">
               {users.map((u) => {
