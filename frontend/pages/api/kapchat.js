@@ -36,7 +36,7 @@ export default async function handler(req, res) {
           success: false,
           code: "KAPCHAT_CLOSED",
           message:
-            "KapChat is closed. Resident hours: Mon–Fri 9:00–10:00 AM and 3:00–4:00 PM, Sat 9:00–10:00 AM (Philippine Time).",
+            "KapChat is closed. Resident hours: Mon–Fri 8:00 AM–5:00 PM, Sat 8:00 AM–12:00 NN (Philippine Time).",
         });
       }
 
