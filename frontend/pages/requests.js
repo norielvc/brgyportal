@@ -87,6 +87,15 @@ import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEdito
 // API Configuration
 const API_URL = "/api";
 
+const FIRST_TIME_JOB_SEEKER_PURPOSES = [
+  "NATIONAL BUREAU OF INVESTIGATION (NBI) REQUIREMENT",
+  "TAXPAYER IDENTIFICATION NUMBER (TIN) REQUIREMENT",
+  "SOCIAL SECURITY SYSTEM (SSS) REQUIREMENT",
+  "PAG-IBIG REQUIREMENT",
+  "PHILHEALTH REQUIREMENT",
+  "*TAXPAYER IDENTIFICATION NUMBERS (TIN) REQUIREMENT",
+];
+
 const PURPOSE_LIST_1 = [
   "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (CITY OF MALOLOS, BULACAN)",
   "TESDA / SCHOOLING REQUIREMENT",
@@ -3803,41 +3812,57 @@ function RequestDetailsModal({
                                 rows="3"
                                 placeholder="ENTER PURPOSE HERE..."
                               />
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                <select
-                                  onChange={handlePurposeSelect}
-                                  className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
-                                >
-                                  <option value="">-- PURPOSE 1 --</option>
-                                  {PURPOSE_LIST_1.map((p, i) => (
-                                    <option key={i} value={p}>
-                                      {p}
-                                    </option>
-                                  ))}
-                                </select>
-                                <select
-                                  onChange={handlePurposeSelect}
-                                  className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-sm outline-none cursor-pointer uppercase"
-                                >
-                                  <option value="">-- PURPOSE 2 --</option>
-                                  {PURPOSE_LIST_2.map((p, i) => (
-                                    <option key={i} value={p}>
-                                      {p}
-                                    </option>
-                                  ))}
-                                </select>
-                                <select
-                                  onChange={handlePurposeSelect}
-                                  className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
-                                >
-                                  <option value="">-- PURPOSE 3 --</option>
-                                  {PURPOSE_LIST_3.map((p, i) => (
-                                    <option key={i} value={p}>
-                                      {p}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
+                              {request.certificate_type === "first_time_job_seeker" ? (
+                                <div className="grid grid-cols-1 gap-2">
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- SELECT FIRST TIME JOB SEEKER REQUIREMENT (RA 11261) --</option>
+                                    {FIRST_TIME_JOB_SEEKER_PURPOSES.map((p, i) => (
+                                      <option key={i} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- PURPOSE 1 --</option>
+                                    {PURPOSE_LIST_1.map((p, i) => (
+                                      <option key={i} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- PURPOSE 2 --</option>
+                                    {PURPOSE_LIST_2.map((p, i) => (
+                                      <option key={i} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- PURPOSE 3 --</option>
+                                    {PURPOSE_LIST_3.map((p, i) => (
+                                      <option key={i} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
                             </>
                           ) : (
                             <div className="bg-slate-50 p-3 sm:p-3.5 rounded-lg border border-slate-100">

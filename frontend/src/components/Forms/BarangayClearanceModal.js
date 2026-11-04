@@ -147,6 +147,15 @@ const defaultOfficials = {
   },
 };
 
+const FIRST_TIME_JOB_SEEKER_PURPOSES = [
+  "NATIONAL BUREAU OF INVESTIGATION (NBI) REQUIREMENT",
+  "TAXPAYER IDENTIFICATION NUMBER (TIN) REQUIREMENT",
+  "SOCIAL SECURITY SYSTEM (SSS) REQUIREMENT",
+  "PAG-IBIG REQUIREMENT",
+  "PHILHEALTH REQUIREMENT",
+  "*TAXPAYER IDENTIFICATION NUMBERS (TIN) REQUIREMENT",
+];
+
 const PURPOSE_LIST_1 = [
   "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (CITY OF MALOLOS, BULACAN)",
   "TESDA / SCHOOLING REQUIREMENT",
@@ -914,49 +923,87 @@ export default function BarangayClearanceModal({
 
                         <div className="pt-1">
                           <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.12em] mb-2.5">
-                            {t.quickAdd}
+                            {t.quickAdd} {certType === "first_time_job_seeker" ? "· First Time Job Seeker (RA 11261)" : ""}
                           </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <CertSearchableDropdown
-                              label={t.catWork}
-                              placeholder={t.select}
-                              items={PURPOSE_LIST_1}
-                              onSelect={handlePurposeSelect}
-                              colorClass={{
-                                label: "text-gray-500",
-                                text: "text-gray-800",
-                                icon: "text-gray-400",
-                                bg: "bg-gray-50",
-                                ring: "ring-gray-200",
-                              }}
-                            />
-                            <CertSearchableDropdown
-                              label={t.catUtility}
-                              placeholder={t.select}
-                              items={PURPOSE_LIST_2}
-                              onSelect={handlePurposeSelect}
-                              colorClass={{
-                                label: "text-gray-500",
-                                text: "text-gray-800",
-                                icon: "text-gray-400",
-                                bg: "bg-gray-50",
-                                ring: "ring-gray-200",
-                              }}
-                            />
-                            <CertSearchableDropdown
-                              label={t.catMedical}
-                              placeholder={t.select}
-                              items={PURPOSE_LIST_3}
-                              onSelect={handlePurposeSelect}
-                              colorClass={{
-                                label: "text-gray-500",
-                                text: "text-gray-800",
-                                icon: "text-gray-400",
-                                bg: "bg-gray-50",
-                                ring: "ring-gray-200",
-                              }}
-                            />
-                          </div>
+                          {certType === "first_time_job_seeker" ? (
+                            <div className="space-y-3">
+                              <CertSearchableDropdown
+                                label={lang === "tl" ? "Mga Pangangailangan (RA 11261)" : "Jobseeker Requirements (RA 11261)"}
+                                placeholder={t.select}
+                                items={FIRST_TIME_JOB_SEEKER_PURPOSES}
+                                onSelect={handlePurposeSelect}
+                                colorClass={{
+                                  label: "text-emerald-700",
+                                  text: "text-gray-800",
+                                  icon: "text-emerald-500",
+                                  bg: "bg-emerald-50/60",
+                                  ring: "ring-emerald-200",
+                                }}
+                              />
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {FIRST_TIME_JOB_SEEKER_PURPOSES.map((reqItem, idx) => {
+                                  const isAdded = (formData.purpose || "").includes(reqItem);
+                                  return (
+                                    <button
+                                      key={idx}
+                                      type="button"
+                                      onClick={() => handlePurposeSelect(reqItem)}
+                                      className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-semibold transition-all text-left ${
+                                        isAdded
+                                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+                                      }`}
+                                    >
+                                      {isAdded ? "✓ " : "+ "}
+                                      {reqItem}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <CertSearchableDropdown
+                                label={t.catWork}
+                                placeholder={t.select}
+                                items={PURPOSE_LIST_1}
+                                onSelect={handlePurposeSelect}
+                                colorClass={{
+                                  label: "text-gray-500",
+                                  text: "text-gray-800",
+                                  icon: "text-gray-400",
+                                  bg: "bg-gray-50",
+                                  ring: "ring-gray-200",
+                                }}
+                              />
+                              <CertSearchableDropdown
+                                label={t.catUtility}
+                                placeholder={t.select}
+                                items={PURPOSE_LIST_2}
+                                onSelect={handlePurposeSelect}
+                                colorClass={{
+                                  label: "text-gray-500",
+                                  text: "text-gray-800",
+                                  icon: "text-gray-400",
+                                  bg: "bg-gray-50",
+                                  ring: "ring-gray-200",
+                                }}
+                              />
+                              <CertSearchableDropdown
+                                label={t.catMedical}
+                                placeholder={t.select}
+                                items={PURPOSE_LIST_3}
+                                onSelect={handlePurposeSelect}
+                                colorClass={{
+                                  label: "text-gray-500",
+                                  text: "text-gray-800",
+                                  icon: "text-gray-400",
+                                  bg: "bg-gray-50",
+                                  ring: "ring-gray-200",
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
