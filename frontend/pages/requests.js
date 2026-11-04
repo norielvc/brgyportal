@@ -7975,6 +7975,8 @@ function ClearancePreviewForRequests({
   }
 
   if (
+    isBusinessClearanceDoc &&
+    (financeApproval || financeAssignmentEntry) &&
     financeDisplayCode &&
     !processorCodeList.includes(financeDisplayCode)
   ) {
