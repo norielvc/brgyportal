@@ -6823,15 +6823,7 @@ function CertificatePreviewModal({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [history, setHistory] = useState([]);
-  const [historyLoaded, setHistoryLoaded] = useState(() => {
-    let details = request?.details;
-    if (typeof details === "string") {
-      try {
-        details = JSON.parse(details);
-      } catch {}
-    }
-    return Boolean(details?.captain_signature);
-  });
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [requestLoaded, setRequestLoaded] = useState(() => Boolean(request?.reference_number));
   const [directPdfBlobUrl, setDirectPdfBlobUrl] = useState(null);
   const directPdfStartedRef = useRef(false);
@@ -7183,7 +7175,8 @@ function CertificatePreviewModal({
     if (
       !directPdf ||
       directPdfStartedRef.current ||
-      !officials
+      !officials ||
+      !historyLoaded
     ) {
       return;
     }
@@ -7207,10 +7200,10 @@ function CertificatePreviewModal({
         console.error("Error auto-generating direct PDF:", error);
         directPdfStartedRef.current = false;
       }
-    }, 180);
+    }, 250);
 
     return () => clearTimeout(timer);
-  }, [directPdf, officials, previewPageSpec, request.reference_number]);
+  }, [directPdf, officials, previewPageSpec, request.reference_number, historyLoaded]);
 
   // ── Print: same A4 PDF as Download, then browser print on that PDF ──
   const handlePrintPDF = async () => {
@@ -7935,9 +7928,19 @@ function ClearancePreviewForRequests({
     "";
 
   // Collect all unique employee codes from previous processors in chronological order, AFTER the most recent return
+  const getEmployeeCodeForHistory = (h) => {
+    if (h.users?.employee_code) return String(h.users.employee_code).trim().toUpperCase();
+    if (h.performed_by && Array.isArray(tenantUsers)) {
+      const match = tenantUsers.find((u) => String(u.id || u._id) === String(h.performed_by));
+      if (match?.employee_code) return String(match.employee_code).trim().toUpperCase();
+    }
+    return null;
+  };
+
   const previousProcessors = (history || [])
     .filter((h) => {
-      if (!h.users?.employee_code) return false;
+      const code = getEmployeeCodeForHistory(h);
+      if (!code) return false;
       if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
       if (
         ["create", "submitted", "approve", "forward", "physical_inspection"].includes(
@@ -7952,9 +7955,25 @@ function ClearancePreviewForRequests({
       );
     })
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-    .map((h) => h.users.employee_code);
+    .map((h) => getEmployeeCodeForHistory(h));
 
-  const processorCodeList = [...new Set(previousProcessors)];
+  const processorCodeList = [...new Set(previousProcessors.filter(Boolean))];
+
+  // Fallback: If no codes found in history, check completed workflowAssignments
+  if (processorCodeList.length === 0 && Array.isArray(workflowAssignments)) {
+    for (const wa of workflowAssignments) {
+      if (["approved", "completed"].includes(String(wa.status || "").toLowerCase())) {
+        const code =
+          wa.users?.employee_code ||
+          (Array.isArray(tenantUsers) &&
+            tenantUsers.find((u) => String(u.id || u._id) === String(wa.assigned_user_id))?.employee_code);
+        if (code && !processorCodeList.includes(String(code).trim().toUpperCase())) {
+          processorCodeList.push(String(code).trim().toUpperCase());
+        }
+      }
+    }
+  }
+
   if (
     financeDisplayCode &&
     !processorCodeList.includes(financeDisplayCode)
