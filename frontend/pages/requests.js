@@ -76,7 +76,12 @@ import {
   joinNameParts,
   resolveApplicantNameParts,
 } from "@/lib/personName";
-import { resolveRequestResidentialAddress } from "@/lib/addressHelper";
+import {
+  resolveRequestResidentialAddress,
+  formatSexFull,
+  formatCivilStatusFull,
+  stripProvinceOf,
+} from "@/lib/addressHelper";
 import { pendingCaseRows } from "@/lib/caseRecordHistory";
 import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
 // API Configuration
@@ -7531,9 +7536,9 @@ function ClearancePreviewForRequests({
   const formData = {
     fullName: request.applicant_name || request.full_name || "",
     age: request.age || "",
-    sex: request.sex || "",
-    civilStatus: request.civil_status || "",
-    address: resolveRequestResidentialAddress(request),
+    sex: formatSexFull(request.sex || ""),
+    civilStatus: formatCivilStatusFull(request.civil_status || ""),
+    address: stripProvinceOf(resolveRequestResidentialAddress(request)),
     dateOfBirth: request.date_of_birth || "",
     placeOfBirth: request.place_of_birth || "",
     dateOfDeath:
@@ -7549,7 +7554,7 @@ function ClearancePreviewForRequests({
     guardianRelationship: request.guardian_relationship || request.details?.guardian_relationship || "",
     partnerFullName: request.partner_full_name || request.details?.partnerFullName || request.details?.partner_name || "",
     partnerAge: request.partner_age || request.details?.partnerAge || "",
-    partnerSex: request.partner_sex || request.details?.partnerSex || "",
+    partnerSex: formatSexFull(request.partner_sex || request.details?.partnerSex || ""),
     partnerDateOfBirth: request.partner_date_of_birth || request.details?.partnerDateOfBirth || "",
     noOfChildren: request.no_of_children || request.details?.noOfChildren || "",
     livingTogetherYears: request.living_together_years || request.details?.livingTogetherYears || "",
@@ -8301,7 +8306,7 @@ function ClearancePreviewForRequests({
                         "Owner's Address",
                         request.ownerAddress ||
                           additionalDetails.ownerAddress ||
-                          formData.address,
+                          stripProvinceOf(formData.address),
                       ],
                       [
                         "Business / Trade Name",
@@ -8551,7 +8556,7 @@ function ClearancePreviewForRequests({
                           >
                             {request.ownerAddress ||
                               additionalDetails.ownerAddress ||
-                              formData.address}
+                              stripProvinceOf(formData.address)}
                           </td>
                         </tr>
                         <tr>
@@ -8908,7 +8913,7 @@ function ClearancePreviewForRequests({
                           THIS IS TO CERTIFY THAT BELOW MENTIONED PERSONS, BONA
                           FIDE RESIDENTS OF THIS BARANGAY AT{" "}
                           <span className="font-bold">
-                            {formData.address?.toUpperCase() ||
+                            {stripProvinceOf(formData.address)?.toUpperCase() ||
                               "____________________"}
                           </span>
                           , ARE LIVING TOGETHER IN COMMON HOUSE (YET TO UNDERGO
@@ -8953,15 +8958,15 @@ function ClearancePreviewForRequests({
                               ["AGE", formData.age],
                               [
                                 "SEX",
-                                (
+                                formatSexFull(
                                   request.sex ||
                                   formData.sex ||
                                   "N/A"
-                                ).toUpperCase(),
+                                ),
                               ],
                               [
                                 "RESIDENTIAL ADDRESS",
-                                formData.address?.toUpperCase(),
+                                stripProvinceOf(formData.address)?.toUpperCase(),
                               ],
                               [
                                 "DATE OF BIRTH",
@@ -9019,17 +9024,17 @@ function ClearancePreviewForRequests({
                           let baseLabels = [
                             ["NAME", formData.fullName?.toUpperCase()],
                             ["AGE", formData.age],
-                            ["SEX", formData.sex?.toUpperCase()],
+                            ["SEX", formatSexFull(formData.sex)],
                           ];
 
                           if (!isCohabitation) {
                             baseLabels.push([
                               "CIVIL STATUS",
-                              formData.civilStatus?.toUpperCase(),
+                              formatCivilStatusFull(formData.civilStatus),
                             ]);
                             baseLabels.push([
                               "RESIDENTIAL ADDRESS",
-                              formData.address?.toUpperCase(),
+                              stripProvinceOf(formData.address)?.toUpperCase(),
                             ]);
                           }
 
@@ -9080,7 +9085,7 @@ function ClearancePreviewForRequests({
                             extraLabels = [
                               ["NAME", formData.partnerFullName?.toUpperCase()],
                               ["AGE", formData.partnerAge],
-                              ["SEX", formData.partnerSex?.toUpperCase()],
+                              ["SEX", formatSexFull(formData.partnerSex)],
                               [
                                 "DATE OF BIRTH",
                                 formData.partnerDateOfBirth
@@ -9127,13 +9132,13 @@ function ClearancePreviewForRequests({
                               ["Name (2)", name2?.toUpperCase()],
                               [
                                 "Residential Address",
-                                formData.address?.toUpperCase(),
+                                stripProvinceOf(formData.address)?.toUpperCase(),
                               ],
                               ["Age", formData.age],
-                              ["Sex", formData.sex?.toUpperCase()],
+                              ["Sex", formatSexFull(formData.sex)],
                               [
                                 "Civil Status",
-                                formData.civilStatus?.toUpperCase(),
+                                formatCivilStatusFull(formData.civilStatus),
                               ],
                               [
                                 "Date of Birth",

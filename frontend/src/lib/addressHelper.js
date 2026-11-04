@@ -70,7 +70,8 @@ export function generateFullAddress(addressData) {
   }
 
   if (province?.trim()) {
-    parts.push(province.trim().toUpperCase());
+    const cleanProv = province.trim().replace(/^province\s+of\s+/i, '').trim();
+    if (cleanProv) parts.push(cleanProv.toUpperCase());
   }
 
   return parts.join(', ');
@@ -80,43 +81,91 @@ export function generateFullAddress(addressData) {
  * Full residential address for certificate requests — prefers structured
  * resident fields (house no., purok, barangay, etc.) when linked.
  */
+/**
+ * Strip "PROVINCE OF" prefix from address string
+ * @param {string} addressString
+ * @returns {string}
+ */
+export function stripProvinceOf(addressString) {
+  if (!addressString) return "";
+  return String(addressString)
+    .replace(/,\s*PROVINCE\s+OF\s+/gi, ', ')
+    .replace(/\bPROVINCE\s+OF\s+/gi, '')
+    .trim();
+}
+
+/**
+ * Format sex to full word (MALE, FEMALE)
+ * @param {string} val
+ * @returns {string}
+ */
+export function formatSexFull(val) {
+  if (!val) return "";
+  const s = String(val).trim().toUpperCase();
+  if (s === "M" || s === "MALE") return "MALE";
+  if (s === "F" || s === "FEMALE") return "FEMALE";
+  return s;
+}
+
+/**
+ * Format civil status to full word (SINGLE, MARRIED, WIDOWED, SEPARATED, DIVORCED, etc.)
+ * @param {string} val
+ * @returns {string}
+ */
+export function formatCivilStatusFull(val) {
+  if (!val) return "";
+  const c = String(val).trim().toUpperCase();
+  if (c === "S" || c.startsWith("SINGLE")) return "SINGLE";
+  if (c === "M" || c.startsWith("MARRIED")) return "MARRIED";
+  if (c === "W" || c.startsWith("WIDOW")) return "WIDOWED";
+  if (c === "D" || c.startsWith("DIVORCED")) return "DIVORCED";
+  if (c === "SEP" || c.startsWith("SEPARAT")) return "SEPARATED";
+  if (c === "C" || c.startsWith("LIVE") || c.startsWith("COHAB")) return "LIVE-IN";
+  return c;
+}
+
 export function resolveRequestResidentialAddress(request) {
   if (!request) return "";
 
+  let result = "";
   if (request.certificate_type === "barangay_cohabitation") {
-    return (
+    result = (
       request.details?.currentAddress ||
       request.address ||
       ""
     ).trim();
-  }
+  } else {
+    const r = request.residents;
+    const fromStructured = r ? generateFullAddress(r) : "";
+    const stored = (
+      request.address ||
+      request.details?.currentAddress ||
+      ""
+    ).trim();
 
-  const r = request.residents;
-  const fromStructured = r ? generateFullAddress(r) : "";
-  const stored = (
-    request.address ||
-    request.details?.currentAddress ||
-    ""
-  ).trim();
-
-  if (fromStructured) {
-    const storedUpper = stored.toUpperCase();
-    const builtUpper = fromStructured.toUpperCase();
-    const builtHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(builtUpper);
-    const storedHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(storedUpper);
-    if (!stored || (builtHasHouse && !storedHasHouse)) {
-      return fromStructured;
+    if (fromStructured) {
+      const storedUpper = stored.toUpperCase();
+      const builtUpper = fromStructured.toUpperCase();
+      const builtHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(builtUpper);
+      const storedHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(storedUpper);
+      if (!stored || (builtHasHouse && !storedHasHouse)) {
+        result = fromStructured;
+      } else if (builtUpper.length > storedUpper.length && storedUpper && !builtUpper.includes(storedUpper)) {
+        result = fromStructured;
+      }
     }
-    if (builtUpper.length > storedUpper.length && storedUpper && !builtUpper.includes(storedUpper)) {
-      return fromStructured;
+
+    if (!result) {
+      if (stored) result = normalizeNorthvilleInText(stored);
+      else if (r?.residential_address?.trim()) {
+        result = normalizeNorthvilleInText(r.residential_address.trim());
+      } else {
+        result = normalizeNorthvilleInText(fromStructured);
+      }
     }
   }
 
-  if (stored) return normalizeNorthvilleInText(stored);
-  if (r?.residential_address?.trim()) {
-    return normalizeNorthvilleInText(r.residential_address.trim());
-  }
-  return normalizeNorthvilleInText(fromStructured);
+  return stripProvinceOf(result);
 }
 
 /**

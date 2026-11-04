@@ -1,6 +1,34 @@
 const fs = require('fs');
 const path = require('path');
 const { supabase } = require('./supabaseClient');
+function formatSexFull(val) {
+    if (!val || val === '-') return '-';
+    const s = String(val).trim().toUpperCase();
+    if (s === 'M' || s === 'MALE') return 'MALE';
+    if (s === 'F' || s === 'FEMALE') return 'FEMALE';
+    return s;
+}
+
+function formatCivilStatusFull(val) {
+    if (!val || val === '-') return '-';
+    const c = String(val).trim().toUpperCase();
+    if (c === 'S' || c.startsWith('SINGLE')) return 'SINGLE';
+    if (c === 'M' || c.startsWith('MARRIED')) return 'MARRIED';
+    if (c === 'W' || c.startsWith('WIDOW')) return 'WIDOWED';
+    if (c === 'D' || c.startsWith('DIVORCED')) return 'DIVORCED';
+    if (c === 'SEP' || c.startsWith('SEPARAT')) return 'SEPARATED';
+    if (c === 'C' || c.startsWith('LIVE') || c.startsWith('COHAB')) return 'LIVE-IN';
+    return c;
+}
+
+function cleanResidentialAddress(address) {
+    if (!address || address === '-') return '-';
+    return String(address)
+        .replace(/,\s*PROVINCE\s+OF\s+/gi, ', ')
+        .replace(/\bPROVINCE\s+OF\s+/gi, '')
+        .trim();
+}
+
 
 class CertificateGenerationService {
     constructor() {
@@ -425,9 +453,9 @@ class CertificateGenerationService {
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
-                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${request.sex || '-'}</span>
-                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${request.civil_status || '-'}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${request.address || '-'}</span>
+                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                 </div>
@@ -516,9 +544,9 @@ class CertificateGenerationService {
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
-                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${request.sex || '-'}</span>
-                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${request.civil_status || '-'}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${request.address || '-'}</span>
+                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                 </div>
@@ -565,9 +593,9 @@ class CertificateGenerationService {
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
-                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${request.sex || '-'}</span>
-                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${request.civil_status || '-'}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${request.address || '-'}</span>
+                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                 </div>
@@ -634,7 +662,7 @@ class CertificateGenerationService {
                     <div class="info-row">
                         <span class="info-label">Residential Address</span>
                         <span class="info-colon">:</span>
-                        <span class="info-value">${request.address || '-'}</span>
+                        <span class="info-value">${cleanResidentialAddress(request.address)}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Age</span>
@@ -1606,10 +1634,10 @@ class CertificateGenerationService {
                 <p style="margin: 20px 0;">This is to certify that below person is under the guardianship of <strong>${(details.guardianName || '').toUpperCase()}</strong>, both bona fide residents of this barangay:</p>
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(request.full_name || '').toUpperCase()}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${(request.address || '').toUpperCase()}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address).toUpperCase()}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
-                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${(request.sex || '').toUpperCase()}</span>
-                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${(request.civil_status || '').toUpperCase()}</span>
+                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Guardian's Relationship</span><span>:</span><span class="detail-value">${(details.guardianRelationship || '').toUpperCase()}</span>
                 </div>
@@ -1634,11 +1662,11 @@ class CertificateGenerationService {
                 <p style="margin: 20px 0;">This is to certify that the persons named below are living together as husband and wife without the benefit of marriage for <strong>${details.livingTogetherYears || '0'} year(s) and ${details.livingTogetherMonths || '0'} month(s)</strong>:</p>
                 <div class="details-grid">
                     <span class="detail-label">Name (1)</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(request.full_name || '').toUpperCase()}</span>
-                    <span class="detail-label">Age/Sex/DOB</span><span>:</span><span class="detail-value">${request.age || '-'} / ${(request.sex || '').toUpperCase()} / ${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString() : '-'}</span>
+                    <span class="detail-label">Age/Sex/DOB</span><span>:</span><span class="detail-value">${request.age || '-'} / ${formatSexFull(request.sex)} / ${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString() : '-'}</span>
                     <span class="detail-label">Name (2)</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(details.partnerFullName || '').toUpperCase()}</span>
-                    <span class="detail-label">Partner Age/Sex/DOB</span><span>:</span><span class="detail-value">${details.partnerAge || '-'} / ${(details.partnerSex || '').toUpperCase()} / ${details.partnerDateOfBirth ? new Date(details.partnerDateOfBirth).toLocaleDateString() : '-'}</span>
+                    <span class="detail-label">Partner Age/Sex/DOB</span><span>:</span><span class="detail-value">${details.partnerAge || '-'} / ${formatSexFull(details.partnerSex)} / ${details.partnerDateOfBirth ? new Date(details.partnerDateOfBirth).toLocaleDateString() : '-'}</span>
                     <span class="detail-label">No. of Children</span><span>:</span><span class="detail-value">${details.noOfChildren || '0'}</span>
-                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${(request.address || '').toUpperCase()}</span>
+                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address).toUpperCase()}</span>
                 </div>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName} for legal purposes.</p>
                 <div class="signature-section">
@@ -1658,7 +1686,7 @@ class CertificateGenerationService {
         const bodyHtml = `
             <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
-                <p style="margin: 20px 0;">This is to certify that <strong>${(request.full_name || '').toUpperCase()}</strong>, a resident of ${request.address || ''}, passed away on <strong>${details.dateOfDeath ? new Date(details.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</strong> due to <strong>${(details.causeOfDeath || 'NATURAL CAUSES').toUpperCase()}</strong>.</p>
+                <p style="margin: 20px 0;">This is to certify that <strong>${(request.full_name || '').toUpperCase()}</strong>, a resident of ${cleanResidentialAddress(request.address)}, passed away on <strong>${details.dateOfDeath ? new Date(details.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</strong> due to <strong>${(details.causeOfDeath || 'NATURAL CAUSES').toUpperCase()}</strong>.</p>
                 <p style="margin: 20px 0;">This also certifies that the death was <strong>${details.covidRelated ? 'COVID-19' : 'NON-COVID'}</strong> related.</p>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> for burial/legal purposes.</p>
                 <div class="signature-section">
@@ -1681,8 +1709,8 @@ class CertificateGenerationService {
                 <p style="margin: 20px 0;">This is a REQUEST FOR MEDICO LEGAL for the following person:</p>
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value">${(request.full_name || '').toUpperCase()}</span>
-                    <span class="detail-label">Age/Sex</span><span>:</span><span class="detail-value">${request.age || '-'} / ${(request.sex || '').toUpperCase()}</span>
-                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${(request.address || '').toUpperCase()}</span>
+                    <span class="detail-label">Age/Sex</span><span>:</span><span class="detail-value">${request.age || '-'} / ${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address).toUpperCase()}</span>
                     <span class="detail-label">Date of Exam</span><span>:</span><span class="detail-value">${details.dateOfExamination || '-'}</span>
                     <span class="detail-label">Usaping Brgy</span><span>:</span><span class="detail-value">${details.usapingBarangay || '-'}</span>
                     <span class="detail-label">Date of Hearing</span><span>:</span><span class="detail-value">${details.dateOfHearing || '-'}</span>
