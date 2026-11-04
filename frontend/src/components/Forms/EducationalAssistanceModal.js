@@ -945,6 +945,9 @@ export default function EducationalAssistanceModal({
                     type="button"
                     onClick={() => {
                       const refToTrack = referenceNumber;
+                      if (typeof window !== "undefined") {
+                        window.__pendingScrollTarget = "track";
+                      }
                       setShowSuccessModal(false);
                       resetForm();
                       onClose();
@@ -952,12 +955,19 @@ export default function EducationalAssistanceModal({
                         window.dispatchEvent(
                           new CustomEvent("brgydesk:auto-track", { detail: { ref: refToTrack } })
                         );
-                        const trackElem = document.getElementById("track");
-                        if (trackElem) {
-                          trackElem.scrollIntoView({ behavior: "smooth", block: "start" });
-                        } else {
-                          window.location.href = `/track-status?ref=${encodeURIComponent(refToTrack)}`;
-                        }
+                        const scrollToTrack = () => {
+                          const trackElem = document.getElementById("track");
+                          if (trackElem) {
+                            const navOffset = 80;
+                            const y = trackElem.getBoundingClientRect().top + (window.pageYOffset || window.scrollY || 0) - navOffset;
+                            window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+                          } else {
+                            window.location.href = `/track-status?ref=${encodeURIComponent(refToTrack)}`;
+                          }
+                        };
+                        scrollToTrack();
+                        setTimeout(scrollToTrack, 100);
+                        setTimeout(scrollToTrack, 300);
                       }
                     }}
                     className="w-full py-3.5 px-4 text-white rounded-xl font-bold text-sm shadow-md hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2"

@@ -2421,7 +2421,7 @@ export default function PortalPageContent({ initialTenantId }) {
       </section>
 
       {/* Track Your Request Section */}
-      <section id="track" className="py-12 md:py-16 w-full border-t border-gray-100" style={{ background: `linear-gradient(135deg, ${tenantConfig.primaryColor}08 0%, ${tenantConfig.accentColor}05 100%)` }}>
+      <section id="track" className="py-12 md:py-16 w-full border-t border-gray-100 scroll-mt-20 md:scroll-mt-24" style={{ background: `linear-gradient(135deg, ${tenantConfig.primaryColor}08 0%, ${tenantConfig.accentColor}05 100%)` }}>
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12">
           <div className="max-w-2xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest mb-4 border" style={{ color: tenantConfig.primaryColor, borderColor: `${tenantConfig.primaryColor}30`, backgroundColor: `${tenantConfig.primaryColor}08` }}>
@@ -6500,6 +6500,21 @@ function TrackRequestWidget({ tenantId, tenantConfig, labels: labelsProp }) {
       if (targetRef) {
         setRefNumber(targetRef);
         executeTrack(targetRef);
+
+        const scrollToTrackSection = () => {
+          const trackElem = document.getElementById("track");
+          if (trackElem) {
+            const navOffset = 80;
+            const y = trackElem.getBoundingClientRect().top + (window.pageYOffset || window.scrollY || 0) - navOffset;
+            window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+          }
+        };
+
+        // Scroll immediately and after modal closes / unlocks
+        scrollToTrackSection();
+        setTimeout(scrollToTrackSection, 100);
+        setTimeout(scrollToTrackSection, 300);
+        setTimeout(scrollToTrackSection, 600);
       }
     };
     window.addEventListener("brgydesk:auto-track", handleAutoTrackEvent);

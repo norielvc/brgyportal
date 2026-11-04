@@ -162,17 +162,27 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   // Success
   if (showSuccess) {
     const handleTrackRedirect = () => {
+      if (typeof window !== "undefined") {
+        window.__pendingScrollTarget = "track";
+      }
       onClose();
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("brgydesk:auto-track", { detail: { ref: referenceNumber } })
         );
-        const trackElem = document.getElementById("track");
-        if (trackElem) {
-          trackElem.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else {
-          window.location.href = `/track-status?ref=${encodeURIComponent(referenceNumber)}`;
-        }
+        const scrollToTrack = () => {
+          const trackElem = document.getElementById("track");
+          if (trackElem) {
+            const navOffset = 80;
+            const y = trackElem.getBoundingClientRect().top + (window.pageYOffset || window.scrollY || 0) - navOffset;
+            window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+          } else {
+            window.location.href = `/track-status?ref=${encodeURIComponent(referenceNumber)}`;
+          }
+        };
+        scrollToTrack();
+        setTimeout(scrollToTrack, 100);
+        setTimeout(scrollToTrack, 300);
       }
     };
 
