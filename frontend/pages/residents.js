@@ -43,6 +43,10 @@ import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
 import {
   generateFullAddress,
+  cleanBarangayName,
+  cleanMunicipalityName,
+  cleanProvinceName,
+  stripProvinceOf,
   PUROK_OPTIONS,
   PHASE_OPTIONS,
   isSubdivisionPurok,
@@ -341,9 +345,9 @@ function residentToFormState(resident, tenantAddressDefaults) {
   if (!resident) {
     return {
       ...EMPTY_RESIDENT_FORM,
-      barangay: tenantAddressDefaults.barangay,
-      municipality: tenantAddressDefaults.municipality,
-      province: tenantAddressDefaults.province,
+      barangay: cleanBarangayName(tenantAddressDefaults.barangay),
+      municipality: cleanMunicipalityName(tenantAddressDefaults.municipality),
+      province: cleanProvinceName(tenantAddressDefaults.province),
     };
   }
   const extras = resident.census_extras || {};
@@ -370,9 +374,15 @@ function residentToFormState(resident, tenantAddressDefaults) {
     date_of_death: formatDateForInput(resident.date_of_death),
     cause_of_death: resident.cause_of_death || "",
     covid_related: Boolean(resident.covid_related),
-    barangay: resident.barangay || tenantAddressDefaults.barangay,
-    municipality: resident.municipality || tenantAddressDefaults.municipality,
-    province: resident.province || tenantAddressDefaults.province,
+    barangay: cleanBarangayName(
+      resident.barangay || tenantAddressDefaults.barangay,
+    ),
+    municipality: cleanMunicipalityName(
+      resident.municipality || tenantAddressDefaults.municipality,
+    ),
+    province: cleanProvinceName(
+      resident.province || tenantAddressDefaults.province,
+    ),
     census_resident_number: resident.census_resident_number || "",
     ec_card_number: resident.ec_card_number || "",
     subdivision: resident.subdivision || "",
@@ -443,9 +453,9 @@ export default function Residents() {
 
   // Tenant-specific address fields
   const [tenantAddressDefaults, setTenantAddressDefaults] = useState({
-    barangay: '',
-    municipality: '',
-    province: 'Province of Bulacan',
+    barangay: "IBA O' ESTE",
+    municipality: "Calumpit",
+    province: "Bulacan",
   });
 
   // Tenant-specific purok options
@@ -521,9 +531,13 @@ export default function Residents() {
       if (data.success && data.settings) {
         const headerInfo = data.settings.certificate_settings?.headerInfo || data.settings.headerInfo || {};
         setTenantAddressDefaults({
-          barangay: headerInfo.barangayName || "BARANGAY IBA O' ESTE",
-          municipality: headerInfo.municipality || 'Calumpit',
-          province: headerInfo.province || 'Province of Bulacan',
+          barangay: cleanBarangayName(
+            headerInfo.barangayName || "IBA O' ESTE",
+          ),
+          municipality: cleanMunicipalityName(
+            headerInfo.municipality || "Calumpit",
+          ),
+          province: cleanProvinceName(headerInfo.province || "Bulacan"),
         });
 
         // Set tenant-specific purok options
@@ -649,9 +663,15 @@ export default function Residents() {
       }
 
       // Generate full address with subdivision/sitio & parent purok
-      const effectiveBarangay = cleanedData.barangay || tenantAddressDefaults.barangay;
-      const effectiveMunicipality = cleanedData.municipality || tenantAddressDefaults.municipality;
-      const effectiveProvince = cleanedData.province || tenantAddressDefaults.province;
+      const effectiveBarangay = cleanBarangayName(
+        cleanedData.barangay || tenantAddressDefaults.barangay,
+      );
+      const effectiveMunicipality = cleanMunicipalityName(
+        cleanedData.municipality || tenantAddressDefaults.municipality,
+      );
+      const effectiveProvince = cleanProvinceName(
+        cleanedData.province || tenantAddressDefaults.province,
+      );
       cleanedData.residential_address = generateFullAddress({
         house_number: cleanedData.house_number,
         purok: subInfo ? subInfo.parentPurok : cleanedData.purok,
@@ -1182,21 +1202,26 @@ export default function Residents() {
         dense
       >
         {selectedResident && (() => {
-          const displayAddress = normalizeNorthvilleInText(
-            selectedResident.residential_address ||
-              generateFullAddress({
-                house_number: selectedResident.house_number,
-                purok: selectedResident.purok,
-                subdivision: selectedResident.subdivision,
-                barangay:
-                  selectedResident.barangay || tenantAddressDefaults.barangay,
-                municipality:
-                  selectedResident.municipality ||
-                  tenantAddressDefaults.municipality,
-                province:
-                  selectedResident.province || tenantAddressDefaults.province,
-              }) ||
-              "—",
+          const displayAddress = stripProvinceOf(
+            normalizeNorthvilleInText(
+              selectedResident.residential_address ||
+                generateFullAddress({
+                  house_number: selectedResident.house_number,
+                  purok: selectedResident.purok,
+                  subdivision: selectedResident.subdivision,
+                  barangay: cleanBarangayName(
+                    selectedResident.barangay || tenantAddressDefaults.barangay,
+                  ),
+                  municipality: cleanMunicipalityName(
+                    selectedResident.municipality ||
+                      tenantAddressDefaults.municipality,
+                  ),
+                  province: cleanProvinceName(
+                    selectedResident.province || tenantAddressDefaults.province,
+                  ),
+                }) ||
+                "—",
+            ),
           );
 
           const householdLinkLabel = selectedResident.household_head_id
@@ -1899,7 +1924,7 @@ export default function Residents() {
                   type="text"
                   readOnly
                   className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
-                  value={formData.barangay}
+                  value={cleanBarangayName(formData.barangay)}
                 />
               </div>
               <div>
@@ -1908,7 +1933,7 @@ export default function Residents() {
                   type="text"
                   readOnly
                   className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
-                  value={formData.municipality}
+                  value={cleanMunicipalityName(formData.municipality)}
                 />
               </div>
               <div className="md:col-span-2">
@@ -1917,7 +1942,7 @@ export default function Residents() {
                   type="text"
                   readOnly
                   className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
-                  value={formData.province}
+                  value={cleanProvinceName(formData.province)}
                 />
               </div>
             </div>

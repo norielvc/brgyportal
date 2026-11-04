@@ -8,13 +8,57 @@
  * @param {Object} tenantSettings - Barangay settings from API
  * @returns {Object} { barangay, municipality, province }
  */
+/**
+ * Remove "BARANGAY" / "Brgy." / "Bgy." prefixes from barangay name
+ * @param {string} val
+ * @returns {string}
+ */
+export function cleanBarangayName(val) {
+  if (!val) return "";
+  return String(val)
+    .trim()
+    .replace(/^(barangay|brgy\.?|bgy\.?)\s+/i, "")
+    .trim();
+}
+
+/**
+ * Remove "MUNICIPALITY OF" / "MUNICIPALITY" / "BAYAN NG" prefixes from municipality name
+ * @param {string} val
+ * @returns {string}
+ */
+export function cleanMunicipalityName(val) {
+  if (!val) return "";
+  return String(val)
+    .trim()
+    .replace(/^(municipality\s+of|municipality|bayan\s+ng)\s+/i, "")
+    .trim();
+}
+
+/**
+ * Remove "PROVINCE OF" / "PROVINCE" / "LALAWIGAN NG" prefixes from province name
+ * @param {string} val
+ * @returns {string}
+ */
+export function cleanProvinceName(val) {
+  if (!val) return "";
+  return String(val)
+    .trim()
+    .replace(/^(province\s+of|province|lalawigan\s+ng)\s+/i, "")
+    .trim();
+}
+
+/**
+ * Get barangay, municipality, and province from tenant settings
+ * @param {Object} tenantSettings - Barangay settings from API
+ * @returns {Object} { barangay, municipality, province }
+ */
 export function getAutoAddressFields(tenantSettings) {
-  const headerInfo = tenantSettings?.certificate_settings?.headerInfo || {};
+  const headerInfo = tenantSettings?.certificate_settings?.headerInfo || tenantSettings?.headerInfo || {};
   
   return {
-    barangay: headerInfo.barangayName || '',
-    municipality: headerInfo.municipality || '',
-    province: headerInfo.province || 'Province of Bulacan',
+    barangay: cleanBarangayName(headerInfo.barangayName || ''),
+    municipality: cleanMunicipalityName(headerInfo.municipality || ''),
+    province: cleanProvinceName(headerInfo.province || 'Bulacan'),
   };
 }
 
@@ -62,16 +106,18 @@ export function generateFullAddress(addressData) {
   }
 
   if (barangay?.trim()) {
-    parts.push(barangay.trim().toUpperCase());
+    const cleanB = cleanBarangayName(barangay);
+    if (cleanB) parts.push(cleanB.toUpperCase());
   }
 
   if (municipality?.trim()) {
-    parts.push(municipality.trim().toUpperCase());
+    const cleanM = cleanMunicipalityName(municipality);
+    if (cleanM) parts.push(cleanM.toUpperCase());
   }
 
   if (province?.trim()) {
-    const cleanProv = province.trim().replace(/^province\s+of\s+/i, '').trim();
-    if (cleanProv) parts.push(cleanProv.toUpperCase());
+    const cleanP = cleanProvinceName(province);
+    if (cleanP) parts.push(cleanP.toUpperCase());
   }
 
   return parts.join(', ');
@@ -82,7 +128,7 @@ export function generateFullAddress(addressData) {
  * resident fields (house no., purok, barangay, etc.) when linked.
  */
 /**
- * Strip "PROVINCE OF" prefix from address string
+ * Strip "PROVINCE OF", "MUNICIPALITY OF", and "BARANGAY" prefixes from address string
  * @param {string} addressString
  * @returns {string}
  */
@@ -91,6 +137,12 @@ export function stripProvinceOf(addressString) {
   return String(addressString)
     .replace(/,\s*PROVINCE\s+OF\s+/gi, ', ')
     .replace(/\bPROVINCE\s+OF\s+/gi, '')
+    .replace(/,\s*MUNICIPALITY\s+OF\s+/gi, ', ')
+    .replace(/\bMUNICIPALITY\s+OF\s+/gi, '')
+    .replace(/,\s*BARANGAY\s+/gi, ', ')
+    .replace(/\bBARANGAY\s+/gi, '')
+    .replace(/,\s*BRGY\.?\s+/gi, ', ')
+    .replace(/\bBRGY\.?\s+/gi, '')
     .trim();
 }
 
