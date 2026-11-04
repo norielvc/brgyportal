@@ -6,6 +6,7 @@ import {
 
 const TYPE_NAMES = {
   barangay_clearance: "Barangay Clearance",
+  first_time_job_seeker: "First Time Job Seeker",
   certificate_of_indigency: "Certificate of Indigency",
   barangay_residency: "Barangay Residency Certificate",
   medico_legal: "Medico-Legal Certificate",

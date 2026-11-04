@@ -61,8 +61,10 @@ import {
   ArrowRight,
   Info,
   BookOpen,
+  UserCheck,
 } from "lucide-react";
 import BarangayClearanceModal from "@/components/Forms/BarangayClearanceModal";
+import FirstTimeJobSeekerModal from "@/components/Forms/FirstTimeJobSeekerModal";
 import IndigencyCertificateModal from "@/components/Forms/IndigencyCertificateModal";
 import ResidencyCertificateModal from "@/components/Forms/ResidencyCertificateModal";
 import BusinessPermitModal from "@/components/Forms/BusinessPermitModal";
@@ -354,6 +356,7 @@ export default function PortalPageContent({ initialTenantId }) {
     color: "text-yellow-400",
   });
   const [showClearanceModal, setShowClearanceModal] = useState(false);
+  const [showFirstTimeJobSeekerModal, setShowFirstTimeJobSeekerModal] = useState(false);
   const [showIndigencyModal, setShowIndigencyModal] = useState(false);
   const [showResidencyModal, setShowResidencyModal] = useState(false);
   const [showBusinessPermitModal, setShowBusinessPermitModal] = useState(false);
@@ -402,6 +405,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
   const isAnyPortalModalOpen = Boolean(
     showClearanceModal ||
+    showFirstTimeJobSeekerModal ||
     showIndigencyModal ||
     showResidencyModal ||
     showBusinessPermitModal ||
@@ -455,8 +459,8 @@ export default function PortalPageContent({ initialTenantId }) {
       return false;
     }
     
-    // Standard plan - basic 3 certificates + portal sections always unlocked
-    const basicCertificates = ['barangay_clearance', 'certificate_of_indigency', 'barangay_residency'];
+    // Standard plan - basic certificates + portal sections always unlocked
+    const basicCertificates = ['barangay_clearance', 'first_time_job_seeker', 'certificate_of_indigency', 'barangay_residency'];
     const standardFeatures = ['facilities', 'programs', 'achievements'];
     
     if (subscription.planId === 'standard') {
@@ -491,6 +495,14 @@ export default function PortalPageContent({ initialTenantId }) {
         locked: isFeatureLocked("barangay_clearance"),
         onClick: () =>
           handleFeatureClick("barangay_clearance", pick("barangay_clearance").title, setShowClearanceModal),
+      },
+      {
+        ...pick("first_time_job_seeker"),
+        icon: UserCheck,
+        color: "emerald",
+        locked: isFeatureLocked("first_time_job_seeker"),
+        onClick: () =>
+          handleFeatureClick("first_time_job_seeker", pick("first_time_job_seeker").title, setShowFirstTimeJobSeekerModal),
       },
       {
         ...pick("certificate_of_indigency"),
@@ -3964,6 +3976,14 @@ export default function PortalPageContent({ initialTenantId }) {
       <BarangayClearanceModal
         isOpen={showClearanceModal}
         onClose={() => setShowClearanceModal(false)}
+        isDemo={tenantId === "demo"}
+        tenantConfig={{ ...tenantConfig, tenant_id: tenantId }}
+      />
+
+      {/* First Time Job Seeker Modal */}
+      <FirstTimeJobSeekerModal
+        isOpen={showFirstTimeJobSeekerModal}
+        onClose={() => setShowFirstTimeJobSeekerModal(false)}
         isDemo={tenantId === "demo"}
         tenantConfig={{ ...tenantConfig, tenant_id: tenantId }}
       />

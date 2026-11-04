@@ -31,6 +31,7 @@ const API_URL = "/api";
 
 const TYPE_LABELS = {
   barangay_clearance: "Barangay Clearance",
+  first_time_job_seeker: "First Time Job Seeker",
   certificate_of_indigency: "Certificate of Indigency",
   barangay_residency: "Certificate of Residency",
   natural_death: "Certificate of Natural Death",

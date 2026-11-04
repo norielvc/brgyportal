@@ -95,6 +95,7 @@ router.get('/next-reference/:type', async (req, res) => {
     // Map type to prefix
     const prefixMap = {
       'barangay_clearance': 'BC',
+      'first_time_job_seeker': 'FTJS',
       'certificate_of_indigency': 'CI',
       'barangay_residency': 'BR',
       'natural_death': 'ND',
@@ -180,6 +181,7 @@ router.get('/next-reference/:type', async (req, res) => {
     const { type } = req.params;
     const prefixMap = {
       'barangay_clearance': 'BC',
+      'first_time_job_seeker': 'FTJS',
       'certificate_of_indigency': 'CI',
       'barangay_residency': 'BR',
       'natural_death': 'ND',
@@ -1771,6 +1773,7 @@ router.get('/stats/summary', async (req, res) => {
       total: all.length,
       byType: {
         barangay_clearance: all.filter(c => c.certificate_type === 'barangay_clearance').length,
+        first_time_job_seeker: all.filter(c => c.certificate_type === 'first_time_job_seeker').length,
         certificate_of_indigency: all.filter(c => c.certificate_type === 'certificate_of_indigency').length,
         barangay_cohabitation: all.filter(c => c.certificate_type === 'barangay_cohabitation').length
       },

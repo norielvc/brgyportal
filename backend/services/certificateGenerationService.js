@@ -247,6 +247,7 @@ class CertificateGenerationService {
             let certificateContent;
             switch (request.certificate_type) {
                 case 'barangay_clearance':
+                case 'first_time_job_seeker':
                     certificateContent = await this.generateBarangayClearanceContent(request, config, signatureContext, history, lastReturnTime);
                     break;
                 case 'certificate_of_indigency':
@@ -525,7 +526,10 @@ class CertificateGenerationService {
             </div>
         `;
 
-        return this.generateDocument('BARANGAY CLEARANCE CERTIFICATE', bodyHtml, request, config);
+        const docTitle = request.certificate_type === 'first_time_job_seeker'
+            ? 'FIRST TIME JOB SEEKER CERTIFICATE'
+            : 'BARANGAY CLEARANCE CERTIFICATE';
+        return this.generateDocument(docTitle, bodyHtml, request, config);
     }
 
     generateIndigencyContent(request, config, captainApproval = null) {

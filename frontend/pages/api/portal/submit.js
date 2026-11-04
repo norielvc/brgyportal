@@ -100,6 +100,7 @@ export default async function handler(req, res) {
   const year = new Date().getFullYear();
   const prefixMap = {
     barangay_clearance: "BC",
+    first_time_job_seeker: "FTJS",
     certificate_of_indigency: "CI",
     barangay_residency: "BR",
     natural_death: "ND",
@@ -136,9 +137,9 @@ export default async function handler(req, res) {
       // Pro plan bypass - all certificates allowed
       const isProPlan = sub.plan.max_requests === -1;
       
-      // Standard plan - basic 3 certificates + all 11 certificates always allowed
+      // Standard plan - basic certificates + all certificates always allowed
       const isStandardPlan = sub.plan_id === 'standard';
-      const basicCertificates = ['barangay_clearance', 'certificate_of_indigency', 'barangay_residency'];
+      const basicCertificates = ['barangay_clearance', 'first_time_job_seeker', 'certificate_of_indigency', 'barangay_residency'];
       
       // Feature Gate (Bypass if Pro/Unlimited or Standard plan with basic certs)
       if (!isProPlan && !isStandardPlan) {

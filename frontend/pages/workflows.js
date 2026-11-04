@@ -42,6 +42,12 @@ const certificateTypes = [
     isUnified: true,
   },
   {
+    id: "first_time_job_seeker",
+    name: "First Time Job Seeker",
+    color: "emerald",
+    isUnified: true,
+  },
+  {
     id: "certificate_of_indigency",
     name: "Certificate of Indigency",
     color: "green",

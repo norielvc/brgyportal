@@ -650,6 +650,12 @@ const PORTAL_FORMS = {
         "Official clearance for employment, business permits, and other legal purposes.",
       features: ["Employment", "Business", "Legal"],
     },
+    first_time_job_seeker: {
+      title: "First Time Job Seeker",
+      description:
+        "Barangay certification under RA 11261 for first-time job seekers to avail of free government clearances and requirements.",
+      features: ["RA 11261", "Employment", "Job Application"],
+    },
     certificate_of_indigency: {
       title: "Certificate of Indigency",
       description:
@@ -709,6 +715,12 @@ const PORTAL_FORMS = {
         "Opisyal na clearance para sa trabaho, permit sa negosyo, at iba pang legal na layunin.",
       features: ["Trabaho", "Negosyo", "Legal"],
     },
+    first_time_job_seeker: {
+      title: "First Time Job Seeker",
+      description:
+        "Katunayan ng barangay sa ilalim ng RA 11261 para sa mga unang beses maghahanap ng trabaho.",
+      features: ["RA 11261", "Trabaho", "Job Application"],
+    },
     certificate_of_indigency: {
       title: "Sertipiko ng Indigency",
       description:
@@ -765,6 +777,7 @@ const PORTAL_FORMS = {
 
 const FORM_ORDER = [
   "barangay_clearance",
+  "first_time_job_seeker",
   "certificate_of_indigency",
   "barangay_residency",
   "business_permit",

@@ -296,7 +296,15 @@ export default function BarangayClearanceModal({
   onClose,
   isDemo = false,
   tenantConfig = {},
+  certType = "barangay_clearance",
+  customTitle = null,
 }) {
+  const displayTitle =
+    customTitle ||
+    (certType === "first_time_job_seeker"
+      ? "First Time Job Seeker"
+      : "Barangay Clearance");
+
   useScrollLock(isOpen);
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -383,7 +391,7 @@ export default function BarangayClearanceModal({
       setNotification({
         type: "error",
         title: "RESTRICTED PROFILE",
-        message: `NOTICE: ${resident.full_name} has a pending case record. Barangay Clearance issuance is restricted.`,
+        message: `NOTICE: ${resident.full_name} has a pending case record. ${displayTitle} issuance is restricted.`,
       });
     } else {
       setNotification({
@@ -517,7 +525,7 @@ export default function BarangayClearanceModal({
           "x-tenant-id": tenantConfig.tenant_id || "ibaoeste",
         },
         body: JSON.stringify({
-          type: "barangay_clearance",
+          type: certType,
           formData,
         }),
       });
@@ -628,7 +636,7 @@ export default function BarangayClearanceModal({
                         {tenantConfig.shortName || "Barangay"} &middot; {t.officialForm}
                       </p>
                       <h2 className="text-base sm:text-xl font-bold text-white leading-tight">
-                        Barangay Clearance
+                        {displayTitle}
                       </h2>
                     </div>
                   </div>
@@ -1323,7 +1331,16 @@ export default function BarangayClearanceModal({
 }
 
 const ClearancePreview = React.memo(
-  ({ formData, referenceNumber, currentDate, officials, certificateRef, tenantId, brgydeskNo }) => {
+  ({
+    formData,
+    referenceNumber,
+    currentDate,
+    officials,
+    certificateRef,
+    tenantId,
+    brgydeskNo,
+    displayTitle = "Barangay Clearance",
+  }) => {
     const verifyRequest = {
       reference_number: referenceNumber,
       tenant_id: tenantId,
@@ -1336,7 +1353,7 @@ const ClearancePreview = React.memo(
         style={{ width: "816px", height: "1056px" }}
       >
         <h1 className="text-4xl font-black text-center uppercase mb-20">
-          Barangay Clearance
+          {displayTitle}
         </h1>
         <div className="space-y-6 text-xl">
           <p>

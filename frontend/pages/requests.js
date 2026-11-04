@@ -223,6 +223,7 @@ function formatRequestStatus(status, certificateType, workflowStepName = "") {
 
 const TYPE_OPTIONS = [
   { value: "barangay_clearance", label: "Clearance" },
+  { value: "first_time_job_seeker", label: "First Time Job Seeker" },
   { value: "certificate_of_indigency", label: "Indigency" },
   { value: "barangay_residency", label: "Residency" },
   { value: "natural_death", label: "Natural Death" },
@@ -3784,6 +3785,7 @@ function RequestDetailsModal({
 
                     {[
                       "barangay_clearance",
+                      "first_time_job_seeker",
                       "certificate_of_indigency",
                       "barangay_residency",
                     ].includes(request.certificate_type) && (
@@ -8262,8 +8264,10 @@ function ClearancePreviewForRequests({
                             ? "REQUEST FOR MEDICO LEGAL (COPY)"
                             : request.certificate_type === "barangay_clearance"
                               ? "BARANGAY CLEARANCE CERTIFICATE"
-                              : request.certificate_type ===
-                                "certificate_of_indigency"
+                              : request.certificate_type === "first_time_job_seeker"
+                                ? "FIRST TIME JOB SEEKER CERTIFICATE"
+                                : request.certificate_type ===
+                                  "certificate_of_indigency"
                                 ? "CERTIFICATE OF INDIGENCY"
                                 : request.certificate_type ===
                                   "barangay_residency"
@@ -8955,7 +8959,8 @@ function ClearancePreviewForRequests({
                         </p>
                       ) : (
                         <p>
-                          {request.certificate_type === "barangay_clearance"
+                          {request.certificate_type === "barangay_clearance" ||
+                          request.certificate_type === "first_time_job_seeker"
                             ? "This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:"
                             : request.certificate_type ===
                               "certificate_of_indigency"
