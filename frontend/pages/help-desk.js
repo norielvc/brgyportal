@@ -2313,7 +2313,7 @@ export default function HelpDesk() {
                         {renderEsumbongDocActions(
                           selectedItem,
                           BLOTTER_DOC_VARIANT.BLOTTER,
-                          "Barangay Blotter Record",
+                          "Tanggapan ng Lupong Tagapamayapa",
                         )}
                         {renderEsumbongDocActions(
                           selectedItem,

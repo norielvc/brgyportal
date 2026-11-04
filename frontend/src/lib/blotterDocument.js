@@ -47,6 +47,25 @@ function formatIncidentTime(value) {
   return esc(t);
 }
 
+const TAGALOG_MONTHS = [
+  "Enero", "Pebrero", "Marso", "Abril", "Mayo", "Hunyo",
+  "Hulyo", "Agosto", "Setyembre", "Oktubre", "Nobyembre", "Disyembre"
+];
+
+function formatTagalogFilingDate(dateVal) {
+  const d = dateVal ? new Date(dateVal) : new Date();
+  const day = d.getDate();
+  const month = TAGALOG_MONTHS[d.getMonth()] || "Enero";
+  const year = d.getFullYear();
+  return { day, month, year };
+}
+
+function formatTagalogGeoName(name, prefix) {
+  if (!name) return "";
+  let clean = String(name).trim();
+  clean = clean.replace(/^(province\s+of|municipality\s+of|city\s+of)\s+/i, "");
+  return prefix ? `${prefix} ${clean}` : clean;
+}
 function formatFiledDate(createdAt) {
   if (!createdAt) return "—";
   try {
@@ -126,18 +145,18 @@ export function buildBlotterDocumentHtml(report, options = {}) {
 
   const refBlotter = `BL-${String(report?.id || "").substring(0, 8).toUpperCase()}`;
   const usapingNo = esc(report.usaping_barangay_number || "—");
-  const entryNo = isSummons
-    ? usapingNo
-    : esc(refBlotter);
+  const entryNo = isSummons ? usapingNo : esc(refBlotter);
 
   const docTitle = isSummons
     ? "PAANYAYA SA PAGHAHARAP"
-    : "E-SUMBONG — BLOTTER RECORD";
+    : "TANGGAPAN NG LUPONG TAGAPAMAYAPA";
   const docSubtitle = isSummons
     ? "Summons to Appear / Usaping Barangay"
-    : "Opisyal na tala ng insidente / Incident record";
+    : "SUMBONG";
 
   const filed = esc(formatFiledDate(report?.created_at));
+  const filingDate = formatTagalogFilingDate(report?.created_at);
+  const caseYear = filingDate.year;
   const petsaDisplay = esc(
     formatPetsaNgPaghaharapDisplay(report.petsa_ng_paghaharap),
   );
@@ -146,6 +165,22 @@ export function buildBlotterDocumentHtml(report, options = {}) {
   const orasLine = orasDisplay
     ? esc(orasDisplay)
     : "9:00 AM (default kung walang oras na nakasaad)";
+
+  const leftLogoUrl = officials?.logos?.leftLogo || "/iba-o-este.png";
+  const rightLogoUrl = "/dilg.png";
+  const provinceLine = formatTagalogGeoName(officials?.headerInfo?.province, "Lalawigan ng") || "Lalawigan ng Bulacan";
+  const municipalityLine = formatTagalogGeoName(officials?.headerInfo?.municipality, "Bayan ng") || "Bayan ng Calumpit";
+  const barangayLine = officials?.headerInfo?.barangayName || "Barangay Iba O' Este";
+  const captainName = officials?.chairman || officials?.captain || "ALEXANDER C. MANIO";
+  const captainSigImg = (officials?.signature || officials?.captainSignature)
+    ? `<div class="kp-captain-sig-img-wrap"><img src="${esc(officials.signature || officials.captainSignature)}" alt="Signature" class="kp-captain-sig-img" /></div>`
+    : "";
+
+  const usapingNumberDisplay = report?.usaping_barangay_number ? esc(report.usaping_barangay_number) : "_________";
+  const casePurpose1 = report?.purpose
+    ? esc(report.purpose)
+    : (report?.incident_date ? `REKLAMO SA INSIDENTE NOONG ${esc(report.incident_date)}` : "");
+  const casePurpose2 = "";
 
   const verifiedMeta =
     verified && report?.verified_at && !isSummons
@@ -183,42 +218,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         </div>
       </div>
     `
-    : `
-      <div class="meta-grid">
-        <div class="meta-cell">
-          <span class="meta-label">Blotter ref.</span>
-          <span class="meta-value mono">${esc(refBlotter)}</span>
-        </div>
-        <div class="meta-cell">
-          <span class="meta-label">Status</span>
-          <span class="meta-value"><span class="status-pill">${formatStatusLabel(report?.status)}</span></span>
-        </div>
-        <div class="meta-cell">
-          <span class="meta-label">Petsa ng pagsusumite</span>
-          <span class="meta-value">${filed}</span>
-        </div>
-        ${usapingMetaCell}
-        ${verifiedMeta}
-      </div>
-    `;
-
-  const blotterBodyHtml = `
-      ${buildPartiesSectionHtml(report)}
-      <section>
-        <h2 class="section-heading">II. Detalye ng sumbong <span>/ Narrative</span></h2>
-        <div class="narrative">${esc(report?.details || "Walang detalye na naitala.")}</div>
-      </section>
-      <div class="signatures">
-        <div>
-          <div class="sig-line">${esc(report?.complainant_name || "Nagsusumbong")}</div>
-          <p class="sig-caption">Affiant / Nagsusumbong</p>
-        </div>
-        <div>
-          <div class="sig-line">Barangay Desk Officer</div>
-          <p class="sig-caption">Recorded by / Kawani ng desk</p>
-        </div>
-      </div>
-  `;
+    : "";
 
   const summonsBodyHtml = `
       <section class="summons-letter">
@@ -255,8 +255,6 @@ export function buildBlotterDocumentHtml(report, options = {}) {
       </div>
   `;
 
-  const mainBodyHtml = isSummons ? summonsBodyHtml : blotterBodyHtml;
-
   return `<!DOCTYPE html>
 <html lang="tl" class="${embedded ? "embedded-preview" : ""}">
   <head>
@@ -283,10 +281,10 @@ export function buildBlotterDocumentHtml(report, options = {}) {
       body {
         margin: 0;
         padding: ${embedded ? "0" : "24px 16px 32px"};
-        font-family: ${bodyFont};
+        font-family: ${isSummons ? bodyFont : "'Times New Roman', Times, Georgia, serif"};
         font-size: ${bodyFontSize}px;
         line-height: 1.45;
-        color: ${esc(bodyTextColor)};
+        color: ${isSummons ? esc(bodyTextColor) : "#000000"};
         background: ${embedded ? "#ffffff" : "#e5e7eb"};
       }
       .toolbar {
@@ -329,7 +327,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         max-width: 8.5in;
         margin: 0 auto;
         background: #fff;
-        padding: 0;
+        padding: ${isSummons ? "0" : "0.45in 0.75in 0.45in 0.75in"};
         box-shadow: ${embedded ? "none" : "0 8px 32px rgba(0,0,0,.12)"};
         min-height: 11in;
         display: flex;
@@ -340,38 +338,255 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         flex: 1 0 auto;
         display: flex;
         flex-direction: column;
-        padding: 0.45in 0.75in 0.25in;
-        font-family: ${bodyFont};
-        color: ${esc(bodyTextColor)};
+        padding: ${isSummons ? "0.45in 0.75in 0.25in" : "0"};
+        font-family: inherit;
+        color: inherit;
+      }
+      .print-sheet-header {
+        flex-shrink: 0;
       }
       .print-sheet-footer {
         flex-shrink: 0;
         width: 100%;
         box-sizing: border-box;
-        padding: 0 0.75in 0.42in;
-        margin-top: auto;
       }
-      .cert-header-section {
-        width: 100%;
+
+      /* TANGGAPAN NG LUPONG TAGAPAMAYAPA Official Form Styles */
+      .kp-header-container {
         display: flex;
-        justify-content: center;
         align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        margin-bottom: 4px;
+      }
+      .kp-logo-box {
+        width: 90px;
+        height: 90px;
         flex-shrink: 0;
-        padding: 12px 28px 16px;
-        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      .cert-logo-box { flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-      .cert-logo-img { width: 100%; height: 100%; object-fit: contain; }
-      .cert-header-text { text-align: center; flex: 0 1 auto; max-width: 420px; }
-      .cert-chairman-office {
-        margin: 8px 0 0;
-        font-size: 14px;
+      .kp-logo-img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      .kp-header-center {
+        text-align: center;
+        flex: 1;
+        padding: 0 12px;
+      }
+      .kp-geo-line {
+        margin: 0;
+        font-size: 11pt;
+        line-height: 1.35;
+        color: #000;
+        font-family: inherit;
+      }
+      .kp-office-heading {
+        margin: 10px 0 6px 0;
+        font-size: 13.5pt;
         font-weight: bold;
-        color: #b91c1c;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        line-height: 1.2;
+        color: #000;
+        font-family: inherit;
+        text-align: center;
       }
+      .kp-header-divider {
+        width: 100%;
+        border-top: 1.5px solid #000;
+        margin: 0 0 14px 0;
+      }
+
+      /* Parties & Case Meta Grid */
+      .kp-parties-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        font-size: 11pt;
+        margin-bottom: 12px;
+      }
+      .kp-parties-left {
+        width: 48%;
+      }
+      .kp-underlined-name {
+        border-bottom: 1px solid #000;
+        min-height: 1.3em;
+        font-weight: bold;
+        font-size: 11pt;
+        padding-bottom: 1px;
+        word-break: break-word;
+      }
+      .kp-parties-label {
+        font-size: 10.5pt;
+        margin-top: 2px;
+        padding-left: 1px;
+      }
+      .kp-parties-vs {
+        text-align: center;
+        font-size: 10.5pt;
+        margin: 6px 0;
+      }
+      .kp-parties-right {
+        width: 48%;
+        text-align: right;
+      }
+      .kp-case-no-line {
+        font-size: 11pt;
+        white-space: nowrap;
+      }
+      .kp-case-no-fill {
+        font-weight: bold;
+        border-bottom: 1px solid #000;
+        padding: 0 6px 1px;
+      }
+      .kp-case-for-label {
+        text-align: center;
+        font-size: 10.5pt;
+        margin: 6px 0 4px;
+      }
+      .kp-case-purpose-line {
+        border-bottom: 1px solid #000;
+        min-height: 1.3em;
+        font-size: 9.5pt;
+        text-align: center;
+        margin-top: 3px;
+        word-break: break-word;
+      }
+
+      /* Title & Statement */
+      .kp-title-box {
+        text-align: center;
+        margin: 12px 0 10px 0;
+      }
+      .kp-main-title {
+        font-size: 13.5pt;
+        font-weight: bold;
+        text-decoration: underline;
+        letter-spacing: 0.1em;
+      }
+      .kp-text-para {
+        font-size: 11pt;
+        line-height: 1.5;
+        text-indent: 2em;
+        text-align: justify;
+        margin: 0 0 10px 0;
+      }
+
+      /* Ruled Narrative Container */
+      .kp-narrative-lined {
+        width: 100%;
+        min-height: 250px;
+        background-image: repeating-linear-gradient(to bottom, transparent, transparent 25px, #333333 25px, #333333 26px);
+        background-size: 100% 26px;
+        line-height: 26px;
+        font-size: 11pt;
+        box-sizing: border-box;
+        padding-top: 1px;
+      }
+      .kp-narrative-text {
+        font-family: inherit;
+        font-size: 11pt;
+        line-height: 26px;
+        text-align: justify;
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Filing Date */
+      .kp-filing-date {
+        text-align: center;
+        font-size: 11pt;
+        margin: 14px 0 18px 0;
+      }
+      .kp-date-u {
+        border-bottom: 1px solid #000;
+        padding: 0 8px 1px;
+        font-weight: bold;
+      }
+
+      /* Signatures of Parties */
+      .kp-parties-signatures {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin: 16px 0 20px 0;
+      }
+      .kp-party-sig {
+        width: 44%;
+        text-align: center;
+      }
+      .kp-sig-line-text {
+        border-bottom: 1px solid #000;
+        min-height: 1.3em;
+        font-weight: bold;
+        font-size: 10.5pt;
+        padding-bottom: 2px;
+        word-break: break-word;
+      }
+      .kp-sig-caption {
+        font-size: 10pt;
+        margin-top: 3px;
+      }
+
+      /* Pagpapatunay */
+      .kp-papatunay-heading {
+        text-align: center;
+        font-size: 11.5pt;
+        font-weight: bold;
+        letter-spacing: 0.08em;
+        margin: 18px 0 6px 0;
+      }
+      .kp-papatunay-body {
+        font-size: 10.5pt;
+        line-height: 1.5;
+        text-indent: 2em;
+        text-align: justify;
+        margin: 0 0 16px 0;
+      }
+
+      /* Punong Barangay block */
+      .kp-punong-barangay-block {
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
+        margin-top: 18px;
+        page-break-inside: avoid;
+      }
+      .kp-captain-signature-col {
+        min-width: 240px;
+        text-align: center;
+      }
+      .kp-captain-sig-img-wrap {
+        min-height: 38px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        margin-bottom: -8px;
+      }
+      .kp-captain-sig-img {
+        max-height: 48px;
+        object-fit: contain;
+      }
+      .kp-captain-fullname {
+        font-size: 11.5pt;
+        font-weight: bold;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .kp-captain-designation {
+        font-size: 9.5pt;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-top: 2px;
+      }
+
+      /* Summons specific styles */
       .doc-title-block { text-align: center; margin-bottom: 18px; }
       .doc-title {
         margin: 0;
@@ -382,45 +597,6 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         text-transform: uppercase;
       }
       .doc-sub { font-size: 10pt; color: #6b7280; margin: 6px 0 0; font-style: italic; }
-      .cert-footer-block {
-        margin-top: 8px;
-        padding-top: 10px;
-        border-top: 1px solid #9ca3af;
-        width: 100%;
-      }
-      .print-sheet-header {
-        flex-shrink: 0;
-      }
-      .cert-footer-disclaimer { margin-bottom: 6px; }
-      .cert-disclaimer-text {
-        margin: 0;
-        font-style: italic;
-        color: #6b7280;
-        font-size: 10px;
-        line-height: 1.45;
-        font-family: inherit;
-        text-align: left;
-      }
-      .cert-footer-contact {
-        padding: 0;
-        line-height: 1.4;
-        text-align: left;
-      }
-      .cert-footer-line {
-        margin: 0;
-        word-wrap: break-word;
-        overflow-wrap: anywhere;
-      }
-      .cert-footer-line-gap { margin-top: 4px; }
-      .cert-footer-ref {
-        margin: 8px 0 0;
-        padding: 0;
-        font-size: 9px;
-        color: #6b7280;
-        line-height: 1.35;
-        text-align: left;
-        font-family: inherit;
-      }
       .meta-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -435,71 +611,25 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         text-transform: uppercase;
         letter-spacing: 0.06em;
         color: #6b7280;
-        font-family: inherit;
       }
       .meta-value { font-size: 11pt; font-weight: bold; }
       .meta-value.mono { font-family: ${monoFont}; letter-spacing: 0.02em; }
       .status-pill {
         display: inline;
-        padding: 0;
-        font-size: inherit;
-        background: none;
-        border: none;
         font-weight: bold;
         color: #92400e;
       }
-      section { margin-bottom: 18px; }
-      .section-heading {
-        font-size: 10pt;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #991b1b;
-        margin: 0 0 10px;
-        padding-bottom: 4px;
-        border-bottom: 1px solid #e5e7eb;
+      .summons-letter {
+        padding: 16px 20px;
+        border: 2px solid #b91c1c;
+        border-radius: 8px;
+        background: #fef2f2;
+        margin-bottom: 22px;
       }
-      .section-heading span { font-weight: normal; color: #6b7280; text-transform: none; letter-spacing: 0; font-size: 9pt; }
-      .parties {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-      }
-      @media (max-width: 560px) { .parties { grid-template-columns: 1fr; } }
-      .party-box {
-        padding: 0;
-      }
-      .party-label {
-        font-size: 8pt;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6b7280;
-        margin-bottom: 6px;
-        font-family: inherit;
-      }
-      .party-name { font-size: 11.5pt; font-weight: bold; margin: 0 0 8px; line-height: 1.3; }
-      .kv-table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
-      .kv-table th {
-        text-align: left;
-        font-weight: normal;
-        color: #4b5563;
-        padding: 3px 8px 3px 0;
-        vertical-align: top;
-        width: 38%;
-      }
-      .kv-table td { padding: 3px 0; font-weight: 600; vertical-align: top; }
-      .notice {
-        margin: 12px 0 0;
-        font-size: 10pt;
-        line-height: 1.5;
-        color: #374151;
-      }
-      .summons-letter { margin-bottom: 16px; }
       .summons-salutation {
+        color: #991b1b;
         font-weight: bold;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
         margin: 0 0 12px;
         font-size: 10.5pt;
       }
@@ -509,15 +639,11 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         line-height: 1.55;
         text-align: justify;
       }
-      .narrative {
-        padding: 0;
-        min-height: 0;
-        font-size: 11pt;
-        line-height: 1.55;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        background: transparent;
-        text-align: justify;
+      .notice {
+        font-size: 9.5pt;
+        color: #6b7280;
+        font-style: italic;
+        margin-top: 16px;
       }
       .signatures {
         margin-top: 36px;
@@ -538,8 +664,50 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         text-transform: uppercase;
       }
       .sig-caption { color: #6b7280; font-size: 9pt; margin-top: 4px; }
-      .emphasis { font-weight: bold; }
-      .mono { font-family: ${monoFont}; }
+      .parties {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 8px;
+      }
+      .party-box {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 12px 14px;
+        background: #f9fafb;
+      }
+      .party-label {
+        font-size: 8.5pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        margin: 0 0 6px;
+      }
+      .party-name {
+        font-size: 12pt;
+        font-weight: bold;
+        margin: 0 0 8px;
+      }
+      .kv-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9.5pt;
+      }
+      .kv-table th {
+        text-align: left;
+        color: #6b7280;
+        font-weight: normal;
+        padding: 2px 8px 2px 0;
+        width: 38%;
+        vertical-align: top;
+      }
+      .kv-table td {
+        padding: 2px 0;
+        font-weight: 500;
+        vertical-align: top;
+      }
+
       @media print {
         body { background: #fff; padding: 0; }
         .toolbar { display: none !important; }
@@ -548,39 +716,18 @@ export function buildBlotterDocumentHtml(report, options = {}) {
           width: 8.5in;
           max-width: 8.5in;
           min-height: 0;
-          padding: 0;
+          padding: ${isSummons ? "0" : "0.35in 0.65in 0.35in 0.65in"} !important;
           margin: 0;
         }
-        /* Repeat barangay clearance header & footer on every printed page */
+        .page-body.kp-sheet-body {
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+        }
         .print-sheet-header {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          width: 8.5in;
-          margin: 0 auto;
-          background: #fff;
-          z-index: 1000;
+          position: ${isSummons ? "fixed" : "static"} !important;
         }
         .print-sheet-footer {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          width: 8.5in;
-          margin: 0 auto;
-          padding: 0 0.75in 0.28in;
-          background: #fff;
-          z-index: 1000;
-          box-sizing: border-box;
-        }
-        .print-sheet-body {
-          padding-top: 2.15in;
-          padding-bottom: 1.55in;
-        }
-        .print-sheet-footer .cert-footer-block {
-          margin-top: 0;
-          padding-top: 8px;
+          position: ${isSummons ? "fixed" : "static"} !important;
         }
       }
       @page {
@@ -600,24 +747,121 @@ export function buildBlotterDocumentHtml(report, options = {}) {
     </div>
     ` : ""}
 
-    <article class="page">
+    <article class="page ${!isSummons ? "kp-page" : ""}">
+      ${isSummons ? `
       <div class="print-sheet-header">
         ${buildClearanceLetterheadHtml(officials)}
       </div>
       <div class="page-body print-sheet-body">
-      <header class="doc-title-block">
-        <h1 class="doc-title">${esc(docTitle)}</h1>
-        <p class="doc-sub">${esc(docSubtitle)}</p>
-      </header>
+        <header class="doc-title-block">
+          <h1 class="doc-title">${esc(docTitle)}</h1>
+          <p class="doc-sub">${esc(docSubtitle)}</p>
+        </header>
 
-      ${metaGridHtml}
+        ${metaGridHtml}
 
-      ${mainBodyHtml}
-
+        ${summonsBodyHtml}
       </div>
       <div class="print-sheet-footer">
         ${buildClearanceFooterHtml(officials, { documentRef: refBlotter })}
       </div>
+      ` : `
+      <div class="print-sheet-header">
+        <div class="kp-header-container">
+          <div class="kp-logo-box">
+            <img src="${esc(leftLogoUrl)}" alt="Barangay Logo" class="kp-logo-img" />
+          </div>
+          <div class="kp-header-center">
+            <p class="kp-geo-line">Republika ng Pilipinas</p>
+            <p class="kp-geo-line">${esc(provinceLine)}</p>
+            <p class="kp-geo-line">${esc(municipalityLine)}</p>
+            <p class="kp-geo-line">${esc(barangayLine)}</p>
+            <h1 class="kp-office-heading">TANGGAPAN NG LUPONG TAGAPAMAYAPA</h1>
+          </div>
+          <div class="kp-logo-box">
+            <img src="${esc(rightLogoUrl)}" alt="DILG Logo" class="kp-logo-img" />
+          </div>
+        </div>
+        <div class="kp-header-divider"></div>
+      </div>
+
+      <div class="page-body print-sheet-body kp-sheet-body">
+        <!-- Parties & Usaping Barangay No -->
+        <div class="kp-parties-row">
+          <div class="kp-parties-left">
+            <div class="kp-underlined-name">${esc(report?.complainant_name || "")},</div>
+            <div class="kp-parties-label">Nagsusumbong,</div>
+            <div class="kp-parties-vs">-laban-</div>
+            <div class="kp-underlined-name">${esc(report?.respondent_name || "")},</div>
+            <div class="kp-parties-label">Ipinagreklamo</div>
+          </div>
+          <div class="kp-parties-right">
+            <div class="kp-case-no-line">
+              Usaping Barangay Blg. <span class="kp-case-no-fill">${esc(usapingNumberDisplay)}</span> ${caseYear}
+            </div>
+            <div class="kp-case-for-label">-para sa-</div>
+            <div class="kp-case-purpose-line">${esc(casePurpose1)}</div>
+            <div class="kp-case-purpose-line">${esc(casePurpose2)}</div>
+          </div>
+        </div>
+
+        <!-- Document Title -->
+        <div class="kp-title-box">
+          <span class="kp-main-title">SUMBONG</span>
+        </div>
+
+        <!-- Opening Statement -->
+        <p class="kp-text-para">
+          Ako / Kami ay nagsusumbong laban sa mga taong binabanggit sa itaas dahil sa paglabag sa akin / aming karapatan ayon sa mga sumusunod na paraan:
+        </p>
+
+        <!-- Ruled Narrative Lines -->
+        <div class="kp-narrative-lined">
+          <div class="kp-narrative-text">${esc(report?.details || "Walang detalye na naitala.")}</div>
+        </div>
+
+        <!-- Closing Request Statement -->
+        <p class="kp-text-para" style="margin-top: 14px; margin-bottom: 10px;">
+          Dahil dito, ako / kami ay magalang na humihiling na inyong ipagkaloob sa akin / amin ang nararapat ayon sa batas o katwiran.
+        </p>
+
+        <!-- Filing Date -->
+        <div class="kp-filing-date">
+          Itinala ngayong ika <span class="kp-date-u">&nbsp;${filingDate.day}&nbsp;</span> ng <span class="kp-date-u">&nbsp;${filingDate.month}&nbsp;</span>, ${filingDate.year}
+        </div>
+
+        <!-- Signatures of Parties -->
+        <div class="kp-parties-signatures">
+          <div class="kp-party-sig">
+            <div class="kp-sig-line-text">${esc(report?.complainant_name || "")}</div>
+            <div class="kp-sig-caption">Nagsusumbong</div>
+          </div>
+          <div class="kp-party-sig">
+            <div class="kp-sig-line-text">&nbsp;</div>
+            <div class="kp-sig-caption">Ipinagsusumbong</div>
+          </div>
+        </div>
+
+        <!-- PAGPAPATUNAY Section -->
+        <div class="kp-papatunay-heading">
+          PAGPAPATUNAY
+        </div>
+        <p class="kp-papatunay-body">
+          Na aking pinapatunayan ang mga nakasaad sa kasunduang ito ay kusang loob na ginawa at napagka - sunduan ng magkabilang panig matapos kong ipaliwanag sa kanila ang katangian at kalalabasan nito.
+        </p>
+
+        <!-- Punong Barangay Signature Block -->
+        <div class="kp-punong-barangay-block">
+          <div class="kp-captain-signature-col">
+            ${captainSigImg}
+            <div class="kp-captain-fullname">${esc(captainName)}</div>
+            <div class="kp-captain-designation">PUNONG BARANGAY</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="print-sheet-footer" style="height:0;min-height:0;margin:0;padding:0;"></div>
+      `}
     </article>
 
     ${autoPrint ? `<script>window.onload = function() { window.print(); }<\/script>` : ""}
@@ -716,7 +960,7 @@ function blotterPdfFilename(report, variant = BLOTTER_DOC_VARIANT.BLOTTER) {
     const ub = String(report?.usaping_barangay_number || ref).replace(/\s+/g, "-");
     return `Paanyaya-${ub}.pdf`;
   }
-  return `E-Sumbong-Blotter-${ref}.pdf`;
+  return `Lupong-Tagapamayapa-${ref}.pdf`;
 }
 
 function waitForImages(root) {
