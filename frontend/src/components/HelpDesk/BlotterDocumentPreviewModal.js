@@ -119,7 +119,7 @@ export default function BlotterDocumentPreviewModal({
   const variantLabel =
     variant === BLOTTER_DOC_VARIANT.SUMMONS
       ? "Paanyaya sa Paghaharap"
-      : "Barangay Blotter Record";
+      : "Tanggapan ng Lupong Tagapamayapa";
 
   return (
     <Modal
@@ -163,7 +163,7 @@ export default function BlotterDocumentPreviewModal({
                 : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
             }`}
           >
-            Barangay Blotter Record
+            Tanggapan ng Lupong Tagapamayapa
           </button>
           <button
             type="button"
