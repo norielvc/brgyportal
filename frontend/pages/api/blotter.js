@@ -479,13 +479,21 @@ export default async function handler(req, res) {
         const user = await assertEsumbongStaffAccess(req, res, tenantId);
         if (!user) return;
 
+        const purposeVal = typeof body.purpose === "string" ? body.purpose.trim() : "";
+        if (!purposeVal) {
+          return res.status(400).json({
+            success: false,
+            message: "Kailangan ang 'Para sa:' (layunin o paksa ng sumbong) bago ma-verify ang E-Sumbong.",
+          });
+        }
+
         try {
           const result = await verifyBlotterReport({
             supabaseClient: supabase,
             tenantId,
             id,
             petsaOverride,
-            purpose: body.purpose,
+            purpose: purposeVal,
           });
           const { report, alreadyVerified } = result;
 
@@ -517,8 +525,15 @@ export default async function handler(req, res) {
         const user = await assertEsumbongStaffAccess(req, res, tenantId);
         if (!user) return;
 
+        const purposeVal = typeof body.purpose === "string" ? body.purpose.trim() : "";
+        if (!purposeVal) {
+          return res.status(400).json({
+            success: false,
+            message: "Kailangan ang 'Para sa:' (layunin o paksa ng sumbong).",
+          });
+        }
+
         try {
-          const purposeVal = typeof body.purpose === "string" ? body.purpose.trim() : "";
           const patch = {
             purpose: purposeVal,
             updated_at: new Date().toISOString(),
@@ -640,7 +655,14 @@ export default async function handler(req, res) {
           updateData.email = val || null;
         }
         if (body.purpose !== undefined) {
-          updateData.purpose = String(body.purpose || "").trim();
+          const val = String(body.purpose || "").trim();
+          if (!val) {
+            return res.status(400).json({
+              success: false,
+              message: "Kailangan ang 'Para sa:' (layunin o paksa ng sumbong).",
+            });
+          }
+          updateData.purpose = val;
         }
 
         updateData.updated_at = new Date().toISOString();

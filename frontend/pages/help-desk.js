@@ -915,10 +915,14 @@ export default function HelpDesk() {
 
   const handleVerifyEsumbong = async () => {
     if (!selectedItem?.id) return;
+    if (!purposeDraft?.trim()) {
+      toast.error("Kailangan ilagay ang 'Para sa:' (purpose ng sumbong) bago i-verify.");
+      return;
+    }
     setIsVerifyingBlotter(true);
     try {
       const res = await blotterAPI.verifyReport(selectedItem.id, {
-        purpose: purposeDraft?.trim() || undefined,
+        purpose: purposeDraft.trim(),
       });
       const report = res.report;
       setItems((prev) =>
@@ -943,11 +947,15 @@ export default function HelpDesk() {
 
   const handleSavePurpose = async () => {
     if (!selectedItem?.id) return;
+    if (!purposeDraft?.trim()) {
+      toast.error("Kailangan ilagay ang 'Para sa:' (purpose ng sumbong).");
+      return;
+    }
     setIsSavingPurpose(true);
     try {
       const res = await blotterAPI.updatePurpose(
         selectedItem.id,
-        purposeDraft?.trim() || "",
+        purposeDraft.trim(),
       );
       const report = res.report;
       setItems((prev) =>
@@ -1036,6 +1044,10 @@ export default function HelpDesk() {
     }
     if (!esumbongEditDraft.details.trim()) {
       toast.error("Kailangan ang detalye ng sumbong.");
+      return;
+    }
+    if (!esumbongEditDraft.purpose?.trim()) {
+      toast.error("Kailangan ang 'Para sa:' (layunin o paksa ng sumbong).");
       return;
     }
 
@@ -2284,7 +2296,7 @@ export default function HelpDesk() {
                             htmlFor="verify-purpose-input"
                             className="text-xs font-semibold text-gray-800 mb-1 block"
                           >
-                            Para sa:{" "}
+                            Para sa: <span className="text-red-500">*</span>{" "}
                             <span className="font-normal text-gray-500">
                               (Subject / paksa ng sumbong na ilalagay sa Lupong Tagapamayapa document)
                             </span>
@@ -2292,13 +2304,14 @@ export default function HelpDesk() {
                           <input
                             id="verify-purpose-input"
                             type="text"
+                            required
                             placeholder="Halimbawa: Paninirang puri, Alitan sa bakod, Pananakit..."
                             value={purposeDraft}
                             onChange={(e) => setPurposeDraft(e.target.value)}
                             className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c]"
                           />
                           <p className="text-[11px] text-gray-600 mt-1">
-                            Ilagay dito ang layunin o paksa bago i-verify. Lalabas ito sa &quot;-para sa-&quot; ng Lupong Tagapamayapa.
+                            Kinakailangan: Ilagay dito ang layunin o paksa bago i-verify. Lalabas ito sa &quot;-para sa-&quot; ng Lupong Tagapamayapa.
                           </p>
                         </div>
                       </div>
@@ -2375,7 +2388,7 @@ export default function HelpDesk() {
                           htmlFor="purpose-field"
                           className="text-xs font-semibold text-gray-700 mb-1 block"
                         >
-                          Para sa:{" "}
+                          Para sa: <span className="text-red-500">*</span>{" "}
                           <span className="font-normal text-gray-500">
                             (Layunin o paksa ng sumbong para sa Lupong Tagapamayapa)
                           </span>
@@ -2384,6 +2397,7 @@ export default function HelpDesk() {
                           <input
                             id="purpose-field"
                             type="text"
+                            required
                             placeholder="Halimbawa: Paninirang puri, Alitan sa bakod..."
                             value={purposeDraft}
                             onChange={(e) => setPurposeDraft(e.target.value)}
@@ -2395,6 +2409,7 @@ export default function HelpDesk() {
                             onClick={() => void handleSavePurpose()}
                             disabled={
                               isSavingPurpose ||
+                              !purposeDraft.trim() ||
                               (purposeDraft || "").trim() === (selectedItem.purpose || "").trim()
                             }
                             className="px-3 py-1.5 text-xs font-semibold text-[#03254c] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 shrink-0"
@@ -2564,10 +2579,12 @@ export default function HelpDesk() {
                       {/* Para sa (Purpose) */}
                       <div>
                         <label className="text-xs font-semibold text-gray-700 block mb-1">
-                          Para sa: <span className="font-normal text-gray-500">(Subject / Purpose ng sumbong para sa Lupong Tagapamayapa)</span>
+                          Para sa: <span className="text-red-500">*</span>{" "}
+                          <span className="font-normal text-gray-500">(Subject / Purpose ng sumbong para sa Lupong Tagapamayapa)</span>
                         </label>
                         <input
                           type="text"
+                          required
                           value={esumbongEditDraft.purpose || ""}
                           onChange={(e) =>
                             setEsumbongEditDraft((d) => ({
@@ -2575,7 +2592,11 @@ export default function HelpDesk() {
                               purpose: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
+                          className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none ${
+                            !esumbongEditDraft.purpose?.trim()
+                              ? "border-amber-300"
+                              : "border-gray-300"
+                          }`}
                           placeholder="Halimbawa: Paninirang puri, Alitan sa bakod, Pananakit..."
                         />
                       </div>
