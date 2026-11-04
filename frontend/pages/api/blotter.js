@@ -102,6 +102,14 @@ function mapSupabaseError(error) {
     };
   }
 
+  if (msg.includes("purpose")) {
+    return {
+      status: 503,
+      message:
+        "Kailangan i-run ang backend/ADD_PURPOSE_TO_BLOTTER.sql sa Supabase para sa 'Para sa:' (purpose) ng E-Sumbong.",
+    };
+  }
+
   if (msg.includes("intake_source")) {
     return {
       status: 503,
@@ -148,6 +156,7 @@ async function verifyBlotterReport({
   tenantId,
   id,
   petsaOverride,
+  purpose,
 }) {
   const normalizedTenant = normalizeTenantId(tenantId);
 
@@ -192,14 +201,31 @@ async function verifyBlotterReport({
     status:
       existing.status === "pending" ? "under_review" : existing.status,
   };
+  if (purpose !== undefined && typeof purpose === "string" && purpose.trim()) {
+    patch.purpose = purpose.trim();
+  }
 
-  const { data, error } = await supabaseClient
+  let { data, error } = await supabaseClient
     .from("blotter_reports")
     .update(patch)
     .eq("id", id)
     .eq("tenant_id", existing.tenant_id)
     .select()
     .maybeSingle();
+
+  // If column purpose does not exist yet in Supabase, retry without purpose
+  if (error && String(error.message || "").toLowerCase().includes("purpose")) {
+    delete patch.purpose;
+    const retry = await supabaseClient
+      .from("blotter_reports")
+      .update(patch)
+      .eq("id", id)
+      .eq("tenant_id", existing.tenant_id)
+      .select()
+      .maybeSingle();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) throw error;
   if (!data) {
@@ -459,6 +485,7 @@ export default async function handler(req, res) {
             tenantId,
             id,
             petsaOverride,
+            purpose: body.purpose,
           });
           const { report, alreadyVerified } = result;
 
@@ -479,6 +506,40 @@ export default async function handler(req, res) {
             verifyErr?.details,
             verifyErr,
           );
+          return res.status(mapped.status).json({
+            success: false,
+            message: mapped.message,
+          });
+        }
+      }
+
+      if (action === "update_purpose") {
+        const user = await assertEsumbongStaffAccess(req, res, tenantId);
+        if (!user) return;
+
+        try {
+          const purposeVal = typeof body.purpose === "string" ? body.purpose.trim() : "";
+          const patch = {
+            purpose: purposeVal,
+            updated_at: new Date().toISOString(),
+          };
+          const { data, error } = await supabase
+            .from("blotter_reports")
+            .update(patch)
+            .eq("id", id)
+            .eq("tenant_id", tenantId)
+            .select()
+            .maybeSingle();
+
+          if (error) throw error;
+          return res.json({
+            success: true,
+            message: "Na-save ang 'Para sa:'",
+            report: data,
+          });
+        } catch (purposeErr) {
+          const mapped = mapSupabaseError(purposeErr);
+          console.error("Blotter update purpose error:", purposeErr);
           return res.status(mapped.status).json({
             success: false,
             message: mapped.message,
@@ -577,6 +638,9 @@ export default async function handler(req, res) {
         if (body.email !== undefined) {
           const val = String(body.email || "").trim();
           updateData.email = val || null;
+        }
+        if (body.purpose !== undefined) {
+          updateData.purpose = String(body.purpose || "").trim();
         }
 
         updateData.updated_at = new Date().toISOString();

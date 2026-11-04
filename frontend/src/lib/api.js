@@ -273,10 +273,19 @@ export const blotterAPI = {
     return response.data;
   },
 
-  verifyReport: async (id, { petsa_ng_paghaharap } = {}) => {
+  verifyReport: async (id, { petsa_ng_paghaharap, purpose } = {}) => {
     const response = await api.put(`/blotter?id=${id}`, {
       action: "verify",
       petsa_ng_paghaharap: petsa_ng_paghaharap || undefined,
+      purpose: purpose !== undefined ? purpose : undefined,
+    });
+    return response.data;
+  },
+
+  updatePurpose: async (id, purpose) => {
+    const response = await api.put(`/blotter?id=${id}`, {
+      action: "update_purpose",
+      purpose,
     });
     return response.data;
   },

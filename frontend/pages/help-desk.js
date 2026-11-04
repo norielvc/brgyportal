@@ -153,10 +153,13 @@ export default function HelpDesk() {
   const [petsaDraft, setPetsaDraft] = useState("");
   const [petsaTimeDraft, setPetsaTimeDraft] = useState("");
   const [isSavingPetsa, setIsSavingPetsa] = useState(false);
+  const [purposeDraft, setPurposeDraft] = useState("");
+  const [isSavingPurpose, setIsSavingPurpose] = useState(false);
   const [isEditingEsumbong, setIsEditingEsumbong] = useState(false);
   const [esumbongEditDraft, setEsumbongEditDraft] = useState({
     complainant_name: "",
     respondent_name: "",
+    purpose: "",
     contact_number: "",
     email: "",
     incident_date: "",
@@ -699,7 +702,14 @@ export default function HelpDesk() {
   }, [isDetailsModalOpen, selectedItem?.id, activeTab, selectedItem?.staff_response]);
 
   useEffect(() => {
-    if (activeTab !== "esumbong" || !selectedItem?.petsa_ng_paghaharap) {
+    if (activeTab !== "esumbong" || !selectedItem) {
+      setPetsaDraft("");
+      setPetsaTimeDraft("");
+      setPurposeDraft("");
+      return;
+    }
+    setPurposeDraft(selectedItem.purpose || "");
+    if (!selectedItem.petsa_ng_paghaharap) {
       setPetsaDraft("");
       setPetsaTimeDraft("");
       return;
@@ -712,6 +722,7 @@ export default function HelpDesk() {
   }, [
     activeTab,
     selectedItem?.id,
+    selectedItem?.purpose,
     selectedItem?.petsa_ng_paghaharap,
     selectedItem?.oras_ng_paghaharap,
   ]);
@@ -906,7 +917,9 @@ export default function HelpDesk() {
     if (!selectedItem?.id) return;
     setIsVerifyingBlotter(true);
     try {
-      const res = await blotterAPI.verifyReport(selectedItem.id);
+      const res = await blotterAPI.verifyReport(selectedItem.id, {
+        purpose: purposeDraft?.trim() || undefined,
+      });
       const report = res.report;
       setItems((prev) =>
         prev.map((item) => (item.id === report.id ? report : item)),
@@ -925,6 +938,30 @@ export default function HelpDesk() {
       );
     } finally {
       setIsVerifyingBlotter(false);
+    }
+  };
+
+  const handleSavePurpose = async () => {
+    if (!selectedItem?.id) return;
+    setIsSavingPurpose(true);
+    try {
+      const res = await blotterAPI.updatePurpose(
+        selectedItem.id,
+        purposeDraft?.trim() || "",
+      );
+      const report = res.report;
+      setItems((prev) =>
+        prev.map((item) => (item.id === report.id ? report : item)),
+      );
+      setSelectedItem(report);
+      toast.success("Na-save ang 'Para sa:'");
+    } catch (error) {
+      console.error("Update purpose error:", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to save 'Para sa:'",
+      );
+    } finally {
+      setIsSavingPurpose(false);
     }
   };
 
@@ -965,6 +1002,7 @@ export default function HelpDesk() {
     setEsumbongEditDraft({
       complainant_name: item.complainant_name || "",
       respondent_name: item.respondent_name || "",
+      purpose: item.purpose || "",
       contact_number: item.contact_number || "",
       email: item.email || "",
       incident_date: item.incident_date ? String(item.incident_date).slice(0, 10) : "",
@@ -2231,6 +2269,41 @@ export default function HelpDesk() {
 
               {activeTab === "esumbong" && (
                 <div className="space-y-5">
+                  {!isBlotterVerified(selectedItem) &&
+                    selectedItem.status !== "dismissed" &&
+                    !isEditingEsumbong && (
+                      <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200/90 space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <BadgeCheck className="w-4 h-4 text-[#03254c]" />
+                          <span className="text-xs font-bold uppercase tracking-wide text-[#03254c]">
+                            E-Sumbong Verification
+                          </span>
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="verify-purpose-input"
+                            className="text-xs font-semibold text-gray-800 mb-1 block"
+                          >
+                            Para sa:{" "}
+                            <span className="font-normal text-gray-500">
+                              (Subject / paksa ng sumbong na ilalagay sa Lupong Tagapamayapa document)
+                            </span>
+                          </label>
+                          <input
+                            id="verify-purpose-input"
+                            type="text"
+                            placeholder="Halimbawa: Paninirang puri, Alitan sa bakod, Pananakit..."
+                            value={purposeDraft}
+                            onChange={(e) => setPurposeDraft(e.target.value)}
+                            className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c]"
+                          />
+                          <p className="text-[11px] text-gray-600 mt-1">
+                            Ilagay dito ang layunin o paksa bago i-verify. Lalabas ito sa &quot;-para sa-&quot; ng Lupong Tagapamayapa.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                   {isBlotterVerified(selectedItem) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-gray-50/80 border border-gray-200">
                       <div>
@@ -2296,6 +2369,41 @@ export default function HelpDesk() {
                           })}
                         </p>
                       </div>
+
+                      <div className="sm:col-span-2 pt-3 border-t border-gray-200">
+                        <label
+                          htmlFor="purpose-field"
+                          className="text-xs font-semibold text-gray-700 mb-1 block"
+                        >
+                          Para sa:{" "}
+                          <span className="font-normal text-gray-500">
+                            (Layunin o paksa ng sumbong para sa Lupong Tagapamayapa)
+                          </span>
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="purpose-field"
+                            type="text"
+                            placeholder="Halimbawa: Paninirang puri, Alitan sa bakod..."
+                            value={purposeDraft}
+                            onChange={(e) => setPurposeDraft(e.target.value)}
+                            disabled={isSavingPurpose}
+                            className="flex-1 px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleSavePurpose()}
+                            disabled={
+                              isSavingPurpose ||
+                              (purposeDraft || "").trim() === (selectedItem.purpose || "").trim()
+                            }
+                            className="px-3 py-1.5 text-xs font-semibold text-[#03254c] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 shrink-0"
+                          >
+                            {isSavingPurpose ? "Saving…" : "Save"}
+                          </button>
+                        </div>
+                      </div>
+
                       {selectedItem.verified_at && (
                         <p className="sm:col-span-2 text-xs text-gray-500">
                           Verified {formatDate(selectedItem.verified_at)}
@@ -2451,6 +2559,25 @@ export default function HelpDesk() {
                             />
                           </div>
                         </div>
+                      </div>
+
+                      {/* Para sa (Purpose) */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 block mb-1">
+                          Para sa: <span className="font-normal text-gray-500">(Subject / Purpose ng sumbong para sa Lupong Tagapamayapa)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={esumbongEditDraft.purpose || ""}
+                          onChange={(e) =>
+                            setEsumbongEditDraft((d) => ({
+                              ...d,
+                              purpose: e.target.value,
+                            }))
+                          }
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
+                          placeholder="Halimbawa: Paninirang puri, Alitan sa bakod, Pananakit..."
+                        />
                       </div>
 
                       {/* Detalye ng Sumbong Section */}
