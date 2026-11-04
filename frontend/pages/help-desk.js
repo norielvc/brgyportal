@@ -12,6 +12,8 @@ import {
   Filter,
   Plus,
   Eye,
+  Pencil,
+  Save,
   Trash2,
   Printer,
   Download,
@@ -151,6 +153,17 @@ export default function HelpDesk() {
   const [petsaDraft, setPetsaDraft] = useState("");
   const [petsaTimeDraft, setPetsaTimeDraft] = useState("");
   const [isSavingPetsa, setIsSavingPetsa] = useState(false);
+  const [isEditingEsumbong, setIsEditingEsumbong] = useState(false);
+  const [esumbongEditDraft, setEsumbongEditDraft] = useState({
+    complainant_name: "",
+    respondent_name: "",
+    contact_number: "",
+    email: "",
+    incident_date: "",
+    incident_time: "",
+    details: "",
+  });
+  const [isSavingEsumbong, setIsSavingEsumbong] = useState(false);
   const [certificateOfficials, setCertificateOfficials] = useState(
     DEFAULT_CERTIFICATE_OFFICIALS,
   );
@@ -944,6 +957,69 @@ export default function HelpDesk() {
       );
     } finally {
       setIsSavingPetsa(false);
+    }
+  };
+
+  const handleStartEditEsumbong = (item = selectedItem) => {
+    if (!item) return;
+    setEsumbongEditDraft({
+      complainant_name: item.complainant_name || "",
+      respondent_name: item.respondent_name || "",
+      contact_number: item.contact_number || "",
+      email: item.email || "",
+      incident_date: item.incident_date ? String(item.incident_date).slice(0, 10) : "",
+      incident_time: item.incident_time ? String(item.incident_time).slice(0, 5) : "",
+      details: item.details || "",
+    });
+    setIsEditingEsumbong(true);
+  };
+
+  const handleCancelEditEsumbong = () => {
+    setIsEditingEsumbong(false);
+  };
+
+  const handleSaveEsumbong = async () => {
+    if (!selectedItem?.id) return;
+    if (!esumbongEditDraft.complainant_name.trim()) {
+      toast.error("Kailangan ang pangalan ng nagsusumbong.");
+      return;
+    }
+    if (!esumbongEditDraft.respondent_name.trim()) {
+      toast.error("Kailangan ang pangalan ng inirereklamo.");
+      return;
+    }
+    if (!esumbongEditDraft.contact_number.trim()) {
+      toast.error("Kailangan ang contact number.");
+      return;
+    }
+    if (!esumbongEditDraft.incident_date.trim()) {
+      toast.error("Kailangan ang petsa ng pangyayari.");
+      return;
+    }
+    if (!esumbongEditDraft.details.trim()) {
+      toast.error("Kailangan ang detalye ng sumbong.");
+      return;
+    }
+
+    try {
+      setIsSavingEsumbong(true);
+      const res = await blotterAPI.updateReport(selectedItem.id, esumbongEditDraft);
+      if (res?.success) {
+        toast.success(res.message || "Na-update ang E-Sumbong report.");
+        const updated = res.report || { ...selectedItem, ...esumbongEditDraft };
+        setSelectedItem(updated);
+        setItems((prev) =>
+          prev.map((it) => (it.id === selectedItem.id ? { ...it, ...updated } : it))
+        );
+        setIsEditingEsumbong(false);
+      } else {
+        toast.error(res?.message || "Failed to update E-Sumbong report.");
+      }
+    } catch (err) {
+      console.error("Save E-Sumbong error:", err);
+      toast.error(err?.response?.data?.message || err?.message || "Error saving changes.");
+    } finally {
+      setIsSavingEsumbong(false);
     }
   };
 
@@ -1779,6 +1855,20 @@ export default function HelpDesk() {
                           <div className="flex items-center justify-end gap-1.5">
                             {activeTab === "esumbong" && (
                               <>
+                                {canAccessEsumbong && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedItem(item);
+                                      handleStartEditEsumbong(item);
+                                      setIsDetailsModalOpen(true);
+                                    }}
+                                    className="p-1.5 text-gray-500 hover:text-slate-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                    title="Edit E-Sumbong"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => handleDownloadBlotterPdf(item)}
@@ -1963,6 +2053,7 @@ export default function HelpDesk() {
             onClose={() => {
               setIsDetailsModalOpen(false);
               setSelectedItem(null);
+              setIsEditingEsumbong(false);
             }}
             title={
               activeTab === "esumbong"
@@ -1993,6 +2084,39 @@ export default function HelpDesk() {
                     </select>
                   </label>
                   <div className="flex items-center gap-0.5 border-l border-gray-200 pl-2 ml-0.5">
+                    {canAccessEsumbong && !isEditingEsumbong && (
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditEsumbong(selectedItem)}
+                        className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Edit E-Sumbong"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    )}
+                    {isEditingEsumbong && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleSaveEsumbong}
+                          disabled={isSavingEsumbong}
+                          className="px-2.5 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
+                          title="Save Changes"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Save</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelEditEsumbong}
+                          disabled={isSavingEsumbong}
+                          className="px-2 py-1 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Cancel"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={() => handlePreviewBlotterSlip(selectedItem)}
@@ -2035,6 +2159,7 @@ export default function HelpDesk() {
             }
             footer={
               activeTab === "esumbong" &&
+              !isEditingEsumbong &&
               !isBlotterVerified(selectedItem) &&
               selectedItem.status !== "dismissed" ? (
                 <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
@@ -2210,70 +2335,236 @@ export default function HelpDesk() {
                       </p>
                     )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-px rounded-lg border border-gray-200 overflow-hidden bg-gray-200 text-[11px] leading-snug">
-                    <div className="bg-white px-3 py-2 space-y-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                        Nagsusumbong
-                      </p>
-                      <p className="text-xs font-semibold text-gray-900 flex flex-wrap items-center gap-2">
-                        {selectedItem.complainant_name}
-                        {selectedItem.intake_source === "walk_in" && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-amber-100 text-amber-900 border border-amber-200">
-                            Walk-in intake
-                          </span>
-                        )}
-                      </p>
-                      <div className="space-y-0.5 text-[11px] text-gray-600">
-                        {selectedItem.contact_number && (
-                          <a
-                            href={`tel:${selectedItem.contact_number}`}
-                            className="flex items-center gap-1.5 hover:text-[#03254c] font-mono"
-                          >
-                            <Phone className="w-3 h-3 shrink-0 text-gray-400" />
-                            {selectedItem.contact_number}
-                          </a>
-                        )}
-                        {selectedItem.email && (
-                          <a
-                            href={`mailto:${selectedItem.email}`}
-                            className="flex items-center gap-1.5 break-all hover:text-[#03254c]"
-                          >
-                            <Mail className="w-3 h-3 shrink-0 text-gray-400" />
-                            {selectedItem.email}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                    <div className="bg-white px-3 py-2 space-y-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                        Inirereklamo
-                      </p>
-                      <p className="text-xs font-semibold text-gray-900">
-                        {selectedItem.respondent_name}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-gray-600">
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="w-3 h-3 shrink-0 text-gray-400" />
-                          {selectedItem.incident_date || "—"}
-                        </span>
-                        {selectedItem.incident_time ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="w-3 h-3 shrink-0 text-gray-400" />
-                            {selectedItem.incident_time}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
+{isEditingEsumbong ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                        {/* Nagsusumbong Section */}
+                        <div className="space-y-2.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                            Nagsusumbong (Complainant)
+                          </p>
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                              Pangalan <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={esumbongEditDraft.complainant_name}
+                              onChange={(e) =>
+                                setEsumbongEditDraft((d) => ({
+                                  ...d,
+                                  complainant_name: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
+                              placeholder="Pangalan ng nagsusumbong"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                              Contact Number <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={esumbongEditDraft.contact_number}
+                              onChange={(e) =>
+                                setEsumbongEditDraft((d) => ({
+                                  ...d,
+                                  contact_number: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-1.5 text-xs font-mono bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
+                              placeholder="09XXXXXXXXX"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              value={esumbongEditDraft.email}
+                              onChange={(e) =>
+                                setEsumbongEditDraft((d) => ({
+                                  ...d,
+                                  email: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
+                              placeholder="Opsyonal: email@example.com"
+                            />
+                          </div>
+                        </div>
 
-                  <div className="flex flex-col min-h-0 flex-1">
-                    <p className="text-xs font-medium text-gray-500 mb-2">
-                      Detalye ng sumbong
-                    </p>
-                    <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 sm:p-5 text-sm sm:text-[15px] text-gray-800 leading-relaxed min-h-[14rem] max-h-[min(28rem,50vh)] overflow-y-auto whitespace-pre-wrap [overflow-wrap:anywhere]">
-                      {selectedItem.details || "No narrative provided."}
+                        {/* Inirereklamo Section */}
+                        <div className="space-y-2.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                            Inirereklamo (Respondent)
+                          </p>
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                              Pangalan <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={esumbongEditDraft.respondent_name}
+                              onChange={(e) =>
+                                setEsumbongEditDraft((d) => ({
+                                  ...d,
+                                  respondent_name: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
+                              placeholder="Pangalan ng inirereklamo"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                              Petsa ng Pangyayari <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={esumbongEditDraft.incident_date}
+                              onChange={(e) =>
+                                setEsumbongEditDraft((d) => ({
+                                  ...d,
+                                  incident_date: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                              Oras ng Pangyayari
+                            </label>
+                            <input
+                              type="time"
+                              value={esumbongEditDraft.incident_time}
+                              onChange={(e) =>
+                                setEsumbongEditDraft((d) => ({
+                                  ...d,
+                                  incident_time: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Detalye ng Sumbong Section */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 block mb-1.5">
+                          Detalye ng sumbong <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                          rows={6}
+                          value={esumbongEditDraft.details}
+                          onChange={(e) =>
+                            setEsumbongEditDraft((d) => ({
+                              ...d,
+                              details: e.target.value,
+                            }))
+                          }
+                          className="w-full p-3.5 text-xs sm:text-sm text-gray-800 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none leading-relaxed"
+                          placeholder="Isalaysay ang buong detalye ng sumbong..."
+                        />
+                      </div>
+
+                      {/* Save / Cancel action buttons */}
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                        <button
+                          type="button"
+                          onClick={handleCancelEditEsumbong}
+                          disabled={isSavingEsumbong}
+                          className="px-3.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveEsumbong}
+                          disabled={isSavingEsumbong}
+                          className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                        >
+                          {isSavingEsumbong ? (
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin rounded-full" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" />
+                          )}
+                          <span>Save Changes</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-px rounded-lg border border-gray-200 overflow-hidden bg-gray-200 text-[11px] leading-snug">
+                        <div className="bg-white px-3 py-2 space-y-1">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                            Nagsusumbong
+                          </p>
+                          <p className="text-xs font-semibold text-gray-900 flex flex-wrap items-center gap-2">
+                            {selectedItem.complainant_name}
+                            {selectedItem.intake_source === "walk_in" && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-amber-100 text-amber-900 border border-amber-200">
+                                Walk-in intake
+                              </span>
+                            )}
+                          </p>
+                          <div className="space-y-0.5 text-[11px] text-gray-600">
+                            {selectedItem.contact_number && (
+                              <a
+                                href={`tel:${selectedItem.contact_number}`}
+                                className="flex items-center gap-1.5 hover:text-[#03254c] font-mono"
+                              >
+                                <Phone className="w-3 h-3 shrink-0 text-gray-400" />
+                                {selectedItem.contact_number}
+                              </a>
+                            )}
+                            {selectedItem.email && (
+                              <a
+                                href={`mailto:${selectedItem.email}`}
+                                className="flex items-center gap-1.5 break-all hover:text-[#03254c]"
+                              >
+                                <Mail className="w-3 h-3 shrink-0 text-gray-400" />
+                                {selectedItem.email}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                        <div className="bg-white px-3 py-2 space-y-1">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                            Inirereklamo
+                          </p>
+                          <p className="text-xs font-semibold text-gray-900">
+                            {selectedItem.respondent_name}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-gray-600">
+                            <span className="inline-flex items-center gap-1">
+                              <Calendar className="w-3 h-3 shrink-0 text-gray-400" />
+                              {selectedItem.incident_date || "—"}
+                            </span>
+                            {selectedItem.incident_time ? (
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="w-3 h-3 shrink-0 text-gray-400" />
+                                {selectedItem.incident_time}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col min-h-0 flex-1">
+                        <p className="text-xs font-medium text-gray-500 mb-2">
+                          Detalye ng sumbong
+                        </p>
+                        <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 sm:p-5 text-sm sm:text-[15px] text-gray-800 leading-relaxed min-h-[14rem] max-h-[min(28rem,50vh)] overflow-y-auto whitespace-pre-wrap [overflow-wrap:anywhere]">
+                          {selectedItem.details || "No narrative provided."}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 

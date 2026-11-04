@@ -525,11 +525,84 @@ export default async function handler(req, res) {
         }
       }
 
+      if (action === "edit" || action === "update") {
+        const user = await assertEsumbongStaffAccess(req, res, tenantId);
+        if (!user) return;
+
+        const updateData = {};
+        if (body.complainant_name !== undefined) {
+          const val = String(body.complainant_name || "").trim();
+          if (!val) {
+            return res.status(400).json({ success: false, message: "Kailangan ang pangalan ng nagsusumbong." });
+          }
+          updateData.complainant_name = val;
+        }
+        if (body.respondent_name !== undefined) {
+          const val = String(body.respondent_name || "").trim();
+          if (!val) {
+            return res.status(400).json({ success: false, message: "Kailangan ang pangalan ng inirereklamo." });
+          }
+          updateData.respondent_name = val;
+        }
+        if (body.details !== undefined) {
+          const val = String(body.details || "").trim();
+          if (!val) {
+            return res.status(400).json({ success: false, message: "Kailangan ang detalye ng sumbong." });
+          }
+          if (val.length > BLOTTER_DETAILS_MAX_CHARS) {
+            return res.status(400).json({
+              success: false,
+              message: `Masyadong mahaba ang detalye (hanggang ${BLOTTER_DETAILS_MAX_CHARS} letra).`,
+            });
+          }
+          updateData.details = val;
+        }
+        if (body.incident_date !== undefined) {
+          const val = String(body.incident_date || "").trim();
+          if (!val || !/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+            return res.status(400).json({ success: false, message: "Kailangan ang wastong petsa ng pangyayari (YYYY-MM-DD)." });
+          }
+          updateData.incident_date = val;
+        }
+        if (body.incident_time !== undefined) {
+          updateData.incident_time = normalizeTime(body.incident_time);
+        }
+        if (body.contact_number !== undefined) {
+          const val = String(body.contact_number || "").trim();
+          if (!val) {
+            return res.status(400).json({ success: false, message: "Kailangan ang contact number." });
+          }
+          updateData.contact_number = val;
+        }
+        if (body.email !== undefined) {
+          const val = String(body.email || "").trim();
+          updateData.email = val || null;
+        }
+
+        updateData.updated_at = new Date().toISOString();
+
+        const { data, error } = await supabase
+          .from("blotter_reports")
+          .update(updateData)
+          .eq("id", id)
+          .eq("tenant_id", tenantId)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        return res.json({
+          success: true,
+          message: "Na-update ang E-Sumbong report.",
+          report: data,
+        });
+      }
+
       if (!status) {
         return res.status(400).json({
           success: false,
           message:
-            "status is required (or use action: verify / update_petsa)",
+            "status is required (or use action: verify / update_petsa / edit)",
         });
       }
 

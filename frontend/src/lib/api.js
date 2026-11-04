@@ -265,6 +265,14 @@ export const blotterAPI = {
     return response.data;
   },
 
+  updateReport: async (id, data) => {
+    const response = await api.put(`/blotter?id=${id}`, {
+      action: "edit",
+      ...data,
+    });
+    return response.data;
+  },
+
   verifyReport: async (id, { petsa_ng_paghaharap } = {}) => {
     const response = await api.put(`/blotter?id=${id}`, {
       action: "verify",
