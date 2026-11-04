@@ -177,15 +177,9 @@ function composeHouseNumberForForm(formData) {
   if (!isSubdivisionPurok(formData.purok)) {
     return formData.house_number || "";
   }
-  const rawPhase = formData.phase?.trim().toUpperCase() || "";
-  const phase = rawPhase
-    ? rawPhase.startsWith("PHASE") || ["YAKAL", "PALIKPIK"].includes(rawPhase)
-      ? rawPhase
-      : `PHASE ${rawPhase}`
-    : "";
   const block = formData.block?.trim() || "";
   const lot = formData.lot?.trim() || "";
-  return [phase, block && `BLOCK ${block}`, lot && `LOT ${lot}`]
+  return [block && `BLOCK ${block}`, lot && `LOT ${lot}`]
     .filter(Boolean)
     .join(" ");
 }
@@ -1814,89 +1808,37 @@ export default function Residents() {
               </div>
 
               {isSubdivisionPurok(formData.purok) ? (
-                hasPhaseField(formData.purok) ? (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="label">Phase <span className="text-red-500">*</span></label>
-                      <select
-                        required
-                        className="input uppercase font-bold"
-                        value={formData.phase}
-                        onChange={(e) =>
-                          setFormData({ ...formData, phase: e.target.value })
-                        }
-                      >
-                        <option value="">-- Select --</option>
-                        {PHASE_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="label">Block <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="1"
-                        className="input uppercase font-bold text-center"
-                        value={formData.block}
-                        onChange={(e) =>
-                          setFormData({ ...formData, block: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="label">Lot <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="2"
-                        className="input uppercase font-bold text-center"
-                        value={formData.lot}
-                        onChange={(e) =>
-                          setFormData({ ...formData, lot: e.target.value })
-                        }
-                      />
-                    </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label">Block</label>
+                    <input
+                      type="text"
+                      placeholder="1"
+                      className="input uppercase font-bold text-center"
+                      value={formData.block}
+                      onChange={(e) =>
+                        setFormData({ ...formData, block: e.target.value })
+                      }
+                    />
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="label">Block <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="1"
-                        className="input uppercase font-bold text-center"
-                        value={formData.block}
-                        onChange={(e) =>
-                          setFormData({ ...formData, block: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="label">Lot <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="2"
-                        className="input uppercase font-bold text-center"
-                        value={formData.lot}
-                        onChange={(e) =>
-                          setFormData({ ...formData, lot: e.target.value })
-                        }
-                      />
-                    </div>
+                  <div>
+                    <label className="label">Lot</label>
+                    <input
+                      type="text"
+                      placeholder="2"
+                      className="input uppercase font-bold text-center"
+                      value={formData.lot}
+                      onChange={(e) =>
+                        setFormData({ ...formData, lot: e.target.value })
+                      }
+                    />
                   </div>
-                )
+                </div>
               ) : formData.purok ? (
                 <div>
-                  <label className="label">House Number <span className="text-red-500">*</span></label>
+                  <label className="label">House Number</label>
                   <input
                     type="text"
-                    required
                     placeholder="e.g., 2706, 123-A"
                     className="input uppercase font-bold"
                     value={formData.house_number}
@@ -1907,7 +1849,7 @@ export default function Residents() {
                 </div>
               ) : (
                 <div>
-                  <label className="label">House Number <span className="text-red-500">*</span></label>
+                  <label className="label">House Number</label>
                   <input
                     type="text"
                     disabled

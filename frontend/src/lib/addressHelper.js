@@ -305,9 +305,9 @@ export function validateAddress(addressData) {
 export const SUBDIVISIONS_CONFIG = {
   'HAZEL HEIGHTS': { subdivision: 'HAZEL HEIGHTS', parentPurok: 'Purok 1', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 1 - HAZEL HEIGHTS' },
   'CREEKSTONE': { subdivision: 'CREEKSTONE', parentPurok: 'Purok 1', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 1 - CREEKSTONE' },
-  'NORTH VILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTHVILLE 9' },
-  'NORTHVILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTHVILLE 9' },
-  'NV9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTHVILLE 9' },
+  'NORTH VILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 2 - NORTHVILLE 9' },
+  'NORTHVILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 2 - NORTHVILLE 9' },
+  'NV9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 2 - NORTHVILLE 9' },
   'SITIO BANAWE': { subdivision: 'SITIO BANAWE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 2 - SITIO BANAWE' },
   'BANAWE': { subdivision: 'SITIO BANAWE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 2 - SITIO BANAWE' },
   'SITIO BANAUE': { subdivision: 'SITIO BANAWE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 2 - SITIO BANAWE' },
