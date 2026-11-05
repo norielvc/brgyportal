@@ -861,6 +861,29 @@ export default function Residents() {
     }
   };
 
+  const openResidentProfile = async (resident) => {
+    setSelectedResident(resident);
+    setIsModalOpen(true);
+    if (!resident?.id) return;
+
+    try {
+      const token = getAuthToken();
+      const tenantId = currentUser?.tenant_id || "ibaoeste";
+      const headers = { "x-tenant-id": tenantId };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch(`${API_URL}/residents/${resident.id}`, {
+        headers,
+      });
+      const data = await response.json();
+      if (response.ok && data.success && data.resident) {
+        setSelectedResident(data.resident);
+      }
+    } catch (err) {
+      console.warn("Could not load full resident record:", err);
+    }
+  };
+
   const handleExportOneResident = async (resident) => {
     if (!resident?.id) return;
     setIsExportingOne(true);
@@ -1162,10 +1185,7 @@ export default function Residents() {
           {residents.map((resident) => (
             <div
               key={resident.id}
-              onClick={() => {
-                setSelectedResident(resident);
-                setIsModalOpen(true);
-              }}
+              onClick={() => openResidentProfile(resident)}
               className="bg-white rounded-lg border border-gray-200 hover:border-[#03254c]/30 hover:shadow-sm transition-all cursor-pointer flex flex-col"
             >
               <div className="p-2.5 flex-1 min-w-0">

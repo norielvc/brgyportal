@@ -207,7 +207,7 @@ export default async function handler(req, res) {
     const kapchat = includeKapchat ? kapchatUnread : 0;
     const helpDeskTotal = esumbong + assistance + kapchat;
 
-    res.setHeader("Cache-Control", "private, max-age=60");
+    res.setHeader("Cache-Control", "private, max-age=120");
 
     return res.status(200).json({
       success: true,

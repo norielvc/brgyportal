@@ -124,6 +124,7 @@ export default function Dashboard() {
     certificateType: "",
     status: "",
   });
+  const [analyticsMeta, setAnalyticsMeta] = useState(null);
 
   // Live Philippine Standard Time (PST) Clock
   const [pstTime, setPstTime] = useState("");
@@ -182,6 +183,7 @@ export default function Dashboard() {
 
       if (json.success) {
         setData(json.data);
+        setAnalyticsMeta(json.meta || null);
       }
     } catch (e) {
       console.error("Dashboard fetch error:", e);
@@ -427,6 +429,13 @@ export default function Dashboard() {
               </button>
             )}
           </div>
+          {analyticsMeta?.defaultLast12Months && !filters.dateFrom && !filters.dateTo && (
+            <p className="text-[11px] text-gray-500 leading-relaxed">
+              Showing certificate requests from the{" "}
+              <span className="font-semibold text-gray-700">last 12 months</span>{" "}
+              by default. Set custom dates below to include older records.
+            </p>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">

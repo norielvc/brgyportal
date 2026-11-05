@@ -41,6 +41,16 @@ export default async function handler(req, res) {
   // Get filter params
   const { dateFrom, dateTo, certificateType, status: statusFilter } = req.query;
 
+  const now = new Date();
+  const defaultRangeStart = new Date(
+    now.getFullYear(),
+    now.getMonth() - 11,
+    1,
+  );
+  const usingDefaultRange = !dateFrom && !dateTo;
+  const effectiveFrom = dateFrom || defaultRangeStart.toISOString();
+  const effectiveTo = dateTo || null;
+
   // Build query with tenant isolation
   let query = supabase
     .from("certificate_requests")
@@ -49,9 +59,8 @@ export default async function handler(req, res) {
     )
     .eq("tenant_id", tenantId);
 
-  // Apply filters
-  if (dateFrom) query = query.gte("created_at", dateFrom);
-  if (dateTo) query = query.lte("created_at", dateTo);
+  if (effectiveFrom) query = query.gte("created_at", effectiveFrom);
+  if (effectiveTo) query = query.lte("created_at", effectiveTo);
   if (certificateType) query = query.eq("certificate_type", certificateType);
   if (statusFilter) query = query.eq("status", statusFilter);
 
@@ -115,7 +124,6 @@ export default async function handler(req, res) {
     }
   });
 
-  const now = new Date();
   const manilaToday = getManilaDayBounds(now);
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -183,7 +191,7 @@ export default async function handler(req, res) {
   const returned = all.filter((r) => r.status === "returned").length;
 
   // Calculate workflow performance metrics
-  const assignmentMetrics = assignments || [];
+  const assignmentMetrics = assignmentList || [];
   const avgAssignmentTime =
     assignmentMetrics.filter((a) => a.status === "approved" && a.updated_at)
       .length > 0
@@ -382,8 +390,15 @@ export default async function handler(req, res) {
   const helpDeskAssistance = assistanceRes.error ? 0 : assistanceRes.count ?? 0;
   const helpDeskKapchat = kapchatRes.error ? 0 : kapchatRes.count ?? 0;
 
+  res.setHeader("Cache-Control", "private, max-age=120");
+
   return res.status(200).json({
     success: true,
+    meta: {
+      dateFrom: effectiveFrom,
+      dateTo: effectiveTo,
+      defaultLast12Months: usingDefaultRange,
+    },
     data: {
       overview: {
         totalRequests: all.length,

@@ -1,6 +1,7 @@
 import { supabase } from "../../../lib/supabase";
 import jwt from "jsonwebtoken";
 import { getJwtSecret } from "../../../lib/jwtSecret";
+import { RESIDENT_SEARCH_SELECT } from "../../../src/lib/residentListQuery";
 
 /**
  * RESIDENT SEARCH API (Next.js)
@@ -44,7 +45,7 @@ export default async function handler(req, res) {
   try {
     let query = supabase
       .from("residents")
-      .select("*", { count: "exact" })
+      .select(RESIDENT_SEARCH_SELECT, { count: "exact" })
       .eq("tenant_id", tenantId);
 
     if (tokens.length > 0) {
@@ -104,6 +105,8 @@ export default async function handler(req, res) {
         }
         return { ...r, full_name: fullName };
       });
+
+      res.setHeader("Cache-Control", "private, max-age=30");
 
       return res.status(200).json({
         success: true,

@@ -44,10 +44,12 @@ Restart `npm run dev` and check the terminal: you should **not** see the product
 Supabase **egress** is mostly database API traffic. To keep usage down:
 
 1. **Never use production Supabase from local dev** (see above).
-2. **Avoid leaving many staff tabs open** — the sidebar polls `/api/dashboard/nav-counts` about every 90s per session.
+2. **Avoid leaving many staff tabs open** — sidebar badges refresh on **navigation and tab focus**, not on a timer (each refresh hits Supabase).
 3. **Certificate lists** use `?view=list` (slim columns, no `details` JSON). Open a single request with `/api/certificates/[id]` when you need the full record.
 4. **Do not refresh Certificate Requests / Help Desk in a loop** — each refresh hits Supabase.
 5. **Census export** is gated (confirm + cooldown) — use it only when needed.
 6. **KapChat** polls every ~20s while the tab is open — close Help Desk / portal chat when not in use.
+7. **Dashboard analytics** defaults to the **last 12 months** of requests unless you set date filters.
+8. **Resident database** list/search skips heavy `census_extras`; opening a profile loads one full row via `GET /api/residents/[id]`.
 
 After deploy, watch Supabase **Usage → Egress** for a few days; daily GB should drop versus polling full certificate rows with nested joins on every badge update.

@@ -16,7 +16,6 @@ export default function MobileBottomNav({ onOpenMenu, onOpenInstall }) {
   const router = useRouter();
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Fetch pending request count for badge
   useEffect(() => {
     const fetchPendingCount = async () => {
       try {
@@ -42,9 +41,27 @@ export default function MobileBottomNav({ onOpenMenu, onOpenInstall }) {
       }
     };
     fetchPendingCount();
-    const interval = setInterval(fetchPendingCount, 90000);
-    return () => clearInterval(interval);
-  }, []);
+
+    const onRefresh = () => fetchPendingCount();
+    const onVisibility = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        fetchPendingCount();
+      }
+    };
+    const onRouteChange = () => fetchPendingCount();
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("certificate-requests-nav-refresh", onRefresh);
+    window.addEventListener("help-desk-nav-refresh", onRefresh);
+    router.events?.on("routeChangeComplete", onRouteChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("certificate-requests-nav-refresh", onRefresh);
+      window.removeEventListener("help-desk-nav-refresh", onRefresh);
+      router.events?.off("routeChangeComplete", onRouteChange);
+    };
+  }, [router.events, router.pathname]);
 
   const navItems = [
     {

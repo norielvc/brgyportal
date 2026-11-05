@@ -272,8 +272,6 @@ export default function Sidebar({
   const [pickupManagementCount, setPickupManagementCount] = useState(0);
 
   useEffect(() => {
-    let intervalId = null;
-
     const fetchNavBadges = async () => {
       try {
         const token = getAuthToken();
@@ -310,18 +308,15 @@ export default function Sidebar({
       }
     };
 
-    const schedulePolling = () => {
-      if (intervalId) clearInterval(intervalId);
-      const ms =
-        typeof document !== "undefined" && document.hidden ? 180000 : 90000;
-      intervalId = setInterval(fetchNavBadges, ms);
-    };
-
     fetchNavBadges();
-    schedulePolling();
 
-    const onVisibility = () => schedulePolling();
+    const onVisibility = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        fetchNavBadges();
+      }
+    };
     const onRefresh = () => fetchNavBadges();
+    const onRouteChange = () => fetchNavBadges();
     const onDirectCount = (e) => {
       if (typeof e?.detail?.count === "number") {
         setCertificateRequestsCount(e.detail.count);
@@ -338,16 +333,17 @@ export default function Sidebar({
     window.addEventListener("help-desk-nav-refresh", onRefresh);
     window.addEventListener("certificate-requests-count", onDirectCount);
     window.addEventListener("pickup-management-count", onPickupDirectCount);
+    router.events?.on("routeChangeComplete", onRouteChange);
 
     return () => {
-      if (intervalId) clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("certificate-requests-nav-refresh", onRefresh);
       window.removeEventListener("help-desk-nav-refresh", onRefresh);
       window.removeEventListener("certificate-requests-count", onDirectCount);
       window.removeEventListener("pickup-management-count", onPickupDirectCount);
+      router.events?.off("routeChangeComplete", onRouteChange);
     };
-  }, [router.pathname]);
+  }, [router.pathname, router.events]);
 
   const getNavBadgeCount = (item) => {
     if (!item.navBadge) return 0;
