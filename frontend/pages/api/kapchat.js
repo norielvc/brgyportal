@@ -2,6 +2,16 @@ import { supabase, isSupabaseServerConfigured } from "../../lib/supabase";
 import { filterKapchatMessagesForResident } from "../../src/lib/kapchatThread";
 import { isKapchatOpenForResidents } from "../../src/lib/kapchatSchedule";
 
+const KAPCHAT_SELECT_WITH_RESIDENT =
+  "id, contact, sender_name, message, status, is_admin, resident_id, created_at, tenant_id";
+const KAPCHAT_SELECT_LEGACY =
+  "id, contact, sender_name, message, status, is_admin, created_at, tenant_id";
+
+function isMissingKapchatResidentIdColumn(error) {
+  const msg = String(error?.message || "");
+  return /resident_id/i.test(msg) && /does not exist|column/i.test(msg);
+}
+
 export default async function handler(req, res) {
   const tenantId = req.headers["x-tenant-id"];
   if (!tenantId) {
@@ -107,7 +117,7 @@ export default async function handler(req, res) {
         .select()
         .single();
 
-      if (error && verifiedResidentId && /resident_id/i.test(error.message || "")) {
+      if (error && insertRow.resident_id && /resident_id/i.test(error.message || "")) {
         const { resident_id: _drop, ...withoutResident } = insertRow;
         ({ data, error } = await supabase
           .from("kapchat_messages")
@@ -240,36 +250,48 @@ export default async function handler(req, res) {
         req.query;
 
       const isAsc = order === "asc" || Boolean(contact);
-      const columns =
-        "id, contact, sender_name, message, status, is_admin, resident_id, created_at, tenant_id";
-      let query = supabase
-        .from("kapchat_messages")
-        .select(columns, { count: "exact" })
-        .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: isAsc });
 
-      if (contact) {
-        query = query.eq("contact", contact.trim());
-      }
+      const buildListQuery = (columns) => {
+        let q = supabase
+          .from("kapchat_messages")
+          .select(columns, { count: "exact" })
+          .eq("tenant_id", tenantId)
+          .order("created_at", { ascending: isAsc });
 
-      if (status) {
-        query = query.eq("status", status);
-      }
-
-      if (since) {
-        const sinceDate = new Date(String(since));
-        if (!Number.isNaN(sinceDate.getTime())) {
-          query = query.gt("created_at", sinceDate.toISOString());
+        if (contact) {
+          q = q.eq("contact", contact.trim());
         }
-      } else if (!contact) {
-        const cap = Math.min(
-          Math.max(parseInt(String(limitParam || "500"), 10) || 500, 50),
-          2000,
-        );
-        query = query.limit(cap);
-      }
 
-      let { data, error, count } = await query;
+        if (status) {
+          q = q.eq("status", status);
+        }
+
+        if (since) {
+          const sinceDate = new Date(String(since));
+          if (!Number.isNaN(sinceDate.getTime())) {
+            q = q.gt("created_at", sinceDate.toISOString());
+          }
+        } else if (!contact) {
+          const cap = Math.min(
+            Math.max(parseInt(String(limitParam || "500"), 10) || 500, 50),
+            2000,
+          );
+          q = q.limit(cap);
+        }
+
+        return q;
+      };
+
+      let { data, error, count } = await buildListQuery(
+        KAPCHAT_SELECT_WITH_RESIDENT,
+      );
+
+      if (error && isMissingKapchatResidentIdColumn(error)) {
+        ({ data, error, count } = await buildListQuery(KAPCHAT_SELECT_LEGACY));
+        if (data) {
+          data = data.map((row) => ({ ...row, resident_id: null }));
+        }
+      }
 
       const residentFilter =
         resident_id != null ? String(resident_id).trim() : "";
