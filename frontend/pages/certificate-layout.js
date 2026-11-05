@@ -1539,11 +1539,9 @@ export default function CertificateLayoutPage() {
                       }}
                     >
                       <div className="flex justify-between items-center mb-8">
-                        <p>
-                          <strong>
-                            {officials.templates?.[previewType]?.intro ||
-                              "TO WHOM IT MAY CONCERN:"}
-                          </strong>
+                        <p className="font-bold text-[15px]">
+                          {officials.templates?.[previewType]?.intro ||
+                            "TO WHOM IT MAY CONCERN:"}
                         </p>
                       </div>
 

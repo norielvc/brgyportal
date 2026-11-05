@@ -20,6 +20,11 @@ import {
   workflowStatusesMatch,
 } from "@/lib/workflowStatus";
 import {
+  certificateDetailUrl,
+  ftjsQueryToPreviewTab,
+  workflowHistoryUrl,
+} from "@/lib/certificateApi";
+import {
   FileText,
   Search,
   Eye,
@@ -715,6 +720,7 @@ export default function RequestsPage() {
 
   const [openPdfFromQuery, setOpenPdfFromQuery] = useState(false);
   const [directPdfFromQuery, setDirectPdfFromQuery] = useState(false);
+  const [jobSeekerPdfFromQuery, setJobSeekerPdfFromQuery] = useState(null);
 
   // Handle Deep Linking from URL - Instant Fast-Path (loads in <100ms instead of waiting for all requests)
   useEffect(() => {
@@ -724,6 +730,9 @@ export default function RequestsPage() {
 
     if (router.query.pdf === "1") setOpenPdfFromQuery(true);
     if (router.query.directPdf === "1") setDirectPdfFromQuery(true);
+    if (router.query.ftjs) {
+      setJobSeekerPdfFromQuery(ftjsQueryToPreviewTab(router.query.ftjs));
+    }
 
     // Fast-path 1: Instant load from sessionStorage / localStorage (from Pickup Management click)
     try {
@@ -761,12 +770,19 @@ export default function RequestsPage() {
 
     // Fast-path 3: Fetch ONLY this single certificate from API immediately
     const token = getAuthToken();
-    fetch(`${API_URL}/certificates/${certId}`, {
+    const pdfDeepLink =
+      router.query.pdf === "1" || router.query.directPdf === "1";
+    fetch(
+      certificateDetailUrl(API_URL, certId, {
+        view: pdfDeepLink ? "pdf" : undefined,
+      }),
+      {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         "Content-Type": "application/json",
       },
-    })
+    },
+    )
       .then((res) => res.json())
       .then((data) => {
         if (data.success && (data.certificate || data.data)) {
@@ -774,7 +790,14 @@ export default function RequestsPage() {
         }
       })
       .catch((err) => console.error("Error direct loading cert for deep link:", err));
-  }, [router.isReady, router.query.id, router.query.pdf, router.query.directPdf, selectedRequest]);
+  }, [
+    router.isReady,
+    router.query.id,
+    router.query.pdf,
+    router.query.directPdf,
+    router.query.ftjs,
+    selectedRequest,
+  ]);
 
   // Check if current user is assigned to approve a request at its current step
   const isUserAssignedToRequest = (
@@ -2296,11 +2319,11 @@ export default function RequestsPage() {
           userSignature={userSignature}
           openPdf={openPdfFromQuery}
           directPdf={directPdfFromQuery}
+          initialJobSeekerPreviewTab={jobSeekerPdfFromQuery}
         />
       )}
 
-      {/* Status Confirmation Modal */}
-      {showActionModal && selectedRequest && (
+      {selectedRequest && showActionModal && (
         <ActionModal
           request={selectedRequest}
           actionType={actionType}
@@ -2428,6 +2451,7 @@ function RequestDetailsModal({
   userSignature,
   openPdf = false,
   directPdf = false,
+  initialJobSeekerPreviewTab = null,
 }) {
   useScrollLock(true);
   const currentStep = getCurrentWorkflowStep(request);
@@ -3220,6 +3244,7 @@ function RequestDetailsModal({
         userSignature={userSignature}
         orRefreshKey={orSectionRefreshKey}
         directPdf={directPdf}
+        initialJobSeekerPreviewTab={initialJobSeekerPreviewTab}
       />
     );
   }
@@ -7038,6 +7063,7 @@ function CertificatePreviewModal({
   userSignature,
   orRefreshKey = 0,
   directPdf = false,
+  initialJobSeekerPreviewTab = null,
 }) {
   useScrollLock(true);
   const certificateRef = useRef(null);
@@ -7055,7 +7081,9 @@ function CertificatePreviewModal({
       ? "permit"
       : "inspection",
   );
-  const [jobSeekerPreviewTab, setJobSeekerPreviewTab] = useState("FIRST TIME JOB SEEKER");
+  const [jobSeekerPreviewTab, setJobSeekerPreviewTab] = useState(
+    () => initialJobSeekerPreviewTab || "FIRST TIME JOB SEEKER",
+  );
   const jobSeekerACertRef = useRef(null);
   const jobSeekerBCertRef = useRef(null);
 
@@ -7082,9 +7110,19 @@ function CertificatePreviewModal({
   const [isPrinting, setIsPrinting] = useState(false);
   const [history, setHistory] = useState([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [requestLoaded, setRequestLoaded] = useState(() => Boolean(request?.reference_number));
+  const [requestLoaded, setRequestLoaded] = useState(false);
   const [directPdfBlobUrl, setDirectPdfBlobUrl] = useState(null);
   const directPdfStartedRef = useRef(false);
+  useEffect(() => {
+    if (initialJobSeekerPreviewTab) {
+      setJobSeekerPreviewTab(initialJobSeekerPreviewTab);
+    }
+  }, [initialJobSeekerPreviewTab, request.id]);
+  useEffect(() => {
+    if (!directPdf) return;
+    directPdfStartedRef.current = false;
+    setDirectPdfBlobUrl(null);
+  }, [directPdf, request.id, jobSeekerPreviewTab]);
   const [workflowAssignments, setWorkflowAssignments] = useState([]);
   const [tenantUsers, setTenantUsers] = useState([]);
   const [financeTeamUsers, setFinanceTeamUsers] = useState([]);
@@ -7184,12 +7222,15 @@ function CertificatePreviewModal({
   const fetchPreviewRequest = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/certificates/${request.id}`, {
+      const response = await fetch(
+        certificateDetailUrl(API_URL, request.id, { view: "pdf" }),
+        {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      });
+      },
+      );
       if (!response.ok) return;
       const data = await response.json();
       if (data.success && data.data) {
@@ -7206,7 +7247,7 @@ function CertificatePreviewModal({
     try {
       const token = getAuthToken();
       const response = await fetch(
-        `${API_URL}/workflow-assignments/history/${request.id}`,
+        workflowHistoryUrl(API_URL, request.id, { view: "pdf" }),
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -7436,8 +7477,14 @@ function CertificatePreviewModal({
     };
 
     fetchOfficials();
-    fetchPreviewRequest();
-    fetchHistory();
+    let cancelled = false;
+    (async () => {
+      setRequestLoaded(false);
+      setHistoryLoaded(false);
+      await fetchPreviewRequest();
+      if (cancelled) return;
+      await fetchHistory();
+    })();
     fetchInspectionData();
     fetchORData();
 
@@ -7450,6 +7497,10 @@ function CertificatePreviewModal({
         day: "numeric",
       }),
     );
+
+    return () => {
+      cancelled = true;
+    };
   }, [request.id, orRefreshKey]);
 
   // Automatically generate and open PDF in the current tab when directPdf=1
@@ -7458,7 +7509,8 @@ function CertificatePreviewModal({
       !directPdf ||
       directPdfStartedRef.current ||
       !officials ||
-      !historyLoaded
+      !historyLoaded ||
+      !requestLoaded
     ) {
       return;
     }
@@ -7473,24 +7525,38 @@ function CertificatePreviewModal({
           previewPageSpec,
         );
         const blob = pdf.output("blob");
-        const url = URL.createObjectURL(blob);
+        const downloadName = `${previewRequest?.reference_number || request.reference_number || "Certificate"}.pdf`;
+        const file =
+          typeof File !== "undefined"
+            ? new File([blob], downloadName, { type: "application/pdf" })
+            : blob;
+        const url = URL.createObjectURL(file);
         setDirectPdfBlobUrl(url);
         if (typeof document !== "undefined") {
-          document.title = `${request.reference_number || "Certificate"}.pdf`;
+          document.title = downloadName;
         }
       } catch (error) {
         console.error("Error auto-generating direct PDF:", error);
         directPdfStartedRef.current = false;
       }
-    }, 250);
+    }, 350);
 
     return () => clearTimeout(timer);
-  }, [directPdf, officials, previewPageSpec, request.reference_number, historyLoaded]);
+  }, [
+    directPdf,
+    officials,
+    previewPageSpec,
+    request.reference_number,
+    previewRequest?.reference_number,
+    historyLoaded,
+    requestLoaded,
+    jobSeekerPreviewTab,
+  ]);
 
-  // ── Print: same A4 PDF as Download, then browser print on that PDF ──
   const handlePrintPDF = async () => {
-    if (!activeCertificateRef.current || isPrinting || isDownloading) return;
+    if (!activeCertificateRef.current || isDownloading || isPrinting) return;
     setIsPrinting(true);
+
     try {
       const pdf = await buildCertificatePdfFromElement(
         activeCertificateRef.current,
@@ -8070,6 +8136,9 @@ function CertificatePreviewModal({
     </div>
   );
 }
+
+const CERT_BODY_FONT_PX = "14px";
+const CERT_TO_WHOM_CLASS = "font-bold text-[15px]";
 
 // Certificate Preview Component - Exact copy from BarangayClearanceModal
 function ClearancePreviewForRequests({
@@ -8991,7 +9060,7 @@ function ClearancePreviewForRequests({
                     <span>BARANGAY BUSINESS CLEARANCE</span>
                   </h2>
 
-                  <div className="mb-6 font-bold text-gray-900 uppercase">
+                  <div className={`mb-6 font-bold text-gray-900 uppercase ${CERT_TO_WHOM_CLASS}`}>
                     TO WHOM IT MAY CONCERN:
                   </div>
 
@@ -9007,7 +9076,7 @@ function ClearancePreviewForRequests({
                           ? "✓"
                           : ""}
                       </span>
-                      <span className="text-[15px]">New Business Clearance</span>
+                      <span className="text-[14px]">New Business Clearance</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="w-6 h-6 border-2 border-black flex items-center justify-center text-black text-xl font-black">
@@ -9015,7 +9084,7 @@ function ClearancePreviewForRequests({
                           ? "✓"
                           : ""}
                       </span>
-                      <span className="text-[15px]">
+                      <span className="text-[14px]">
                         Renewal of Existing Business Clearance
                       </span>
                     </div>
@@ -9073,7 +9142,7 @@ function ClearancePreviewForRequests({
                     ))}
                   </div>
 
-                  <div className="mb-8 leading-relaxed text-black font-normal text-[15px] text-justify">
+                  <div className="mb-8 leading-relaxed text-black font-normal text-[14px] text-justify">
                     The subject business establishment upon occular visit /
                     inspection conducted by this office jointly with Sangguniang
                     Barangay Committees on Health, Environment and Finance and
@@ -9083,13 +9152,13 @@ function ClearancePreviewForRequests({
                     clearance.
                   </div>
 
-                  <div className="mb-8 leading-relaxed text-black font-normal text-[15px] text-justify">
+                  <div className="mb-8 leading-relaxed text-black font-normal text-[14px] text-justify">
                     In view of the above, this office poses no objection for the
                     issuance of further permits as necessary for the conduct of
                     above business activity including Mayor&apos;s Permit, etc.
                   </div>
 
-                  <div className="mb-6 leading-relaxed text-black font-normal text-[15px]">
+                  <div className="mb-6 leading-relaxed text-black font-normal text-[14px]">
                     Issued this {issuedDate} at Barangay Iba O&apos; Este,
                     Calumpit, Bulacan.
                   </div>
@@ -9614,9 +9683,13 @@ function ClearancePreviewForRequests({
                   style={{ fontFamily: bodyStyle.fontFamily || "inherit" }}
                 >
                   <div>
-                    <div className="mb-7 font-bold text-[14px]">
-                      <p className="mb-4">TO WHOM IT MAY CONCERN:</p>
-                      <p className="text-center text-[15px] tracking-wide">RE: BARANGAY CERTIFICATION</p>
+                    <div className="mb-7 text-[14px]">
+                      <p className={`mb-4 ${CERT_TO_WHOM_CLASS}`}>
+                        TO WHOM IT MAY CONCERN:
+                      </p>
+                      <p className="text-center font-bold text-[14px] tracking-wide">
+                        RE: BARANGAY CERTIFICATION
+                      </p>
                     </div>
 
                     <p className="mb-7 text-justify indent-10 text-[14px] leading-relaxed">
@@ -9632,21 +9705,40 @@ function ClearancePreviewForRequests({
                     </p>
 
                     <div className="mt-6 space-y-8 text-left text-[14px]">
-                      {/* TRULY YOURS, */}
-                      <div className="text-left">
-                        <p className="font-bold text-[14px] mb-20">TRULY YOURS,</p>
-                        <div className="relative inline-block text-left">
-                          {effectiveSignature && (
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-80 h-36 pointer-events-none">
-                              <img
-                                src={effectiveSignature}
-                                alt="Captain Signature"
-                                className="w-full h-full object-contain mix-blend-multiply scale-125"
-                              />
+                      <div className="text-left cert-captain-signature-block relative">
+                        <div className="flex items-start justify-between gap-4 mb-14">
+                          <p className="font-bold text-[14px] shrink-0 text-gray-900">
+                            TRULY YOURS,
+                          </p>
+                        </div>
+                        <div className="relative inline-block">
+                          <div className="flex items-center gap-1 relative z-10">
+                            <div className="relative">
+                              {effectiveSignature && (
+                                <div
+                                  className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[64%] w-[30rem] h-64 pointer-events-none flex items-center justify-center z-20"
+                                  style={{ mixBlendMode: "multiply" }}
+                                >
+                                  <img
+                                    src={effectiveSignature}
+                                    className="w-full h-full object-contain"
+                                    alt="Chairman signature"
+                                  />
+                                </div>
+                              )}
+                              <p
+                                className="uppercase font-bold mb-0 whitespace-nowrap"
+                                style={{ fontSize: "20px" }}
+                              >
+                                {captainName || officials.chairman}
+                              </p>
                             </div>
-                          )}
-                          <p className="font-bold uppercase text-[14px] leading-snug">{captainName || officials.chairman}</p>
-                          <p className="font-bold uppercase text-[14px] leading-snug text-gray-900">BARANGAY CHAIRMAN</p>
+                          </div>
+                          <div className="relative flex items-center z-10 w-full mb-2 -mt-1.5">
+                            <p className="text-[14px] font-bold shrink-0 leading-tight uppercase text-gray-900">
+                              BARANGAY CHAIRMAN
+                            </p>
+                          </div>
                         </div>
                       </div>
 
@@ -9672,7 +9764,7 @@ function ClearancePreviewForRequests({
                 </div>
               ) : isJobSeekerDocB ? (
                 <div
-                  className={`w-full max-w-full text-left flex flex-col flex-1 text-gray-900 text-[12px] leading-normal ${getFontClass(bodyStyle.fontFamily)}`}
+                  className={`w-full max-w-full text-left flex flex-col flex-1 text-gray-900 text-[14px] leading-normal ${getFontClass(bodyStyle.fontFamily)}`}
                   style={{ fontFamily: bodyStyle.fontFamily || "inherit" }}
                 >
                   <div>
@@ -9684,16 +9776,16 @@ function ClearancePreviewForRequests({
                       <h1 className="text-[16px] font-bold uppercase tracking-wide text-gray-900 mb-0.5">
                         OATH OF UNDERTAKING
                       </h1>
-                      <p className="text-[12px] font-semibold text-gray-800">
+                      <p className="text-[14px] font-semibold text-gray-800">
                         Republic Act 11261 &ndash; First Jobseekers Assistance Act
                       </p>
                     </div>
 
-                    <p className="text-justify mb-3 text-[12px] leading-relaxed">
+                    <p className="text-justify mb-3 text-[14px] leading-relaxed">
                       I, <strong className="uppercase">{formData.fullName}</strong>, <strong>{formData.age || "-"}</strong> years of age, resident of <strong>{formData.address}</strong> for <strong>{displayYearsOfResidency}</strong> years, availing the benefits of Republic Act 11261, otherwise known as the First Jobseekers Act of 2019, do hereby declare, agree and undertake to abide and be bound by the following:
                     </p>
 
-                    <ol className="list-decimal pl-5 space-y-1 text-[11.5px] leading-relaxed text-justify mb-4">
+                    <ol className="list-decimal pl-5 space-y-1 text-[14px] leading-relaxed text-justify mb-4">
                       <li>That this is the first time that I will actively look for a job, and therefore requesting that a Barangay Certification be issued in my favor to avail the benefits of the law.</li>
                       <li>That I am aware that the benefit and privileges under the said law shall be valid only for one (1) year from the date that the Barangay certification is issued.</li>
                       <li>That I can avail the benefits of the law only once.</li>
@@ -9705,7 +9797,7 @@ function ClearancePreviewForRequests({
                       <li>That I consent to the use of my personal information pursuant to the Data Privacy Act and other applicable laws, rules, and regulations.</li>
                     </ol>
 
-                    <p className="text-[12px] mb-4">
+                    <p className="text-[14px] mb-4">
                       Signed this <strong>{jsDayOrdinal} day of {jsMonthName}, {jsYear}</strong> in the City / Municipality of Calumpit.
                     </p>
 
@@ -9748,10 +9840,10 @@ function ClearancePreviewForRequests({
               ) : (
                 <div
                   className="w-full space-y-6 text-justify"
-                  style={{ fontSize: "15px" }}
+                  style={{ fontSize: CERT_BODY_FONT_PX }}
                 >
                   <div className="flex justify-between items-center mb-3">
-                    <p className="font-bold text-lg">TO WHOM IT MAY CONCERN:</p>
+                    <p className={CERT_TO_WHOM_CLASS}>TO WHOM IT MAY CONCERN:</p>
                   </div>{" "}
                   {/* Date removed for Indigency as per new layout */}
                   <>
@@ -10147,7 +10239,7 @@ function ClearancePreviewForRequests({
                         </p>
                         {request.residents?.pending_case && (
                           <div className="flex justify-end mb-8">
-                          <table className="border-collapse text-left text-[15px] leading-snug text-red-700 w-1/2">
+                          <table className="border-collapse text-left text-[14px] leading-snug text-red-700 w-1/2">
                             <thead>
                               <tr>
                                 <th className="border border-red-700 px-2 py-1 font-bold w-[72px]">
@@ -10200,8 +10292,7 @@ function ClearancePreviewForRequests({
                               "certificate_of_indigency"
                               ? "34px"
                               : "40px",
-                        // Visual-only offset (does not consume layout height),
-                        // so the signature block sits lower without pushing the footer/QR.
+                        // One line (~14px) higher than default clearance layout.
                         top:
                           isSamePerson ||
                           isGuardianship ||
@@ -10209,7 +10300,7 @@ function ClearancePreviewForRequests({
                           isMedicoLegal ||
                           request.certificate_type === "certificate_of_indigency"
                             ? undefined
-                            : "40px",
+                            : "26px",
                       }}
                     >
                       {isNaturalDeath && <div className="h-6"></div>}

@@ -52,6 +52,51 @@ export const CERTIFICATE_FULL_SELECT = `
   )
 `;
 
+/** PDF / preview: full cert row (incl. details) but slim resident join (known DB columns only). */
+export const RESIDENT_PDF_SELECT = `
+  id,
+  tenant_id,
+  full_name,
+  first_name,
+  middle_name,
+  last_name,
+  suffix,
+  email,
+  contact_number,
+  gender,
+  age,
+  civil_status,
+  date_of_birth,
+  place_of_birth,
+  residential_address,
+  house_number,
+  purok,
+  barangay,
+  municipality,
+  province,
+  pending_case,
+  case_record_history,
+  is_deceased,
+  date_of_death,
+  covid_related,
+  cause_of_death
+`;
+
+export const CERTIFICATE_PDF_SELECT = `
+  *,
+  residents:resident_id (${RESIDENT_PDF_SELECT.replace(/\s+/g, " ").trim()}),
+  workflow_assignments (
+    id,
+    step_id,
+    step_name,
+    assigned_user_id,
+    status,
+    created_at,
+    updated_at,
+    completed_at
+  )
+`;
+
 export function attachPendingWorkflowAssignment(cert) {
   const assignments = cert.workflow_assignments || [];
   const pendingAssignment = assignments
@@ -219,14 +264,27 @@ export async function enrichCertificateList(certificates, tenantId, options = {}
   }
 
   if (includeCohabitationPartners) {
+    const cohabitationPartnerId = (cert) => {
+      let details = cert.details;
+      if (typeof details === "string") {
+        try {
+          details = JSON.parse(details);
+        } catch {
+          details = null;
+        }
+      }
+      return details?.partnerId || null;
+    };
+
     const cohabitationRequests = list.filter(
       (c) =>
-        c.certificate_type === "barangay_cohabitation" && c.details?.partnerId,
+        c.certificate_type === "barangay_cohabitation" &&
+        cohabitationPartnerId(c),
     );
 
     if (cohabitationRequests.length > 0) {
       const partnerIds = [
-        ...new Set(cohabitationRequests.map((c) => c.details.partnerId)),
+        ...new Set(cohabitationRequests.map((c) => cohabitationPartnerId(c))),
       ];
       const { data: partnerResidents } = await supabase
         .from("residents")
@@ -241,11 +299,9 @@ export async function enrichCertificateList(certificates, tenantId, options = {}
           partnerResidents.map((r) => [r.id, r]),
         );
         for (const cert of list) {
-          if (
-            cert.certificate_type === "barangay_cohabitation" &&
-            cert.details?.partnerId
-          ) {
-            const partner = partnerMap[cert.details.partnerId];
+          const partnerId = cohabitationPartnerId(cert);
+          if (cert.certificate_type === "barangay_cohabitation" && partnerId) {
+            const partner = partnerMap[partnerId];
             if (partner) {
               cert.partner_place_of_birth = partner.place_of_birth || "";
               cert.partner_residential_address = partner.residential_address || "";
@@ -270,6 +326,52 @@ export async function enrichCertificateList(certificates, tenantId, options = {}
   }
 
   return list;
+}
+
+export async function fetchCertificateById(tenantId, id, { view = "full" } = {}) {
+  const isPdf = view === "pdf";
+  let effectiveView = view;
+  let select = isPdf ? CERTIFICATE_PDF_SELECT : CERTIFICATE_FULL_SELECT;
+
+  let { data, error } = await supabase
+    .from("certificate_requests")
+    .select(select)
+    .eq("id", id)
+    .eq("tenant_id", tenantId)
+    .single();
+
+  if (error && isPdf) {
+    const retry = await supabase
+      .from("certificate_requests")
+      .select(CERTIFICATE_FULL_SELECT)
+      .eq("id", id)
+      .eq("tenant_id", tenantId)
+      .single();
+    data = retry.data;
+    error = retry.error;
+    effectiveView = "full";
+  }
+
+  if (error) {
+    const err = new Error(error.message || "Failed to load certificate");
+    err.code =
+      error.code === "PGRST116" || String(error.message || "").includes("0 rows")
+        ? "NOT_FOUND"
+        : "QUERY_ERROR";
+    throw err;
+  }
+  if (!data) {
+    const err = new Error("Certificate not found");
+    err.code = "NOT_FOUND";
+    throw err;
+  }
+
+  const [enriched] = await enrichCertificateList([data], tenantId, {
+    includeCohabitationPartners: effectiveView === "pdf" || effectiveView === "full",
+    skipSideEffects: true,
+  });
+
+  return attachPendingWorkflowAssignment(enriched);
 }
 
 export async function fetchCertificatesForTenant(

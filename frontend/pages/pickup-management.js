@@ -240,7 +240,7 @@ export default function PickupManagementPage() {
     setIsSendModalOpen(true);
   };
 
-  const openCertificatePdfInNewTab = (certificate) => {
+  const openCertificatePdfInNewTab = (certificate, ftjsVariant) => {
     if (!certificate?.id) return;
     try {
       const serialized = JSON.stringify(certificate);
@@ -249,7 +249,77 @@ export default function PickupManagementPage() {
     } catch {
       /* ignore storage quota errors */
     }
-    window.open(`/requests?id=${certificate.id}&pdf=1&directPdf=1`, "_blank");
+    const params = new URLSearchParams({
+      id: String(certificate.id),
+      pdf: "1",
+      directPdf: "1",
+    });
+    if (ftjsVariant) params.set("ftjs", ftjsVariant);
+    window.open(`/requests?${params.toString()}`, "_blank");
+  };
+
+  const isFirstTimeJobSeeker = (certificate) =>
+    String(certificate?.certificate_type || "").toLowerCase() ===
+    "first_time_job_seeker";
+
+  const FtjsPdfActionButtons = ({ certificate, compact = false }) => {
+    const btnClass = compact
+      ? "px-1.5 py-1 bg-white border border-gray-200 hover:bg-gray-50 text-[#03254c] rounded-md text-[9px] font-semibold flex items-center gap-0.5 transition-colors whitespace-nowrap"
+      : "px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 text-[#03254c] rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap";
+
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => openCertificatePdfInNewTab(certificate, "clearance")}
+          className={btnClass}
+          title="Barangay Clearance PDF"
+        >
+          <FileText className={compact ? "w-3 h-3 shrink-0" : "w-3.5 h-3.5 shrink-0"} />
+          {compact ? "Clearance" : "PDF Clearance"}
+        </button>
+        <button
+          type="button"
+          onClick={() => openCertificatePdfInNewTab(certificate, "a")}
+          className={btnClass}
+          title="Job Seeker A — Barangay Certification PDF"
+        >
+          <FileText className={compact ? "w-3 h-3 shrink-0" : "w-3.5 h-3.5 shrink-0"} />
+          {compact ? "Seeker A" : "PDF Seeker A"}
+        </button>
+        <button
+          type="button"
+          onClick={() => openCertificatePdfInNewTab(certificate, "b")}
+          className={btnClass}
+          title="Job Seeker B — Oath of Undertaking PDF"
+        >
+          <FileText className={compact ? "w-3 h-3 shrink-0" : "w-3.5 h-3.5 shrink-0"} />
+          {compact ? "Seeker B" : "PDF Seeker B"}
+        </button>
+      </>
+    );
+  };
+
+  const CertificatePdfButton = ({ certificate, compact = false }) => {
+    if (isFirstTimeJobSeeker(certificate)) {
+      return (
+        <FtjsPdfActionButtons certificate={certificate} compact={compact} />
+      );
+    }
+    const btnClass = compact
+      ? "px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 text-[#03254c] rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors"
+      : "px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 text-[#03254c] rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors";
+    return (
+      <button
+        type="button"
+        onClick={() => openCertificatePdfInNewTab(certificate)}
+        className={btnClass}
+        title="Open certificate PDF in new tab"
+      >
+        <FileText className="w-3.5 h-3.5" />
+        PDF
+      </button>
+    );
   };
 
   const handleSendCertificate = async (certificate) => {
@@ -559,7 +629,7 @@ export default function PickupManagementPage() {
                   </div>
 
                   {/* Action Buttons Row */}
-                  <div className="pt-1.5 border-t border-gray-100 flex items-center justify-end gap-1">
+                  <div className="pt-1.5 border-t border-gray-100 flex flex-wrap items-center justify-end gap-1">
                     <button
                       onClick={() => setSelectedCertificate(certificate)}
                       className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors"
@@ -567,13 +637,7 @@ export default function PickupManagementPage() {
                       <Eye className="w-3.5 h-3.5" />
                       Details
                     </button>
-                    <button
-                      onClick={() => openCertificatePdfInNewTab(certificate)}
-                      className="px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 text-[#03254c] rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      PDF
-                    </button>
+                    <CertificatePdfButton certificate={certificate} />
 
                     {isReadyForPickup(certificate) &&
                       (certificate.email || certificate.residents?.email) && (
@@ -690,7 +754,7 @@ export default function PickupManagementPage() {
                         {formatDate(certificate.updated_at)}
                       </td>
                       <td className="px-2.5 py-1.5">
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex flex-wrap items-center justify-center gap-1 max-w-[320px]">
                           <button
                             onClick={() => setSelectedCertificate(certificate)}
                             className="p-1 text-gray-500 hover:text-[#03254c] hover:bg-blue-50 rounded transition-colors"
@@ -698,14 +762,7 @@ export default function PickupManagementPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => openCertificatePdfInNewTab(certificate)}
-                            className="px-2 py-1 bg-white border border-gray-200 text-[#03254c] rounded-md font-semibold hover:bg-gray-50 flex items-center gap-1 text-[10px] transition-all"
-                            title="Open certificate PDF in new tab"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            PDF
-                          </button>
+                          <CertificatePdfButton certificate={certificate} compact />
 
                           {isReadyForPickup(certificate) &&
                             (certificate.email ||

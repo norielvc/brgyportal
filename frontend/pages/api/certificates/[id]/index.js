@@ -1,5 +1,6 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
+import { fetchCertificateById } from "../../../../src/lib/certificateListQuery";
 
 export default async function handler(req, res) {
   const user = await authenticateToken(req, res);
@@ -14,22 +15,22 @@ export default async function handler(req, res) {
   const { id } = req.query;
 
   if (req.method === "GET") {
-    const { data, error } = await supabase
-      .from("certificate_requests")
-      .select("*, residents:resident_id (*), workflow_assignments (id, step_id, step_name, assigned_user_id, status, created_at)")
-      .eq("id", id)
-      .eq("tenant_id", tenantId)
-      .single();
-    if (error || !data)
+    const view =
+      req.query.view === "pdf" || req.query.pdf === "1" ? "pdf" : "full";
+    let data;
+    try {
+      data = await fetchCertificateById(tenantId, id, { view });
+    } catch (err) {
+      if (err.code === "NOT_FOUND") {
+        return res
+          .status(404)
+          .json({ success: false, message: "Certificate not found" });
+      }
+      console.error("[certificates/[id] GET]", err?.message || err);
       return res
-        .status(404)
-        .json({ success: false, message: "Certificate not found" });
-
-    const assignments = data.workflow_assignments || [];
-    const pendingAssignment = assignments
-      .filter(a => a.status === 'pending')
-      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
-    data.workflow_assignment = pendingAssignment || null;
+        .status(500)
+        .json({ success: false, message: err.message || "Failed to load certificate" });
+    }
 
     // Enrich resident residential_address from structured fields when flat field is empty
     if (data.residents && !data.residents.residential_address) {
