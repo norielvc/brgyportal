@@ -61,14 +61,14 @@ export default async function handler(req, res) {
     // 3. Count Monthly Requests
     const { count: requestsCount } = await supabase
         .from('certificate_requests')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('tenant_id', tenantId)
         .gte('created_at', subscription.current_period_start);
 
     // 4. Count Staff
     const { count: staffCount } = await supabase
         .from('users')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('tenant_id', tenantId);
 
     return res.status(200).json({

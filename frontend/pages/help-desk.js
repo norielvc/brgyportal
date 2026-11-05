@@ -328,7 +328,7 @@ export default function HelpDesk() {
     };
 
     pollKapchat();
-    intervalId = setInterval(pollKapchat, 10000);
+    intervalId = setInterval(pollKapchat, 20000);
 
     const onVisibility = () => {
       if (!document.hidden) pollKapchat();

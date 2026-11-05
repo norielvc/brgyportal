@@ -18,7 +18,17 @@ export default async function handler(req, res) {
 
   const { data, error } = await supabase
     .from("workflow_assignments")
-    .select("*, certificate_requests:request_id (*, residents:resident_id (*))")
+    .select(
+      `id, step_id, step_name, assigned_user_id, status, created_at,
+      certificate_requests:request_id (
+        id, reference_number, certificate_type, status, full_name, purpose, address,
+        contact_number, email, created_at, updated_at, resident_id,
+        residents:resident_id (
+          id, full_name, email, contact_number, residential_address,
+          house_number, purok, barangay, municipality, province
+        )
+      )`,
+    )
     .eq("assigned_user_id", user._id)
     .eq("status", "pending")
     .eq("tenant_id", tenantId)

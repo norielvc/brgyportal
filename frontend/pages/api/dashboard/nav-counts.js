@@ -4,7 +4,7 @@ import {
   buildReleasingStepByType,
   computeStaffNavCounts,
 } from "../../../src/lib/certificateNavCounts";
-import { getWorkflowMapForTenant } from "../../../src/lib/workflowMap";
+import { buildWorkflowMapFromConfigRows } from "../../../src/lib/workflowMap";
 import {
   getEsumbongSettings,
   userHasEsumbongAccess,
@@ -79,8 +79,8 @@ export default async function handler(req, res) {
       kapchatUnread,
       esumbongSettings,
       kapchatSettings,
-      wfMap,
       wfConfigsRes,
+      pendingAssignRes,
       myAssignRes,
       openCertsRes,
       pickupCertsRes,
@@ -103,11 +103,17 @@ export default async function handler(req, res) {
       countKapchatUnread(tenantId),
       getEsumbongSettings(supabase, tenantId),
       getKapchatSettings(supabase, tenantId),
-      getWorkflowMapForTenant(tenantId),
       supabase
         .from("workflow_configurations")
         .select("certificate_type, workflow_config")
         .eq("tenant_id", tenantId),
+      supabase
+        .from("workflow_assignments")
+        .select(
+          "request_id, step_name, assigned_user_id, status, created_at",
+        )
+        .eq("tenant_id", tenantId)
+        .eq("status", "pending"),
       userId
         ? supabase
             .from("workflow_assignments")
@@ -120,9 +126,7 @@ export default async function handler(req, res) {
         : Promise.resolve({ data: [] }),
       supabase
         .from("certificate_requests")
-        .select(
-          "id, status, certificate_type, workflow_assignments (id, step_name, assigned_user_id, status, created_at)",
-        )
+        .select("id, status, certificate_type")
         .eq("tenant_id", tenantId)
         .in("status", OPEN_REQUEST_STATUSES),
       supabase
@@ -139,9 +143,24 @@ export default async function handler(req, res) {
       });
     }
 
+    const wfMap = buildWorkflowMapFromConfigRows(wfConfigsRes.data || []);
     const releasingStepByType = buildReleasingStepByType(
       wfConfigsRes.data || [],
     );
+
+    const pendingAssignmentsByRequest = {};
+    for (const row of pendingAssignRes.data || []) {
+      const rid = row.request_id;
+      if (!rid) continue;
+      const prev = pendingAssignmentsByRequest[rid];
+      if (
+        !prev ||
+        new Date(row.created_at || 0).getTime() >
+          new Date(prev.created_at || 0).getTime()
+      ) {
+        pendingAssignmentsByRequest[rid] = row;
+      }
+    }
     const pickupCerts = pickupCertsRes.data || [];
     let releasingAssignmentsByRequestId = {};
 
@@ -176,6 +195,7 @@ export default async function handler(req, res) {
       pickupCertificates: pickupCerts,
       releasingStepByType,
       releasingAssignmentsByRequestId,
+      pendingAssignmentsByRequest,
     });
 
     const includeEsumbong = userHasEsumbongAccess(user, esumbongSettings);
@@ -187,7 +207,7 @@ export default async function handler(req, res) {
     const kapchat = includeKapchat ? kapchatUnread : 0;
     const helpDeskTotal = esumbong + assistance + kapchat;
 
-    res.setHeader("Cache-Control", "private, max-age=15");
+    res.setHeader("Cache-Control", "private, max-age=60");
 
     return res.status(200).json({
       success: true,

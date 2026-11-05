@@ -187,6 +187,23 @@ export function pickPendingWorkflowAssignment(assignments) {
   return pending[0] || null;
 }
 
+function pendingAssignmentByRequest(pendingRows) {
+  const map = {};
+  for (const row of pendingRows || []) {
+    const rid = row.request_id;
+    if (!rid) continue;
+    const prev = map[rid];
+    if (
+      !prev ||
+      new Date(row.created_at || 0).getTime() >
+        new Date(prev.created_at || 0).getTime()
+    ) {
+      map[rid] = row;
+    }
+  }
+  return map;
+}
+
 export function computeStaffNavCounts({
   activeUser,
   wfMap,
@@ -195,7 +212,11 @@ export function computeStaffNavCounts({
   pickupCertificates,
   releasingStepByType,
   releasingAssignmentsByRequestId,
+  pendingAssignmentsByRequest,
 }) {
+  const role = String(activeUser?.role || "").toLowerCase();
+  const isBypass = ["superadmin", "super_admin", "admin"].includes(role);
+
   const myAssigned = [];
   for (const row of myAssignmentRows || []) {
     const cert = row.certificate_requests;
@@ -222,11 +243,32 @@ export function computeStaffNavCounts({
     cert.releasing_user_ids = [...new Set([...assignUsers, ...stepUsers])];
   }
 
-  const combined = [...myAssigned];
   let pickupCount = 0;
+  for (const cert of pickupCertificates || []) {
+    if (isCertReadyForPickup(cert, wfMap, activeUser)) {
+      pickupCount += 1;
+    }
+  }
+
+  if (isBypass) {
+    return {
+      certificateRequests: (openCertificates || []).length,
+      pickupManagement: pickupCount,
+    };
+  }
+
+  const pendingByRequest =
+    pendingAssignmentsByRequest ||
+    pendingAssignmentByRequest(
+      (openCertificates || []).flatMap((c) => c.workflow_assignments || []),
+    );
+
+  const combined = [...myAssigned];
 
   for (const cert of openCertificates || []) {
-    const pending = pickPendingWorkflowAssignment(cert.workflow_assignments);
+    const pending =
+      pendingByRequest[cert.id] ||
+      pickPendingWorkflowAssignment(cert.workflow_assignments);
     const shaped = {
       id: cert.id,
       status: cert.status,
@@ -244,12 +286,6 @@ export function computeStaffNavCounts({
       isRequestAssignedToUser(shaped, wfMap, activeUser)
     ) {
       combined.push(shaped);
-    }
-  }
-
-  for (const cert of pickupCertificates || []) {
-    if (isCertReadyForPickup(cert, wfMap, activeUser)) {
-      pickupCount += 1;
     }
   }
 

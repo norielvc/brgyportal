@@ -69,39 +69,48 @@ export default async function handler(req, res) {
       });
   }
 
-  // Fetch workflow assignments with user info (tenant-isolated)
-  const { data: assignments } = await supabase
-    .from("workflow_assignments")
-    .select("id, request_id, step_name, status, created_at, updated_at, assigned_user_id")
-    .eq("tenant_id", tenantId);
-
-  // Fetch workflow history for rejection reasons (tenant-isolated)
-  const { data: history } = await supabase
-    .from("workflow_history")
-    .select("action, comments, new_status")
-    .eq("tenant_id", tenantId)
-    .eq("action", "reject");
-
   // Fetch residents count (tenant-isolated)
   const { count: residentsCount } = await supabase
     .from("residents")
-    .select("*", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId);
 
   // Fetch active users count (tenant-isolated)
   const { count: usersCount } = await supabase
     .from("users")
-    .select("*", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId);
 
   const all = requests || [];
-  const assignmentList = assignments || [];
+  const requestIds = all.map((r) => r.id).filter(Boolean);
+
+  let assignmentList = [];
+  if (requestIds.length > 0) {
+    const { data: scopedAssignments } = await supabase
+      .from("workflow_assignments")
+      .select(
+        "id, request_id, step_name, status, created_at, updated_at, assigned_user_id",
+      )
+      .eq("tenant_id", tenantId)
+      .in("request_id", requestIds);
+    assignmentList = scopedAssignments || [];
+  }
+
+  let history = [];
+  if (requestIds.length > 0) {
+    const { data: scopedHistory } = await supabase
+      .from("workflow_history")
+      .select("request_id, action, comments, new_status")
+      .eq("tenant_id", tenantId)
+      .eq("action", "reject")
+      .in("request_id", requestIds);
+    history = scopedHistory || [];
+  }
 
   // Map each request to its current pending workflow step
   const requestToStepMap = {};
-  assignmentList.forEach(a => {
+  assignmentList.forEach((a) => {
     if (a.status === "pending") {
-      // In case of multiple pending steps (rare), take the latest one
       requestToStepMap[a.request_id] = a.step_name;
     }
   });

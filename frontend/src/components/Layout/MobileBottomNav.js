@@ -42,7 +42,7 @@ export default function MobileBottomNav({ onOpenMenu, onOpenInstall }) {
       }
     };
     fetchPendingCount();
-    const interval = setInterval(fetchPendingCount, 45000);
+    const interval = setInterval(fetchPendingCount, 90000);
     return () => clearInterval(interval);
   }, []);
 

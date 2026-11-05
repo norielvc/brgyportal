@@ -96,7 +96,8 @@ function buildReleasingStepByType(wfConfigs) {
 }
 
 export async function enrichCertificateList(certificates, tenantId, options = {}) {
-  const { includeCohabitationPartners = false } = options;
+  const { includeCohabitationPartners = false, skipSideEffects = false } =
+    options;
   const list = (certificates || []).map(attachPendingWorkflowAssignment);
 
   const { data: wfConfigs } = await supabase
@@ -106,18 +107,20 @@ export async function enrichCertificateList(certificates, tenantId, options = {}
 
   const releasingStepByType = buildReleasingStepByType(wfConfigs);
 
-  for (const cert of list) {
-    if (
-      cert.status === "oic_review" &&
-      cert.certificate_type !== "business_permit"
-    ) {
-      cert.status = "ready";
-      supabase
-        .from("certificate_requests")
-        .update({ status: "ready", updated_at: new Date().toISOString() })
-        .eq("id", cert.id)
-        .eq("tenant_id", tenantId)
-        .then(() => {});
+  if (!skipSideEffects) {
+    for (const cert of list) {
+      if (
+        cert.status === "oic_review" &&
+        cert.certificate_type !== "business_permit"
+      ) {
+        cert.status = "ready";
+        supabase
+          .from("certificate_requests")
+          .update({ status: "ready", updated_at: new Date().toISOString() })
+          .eq("id", cert.id)
+          .eq("tenant_id", tenantId)
+          .then(() => {});
+      }
     }
   }
 
@@ -125,7 +128,7 @@ export async function enrichCertificateList(certificates, tenantId, options = {}
     ["ready", "ready_for_pickup", "released"].includes(c.status),
   );
 
-  if (pickupCerts.length > 0) {
+  if (!skipSideEffects && pickupCerts.length > 0) {
     const pickupIds = pickupCerts.map((c) => c.id);
     const { data: relAssignments } = await supabase
       .from("workflow_assignments")
@@ -188,6 +191,14 @@ export async function enrichCertificateList(certificates, tenantId, options = {}
       cert.releasing_user_ids = [...new Set([...assignUsers, ...stepUsers])];
       cert.releasing_step_name =
         relStep?.name || reqAssigns[0]?.step_name || "Releasing Team";
+    }
+  } else if (skipSideEffects && pickupCerts.length > 0) {
+    for (const cert of pickupCerts) {
+      const relStep = releasingStepByType[cert.certificate_type];
+      cert.releasing_user_ids = (relStep?.assignedUsers || []).map((u) =>
+        String(u),
+      );
+      cert.releasing_step_name = relStep?.name || "Releasing Team";
     }
   }
 
@@ -280,5 +291,6 @@ export async function fetchCertificatesForTenant(
   return enrichCertificateList(data || [], tenantId, {
     includeCohabitationPartners: isFull,
     markListView: !isFull,
+    skipSideEffects: !isFull,
   });
 }

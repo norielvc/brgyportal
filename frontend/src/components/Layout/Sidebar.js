@@ -313,7 +313,7 @@ export default function Sidebar({
     const schedulePolling = () => {
       if (intervalId) clearInterval(intervalId);
       const ms =
-        typeof document !== "undefined" && document.hidden ? 90000 : 45000;
+        typeof document !== "undefined" && document.hidden ? 180000 : 90000;
       intervalId = setInterval(fetchNavBadges, ms);
     };
 

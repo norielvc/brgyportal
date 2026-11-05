@@ -1174,7 +1174,7 @@ export default function PortalPageContent({ initialTenantId }) {
     }
   };
 
-  // Live polling for KapChat (every 8s when chat is open and tab visible)
+  // Live polling for KapChat (every 20s when chat is open and tab visible)
   useEffect(() => {
     if (
       !showAssistance ||
@@ -1201,7 +1201,7 @@ export default function PortalPageContent({ initialTenantId }) {
         chatUserInfo.residentId,
         chatUserInfo.name,
       );
-    }, 8000);
+    }, 20000);
 
     const onVisibility = () => {
       if (!document.hidden) {

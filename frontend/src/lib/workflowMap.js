@@ -55,20 +55,37 @@ certTypes.forEach((t) => {
   }
 });
 
-export async function getWorkflowMapForTenant(tenantId) {
+const workflowMapCache = new Map();
+const WORKFLOW_MAP_TTL_MS = 5 * 60 * 1000;
+
+export function buildWorkflowMapFromConfigRows(rows) {
   const workflows = { ...defaultWorkflows };
+  for (const t of certTypes) {
+    if (!workflows[t]) {
+      workflows[t] = defaultWorkflows.barangay_clearance.map((s) => ({ ...s }));
+    }
+  }
+  for (const config of rows || []) {
+    if (config.workflow_config?.steps) {
+      workflows[config.certificate_type] = config.workflow_config.steps;
+    }
+  }
+  return workflows;
+}
+
+export async function getWorkflowMapForTenant(tenantId) {
+  if (!tenantId) return buildWorkflowMapFromConfigRows([]);
+  const cached = workflowMapCache.get(tenantId);
+  if (cached && Date.now() - cached.at < WORKFLOW_MAP_TTL_MS) {
+    return cached.map;
+  }
   const { data, error } = await supabase
     .from("workflow_configurations")
     .select("certificate_type, workflow_config")
     .eq("tenant_id", tenantId);
-  if (!error && data) {
-    data.forEach((config) => {
-      if (config.workflow_config?.steps) {
-        workflows[config.certificate_type] = config.workflow_config.steps;
-      }
-    });
-  }
-  return workflows;
+  const map = error ? buildWorkflowMapFromConfigRows([]) : buildWorkflowMapFromConfigRows(data);
+  workflowMapCache.set(tenantId, { map, at: Date.now() });
+  return map;
 }
 
 export { certTypes, defaultWorkflows };
