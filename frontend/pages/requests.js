@@ -20,6 +20,7 @@ import {
   workflowStatusesMatch,
 } from "@/lib/workflowStatus";
 import {
+  businessPermitQueryToPreviewTab,
   certificateDetailUrl,
   ftjsQueryToPreviewTab,
   workflowHistoryUrl,
@@ -721,6 +722,8 @@ export default function RequestsPage() {
   const [openPdfFromQuery, setOpenPdfFromQuery] = useState(false);
   const [directPdfFromQuery, setDirectPdfFromQuery] = useState(false);
   const [jobSeekerPdfFromQuery, setJobSeekerPdfFromQuery] = useState(null);
+  const [businessPermitPdfFromQuery, setBusinessPermitPdfFromQuery] =
+    useState(null);
 
   // Handle Deep Linking from URL - Instant Fast-Path (loads in <100ms instead of waiting for all requests)
   useEffect(() => {
@@ -732,6 +735,11 @@ export default function RequestsPage() {
     if (router.query.directPdf === "1") setDirectPdfFromQuery(true);
     if (router.query.ftjs) {
       setJobSeekerPdfFromQuery(ftjsQueryToPreviewTab(router.query.ftjs));
+    }
+    if (router.query.bp) {
+      setBusinessPermitPdfFromQuery(
+        businessPermitQueryToPreviewTab(router.query.bp),
+      );
     }
 
     // Fast-path 1: Instant load from sessionStorage / localStorage (from Pickup Management click)
@@ -796,6 +804,7 @@ export default function RequestsPage() {
     router.query.pdf,
     router.query.directPdf,
     router.query.ftjs,
+    router.query.bp,
     selectedRequest,
   ]);
 
@@ -2320,6 +2329,7 @@ export default function RequestsPage() {
           openPdf={openPdfFromQuery}
           directPdf={directPdfFromQuery}
           initialJobSeekerPreviewTab={jobSeekerPdfFromQuery}
+          initialBusinessPreviewTab={businessPermitPdfFromQuery}
         />
       )}
 
@@ -2452,6 +2462,7 @@ function RequestDetailsModal({
   openPdf = false,
   directPdf = false,
   initialJobSeekerPreviewTab = null,
+  initialBusinessPreviewTab = null,
 }) {
   useScrollLock(true);
   const currentStep = getCurrentWorkflowStep(request);
@@ -3245,6 +3256,7 @@ function RequestDetailsModal({
         orRefreshKey={orSectionRefreshKey}
         directPdf={directPdf}
         initialJobSeekerPreviewTab={initialJobSeekerPreviewTab}
+        initialBusinessPreviewTab={initialBusinessPreviewTab}
       />
     );
   }
@@ -7064,6 +7076,7 @@ function CertificatePreviewModal({
   orRefreshKey = 0,
   directPdf = false,
   initialJobSeekerPreviewTab = null,
+  initialBusinessPreviewTab = null,
 }) {
   useScrollLock(true);
   const certificateRef = useRef(null);
@@ -7076,11 +7089,18 @@ function CertificatePreviewModal({
   const isCompletedOrReady = ["ready", "ready_for_pickup", "released", "oic_review"].includes(
     String(request.status || "").toLowerCase(),
   );
-  const [businessPreviewTab, setBusinessPreviewTab] = useState(
-    isBusinessPermitRequest && (directPdf || isCompletedOrReady)
-      ? "permit"
-      : "inspection",
-  );
+  const [businessPreviewTab, setBusinessPreviewTab] = useState(() => {
+    if (
+      initialBusinessPreviewTab === "inspection" ||
+      initialBusinessPreviewTab === "permit"
+    ) {
+      return initialBusinessPreviewTab;
+    }
+    if (isBusinessPermitRequest && (directPdf || isCompletedOrReady)) {
+      return "permit";
+    }
+    return "inspection";
+  });
   const [jobSeekerPreviewTab, setJobSeekerPreviewTab] = useState(
     () => initialJobSeekerPreviewTab || "FIRST TIME JOB SEEKER",
   );
@@ -7119,10 +7139,18 @@ function CertificatePreviewModal({
     }
   }, [initialJobSeekerPreviewTab, request.id]);
   useEffect(() => {
+    if (
+      initialBusinessPreviewTab === "inspection" ||
+      initialBusinessPreviewTab === "permit"
+    ) {
+      setBusinessPreviewTab(initialBusinessPreviewTab);
+    }
+  }, [initialBusinessPreviewTab, request.id]);
+  useEffect(() => {
     if (!directPdf) return;
     directPdfStartedRef.current = false;
     setDirectPdfBlobUrl(null);
-  }, [directPdf, request.id, jobSeekerPreviewTab]);
+  }, [directPdf, request.id, jobSeekerPreviewTab, businessPreviewTab]);
   const [workflowAssignments, setWorkflowAssignments] = useState([]);
   const [tenantUsers, setTenantUsers] = useState([]);
   const [financeTeamUsers, setFinanceTeamUsers] = useState([]);
@@ -7551,6 +7579,7 @@ function CertificatePreviewModal({
     historyLoaded,
     requestLoaded,
     jobSeekerPreviewTab,
+    businessPreviewTab,
   ]);
 
   const handlePrintPDF = async () => {
@@ -9764,7 +9793,7 @@ function ClearancePreviewForRequests({
                 </div>
               ) : isJobSeekerDocB ? (
                 <div
-                  className={`w-full max-w-full text-left flex flex-col flex-1 text-gray-900 text-[14px] leading-normal ${getFontClass(bodyStyle.fontFamily)}`}
+                  className={`w-full max-w-full text-left flex flex-col flex-1 text-gray-900 text-[12px] leading-normal ${getFontClass(bodyStyle.fontFamily)}`}
                   style={{ fontFamily: bodyStyle.fontFamily || "inherit" }}
                 >
                   <div>
@@ -9776,16 +9805,16 @@ function ClearancePreviewForRequests({
                       <h1 className="text-[16px] font-bold uppercase tracking-wide text-gray-900 mb-0.5">
                         OATH OF UNDERTAKING
                       </h1>
-                      <p className="text-[14px] font-semibold text-gray-800">
+                      <p className="text-[12px] font-semibold text-gray-800">
                         Republic Act 11261 &ndash; First Jobseekers Assistance Act
                       </p>
                     </div>
 
-                    <p className="text-justify mb-3 text-[14px] leading-relaxed">
+                    <p className="text-justify mb-3 text-[12px] leading-relaxed">
                       I, <strong className="uppercase">{formData.fullName}</strong>, <strong>{formData.age || "-"}</strong> years of age, resident of <strong>{formData.address}</strong> for <strong>{displayYearsOfResidency}</strong> years, availing the benefits of Republic Act 11261, otherwise known as the First Jobseekers Act of 2019, do hereby declare, agree and undertake to abide and be bound by the following:
                     </p>
 
-                    <ol className="list-decimal pl-5 space-y-1 text-[14px] leading-relaxed text-justify mb-4">
+                    <ol className="list-decimal pl-5 space-y-1 text-[11.5px] leading-relaxed text-justify mb-4">
                       <li>That this is the first time that I will actively look for a job, and therefore requesting that a Barangay Certification be issued in my favor to avail the benefits of the law.</li>
                       <li>That I am aware that the benefit and privileges under the said law shall be valid only for one (1) year from the date that the Barangay certification is issued.</li>
                       <li>That I can avail the benefits of the law only once.</li>
@@ -9797,7 +9826,7 @@ function ClearancePreviewForRequests({
                       <li>That I consent to the use of my personal information pursuant to the Data Privacy Act and other applicable laws, rules, and regulations.</li>
                     </ol>
 
-                    <p className="text-[14px] mb-4">
+                    <p className="text-[12px] mb-4">
                       Signed this <strong>{jsDayOrdinal} day of {jsMonthName}, {jsYear}</strong> in the City / Municipality of Calumpit.
                     </p>
 

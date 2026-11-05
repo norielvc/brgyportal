@@ -3,6 +3,49 @@
  * This works alongside email notifications
  */
 
+const CERTIFICATE_NOTIFICATION_CATEGORIES = new Set([
+  "assignment",
+  "workflow",
+  "request_submitted",
+  "request_ready",
+  "request_rejected",
+  "request_returned",
+  "certificate",
+]);
+
+/** Admin portal: open Certificate Requests (`/requests`), not public `/requests/[id]` tracking. */
+export function resolveNotificationNavigationLink(notification) {
+  const rawLink = String(notification?.link || "").trim();
+  const requestIdFromRow = notification?.request_id
+    ? String(notification.request_id).trim()
+    : "";
+  const requestIdFromPath = rawLink.match(
+    /^\/requests\/([0-9a-f-]{36})$/i,
+  )?.[1];
+  const requestId = requestIdFromRow || requestIdFromPath || "";
+
+  const isCertificateRelated =
+    CERTIFICATE_NOTIFICATION_CATEGORIES.has(notification?.category) ||
+    Boolean(requestId) ||
+    rawLink === "/requests" ||
+    rawLink.startsWith("/requests?") ||
+    /^\/requests\/[0-9a-f-]{36}$/i.test(rawLink) ||
+    /^\/track\//i.test(rawLink);
+
+  if (isCertificateRelated) {
+    return requestId
+      ? `/requests?id=${encodeURIComponent(requestId)}`
+      : "/requests";
+  }
+
+  return rawLink || "/requests";
+}
+
+export function certificateRequestAdminLink(requestId) {
+  if (!requestId) return "/requests";
+  return `/requests?id=${encodeURIComponent(String(requestId).trim())}`;
+}
+
 export const createNotification = async ({
   userId,
   tenantId,

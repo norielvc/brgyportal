@@ -124,7 +124,7 @@ export async function notifyNewCertificateRequest({
       category: "assignment",
       reference_number: referenceNumber,
       request_id: requestId,
-      link: "/requests",
+      link: `/requests?id=${encodeURIComponent(String(requestId))}`,
       read: false,
       created_at: new Date().toISOString(),
     });

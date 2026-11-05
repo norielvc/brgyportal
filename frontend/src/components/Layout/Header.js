@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { getUserData, logout, getAuthToken } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
 import { useRouter } from "next/router";
+import { resolveNotificationNavigationLink } from "@/lib/notificationHelper";
 
 export default function Header({
   title,
@@ -146,9 +147,7 @@ export default function Header({
 
   const handleNotificationClick = (notification) => {
     markAsRead(notification.id);
-    if (notification.link) {
-      router.push(notification.link);
-    }
+    router.push(resolveNotificationNavigationLink(notification));
     setShowNotifications(false);
   };
 

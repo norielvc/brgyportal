@@ -1,4 +1,8 @@
 import { supabase } from "../../../lib/supabase";
+import {
+  normalizeCensusResidentNumber,
+  withNormalizedCensusResidentNumber,
+} from "../../../src/lib/censusResidentNumber";
 
 const sanitizeResidentData = (data) => {
   const sanitized = { ...data };
@@ -7,6 +11,11 @@ const sanitizeResidentData = (data) => {
       sanitized[key] = null;
     }
   });
+  if (sanitized.census_resident_number != null) {
+    sanitized.census_resident_number = normalizeCensusResidentNumber(
+      sanitized.census_resident_number,
+    );
+  }
   return sanitized;
 };
 
@@ -40,7 +49,10 @@ export default async function handler(req, res) {
         .single();
 
       if (error) throw error;
-      return res.status(200).json({ success: true, resident: data });
+      return res.status(200).json({
+        success: true,
+        resident: withNormalizedCensusResidentNumber(data),
+      });
     } catch (error) {
       console.error("Error updating resident:", error);
       return res.status(500).json({ success: false, message: error.message });
@@ -77,7 +89,10 @@ export default async function handler(req, res) {
           .json({ success: false, message: "Resident not found" });
       }
 
-      return res.status(200).json({ success: true, resident: data });
+      return res.status(200).json({
+        success: true,
+        resident: withNormalizedCensusResidentNumber(data),
+      });
     } catch (error) {
       console.error("Error fetching resident:", error);
       return res.status(500).json({ success: false, message: error.message });

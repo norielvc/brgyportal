@@ -240,7 +240,7 @@ export default function PickupManagementPage() {
     setIsSendModalOpen(true);
   };
 
-  const openCertificatePdfInNewTab = (certificate, ftjsVariant) => {
+  const openCertificatePdfInNewTab = (certificate, { ftjs, bp } = {}) => {
     if (!certificate?.id) return;
     try {
       const serialized = JSON.stringify(certificate);
@@ -254,13 +254,49 @@ export default function PickupManagementPage() {
       pdf: "1",
       directPdf: "1",
     });
-    if (ftjsVariant) params.set("ftjs", ftjsVariant);
+    if (ftjs) params.set("ftjs", ftjs);
+    if (bp) params.set("bp", bp);
     window.open(`/requests?${params.toString()}`, "_blank");
   };
 
   const isFirstTimeJobSeeker = (certificate) =>
     String(certificate?.certificate_type || "").toLowerCase() ===
     "first_time_job_seeker";
+
+  const isBusinessPermit = (certificate) =>
+    String(certificate?.certificate_type || "").toLowerCase() ===
+    "business_permit";
+
+  const BusinessPermitPdfActionButtons = ({ certificate, compact = false }) => {
+    const btnClass = compact
+      ? "px-1.5 py-1 bg-white border border-gray-200 hover:bg-gray-50 text-[#03254c] rounded-md text-[9px] font-semibold flex items-center gap-0.5 transition-colors whitespace-nowrap"
+      : "px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 text-[#03254c] rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap";
+
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => openCertificatePdfInNewTab(certificate, { bp: "permit" })}
+          className={btnClass}
+          title="Business Clearance Certificate PDF"
+        >
+          <FileText className={compact ? "w-3 h-3 shrink-0" : "w-3.5 h-3.5 shrink-0"} />
+          {compact ? "Clearance" : "PDF Clearance"}
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            openCertificatePdfInNewTab(certificate, { bp: "inspection" })
+          }
+          className={btnClass}
+          title="Physical Inspection & Preparation Form PDF"
+        >
+          <FileText className={compact ? "w-3 h-3 shrink-0" : "w-3.5 h-3.5 shrink-0"} />
+          {compact ? "Inspection" : "PDF Inspection"}
+        </button>
+      </>
+    );
+  };
 
   const FtjsPdfActionButtons = ({ certificate, compact = false }) => {
     const btnClass = compact
@@ -271,7 +307,7 @@ export default function PickupManagementPage() {
       <>
         <button
           type="button"
-          onClick={() => openCertificatePdfInNewTab(certificate, "clearance")}
+          onClick={() => openCertificatePdfInNewTab(certificate, { ftjs: "clearance" })}
           className={btnClass}
           title="Barangay Clearance PDF"
         >
@@ -280,7 +316,7 @@ export default function PickupManagementPage() {
         </button>
         <button
           type="button"
-          onClick={() => openCertificatePdfInNewTab(certificate, "a")}
+          onClick={() => openCertificatePdfInNewTab(certificate, { ftjs: "a" })}
           className={btnClass}
           title="Job Seeker A — Barangay Certification PDF"
         >
@@ -289,7 +325,7 @@ export default function PickupManagementPage() {
         </button>
         <button
           type="button"
-          onClick={() => openCertificatePdfInNewTab(certificate, "b")}
+          onClick={() => openCertificatePdfInNewTab(certificate, { ftjs: "b" })}
           className={btnClass}
           title="Job Seeker B — Oath of Undertaking PDF"
         >
@@ -304,6 +340,14 @@ export default function PickupManagementPage() {
     if (isFirstTimeJobSeeker(certificate)) {
       return (
         <FtjsPdfActionButtons certificate={certificate} compact={compact} />
+      );
+    }
+    if (isBusinessPermit(certificate)) {
+      return (
+        <BusinessPermitPdfActionButtons
+          certificate={certificate}
+          compact={compact}
+        />
       );
     }
     const btnClass = compact

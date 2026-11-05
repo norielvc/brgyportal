@@ -31,6 +31,10 @@ import {
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import { censusExportFileName } from "@/lib/censusMasterExport";
+import {
+  formatCensusResidentNumberDisplay,
+  normalizeCensusResidentNumber,
+} from "@/lib/censusResidentNumber";
 import Layout from "@/components/Layout/Layout";
 import { LoadingCard } from "@/components/UI/LoadingSpinner";
 import Pagination from "@/components/UI/Pagination";
@@ -377,7 +381,8 @@ function residentToFormState(resident, tenantAddressDefaults) {
     province: cleanProvinceName(
       resident.province || tenantAddressDefaults.province,
     ),
-    census_resident_number: resident.census_resident_number || "",
+    census_resident_number:
+      formatCensusResidentNumberDisplay(resident.census_resident_number) || "",
     ec_card_number: resident.ec_card_number || "",
     subdivision: resident.subdivision || "",
     purok_as_in_sheet: extras.purok_as_in_sheet || "",
@@ -467,6 +472,8 @@ export default function Residents() {
   const [residentFormTab, setResidentFormTab] = useState("core");
   const [formBaseline, setFormBaseline] = useState("");
   const [discardFormOpen, setDiscardFormOpen] = useState(false);
+  const [loadingNextResidentNumber, setLoadingNextResidentNumber] =
+    useState(false);
 
   const snapshotFormState = (data) => JSON.stringify(data);
 
@@ -560,7 +567,22 @@ export default function Residents() {
     }
   }, [mounted, currentUser, currentPage, searchTerm, limit, filters]);
 
-  const handleOpenAddModal = () => {
+  const fetchNextCensusResidentNumber = async () => {
+    const token = getAuthToken();
+    const tenantId = currentUser?.tenant_id || "ibaoeste";
+    const headers = { "x-tenant-id": tenantId };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(`${API_URL}/residents/next-number`, {
+      headers,
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Could not load next resident number");
+    }
+    return data.next_number;
+  };
+
+  const handleOpenAddModal = async () => {
     // Determine purok options based on tenant
     const tenantPurokOptions = currentUser?.tenant_id === 'demo' 
       ? [
@@ -581,11 +603,30 @@ export default function Residents() {
       lot: "",
     };
     setFormData(nextForm);
-    setFormBaseline(snapshotFormState(nextForm));
+    setFormBaseline("");
     setCensusImportSnapshot([]);
     setSelectedResident(null);
     setResidentFormTab("core");
     setIsFormModalOpen(true);
+    setLoadingNextResidentNumber(true);
+
+    try {
+      const nextNumber = await fetchNextCensusResidentNumber();
+      const withNumber = {
+        ...nextForm,
+        census_resident_number: nextNumber,
+      };
+      setFormData(withNumber);
+      setFormBaseline(snapshotFormState(withNumber));
+    } catch (error) {
+      console.warn("Next resident number:", error);
+      toast.error(
+        error.message || "Could not auto-fill resident number. Enter manually.",
+      );
+      setFormBaseline(snapshotFormState(nextForm));
+    } finally {
+      setLoadingNextResidentNumber(false);
+    }
   };
 
   const handleOpenEditModal = () => {
@@ -719,6 +760,12 @@ export default function Residents() {
       // Convert empty date strings to null to avoid timestamp syntax errors
       if (payload.date_of_birth === "") payload.date_of_birth = null;
       if (payload.date_of_death === "") payload.date_of_death = null;
+
+      if (payload.census_resident_number != null) {
+        payload.census_resident_number = normalizeCensusResidentNumber(
+          payload.census_resident_number,
+        );
+      }
 
       // Ensure numeric fields are correctly typed
       if (payload.age === "" || payload.age === null) {
@@ -1303,9 +1350,14 @@ export default function Residents() {
                       <Activity className="w-2.5 h-2.5" /> Active
                     </span>
                   )}
-                  {selectedResident.census_resident_number && (
+                  {formatCensusResidentNumberDisplay(
+                    selectedResident.census_resident_number,
+                  ) && (
                     <span className="text-[8px] font-semibold text-gray-600 bg-white border border-gray-200 px-1 py-px rounded">
-                      SR {String(selectedResident.census_resident_number).replace(/^#?\s*/i, "")}
+                      SR{" "}
+                      {formatCensusResidentNumberDisplay(
+                        selectedResident.census_resident_number,
+                      )}
                     </span>
                   )}
                   {selectedResident.ec_card_number && (
@@ -1386,7 +1438,13 @@ export default function Residents() {
 
               <CensusSubheading compact>Registration & address</CensusSubheading>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
-                <CensusProfileField compact label="Resident number" value={selectedResident.census_resident_number} />
+                <CensusProfileField
+                  compact
+                  label="Resident number"
+                  value={formatCensusResidentNumberDisplay(
+                    selectedResident.census_resident_number,
+                  )}
+                />
                 <CensusProfileField compact label="EC card number" value={selectedResident.ec_card_number} />
                 <CensusProfileField compact label="Purok (Excel)" value={selectedResident.census_extras?.purok_as_in_sheet} />
                 <CensusProfileField compact label="Subdivision (Excel)" value={selectedResident.census_extras?.subdivision_as_in_sheet} />
@@ -1558,12 +1616,13 @@ export default function Residents() {
                 {selectedResident.middle_name} {selectedResident.suffix}
               </p>
               <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[9px] font-semibold">
-                {selectedResident.census_resident_number && (
+                {formatCensusResidentNumberDisplay(
+                  selectedResident.census_resident_number,
+                ) && (
                   <span className="px-1.5 py-px rounded bg-white border border-gray-200 text-gray-700">
                     SR{" "}
-                    {String(selectedResident.census_resident_number).replace(
-                      /^#?\s*/i,
-                      "",
+                    {formatCensusResidentNumberDisplay(
+                      selectedResident.census_resident_number,
                     )}
                   </span>
                 )}
@@ -1976,6 +2035,9 @@ export default function Residents() {
                 <input
                   type="text"
                   className="input font-mono text-xs"
+                  placeholder={
+                    loadingNextResidentNumber ? "Loading next number…" : ""
+                  }
                   value={formData.census_resident_number}
                   onChange={(e) =>
                     setFormData({
@@ -1983,7 +2045,24 @@ export default function Residents() {
                       census_resident_number: e.target.value,
                     })
                   }
+                  onBlur={(e) => {
+                    const normalized = normalizeCensusResidentNumber(
+                      e.target.value,
+                    );
+                    if (normalized) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        census_resident_number: normalized,
+                      }));
+                    }
+                  }}
                 />
+                {!selectedResident && (
+                  <p className="text-[9px] text-gray-500 mt-0.5">
+                    Auto-filled with the next available census number. You can
+                    change it if needed.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="label">EC card number</label>

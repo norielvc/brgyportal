@@ -41,7 +41,28 @@ export function previewTabToFtjsQuery(tab) {
   return "clearance";
 }
 
-export function buildDirectCertificatePdfUrl(certificateId, { ftjs } = {}) {
+/** Business permit preview tabs: `permit` (clearance) | `inspection`. */
+export function businessPermitQueryToPreviewTab(bp) {
+  const v = String(bp || "")
+    .toLowerCase()
+    .replace(/-/g, "_")
+    .trim();
+  if (
+    v === "inspection" ||
+    v === "physical" ||
+    v === "physical_inspection" ||
+    v === "inspection_form"
+  ) {
+    return "inspection";
+  }
+  return "permit";
+}
+
+export function previewTabToBusinessPermitQuery(tab) {
+  return tab === "inspection" ? "inspection" : "permit";
+}
+
+export function buildDirectCertificatePdfUrl(certificateId, { ftjs, bp } = {}) {
   if (!certificateId) return "/requests";
   const params = new URLSearchParams({
     id: String(certificateId),
@@ -49,5 +70,11 @@ export function buildDirectCertificatePdfUrl(certificateId, { ftjs } = {}) {
     directPdf: "1",
   });
   if (ftjs) params.set("ftjs", previewTabToFtjsQuery(ftjsQueryToPreviewTab(ftjs)));
+  if (bp) {
+    params.set(
+      "bp",
+      previewTabToBusinessPermitQuery(businessPermitQueryToPreviewTab(bp)),
+    );
+  }
   return `/requests?${params.toString()}`;
 }

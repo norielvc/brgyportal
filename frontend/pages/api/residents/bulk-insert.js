@@ -1,5 +1,6 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
+import { normalizeCensusResidentNumber } from "../../../src/lib/censusResidentNumber";
 
 export const config = {
   api: {
@@ -38,11 +39,15 @@ export default async function handler(req, res) {
         .status(400)
         .json({ success: false, message: "residents array is required" });
 
-    const insertData = residents.map((r) => ({
-      ...r,
-      tenant_id: tenantId,
-      created_at: new Date().toISOString(),
-    }));
+    const insertData = residents.map((r) => {
+      const row = { ...r, tenant_id: tenantId, created_at: new Date().toISOString() };
+      if (row.census_resident_number != null) {
+        row.census_resident_number = normalizeCensusResidentNumber(
+          row.census_resident_number,
+        );
+      }
+      return row;
+    });
     
     console.log(`Inserting ${insertData.length} residents for tenant: ${tenantId}`);
     

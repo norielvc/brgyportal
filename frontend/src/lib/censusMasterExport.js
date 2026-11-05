@@ -1,3 +1,8 @@
+import {
+  formatCensusResidentNumberDisplay,
+  normalizeCensusResidentNumber,
+} from "./censusResidentNumber";
+
 export const CENSUS_MASTER_HEADERS = [
   "RESIDENT NUMBER",
   "LAST NAME",
@@ -66,7 +71,11 @@ export function residentToCensusMasterRow(resident) {
   const un = resident.census_extras?.unnamed_columns || {};
   const birth = snapshot(resident, "BIRTHDATE") || resident.date_of_birth || "";
   return [
-    blank(resident.census_resident_number || snapshot(resident, "RESIDENT NUMBER")),
+    blank(
+      formatCensusResidentNumberDisplay(
+        resident.census_resident_number || snapshot(resident, "RESIDENT NUMBER"),
+      ),
+    ),
     blank(resident.last_name || snapshot(resident, "LAST NAME")),
     blank(resident.first_name || snapshot(resident, "FIRST NAME")),
     blank(resident.middle_name || snapshot(resident, "MIDDLE NAME")),
@@ -130,16 +139,18 @@ export function residentToCensusMasterRow(resident) {
 }
 
 export function censusResidentSortKey(resident) {
-  const raw = String(resident.census_resident_number || "");
-  const num = parseInt(raw.replace(/\D/g, ""), 10);
+  const normalized = normalizeCensusResidentNumber(
+    resident.census_resident_number,
+  );
+  const num = normalized ? parseInt(normalized, 10) : NaN;
   return Number.isFinite(num) ? num : Number.MAX_SAFE_INTEGER;
 }
 
 export function censusExportFileName(resident) {
   const dateStr = new Date().toISOString().slice(0, 10);
-  const sr = String(resident?.census_resident_number || "")
-    .replace(/[^\w-]+/g, "")
-    .slice(0, 12);
+  const sr =
+    formatCensusResidentNumberDisplay(resident?.census_resident_number) ||
+    "";
   const name = [resident?.last_name, resident?.first_name]
     .filter(Boolean)
     .join("-")

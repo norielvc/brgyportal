@@ -195,18 +195,21 @@ const mainMenuItems = [
         name: "Activity",
         href: "/activity",
         icon: Activity,
+        adminOnly: true,
         description: "System logs",
       },
       {
         name: "Reports",
         href: "/reports",
         icon: FileText,
+        adminOnly: true,
         description: "Analytics",
       },
       {
         name: "Settings",
         href: "/settings",
         icon: Settings,
+        adminOnly: true,
         description: "Configuration",
       },
     ],
@@ -243,14 +246,9 @@ export default function Sidebar({
   });
   const user = getUserData();
   const role = user?.role?.toLowerCase();
-  const adminRoles = [
-    "superadmin",
-    "super_admin",
-    "admin",
-    "captain",
-    "secretary",
-    "staff",
-  ];
+  /** Management / System sidebar — administrators only (not captain, secretary, staff). */
+  const portalAdminRoles = ["superadmin", "super_admin", "admin"];
+  const isPortalAdmin = Boolean(role && portalAdminRoles.includes(role));
 
   // Fetch subscription data to check plan
   const [subscription, setSubscription] = useState(null);
@@ -539,8 +537,14 @@ export default function Sidebar({
     if (item.href === "/pickup-management" && !isReleasingTeamMember) {
       return false;
     }
-    if (item.adminOnly && (!role || !adminRoles.includes(role))) {
+    if (item.adminOnly && !isPortalAdmin) {
       return false;
+    }
+    if (item.children?.length) {
+      const visibleChildren = item.children.filter(
+        (child) => !child.adminOnly || isPortalAdmin,
+      );
+      if (visibleChildren.length === 0) return false;
     }
     return true;
   });
@@ -697,8 +701,7 @@ export default function Sidebar({
                 <div className="pl-2 mt-0.5 space-y-0.5 border-l border-white/10 ml-3">
                   {item.children
                     .filter(
-                      (child) =>
-                        !child.adminOnly || (role && adminRoles.includes(role)),
+                      (child) => !child.adminOnly || isPortalAdmin,
                     )
                     .map((child) => {
                       const isChildActive = router.pathname === child.href;

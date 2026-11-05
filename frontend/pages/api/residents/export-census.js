@@ -12,6 +12,7 @@ import {
   checkFullCensusExportAllowed,
   recordFullCensusExport,
 } from "../../../src/lib/censusExportGuard";
+import { normalizeCensusResidentNumber } from "../../../src/lib/censusResidentNumber";
 
 function tenantFromRequest(req) {
   let tenantId = req.headers["x-tenant-id"] || req.query.tenant_id;
@@ -62,7 +63,9 @@ export default async function handler(req, res) {
           id: data.id,
           first_name: data.first_name,
           last_name: data.last_name,
-          census_resident_number: data.census_resident_number,
+          census_resident_number: normalizeCensusResidentNumber(
+            data.census_resident_number,
+          ),
         },
       });
     }

@@ -544,7 +544,7 @@ export default async function handler(req, res) {
             category: notifData.category,
             reference_number: cert.reference_number,
             request_id: requestId,
-            link: notifData.link || `/requests/${requestId}`,
+            link: notifData.link || `/requests?id=${requestId}`,
             read: false,
             created_at: new Date().toISOString()
           }])
@@ -612,7 +612,7 @@ export default async function handler(req, res) {
               message: `Request ${cert.reference_number} from ${applicantName} requires your approval.`,
               type: 'info',
               category: 'assignment',
-              link: `/requests/${requestId}`
+              link: `/requests?id=${requestId}`,
             });
           }
         }
@@ -750,7 +750,7 @@ export default async function handler(req, res) {
               message: `Request ${cert.reference_number} from ${applicantName} has been sent back for review.`,
               type: 'info',
               category: 'assignment',
-              link: `/requests/${requestId}`
+              link: `/requests?id=${requestId}`,
             });
           }
         }

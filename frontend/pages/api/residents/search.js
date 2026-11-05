@@ -2,6 +2,7 @@ import { supabase } from "../../../lib/supabase";
 import jwt from "jsonwebtoken";
 import { getJwtSecret } from "../../../lib/jwtSecret";
 import { RESIDENT_SEARCH_SELECT } from "../../../src/lib/residentListQuery";
+import { withNormalizedCensusResidentNumber } from "../../../src/lib/censusResidentNumber";
 
 /**
  * RESIDENT SEARCH API (Next.js)
@@ -82,6 +83,7 @@ export default async function handler(req, res) {
 
     if (!error && residents) {
       const enriched = residents.map((r) => {
+        r = withNormalizedCensusResidentNumber(r);
         const fromParts = [r.first_name, r.middle_name, r.last_name, r.suffix]
           .filter(Boolean)
           .join(" ")

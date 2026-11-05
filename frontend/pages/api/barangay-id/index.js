@@ -1,7 +1,5 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
-import { EC_CARD_NO_EXPIRY_DATE } from "../../../src/lib/ecCard";
-
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
   if (!userRes) return;
@@ -248,6 +246,18 @@ export default async function handler(req, res) {
 
       // 3. Compute Dates and Birth Date
       const startIssueDate = issue_date ? new Date(issue_date) : new Date();
+      if (isNaN(startIssueDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid issue date.",
+        });
+      }
+      const validityYears = Math.max(
+        1,
+        parseInt(String(validity_years ?? 1), 10) || 1,
+      );
+      const expDate = new Date(startIssueDate);
+      expDate.setFullYear(expDate.getFullYear() + validityYears);
 
       const firstName = customFirstName !== undefined && customFirstName !== "" ? customFirstName : resident.first_name;
       const middleName = customMiddleName !== undefined ? customMiddleName : resident.middle_name;
@@ -325,8 +335,6 @@ export default async function handler(req, res) {
         captain_signature_url: captain_signature_url || null,
         qr_code_data: qrPayload,
         status: "active",
-        issue_date: startIssueDate.toISOString().split("T")[0],
-        expiry_date: EC_CARD_NO_EXPIRY_DATE,
         issue_date: startIssueDate.toISOString().split("T")[0],
         expiry_date: expDate.toISOString().split("T")[0],
         issued_by: userRes.id || null,

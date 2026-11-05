@@ -5,6 +5,7 @@ const {
   normalizePurok,
   normalizeSubdivisionRaw,
 } = require("./censusAddress");
+const { normalizeCensusResidentNumber } = require("./censusResidentNumber");
 
 const DEFAULT_ADDRESS = {
   barangay: "IBA O' ESTE",
@@ -120,9 +121,10 @@ function buildRowRecord(headers, row, tenantId, ecFileByResidentNumber, importMe
   const col30 = row[30];
   const col31 = row[31];
 
-  const censusNumber =
+  const censusNumberRaw =
     trimStr(rowByHeader["RESIDENT NUMBER"]) ||
     trimStr(rowByHeader["SR NUMBER"]);
+  const censusNumber = normalizeCensusResidentNumber(censusNumberRaw);
   if (!censusNumber) return null;
 
   const lastName = upperName(rowByHeader["LAST NAME"]);
