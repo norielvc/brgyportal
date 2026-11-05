@@ -1,12 +1,17 @@
 import { supabase } from "../../../lib/supabase";
 import jwt from "jsonwebtoken";
 import { getJwtSecret } from "../../../lib/jwtSecret";
+import { authenticateToken } from "../../../src/lib/api-auth";
 import {
   CENSUS_MASTER_HEADERS,
   RESIDENT_CENSUS_EXPORT_SELECT,
   censusResidentSortKey,
   residentToCensusMasterRow,
 } from "../../../src/lib/censusMasterExport";
+import {
+  checkFullCensusExportAllowed,
+  recordFullCensusExport,
+} from "../../../src/lib/censusExportGuard";
 
 function tenantFromRequest(req) {
   let tenantId = req.headers["x-tenant-id"] || req.query.tenant_id;
@@ -62,6 +67,48 @@ export default async function handler(req, res) {
       });
     }
 
+    const user = await authenticateToken(req, res);
+    if (!user) return;
+
+    const userTenant = user.tenant_id || tenantId;
+    if (userTenant !== tenantId) {
+      return res.status(403).json({
+        success: false,
+        message: "Tenant mismatch for census export",
+      });
+    }
+
+    const confirm =
+      req.query.confirm === "1" ||
+      req.query.confirm === "true" ||
+      req.headers["x-confirm-full-census"] === "1";
+
+    if (!confirm) {
+      const { count } = await supabase
+        .from("residents")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", tenantId);
+
+      return res.status(428).json({
+        success: false,
+        code: "CONFIRM_REQUIRED",
+        message:
+          "Full census export moves a large amount of data. Confirm in the UI or pass confirm=1.",
+        estimatedResidents: count ?? 0,
+      });
+    }
+
+    const actorKey = String(user._id || user.id || user.email || "staff");
+    const cooldown = checkFullCensusExportAllowed(tenantId, actorKey);
+    if (!cooldown.allowed) {
+      return res.status(429).json({
+        success: false,
+        code: "EXPORT_COOLDOWN",
+        message: `Full census export was run recently. Try again in ${cooldown.retryAfterSec} seconds.`,
+        retryAfterSec: cooldown.retryAfterSec,
+      });
+    }
+
     const all = [];
     let from = 0;
     while (true) {
@@ -77,6 +124,8 @@ export default async function handler(req, res) {
       if (data.length < 1000) break;
       from += 1000;
     }
+
+    recordFullCensusExport(tenantId, actorKey);
 
     all.sort((a, b) => censusResidentSortKey(a) - censusResidentSortKey(b));
 

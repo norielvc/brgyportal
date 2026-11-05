@@ -363,6 +363,12 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
         newStatus = 'completed';
         nextStep = steps[currentStepIndex + 1];
         newRequestStatus = nextStep.status;
+        if (
+          String(nextStep.status || '').toLowerCase().includes('witness') ||
+          String(nextStep.name || '').toLowerCase().includes('witness')
+        ) {
+          newRequestStatus = 'witness_verification';
+        }
       } else {
         // Fallback for final steps or undefined steps
         newStatus = 'completed';
@@ -442,13 +448,25 @@ router.put('/:assignmentId/status', authenticateToken, async (req, res) => {
       }
     }
 
-    const { error: requestUpdateError } = await supabase
+    const dbStatusForCert = (newRequestStatus === 'witness_verification' || newRequestStatus === 'Witness Verification') ? 'processing' : newRequestStatus;
+    let { error: requestUpdateError } = await supabase
       .from('certificate_requests')
-      .update({ status: newRequestStatus, updated_at: new Date().toISOString() })
+      .update({ status: dbStatusForCert, updated_at: new Date().toISOString() })
       .eq('id', assignment.request_id)
       .eq('tenant_id', tenantId);
 
-    if (requestUpdateError) throw requestUpdateError;
+    if (requestUpdateError) {
+      console.warn('[STATUS-UPDATE] Error updating certificate_requests status to ' + newRequestStatus + ':', requestUpdateError.message || requestUpdateError);
+      const fallbackRes = await supabase
+        .from('certificate_requests')
+        .update({ status: 'processing', updated_at: new Date().toISOString() })
+        .eq('id', assignment.request_id)
+        .eq('tenant_id', tenantId);
+      if (fallbackRes.error) {
+        console.error('[STATUS-UPDATE] Fallback update to processing also failed:', fallbackRes.error);
+        throw requestUpdateError;
+      }
+    }
 
     if ((action === 'approve' || action === 'return' || (action === 'physical_inspection' && assignment.request_type === 'business_permit')) && nextStep) {
       const nextStepAssignments = nextStep.assignedUsers || [];

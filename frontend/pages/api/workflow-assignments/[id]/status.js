@@ -169,17 +169,32 @@ export default async function handler(req, res) {
     .eq("tenant_id", tenantId)
     .eq("status", "pending");
 
-  // 4. Determine next certificate status
+  // 4. Determine next certificate status via workflow configuration
+  const { data: currentWfConfig } = await supabase
+    .from("workflow_configurations")
+    .select("workflow_config")
+    .eq("certificate_type", certType)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  const currentStepsList = currentWfConfig?.workflow_config?.steps || [];
+  const activeStep = currentStepsList.find(
+    (s) => s.id.toString() === assignment.step_id.toString()
+  );
+  const currentStepIdx = currentStepsList.findIndex(
+    (s) => s.id.toString() === assignment.step_id.toString()
+  );
+
   const statusFlow = {
-    staff_review: "secretary_approval",  // After staff review, goes to secretary
+    staff_review: "secretary_approval",
     pending: "secretary_approval",
     submitted: "secretary_approval",
     returned: "secretary_approval",
-    processing: "secretary_approval",  // Legacy: processing = waiting for secretary
+    processing: "secretary_approval",
     secretary_approval: "captain_approval",
     physical_inspection: "verifying",
     verifying: "captain_approval",
-    captain_approval: "ready", // Goes directly to Pickup Management (BP overridden by resolveBusinessPermitApproveTarget)
+    captain_approval: "ready",
     Treasury: "oic_review",
     oic_review: "ready",
     ready: "released",
@@ -189,16 +204,9 @@ export default async function handler(req, res) {
   let newCertStatus = cert.status;
   let inspectionNextStep = null;
   if (action === "approve") {
-    newCertStatus = statusFlow[cert.status] || statusFlow[String(cert.status || "").toLowerCase()] || cert.status;
     const isBusinessPermit = (certType || cert.certificate_type) === "business_permit";
     if (isBusinessPermit) {
-      const { data: permitWf } = await supabase
-        .from("workflow_configurations")
-        .select("workflow_config")
-        .eq("certificate_type", certType || cert.certificate_type)
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
-      const permitSteps = permitWf?.workflow_config?.steps || [];
+      const permitSteps = currentStepsList;
       const { data: priorHistory } = await supabase
         .from("workflow_history")
         .select("action, step_name, previous_status, new_status")
@@ -215,27 +223,37 @@ export default async function handler(req, res) {
         newCertStatus = target.status;
         inspectionNextStep = target.next || null;
       }
+    } else if (currentStepIdx !== -1 && currentStepsList[currentStepIdx + 1]) {
+      const nextStepCandidate = currentStepsList[currentStepIdx + 1];
+      inspectionNextStep = nextStepCandidate;
+      const nextStepStatus = String(nextStepCandidate.status || "").toLowerCase();
+      const nextStepName = String(nextStepCandidate.name || "").toLowerCase();
+
+      if (nextStepStatus.includes("witness") || nextStepName.includes("witness")) {
+        newCertStatus = "witness_verification";
+      } else if (nextStepCandidate.status) {
+        newCertStatus = normalizeCertificateStatus(nextStepCandidate.status, {
+          stepName: nextStepCandidate.name,
+          certificateType: certType || cert.certificate_type,
+        });
+      } else {
+        newCertStatus = statusFlow[cert.status] || cert.status;
+      }
+    } else {
+      newCertStatus = statusFlow[cert.status] || statusFlow[String(cert.status || "").toLowerCase()] || cert.status;
     }
-    console.log(`[WORKFLOW-ASSIGNMENT] Status flow: ${cert.status} -> ${newCertStatus}`);
+    console.log(`[WORKFLOW-ASSIGNMENT] Status flow: ${cert.status} -> ${newCertStatus}, nextStep: ${inspectionNextStep?.name}`);
   } else if (action === "reject") {
     newCertStatus = "rejected";
   } else if (action === "return") {
-    newCertStatus = "returned"; // stays in returned, but Step 1 gets reassigned
+    newCertStatus = "returned";
   } else if (action === "send_back_to_start") {
     newCertStatus = "staff_review";
   } else if (action === "physical_inspection") {
     newCertStatus = "physical_inspection";
     if ((certType || cert.certificate_type) === "business_permit") {
-      const { data: inspectionWf } = await supabase
-        .from("workflow_configurations")
-        .select("workflow_config")
-        .eq("certificate_type", certType)
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
-      const inspectionSteps = inspectionWf?.workflow_config?.steps || [];
-      const currentIndex = inspectionSteps.findIndex(
-        (step) => String(step.id) === String(assignment.step_id),
-      );
+      const inspectionSteps = currentStepsList;
+      const currentIndex = currentStepIdx;
       if (currentIndex !== -1 && currentIndex < inspectionSteps.length - 1) {
         inspectionNextStep = inspectionSteps[currentIndex + 1];
         newCertStatus =
@@ -248,22 +266,15 @@ export default async function handler(req, res) {
   }
 
   // 5. Update certificate status
+  const dbStatusForCert = (newCertStatus === "witness_verification" || newCertStatus === "Witness Verification")
+    ? "processing"
+    : newCertStatus;
+
   await supabase
     .from("certificate_requests")
-    .update({ status: newCertStatus, updated_at: new Date().toISOString() })
+    .update({ status: dbStatusForCert, updated_at: new Date().toISOString() })
     .eq("id", requestId)
     .eq("tenant_id", tenantId);
-
-  // 5.5 Fetch config to get current step role
-  const { data: currentWfConfig } = await supabase
-    .from("workflow_configurations")
-    .select("workflow_config")
-    .eq("certificate_type", certType)
-    .eq("tenant_id", tenantId)
-    .single();
-
-  const currentStepsList = currentWfConfig?.workflow_config?.steps || [];
-  const activeStep = currentStepsList.find(s => s.id.toString() === assignment.step_id.toString());
 
   // 6. Log to workflow history
   await supabase.from("workflow_history").insert([{
@@ -629,7 +640,37 @@ export default async function handler(req, res) {
         }
       }
     } else if (action === 'reject') {
-      // In-app notification for applicant. Rejection email is disabled.
+      // Send rejection notification email to resident applicant if an email exists
+      if (applicantEmail) {
+        try {
+          const { isEmailNotificationsEnabled } = await import(
+            "@/lib/requestNotificationHelper"
+          );
+          const emailEnabled = await isEmailNotificationsEnabled(supabase);
+          if (emailEnabled) {
+            await sendEmail({
+              recipientEmail: applicantEmail,
+              recipientName: applicantName || "Valued Resident",
+              eventType: "REJECTED",
+              certificateType: cert.certificate_type,
+              referenceNumber: cert.reference_number,
+              applicantName: applicantName || "Valued Resident",
+              comments:
+                note ||
+                "Your application was reviewed by the barangay and could not be approved at this time.",
+              requestId,
+              tenantId,
+            });
+            console.log(
+              `📧 Rejection email sent to resident: ${applicantEmail} for ${cert.reference_number}`,
+            );
+          }
+        } catch (rejectMailErr) {
+          console.error("❌ Rejection email error:", rejectMailErr.message);
+        }
+      }
+
+      // In-app notification for applicant
       if (cert.resident_id) {
         const { data: residentUser } = await supabase
           .from('users')

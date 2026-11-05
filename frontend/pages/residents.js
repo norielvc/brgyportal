@@ -43,6 +43,10 @@ import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
 import {
   generateFullAddress,
+  cleanBarangayName,
+  cleanMunicipalityName,
+  cleanProvinceName,
+  stripProvinceOf,
   PUROK_OPTIONS,
   PHASE_OPTIONS,
   isSubdivisionPurok,
@@ -173,15 +177,9 @@ function composeHouseNumberForForm(formData) {
   if (!isSubdivisionPurok(formData.purok)) {
     return formData.house_number || "";
   }
-  const rawPhase = formData.phase?.trim().toUpperCase() || "";
-  const phase = rawPhase
-    ? rawPhase.startsWith("PHASE") || ["YAKAL", "PALIKPIK"].includes(rawPhase)
-      ? rawPhase
-      : `PHASE ${rawPhase}`
-    : "";
   const block = formData.block?.trim() || "";
   const lot = formData.lot?.trim() || "";
-  return [phase, block && `BLOCK ${block}`, lot && `LOT ${lot}`]
+  return [block && `BLOCK ${block}`, lot && `LOT ${lot}`]
     .filter(Boolean)
     .join(" ");
 }
@@ -341,9 +339,9 @@ function residentToFormState(resident, tenantAddressDefaults) {
   if (!resident) {
     return {
       ...EMPTY_RESIDENT_FORM,
-      barangay: tenantAddressDefaults.barangay,
-      municipality: tenantAddressDefaults.municipality,
-      province: tenantAddressDefaults.province,
+      barangay: cleanBarangayName(tenantAddressDefaults.barangay),
+      municipality: cleanMunicipalityName(tenantAddressDefaults.municipality),
+      province: cleanProvinceName(tenantAddressDefaults.province),
     };
   }
   const extras = resident.census_extras || {};
@@ -370,9 +368,15 @@ function residentToFormState(resident, tenantAddressDefaults) {
     date_of_death: formatDateForInput(resident.date_of_death),
     cause_of_death: resident.cause_of_death || "",
     covid_related: Boolean(resident.covid_related),
-    barangay: resident.barangay || tenantAddressDefaults.barangay,
-    municipality: resident.municipality || tenantAddressDefaults.municipality,
-    province: resident.province || tenantAddressDefaults.province,
+    barangay: cleanBarangayName(
+      resident.barangay || tenantAddressDefaults.barangay,
+    ),
+    municipality: cleanMunicipalityName(
+      resident.municipality || tenantAddressDefaults.municipality,
+    ),
+    province: cleanProvinceName(
+      resident.province || tenantAddressDefaults.province,
+    ),
     census_resident_number: resident.census_resident_number || "",
     ec_card_number: resident.ec_card_number || "",
     subdivision: resident.subdivision || "",
@@ -443,9 +447,9 @@ export default function Residents() {
 
   // Tenant-specific address fields
   const [tenantAddressDefaults, setTenantAddressDefaults] = useState({
-    barangay: '',
-    municipality: '',
-    province: 'Province of Bulacan',
+    barangay: "IBA O' ESTE",
+    municipality: "Calumpit",
+    province: "Bulacan",
   });
 
   // Tenant-specific purok options
@@ -521,9 +525,13 @@ export default function Residents() {
       if (data.success && data.settings) {
         const headerInfo = data.settings.certificate_settings?.headerInfo || data.settings.headerInfo || {};
         setTenantAddressDefaults({
-          barangay: headerInfo.barangayName || "BARANGAY IBA O' ESTE",
-          municipality: headerInfo.municipality || 'Calumpit',
-          province: headerInfo.province || 'Province of Bulacan',
+          barangay: cleanBarangayName(
+            headerInfo.barangayName || "IBA O' ESTE",
+          ),
+          municipality: cleanMunicipalityName(
+            headerInfo.municipality || "Calumpit",
+          ),
+          province: cleanProvinceName(headerInfo.province || "Bulacan"),
         });
 
         // Set tenant-specific purok options
@@ -649,9 +657,15 @@ export default function Residents() {
       }
 
       // Generate full address with subdivision/sitio & parent purok
-      const effectiveBarangay = cleanedData.barangay || tenantAddressDefaults.barangay;
-      const effectiveMunicipality = cleanedData.municipality || tenantAddressDefaults.municipality;
-      const effectiveProvince = cleanedData.province || tenantAddressDefaults.province;
+      const effectiveBarangay = cleanBarangayName(
+        cleanedData.barangay || tenantAddressDefaults.barangay,
+      );
+      const effectiveMunicipality = cleanMunicipalityName(
+        cleanedData.municipality || tenantAddressDefaults.municipality,
+      );
+      const effectiveProvince = cleanProvinceName(
+        cleanedData.province || tenantAddressDefaults.province,
+      );
       cleanedData.residential_address = generateFullAddress({
         house_number: cleanedData.house_number,
         purok: subInfo ? subInfo.parentPurok : cleanedData.purok,
@@ -880,16 +894,43 @@ export default function Residents() {
   };
 
   const handleExportCensus = async () => {
+    const estimated =
+      typeof totalItems === "number" && totalItems > 0
+        ? totalItems
+        : null;
+    const estimateLabel = estimated
+      ? `about ${estimated.toLocaleString()} residents`
+      : "the full resident database";
+
+    const confirmed = window.confirm(
+      `Export the census master list (${estimateLabel})?\n\n` +
+        "This downloads a large amount of data from Supabase and counts toward your monthly egress quota. " +
+        "You can export one resident at a time from their profile instead.\n\nContinue?",
+    );
+    if (!confirmed) return;
+
     setIsExporting(true);
     const toastId = toast.loading("Preparing census master list...");
     try {
       const token = getAuthToken();
       const tenantId = currentUser?.tenant_id || "ibaoeste";
-      const headers = { "x-tenant-id": tenantId };
+      const headers = {
+        "x-tenant-id": tenantId,
+        "x-confirm-full-census": "1",
+      };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const response = await fetch(`${API_URL}/residents/export-census`, { headers });
+      const response = await fetch(
+        `${API_URL}/residents/export-census?confirm=1`,
+        { headers },
+      );
       const data = await response.json();
+      if (response.status === 429) {
+        throw new Error(
+          data.message ||
+            `Please wait ${data.retryAfterSec || 300} seconds before exporting again.`,
+        );
+      }
       if (!response.ok || !data.success) {
         throw new Error(data.message || "Export failed");
       }
@@ -1182,21 +1223,26 @@ export default function Residents() {
         dense
       >
         {selectedResident && (() => {
-          const displayAddress = normalizeNorthvilleInText(
-            selectedResident.residential_address ||
-              generateFullAddress({
-                house_number: selectedResident.house_number,
-                purok: selectedResident.purok,
-                subdivision: selectedResident.subdivision,
-                barangay:
-                  selectedResident.barangay || tenantAddressDefaults.barangay,
-                municipality:
-                  selectedResident.municipality ||
-                  tenantAddressDefaults.municipality,
-                province:
-                  selectedResident.province || tenantAddressDefaults.province,
-              }) ||
-              "—",
+          const displayAddress = stripProvinceOf(
+            normalizeNorthvilleInText(
+              selectedResident.residential_address ||
+                generateFullAddress({
+                  house_number: selectedResident.house_number,
+                  purok: selectedResident.purok,
+                  subdivision: selectedResident.subdivision,
+                  barangay: cleanBarangayName(
+                    selectedResident.barangay || tenantAddressDefaults.barangay,
+                  ),
+                  municipality: cleanMunicipalityName(
+                    selectedResident.municipality ||
+                      tenantAddressDefaults.municipality,
+                  ),
+                  province: cleanProvinceName(
+                    selectedResident.province || tenantAddressDefaults.province,
+                  ),
+                }) ||
+                "—",
+            ),
           );
 
           const householdLinkLabel = selectedResident.household_head_id
@@ -1789,89 +1835,37 @@ export default function Residents() {
               </div>
 
               {isSubdivisionPurok(formData.purok) ? (
-                hasPhaseField(formData.purok) ? (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="label">Phase <span className="text-red-500">*</span></label>
-                      <select
-                        required
-                        className="input uppercase font-bold"
-                        value={formData.phase}
-                        onChange={(e) =>
-                          setFormData({ ...formData, phase: e.target.value })
-                        }
-                      >
-                        <option value="">-- Select --</option>
-                        {PHASE_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="label">Block <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="1"
-                        className="input uppercase font-bold text-center"
-                        value={formData.block}
-                        onChange={(e) =>
-                          setFormData({ ...formData, block: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="label">Lot <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="2"
-                        className="input uppercase font-bold text-center"
-                        value={formData.lot}
-                        onChange={(e) =>
-                          setFormData({ ...formData, lot: e.target.value })
-                        }
-                      />
-                    </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label">Block</label>
+                    <input
+                      type="text"
+                      placeholder="1"
+                      className="input uppercase font-bold text-center"
+                      value={formData.block}
+                      onChange={(e) =>
+                        setFormData({ ...formData, block: e.target.value })
+                      }
+                    />
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="label">Block <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="1"
-                        className="input uppercase font-bold text-center"
-                        value={formData.block}
-                        onChange={(e) =>
-                          setFormData({ ...formData, block: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="label">Lot <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="2"
-                        className="input uppercase font-bold text-center"
-                        value={formData.lot}
-                        onChange={(e) =>
-                          setFormData({ ...formData, lot: e.target.value })
-                        }
-                      />
-                    </div>
+                  <div>
+                    <label className="label">Lot</label>
+                    <input
+                      type="text"
+                      placeholder="2"
+                      className="input uppercase font-bold text-center"
+                      value={formData.lot}
+                      onChange={(e) =>
+                        setFormData({ ...formData, lot: e.target.value })
+                      }
+                    />
                   </div>
-                )
+                </div>
               ) : formData.purok ? (
                 <div>
-                  <label className="label">House Number <span className="text-red-500">*</span></label>
+                  <label className="label">House Number</label>
                   <input
                     type="text"
-                    required
                     placeholder="e.g., 2706, 123-A"
                     className="input uppercase font-bold"
                     value={formData.house_number}
@@ -1882,7 +1876,7 @@ export default function Residents() {
                 </div>
               ) : (
                 <div>
-                  <label className="label">House Number <span className="text-red-500">*</span></label>
+                  <label className="label">House Number</label>
                   <input
                     type="text"
                     disabled
@@ -1899,7 +1893,7 @@ export default function Residents() {
                   type="text"
                   readOnly
                   className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
-                  value={formData.barangay}
+                  value={cleanBarangayName(formData.barangay)}
                 />
               </div>
               <div>
@@ -1908,7 +1902,7 @@ export default function Residents() {
                   type="text"
                   readOnly
                   className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
-                  value={formData.municipality}
+                  value={cleanMunicipalityName(formData.municipality)}
                 />
               </div>
               <div className="md:col-span-2">
@@ -1917,7 +1911,7 @@ export default function Residents() {
                   type="text"
                   readOnly
                   className="input uppercase font-bold bg-gray-100 cursor-not-allowed"
-                  value={formData.province}
+                  value={cleanProvinceName(formData.province)}
                 />
               </div>
             </div>

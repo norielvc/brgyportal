@@ -3,7 +3,7 @@ import { supabase } from "../../../lib/supabase";
 import bcrypt from "bcryptjs";
 
 const CERTIFICATE_TYPES = [
-  'barangay_clearance', 'certificate_of_indigency', 'barangay_residency',
+  'barangay_clearance', 'first_time_job_seeker', 'certificate_of_indigency', 'barangay_residency',
   'natural_death', 'barangay_guardianship', 'barangay_cohabitation',
   'medico_legal', 'business_permit', 'certification_same_person', 'educational_assistance'
 ];

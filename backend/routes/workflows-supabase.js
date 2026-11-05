@@ -94,6 +94,7 @@ router.put('/', authenticateToken, requireAdmin, async (req, res) => {
     // Whitelist of valid certificate types to prevent database constraint errors
     const validCertificateTypes = [
       'barangay_clearance',
+      'first_time_job_seeker',
       'certificate_of_indigency',
       'barangay_residency',
       'natural_death',
@@ -101,7 +102,8 @@ router.put('/', authenticateToken, requireAdmin, async (req, res) => {
       'barangay_cohabitation',
       'medico_legal',
       'business_permit',
-      'certification_same_person'
+      'certification_same_person',
+      'educational_assistance'
     ];
 
     // ONLY process known certificate types
@@ -181,6 +183,7 @@ router.post('/sync-assignments', authenticateToken, requireAdmin, async (req, re
     // Process each certificate type
     const certificateTypes = [
       'barangay_clearance',
+      'first_time_job_seeker',
       'certificate_of_indigency',
       'barangay_residency',
       'natural_death',
@@ -188,7 +191,8 @@ router.post('/sync-assignments', authenticateToken, requireAdmin, async (req, re
       'barangay_cohabitation',
       'medico_legal',
       'business_permit',
-      'certification_same_person'
+      'certification_same_person',
+      'educational_assistance'
     ];
     let syncResults = {
       totalAssignments: 0,

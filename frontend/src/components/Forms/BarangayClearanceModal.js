@@ -147,6 +147,15 @@ const defaultOfficials = {
   },
 };
 
+const FIRST_TIME_JOB_SEEKER_PURPOSES = [
+  "NATIONAL BUREAU OF INVESTIGATION (NBI) REQUIREMENT",
+  "TAXPAYER IDENTIFICATION NUMBER (TIN) REQUIREMENT",
+  "SOCIAL SECURITY SYSTEM (SSS) REQUIREMENT",
+  "PAG-IBIG REQUIREMENT",
+  "PHILHEALTH REQUIREMENT",
+  "*TAXPAYER IDENTIFICATION NUMBERS (TIN) REQUIREMENT",
+];
+
 const PURPOSE_LIST_1 = [
   "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (CITY OF MALOLOS, BULACAN)",
   "TESDA / SCHOOLING REQUIREMENT",
@@ -296,7 +305,15 @@ export default function BarangayClearanceModal({
   onClose,
   isDemo = false,
   tenantConfig = {},
+  certType = "barangay_clearance",
+  customTitle = null,
 }) {
+  const displayTitle =
+    customTitle ||
+    (certType === "first_time_job_seeker"
+      ? "First Time Job Seeker"
+      : "Barangay Clearance");
+
   useScrollLock(isOpen);
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -383,7 +400,7 @@ export default function BarangayClearanceModal({
       setNotification({
         type: "error",
         title: "RESTRICTED PROFILE",
-        message: `NOTICE: ${resident.full_name} has a pending case record. Barangay Clearance issuance is restricted.`,
+        message: `NOTICE: ${resident.full_name} has a pending case record. ${displayTitle} issuance is restricted.`,
       });
     } else {
       setNotification({
@@ -517,7 +534,7 @@ export default function BarangayClearanceModal({
           "x-tenant-id": tenantConfig.tenant_id || "ibaoeste",
         },
         body: JSON.stringify({
-          type: "barangay_clearance",
+          type: certType,
           formData,
         }),
       });
@@ -628,7 +645,7 @@ export default function BarangayClearanceModal({
                         {tenantConfig.shortName || "Barangay"} &middot; {t.officialForm}
                       </p>
                       <h2 className="text-base sm:text-xl font-bold text-white leading-tight">
-                        Barangay Clearance
+                        {displayTitle}
                       </h2>
                     </div>
                   </div>
@@ -906,49 +923,87 @@ export default function BarangayClearanceModal({
 
                         <div className="pt-1">
                           <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.12em] mb-2.5">
-                            {t.quickAdd}
+                            {t.quickAdd} {certType === "first_time_job_seeker" ? "· First Time Job Seeker (RA 11261)" : ""}
                           </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <CertSearchableDropdown
-                              label={t.catWork}
-                              placeholder={t.select}
-                              items={PURPOSE_LIST_1}
-                              onSelect={handlePurposeSelect}
-                              colorClass={{
-                                label: "text-gray-500",
-                                text: "text-gray-800",
-                                icon: "text-gray-400",
-                                bg: "bg-gray-50",
-                                ring: "ring-gray-200",
-                              }}
-                            />
-                            <CertSearchableDropdown
-                              label={t.catUtility}
-                              placeholder={t.select}
-                              items={PURPOSE_LIST_2}
-                              onSelect={handlePurposeSelect}
-                              colorClass={{
-                                label: "text-gray-500",
-                                text: "text-gray-800",
-                                icon: "text-gray-400",
-                                bg: "bg-gray-50",
-                                ring: "ring-gray-200",
-                              }}
-                            />
-                            <CertSearchableDropdown
-                              label={t.catMedical}
-                              placeholder={t.select}
-                              items={PURPOSE_LIST_3}
-                              onSelect={handlePurposeSelect}
-                              colorClass={{
-                                label: "text-gray-500",
-                                text: "text-gray-800",
-                                icon: "text-gray-400",
-                                bg: "bg-gray-50",
-                                ring: "ring-gray-200",
-                              }}
-                            />
-                          </div>
+                          {certType === "first_time_job_seeker" ? (
+                            <div className="space-y-3">
+                              <CertSearchableDropdown
+                                label={lang === "tl" ? "Mga Pangangailangan (RA 11261)" : "Jobseeker Requirements (RA 11261)"}
+                                placeholder={t.select}
+                                items={FIRST_TIME_JOB_SEEKER_PURPOSES}
+                                onSelect={handlePurposeSelect}
+                                colorClass={{
+                                  label: "text-emerald-700",
+                                  text: "text-gray-800",
+                                  icon: "text-emerald-500",
+                                  bg: "bg-emerald-50/60",
+                                  ring: "ring-emerald-200",
+                                }}
+                              />
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {FIRST_TIME_JOB_SEEKER_PURPOSES.map((reqItem, idx) => {
+                                  const isAdded = (formData.purpose || "").includes(reqItem);
+                                  return (
+                                    <button
+                                      key={idx}
+                                      type="button"
+                                      onClick={() => handlePurposeSelect(reqItem)}
+                                      className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-semibold transition-all text-left ${
+                                        isAdded
+                                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+                                      }`}
+                                    >
+                                      {isAdded ? "✓ " : "+ "}
+                                      {reqItem}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <CertSearchableDropdown
+                                label={t.catWork}
+                                placeholder={t.select}
+                                items={PURPOSE_LIST_1}
+                                onSelect={handlePurposeSelect}
+                                colorClass={{
+                                  label: "text-gray-500",
+                                  text: "text-gray-800",
+                                  icon: "text-gray-400",
+                                  bg: "bg-gray-50",
+                                  ring: "ring-gray-200",
+                                }}
+                              />
+                              <CertSearchableDropdown
+                                label={t.catUtility}
+                                placeholder={t.select}
+                                items={PURPOSE_LIST_2}
+                                onSelect={handlePurposeSelect}
+                                colorClass={{
+                                  label: "text-gray-500",
+                                  text: "text-gray-800",
+                                  icon: "text-gray-400",
+                                  bg: "bg-gray-50",
+                                  ring: "ring-gray-200",
+                                }}
+                              />
+                              <CertSearchableDropdown
+                                label={t.catMedical}
+                                placeholder={t.select}
+                                items={PURPOSE_LIST_3}
+                                onSelect={handlePurposeSelect}
+                                colorClass={{
+                                  label: "text-gray-500",
+                                  text: "text-gray-800",
+                                  icon: "text-gray-400",
+                                  bg: "bg-gray-50",
+                                  ring: "ring-gray-200",
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1207,39 +1262,95 @@ export default function BarangayClearanceModal({
           <div className="fixed inset-0 z-[70] overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4">
               <div className="fixed inset-0 bg-black/90 backdrop-blur-xl" />
-              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in p-8 text-center">
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in p-6 sm:p-8 text-center">
                 <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
                   style={{ backgroundColor: `${accentColor}18` }}
                 >
                   <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                <h2 className="text-xl font-bold text-gray-900 mb-1.5">
                   {t.successTitle}
                 </h2>
-                <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                <p className="text-sm text-gray-500 leading-relaxed mb-4">
                   {t.successBody}
                 </p>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-4 text-center">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1">
                     {t.referenceNumber}
                   </p>
                   <p className="text-2xl font-bold font-mono tracking-tight" style={{ color: accentColor }}>
                     {submittedReferenceNumber}
                   </p>
-                  <p className="text-xs text-gray-500 mt-2">{t.saveReference}</p>
+                  <p className="text-xs text-gray-500 mt-1.5">{t.saveReference}</p>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    resetForm();
-                    onClose();
-                  }}
-                  className="w-full text-white py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: accentColor }}
-                >
-                  {t.close}
-                </button>
+
+                <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 mb-5 text-left">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <Search className="w-3.5 h-3.5 text-blue-700" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-blue-950 uppercase tracking-wider mb-0.5">
+                        {lang === "tl" ? "Subaybayan ang Kahilingan" : "Request Tracking"}
+                      </p>
+                      <p className="text-xs text-blue-800 leading-relaxed">
+                        {t.trackInstruction || (lang === "tl"
+                          ? "Maaari mong subaybayan ang live na estado at pag-apruba ng iyong kahilingan gamit ang Request Tracking."
+                          : "You can monitor the real-time status and approval progress of your request using Request Tracking.")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const refToTrack = submittedReferenceNumber;
+                      if (typeof window !== "undefined") {
+                        window.__pendingScrollTarget = "track";
+                      }
+                      setShowSuccessModal(false);
+                      resetForm();
+                      onClose();
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(
+                          new CustomEvent("brgydesk:auto-track", { detail: { ref: refToTrack } })
+                        );
+                        const scrollToTrack = () => {
+                          const trackElem = document.getElementById("track");
+                          if (trackElem) {
+                            const navOffset = 80;
+                            const y = trackElem.getBoundingClientRect().top + (window.pageYOffset || window.scrollY || 0) - navOffset;
+                            window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+                          } else {
+                            window.location.href = `/track-status?ref=${encodeURIComponent(refToTrack)}`;
+                          }
+                        };
+                        scrollToTrack();
+                        setTimeout(scrollToTrack, 100);
+                        setTimeout(scrollToTrack, 300);
+                      }
+                    }}
+                    className="w-full py-3.5 px-4 text-white rounded-xl font-bold text-sm shadow-md hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>{t.trackAction || (lang === "tl" ? "Subaybayan ang Kahilingan Ngayon" : "Track Request Now")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSuccessModal(false);
+                      resetForm();
+                      onClose();
+                    }}
+                    className="w-full py-2.5 px-4 text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-sm transition-colors"
+                  >
+                    {t.close}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1277,7 +1388,16 @@ export default function BarangayClearanceModal({
 }
 
 const ClearancePreview = React.memo(
-  ({ formData, referenceNumber, currentDate, officials, certificateRef, tenantId, brgydeskNo }) => {
+  ({
+    formData,
+    referenceNumber,
+    currentDate,
+    officials,
+    certificateRef,
+    tenantId,
+    brgydeskNo,
+    displayTitle = "Barangay Clearance",
+  }) => {
     const verifyRequest = {
       reference_number: referenceNumber,
       tenant_id: tenantId,
@@ -1290,7 +1410,7 @@ const ClearancePreview = React.memo(
         style={{ width: "816px", height: "1056px" }}
       >
         <h1 className="text-4xl font-black text-center uppercase mb-20">
-          Barangay Clearance
+          {displayTitle}
         </h1>
         <div className="space-y-6 text-xl">
           <p>

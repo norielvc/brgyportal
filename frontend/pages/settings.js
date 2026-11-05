@@ -24,6 +24,11 @@ import SignatureInput from "@/components/UI/SignatureInput";
 import SignatureImage from "@/components/UI/SignatureImage";
 import SignatureDebugger from "@/components/UI/SignatureDebugger";
 import { ConfirmModal } from "@/components/UI/Modal";
+import {
+  cleanBarangayName,
+  cleanMunicipalityName,
+  cleanProvinceName,
+} from "@/lib/addressHelper";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -47,9 +52,9 @@ export default function Settings() {
       if (data.success && data.settings) {
         const headerInfo = data.settings.certificate_settings?.headerInfo || {};
         setTenantAddressDefaults({
-          barangay: headerInfo.barangayName || 'BARANGAY DEMO',
-          municipality: headerInfo.municipality || 'DEMO',
-          province: headerInfo.province || 'DEMO',
+          barangay: cleanBarangayName(headerInfo.barangayName || 'DEMO'),
+          municipality: cleanMunicipalityName(headerInfo.municipality || 'DEMO'),
+          province: cleanProvinceName(headerInfo.province || 'DEMO'),
         });
       }
     } catch (error) {

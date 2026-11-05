@@ -6,6 +6,7 @@ import {
   Menu,
   PanelLeft,
   RefreshCw,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -28,6 +29,32 @@ export default function Header({
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [pageRefreshing, setPageRefreshing] = useState(false);
+  const [emailQuota, setEmailQuota] = useState(null);
+  const [showQuotaDropdown, setShowQuotaDropdown] = useState(false);
+  const [refreshingQuota, setRefreshingQuota] = useState(false);
+
+  const fetchEmailQuota = async (force = false) => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      if (force) setRefreshingQuota(true);
+      const res = await fetch(`/api/email-quota${force ? "?force=true" : ""}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.configured) {
+          setEmailQuota(data);
+        }
+      }
+    } catch {
+      /* silent */
+    } finally {
+      if (force) {
+        setTimeout(() => setRefreshingQuota(false), 500);
+      }
+    }
+  };
   const user = getUserData();
   const router = useRouter();
 
@@ -35,7 +62,7 @@ export default function Header({
     if (pageRefreshing) return;
     setPageRefreshing(true);
     try {
-      await fetchNotifications();
+      await Promise.all([fetchNotifications(), fetchEmailQuota(true)]);
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("brgydesk-page-refresh"));
         window.dispatchEvent(new CustomEvent("help-desk-nav-refresh"));
@@ -45,12 +72,22 @@ export default function Header({
     }
   };
 
-  // Fetch notifications
+  // Fetch notifications & email quota
   useEffect(() => {
     fetchNotifications();
-    // Poll for new notifications every 30 seconds
+    fetchEmailQuota();
+    // Poll for new notifications every 30 seconds and quota every 60 seconds
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    const quotaInterval = setInterval(() => fetchEmailQuota(false), 60000);
+    const onRefresh = () => fetchEmailQuota(true);
+    window.addEventListener("email-sent", onRefresh);
+    window.addEventListener("brgydesk-page-refresh", onRefresh);
+    return () => {
+      clearInterval(interval);
+      clearInterval(quotaInterval);
+      window.removeEventListener("email-sent", onRefresh);
+      window.removeEventListener("brgydesk-page-refresh", onRefresh);
+    };
   }, []);
 
   const fetchNotifications = async () => {
@@ -192,6 +229,120 @@ export default function Header({
               className={`h-4 w-4 ${pageRefreshing ? "animate-spin" : ""}`}
             />
           </button>
+
+          {/* Real-time Resend Email Quota Widget */}
+          {emailQuota && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowQuotaDropdown(!showQuotaDropdown)}
+                title={`Resend Email: ${emailQuota.dailyUsed} / ${emailQuota.dailyLimit} used today (${emailQuota.remainingToday} left)`}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all",
+                  emailQuota.dailyUsed >= 90
+                    ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                    : emailQuota.dailyUsed >= 70
+                    ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                    : "bg-blue-50/80 text-[#03254c] border-blue-200/80 hover:bg-blue-100/70",
+                )}
+              >
+                <Mail className="w-3.5 h-3.5 text-[#03254c] shrink-0" />
+                <span className="font-mono font-bold text-[11px]">
+                  {emailQuota.dailyUsed}/{emailQuota.dailyLimit}
+                </span>
+                <span className="hidden xl:inline text-[10px] text-gray-500 font-normal">
+                  today
+                </span>
+              </button>
+
+              {/* Dropdown Details */}
+              {showQuotaDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowQuotaDropdown(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 p-4 text-left">
+                    <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-100">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900">
+                        <Mail className="w-4 h-4 text-[#03254c]" />
+                        <span>Resend Email Quota</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fetchEmailQuota(true)}
+                        disabled={refreshingQuota}
+                        title="Refresh quota"
+                        className="text-[11px] text-blue-600 hover:underline flex items-center gap-1 font-medium disabled:opacity-50"
+                      >
+                        <RefreshCw
+                          className={cn("w-3 h-3", refreshingQuota && "animate-spin")}
+                        />
+                        Refresh
+                      </button>
+                    </div>
+
+                    {/* Daily Quota Progress */}
+                    <div className="space-y-1.5 mb-3">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-medium text-gray-600">Daily Limit (24h)</span>
+                        <span className="font-bold text-gray-900 font-mono">
+                          {emailQuota.dailyUsed} / {emailQuota.dailyLimit}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-2 rounded-full transition-all duration-500",
+                            emailQuota.dailyUsed >= 90
+                              ? "bg-red-500"
+                              : emailQuota.dailyUsed >= 70
+                              ? "bg-amber-500"
+                              : "bg-emerald-500",
+                          )}
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.round((emailQuota.dailyUsed / emailQuota.dailyLimit) * 100),
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-gray-400">
+                        <span>{emailQuota.remainingToday} emails left today</span>
+                        <span>Resets rolling 24h</span>
+                      </div>
+                    </div>
+
+                    {/* Monthly Quota */}
+                    <div className="space-y-1 mb-3 pt-2.5 border-t border-gray-100 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 font-medium">Monthly Usage:</span>
+                        <span className="font-semibold text-gray-800 font-mono">
+                          {emailQuota.monthlyUsed} / {emailQuota.monthlyLimit}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Footer link to Resend */}
+                    <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px]">
+                      <a
+                        href="https://resend.com/emails"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline font-semibold"
+                      >
+                        View Live Logs &rarr;
+                      </a>
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                        Active
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Notifications */}
           <div className="relative">

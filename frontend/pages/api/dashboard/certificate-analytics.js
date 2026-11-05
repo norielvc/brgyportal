@@ -1,6 +1,5 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
-import { buildKapchatHelpDeskThreads } from "../../../src/lib/kapchatThread";
 
 const ESUMBONG_OPEN = ["pending", "under_review"];
 const ASSISTANCE_OPEN = ["pending", "in_progress"];
@@ -364,20 +363,15 @@ export default async function handler(req, res) {
       .in("status", ASSISTANCE_OPEN),
     supabase
       .from("kapchat_messages")
-      .select(
-        "id, contact, sender_name, message, status, is_admin, resident_id, created_at",
-      )
+      .select("id", { count: "exact", head: true })
       .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: true }),
+      .eq("is_admin", false)
+      .eq("status", "unread"),
   ]);
 
   const helpDeskEsumbong = esumbongRes.error ? 0 : esumbongRes.count ?? 0;
   const helpDeskAssistance = assistanceRes.error ? 0 : assistanceRes.count ?? 0;
-  let helpDeskKapchat = 0;
-  if (!kapchatRes.error && Array.isArray(kapchatRes.data)) {
-    const threads = buildKapchatHelpDeskThreads(kapchatRes.data);
-    helpDeskKapchat = threads.reduce((sum, t) => sum + (t.unreadCount || 0), 0);
-  }
+  const helpDeskKapchat = kapchatRes.error ? 0 : kapchatRes.count ?? 0;
 
   return res.status(200).json({
     success: true,

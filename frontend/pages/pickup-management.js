@@ -102,7 +102,7 @@ export default function PickupManagementPage() {
     try {
       const token = getAuthToken();
       const [certRes, wfRes] = await Promise.all([
-        fetch(`${API_URL}/certificates`, {
+        fetch(`${API_URL}/certificates?view=list`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
         fetch(`${API_URL}/workflows`, {
@@ -172,6 +172,7 @@ export default function PickupManagementPage() {
   const getTypeLabel = (type) => {
     const labels = {
       'barangay_clearance': 'Barangay Clearance',
+      'first_time_job_seeker': 'First Time Job Seeker',
       'certificate_of_indigency': 'Certificate of Indigency',
       'barangay_residency': 'Barangay Residency',
       'barangay_medico_legal': 'Medico-Legal Request',
@@ -185,6 +186,7 @@ export default function PickupManagementPage() {
   const getTypeColor = (type) => {
     const colors = {
       'barangay_clearance': 'bg-blue-600',
+      'first_time_job_seeker': 'bg-teal-600',
       'certificate_of_indigency': 'bg-emerald-600',
       'barangay_residency': 'bg-orange-600',
       'barangay_medico_legal': 'bg-rose-600',
@@ -290,6 +292,9 @@ export default function PickupManagementPage() {
       }
 
       if (response.ok && data.success) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("email-sent"));
+        }
         const fromHint = data.from ? ` from ${data.from}` : '';
         toast.success(data.message || `Email sent${fromHint}. Check Spam/Promotions if you do not see it.`, {
           duration: 8000,
@@ -458,6 +463,7 @@ export default function PickupManagementPage() {
               >
                 <option value="all">All Types</option>
                 <option value="barangay_clearance">Clearance</option>
+                <option value="first_time_job_seeker">First Time Job Seeker</option>
                 <option value="certificate_of_indigency">Indigency</option>
                 <option value="barangay_residency">Residency</option>
               </select>

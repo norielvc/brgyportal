@@ -10,6 +10,7 @@ import {
 
 const certTypes = [
   "barangay_clearance",
+  "first_time_job_seeker",
   "certificate_of_indigency",
   "barangay_residency",
   "natural_death",

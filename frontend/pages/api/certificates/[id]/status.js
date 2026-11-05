@@ -115,7 +115,8 @@ export default async function handler(req, res) {
     .eq("tenant_id", tenantId)
     .single();
 
-  const updateData = { status, updated_at: new Date().toISOString() };
+  const dbStatus = (status === "witness_verification" || status === "Witness Verification") ? "processing" : status;
+  const updateData = { status: dbStatus, updated_at: new Date().toISOString() };
   if (current_step) updateData.current_step = current_step;
 
   const { data, error } = await supabase
@@ -204,17 +205,20 @@ export default async function handler(req, res) {
 
       const steps = wfConfig?.workflow_config?.steps || [];
       // Find the step that matches the NEW status (or Releasing Team when moving to ready/ready_for_pickup)
-      const nextStep = ["ready", "ready_for_pickup"].includes(status)
-        ? steps.find((s) =>
-            String(s.name || "").toLowerCase().includes("releasing"),
-          ) ||
-          steps.find(
-            (s) =>
-              String(s.status || "").toLowerCase() === "oic_review" &&
-              !String(s.name || "").toLowerCase().includes("preparation"),
-          ) ||
-          steps.find((s) => s.status === status)
-        : steps.find((s) => s.status === status);
+      const isWitness = status === "witness_verification" || String(status).toLowerCase().includes("witness") || (dbStatus === "processing" && data.certificate_type === "first_time_job_seeker");
+      const nextStep = isWitness
+        ? steps.find((s) => String(s.name || "").toLowerCase().includes("witness") || String(s.status || "").toLowerCase().includes("witness"))
+        : (["ready", "ready_for_pickup"].includes(status)
+          ? steps.find((s) =>
+              String(s.name || "").toLowerCase().includes("releasing"),
+            ) ||
+            steps.find(
+              (s) =>
+                String(s.status || "").toLowerCase() === "oic_review" &&
+                !String(s.name || "").toLowerCase().includes("preparation"),
+            ) ||
+            steps.find((s) => s.status === status)
+          : steps.find((s) => s.status === status));
 
       if (nextStep?.assignedUsers?.length) {
         for (const userId of nextStep.assignedUsers) {
@@ -280,6 +284,49 @@ export default async function handler(req, res) {
       }
     } catch (wfErr) {
       console.warn("Could not create return assignments:", wfErr.message);
+    }
+  }
+
+  // Send rejection email to resident if request was rejected
+  if (status === "rejected" || action === "reject") {
+    try {
+      let applicantEmail = data.email;
+      if (!applicantEmail && data.resident_id) {
+        const { data: resObj } = await supabase
+          .from("residents")
+          .select("email")
+          .eq("id", data.resident_id)
+          .maybeSingle();
+        if (resObj?.email) applicantEmail = resObj.email;
+      }
+      if (applicantEmail) {
+        const { isEmailNotificationsEnabled } = await import(
+          "@/lib/requestNotificationHelper"
+        );
+        const { sendProcessNotification } = await import("@/lib/mailer");
+        const emailEnabled = await isEmailNotificationsEnabled(supabase);
+        if (emailEnabled) {
+          await sendProcessNotification({
+            recipientEmail: applicantEmail,
+            recipientName: data.full_name || "Valued Resident",
+            eventType: "REJECTED",
+            certificateType: data.certificate_type,
+            referenceNumber: data.reference_number,
+            applicantName: data.full_name || "Valued Resident",
+            comments:
+              comment ||
+              comments ||
+              "Your application was reviewed by the barangay and could not be approved at this time.",
+            requestId: id,
+            tenantId,
+          });
+          console.log(
+            `📧 Rejection email sent to resident: ${applicantEmail} for ${data.reference_number}`,
+          );
+        }
+      }
+    } catch (rejectMailErr) {
+      console.warn("Rejection email error:", rejectMailErr.message);
     }
   }
 

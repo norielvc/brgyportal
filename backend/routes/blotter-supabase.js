@@ -127,7 +127,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Update blotter report status
+// Update blotter report
 router.put('/:id', async (req, res) => {
     try {
         const tenantId = req.headers['x-tenant-id'] || req.user?.tenant_id;
@@ -136,11 +136,22 @@ router.put('/:id', async (req, res) => {
         }
 
         const { id } = req.params;
-        const { status } = req.body;
+        const { status, complainant_name, respondent_name, details, incident_date, incident_time, contact_number, email } = req.body;
+
+        const updateData = {};
+        if (status !== undefined) updateData.status = status;
+        if (complainant_name !== undefined) updateData.complainant_name = complainant_name;
+        if (respondent_name !== undefined) updateData.respondent_name = respondent_name;
+        if (details !== undefined) updateData.details = details;
+        if (incident_date !== undefined) updateData.incident_date = incident_date;
+        if (incident_time !== undefined) updateData.incident_time = incident_time;
+        if (contact_number !== undefined) updateData.contact_number = contact_number;
+        if (email !== undefined) updateData.email = email;
+        updateData.updated_at = new Date().toISOString();
 
         const { data, error } = await supabase
             .from('blotter_reports')
-            .update({ status })
+            .update(updateData)
             .eq('id', id)
             .eq('tenant_id', tenantId)
             .select()

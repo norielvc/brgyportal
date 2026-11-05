@@ -6,6 +6,7 @@ import {
 
 const TYPE_NAMES = {
   barangay_clearance: "Barangay Clearance",
+  first_time_job_seeker: "First Time Job Seeker",
   certificate_of_indigency: "Certificate of Indigency",
   barangay_residency: "Barangay Residency Certificate",
   medico_legal: "Medico-Legal Certificate",
@@ -439,6 +440,7 @@ export async function sendKapchatNotification({
   contactNumber = "",
   message = "",
   tenantId = "ibaoeste",
+  isResidentConfirmation = false,
 }) {
   if (!recipientEmail) {
     return { success: false, error: "Recipient email missing" };
@@ -446,28 +448,47 @@ export async function sendKapchatNotification({
 
   const profile = getTenantEmailProfile(tenantId);
   const cleanSender = senderName || "Resident";
-  const subject = `KapChat Message from ${cleanSender} — ${profile.fromName}`;
+  const subject = isResidentConfirmation
+    ? `KapChat Message Received — ${profile.fromName}`
+    : `KapChat Message from ${cleanSender} — ${profile.fromName}`;
 
   const html = renderFormalEmailLayout({
     profile,
-    badgeText: "KAPCHAT • REKTA KAY KAP",
+    badgeText: isResidentConfirmation
+      ? "KAPCHAT • MENSAHE NATANGGAP"
+      : "KAPCHAT • REKTA KAY KAP",
     accentColor: "#0f172a",
     badgeBg: "#dbeafe",
     badgeColor: "#1e40af",
-    titleEN: "New Resident Message via KapChat",
-    titleTL: "Bagong Mensahe mula sa Residente sa KapChat",
-    recipientName: recipientName || "Punong Barangay",
-    messageEN: `A verified resident has sent a direct message through KapChat (Rekta kay Kap) on the ${profile.fromName} portal.`,
-    messageTL: `May nagpadala po ng mensahe sa KapChat (Rekta kay Kap) sa opisyal na portal ng ${profile.fromName}.`,
+    titleEN: isResidentConfirmation
+      ? "Your KapChat Message Has Been Received"
+      : "New Resident Message via KapChat",
+    titleTL: isResidentConfirmation
+      ? "Natanggap Namin ang Iyong Mensahe sa KapChat"
+      : "Bagong Mensahe mula sa Residente sa KapChat",
+    recipientName:
+      recipientName || (isResidentConfirmation ? cleanSender : "Barangay Staff"),
+    messageEN: isResidentConfirmation
+      ? `Thank you for reaching out through KapChat on the official ${profile.fromName} portal. Your message has been routed to our duty desk officer and will be attended to promptly during office hours.`
+      : `A verified resident has sent a direct message through KapChat (Rekta kay Kap) on the ${profile.fromName} portal.`,
+    messageTL: isResidentConfirmation
+      ? `Maraming salamat sa pag-abot sa pamamagitan ng KapChat sa opisyal na portal ng ${profile.fromName}. Ang iyong mensahe ay naipasa sa aming duty desk officer at tutugunan sa oras ng tanggapan.`
+      : `May nagpadala po ng mensahe sa KapChat (Rekta kay Kap) sa opisyal na portal ng ${profile.fromName}.`,
     detailsRows: [
-      { label: "Resident Name", value: cleanSender },
-      { label: "Contact Number", value: contactNumber || "—" },
+      { label: "Sender Name", value: cleanSender },
+      { label: "Contact / Phone", value: contactNumber || "—" },
       { label: "Portal", value: profile.portalDomain },
     ],
-    remarksLabel: "Resident Message / Mensahe ng Residente",
+    remarksLabel: isResidentConfirmation
+      ? "Your Message / Iyong Mensahe"
+      : "Resident Message / Mensahe ng Residente",
     remarksText: message || "—",
-    ctaLabel: "Open KapChat in Help Desk",
-    ctaUrl: `${profile.portalUrl}/help-desk?tab=kapchat`,
+    ctaLabel: isResidentConfirmation
+      ? "Open Barangay Portal"
+      : "Open KapChat in Help Desk",
+    ctaUrl: isResidentConfirmation
+      ? profile.portalUrl
+      : `${profile.portalUrl}/help-desk?tab=kapchat`,
   });
 
   const text = [

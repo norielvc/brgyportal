@@ -1,6 +1,108 @@
 const fs = require('fs');
 const path = require('path');
 const { supabase } = require('./supabaseClient');
+function formatSexFull(val) {
+    if (!val || val === '-') return '-';
+    const s = String(val).trim().toUpperCase();
+    if (s === 'M' || s === 'MALE') return 'MALE';
+    if (s === 'F' || s === 'FEMALE') return 'FEMALE';
+    return s;
+}
+
+function formatCivilStatusFull(val) {
+    if (!val || val === '-') return '-';
+    const c = String(val).trim().toUpperCase();
+    if (c === 'S' || c.startsWith('SINGLE')) return 'SINGLE';
+    if (c === 'M' || c.startsWith('MARRIED')) return 'MARRIED';
+    if (c === 'W' || c.startsWith('WIDOW')) return 'WIDOWED';
+    if (c === 'D' || c.startsWith('DIVORCED')) return 'DIVORCED';
+    if (c === 'SEP' || c.startsWith('SEPARAT')) return 'SEPARATED';
+    if (c === 'C' || c.startsWith('LIVE') || c.startsWith('COHAB')) return 'LIVE-IN';
+    return c;
+}
+
+function cleanResidentialAddress(address) {
+    if (!address || address === '-') return '-';
+    return String(address)
+        .replace(/,\s*PROVINCE\s+OF\s+/gi, ', ')
+        .replace(/\bPROVINCE\s+OF\s+/gi, '')
+        .trim();
+}
+
+function formatJobSeekerDates(dateString) {
+    const d = dateString ? new Date(dateString) : new Date();
+    const day = d.getDate();
+    const getOrdinal = (n) => {
+        const s = ["th", "st", "nd", "rd"];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+    const dayOrdinal = getOrdinal(day);
+    const monthName = d.toLocaleDateString("en-US", { month: "long" });
+    const yearNumber = d.getFullYear();
+
+    const expiryDate = new Date(d);
+    expiryDate.setFullYear(d.getFullYear() + 1);
+    const expiryMonth = expiryDate.toLocaleDateString("en-US", { month: "long" });
+    const expiryDay = expiryDate.getDate();
+    const expiryYear = expiryDate.getFullYear();
+
+    return {
+        dayOrdinal,
+        monthName,
+        yearNumber,
+        expiryMonth,
+        expiryDay,
+        expiryYear,
+    };
+}
+
+
+function splitPurposesList(purpose) {
+    if (!purpose) return [];
+    let raw = String(purpose).trim();
+    let lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    let items = [];
+    for (const line of lines) {
+        if (line.includes(' / ')) {
+            items.push(...line.split(/\s+\/\s+/).map(p => p.trim()).filter(Boolean));
+        } else if (line.includes(' ; ')) {
+            items.push(...line.split(/\s*;\s*/).map(p => p.trim()).filter(Boolean));
+        } else {
+            items.push(line);
+        }
+    }
+    return items.map(item => item.replace(/^(\d+[\.\)]\s*|[•\-\*]\s*)/, '').trim()).filter(Boolean);
+}
+
+function formatPurposesHtml(purpose) {
+    if (!purpose) return '<p style="padding-left: 20px; font-weight: bold; font-size: 1.1em; margin-top: 10px;">• GENERAL PURPOSES</p>';
+
+    let raw = String(purpose).trim();
+    let lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    let items = [];
+    for (const line of lines) {
+        if (line.includes(' / ')) {
+            items.push(...line.split(/\s+\/\s+/).map(p => p.trim()).filter(Boolean));
+        } else if (line.includes(' ; ')) {
+            items.push(...line.split(/\s*;\s*/).map(p => p.trim()).filter(Boolean));
+        } else {
+            items.push(line);
+        }
+    }
+
+    items = items.map(item => item.replace(/^(\d+[\.\)]\s*|[•\-\*]\s*)/, '').trim()).filter(Boolean);
+
+    if (items.length === 0) {
+        return '<p style="padding-left: 20px; font-weight: bold; font-size: 1.1em; margin-top: 10px;">• GENERAL PURPOSES</p>';
+    }
+
+    return `
+        <div style="padding-left: 20px; font-weight: bold; font-size: 1.05em; margin-top: 8px; line-height: 1.5;">
+            ${items.map((item, idx) => `<div style="display: flex; gap: 8px; margin-bottom: 3px;"><span>${idx + 1}.</span><span>${item.toUpperCase()}</span></div>`).join('')}
+        </div>
+    `;
+}
 
 class CertificateGenerationService {
     constructor() {
@@ -168,6 +270,50 @@ class CertificateGenerationService {
                 ? `${secretarySigRecord.users.first_name || ''} ${secretarySigRecord.users.last_name || ''}`.trim() 
                 : secretarySigRecord?.performed_by_name || '';
 
+            // 1c. Get Witness's Signature specifically (Councilor / Witnessed by)
+            const witnessSigRecord = (history || []).find(h => {
+                const action = h.action;
+                if (action !== 'approve' && action !== 'forward') return false;
+                if (!h.signature_data) return false;
+                if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+
+                const step = (h.step_name || '').toLowerCase();
+                const role = (h.official_role || '').toLowerCase();
+                const prev = (h.previous_status || '').toLowerCase();
+
+                // Explicitly exclude secretary, captain, chairman, staff review, treasury, inspection
+                if (
+                    step.includes('secretary') ||
+                    role.includes('secretary') ||
+                    prev.includes('secretary') ||
+                    step.includes('captain') ||
+                    role.includes('captain') ||
+                    step.includes('chairman') ||
+                    role.includes('chairman') ||
+                    step.includes('punong') ||
+                    role.includes('punong') ||
+                    step.includes('review') ||
+                    step.includes('treasury') ||
+                    step.includes('inspection')
+                ) {
+                    return false;
+                }
+
+                return (
+                    step.includes('witness') ||
+                    role.includes('witness') ||
+                    prev.includes('witness') ||
+                    (step.includes('councilor') && !step.includes('secretary'))
+                );
+            });
+            const witnessSignature = witnessSigRecord?.signature_data;
+            const witnessMiddleInitial = witnessSigRecord?.users?.middle_name
+                ? `${witnessSigRecord.users.middle_name.trim().charAt(0).toUpperCase()}. `
+                : '';
+            const witnessName = witnessSigRecord?.users
+                ? `${witnessSigRecord.users.first_name || ''} ${witnessMiddleInitial}${witnessSigRecord.users.last_name || ''}`.trim()
+                : witnessSigRecord?.performed_by_name || '';
+
             // 2. Get Forwarder Signatures (excluding Chairman)
             const forwarderSignatures = (history || [])
                 .filter(h =>
@@ -178,11 +324,13 @@ class CertificateGenerationService {
                       (h.step_name?.toLowerCase().includes('captain') ||
                        h.step_name?.toLowerCase().includes('chairman') ||
                        h.step_name?.toLowerCase().includes('punong') ||
-                       h.step_name?.toLowerCase().includes('secretary')) ||
+                       h.step_name?.toLowerCase().includes('secretary') ||
+                       h.step_name?.toLowerCase().includes('witness')) ||
                       (h.official_role?.toLowerCase().includes('captain') ||
                        h.official_role?.toLowerCase().includes('chairman') ||
                        h.official_role?.toLowerCase().includes('punong') ||
-                       h.official_role?.toLowerCase().includes('secretary'))
+                       h.official_role?.toLowerCase().includes('secretary') ||
+                       h.official_role?.toLowerCase().includes('witness'))
                     )
                 )
                 .reduce((acc, current) => {
@@ -207,6 +355,9 @@ class CertificateGenerationService {
                 secretary_signature: secretarySignature,
                 secretary_name: secretaryName,
                 secretary_created_at: secretarySigRecord?.created_at,
+                witness_signature: witnessSignature,
+                witness_name: witnessName,
+                witness_created_at: witnessSigRecord?.created_at,
                 forwarderSignatures: forwarderSignatures,
                 officialName: captainName,
                 officialRole: captainRole
@@ -220,6 +371,15 @@ class CertificateGenerationService {
             switch (request.certificate_type) {
                 case 'barangay_clearance':
                     certificateContent = await this.generateBarangayClearanceContent(request, config, signatureContext, history, lastReturnTime);
+                    break;
+                case 'first_time_job_seeker':
+                    if (templateType === 'JOB SEEKER B' || templateType === 'oath' || templateType === 'job_seeker_b') {
+                        certificateContent = await this.generateJobSeekerBContent(request, config, signatureContext, history, lastReturnTime);
+                    } else if (templateType === 'JOB SEEKER A' || templateType === 'job_seeker_a') {
+                        certificateContent = await this.generateJobSeekerAContent(request, config, signatureContext, history, lastReturnTime);
+                    } else {
+                        certificateContent = await this.generateBarangayClearanceContent(request, config, signatureContext, history, lastReturnTime);
+                    }
                     break;
                 case 'certificate_of_indigency':
                     certificateContent = this.generateIndigencyContent(request, config, signatureContext);
@@ -408,6 +568,124 @@ class CertificateGenerationService {
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const bodyStyle = styles.bodyStyle || {};
 
+        const docTitle = 'BARANGAY CLEARANCE CERTIFICATE';
+
+        // For first time job seeker, if multiple purposes are selected, issue 1 Barangay Clearance for each purpose
+        if (request.certificate_type === 'first_time_job_seeker') {
+            const purposes = splitPurposesList(request.purpose);
+            if (purposes.length > 1) {
+                const pages = purposes.map((singlePurpose, idx) => {
+                    const isLast = idx === purposes.length - 1;
+                    const pageBody = `
+                        <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+                            <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
+                            
+                            <p style="margin: 20px 0;">
+                                This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:
+                            </p>
+
+                            <div class="details-grid">
+                                <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
+                                <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
+                                <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
+                                <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
+                                <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
+                                <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
+                                <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
+                            </div>
+
+                            <div style="margin: 25px 0;">
+                                <p>This certification is being issued upon the request of above mentioned person for below purpose(s):</p>
+                                ${formatPurposesHtml(singlePurpose)}
+                            </div>
+
+                            <p style="margin-bottom: 25px;">
+                                Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName}, ${config.headerInfo.municipality}, ${config.headerInfo.province}.
+                            </p>
+
+                            <div class="signature-section" style="margin-top: 35px;">
+                                <div class="sig-block">
+                                    <div class="sig-line" style="border-bottom: 1px solid #000; width: 300px; height: 40px; margin: 28px 0 5px 0;">
+                                        <p style="font-size: 12px; margin: 0; padding-top: 45px;">Resident's Signature / Thumb Mark</p>
+                                    </div>
+                                </div>
+
+                                ${this.renderTrulyYours(captainApproval, officials)}
+                            </div>
+                        </div>
+                    `;
+
+                    return `
+                        <div class="certificate-container" style="${!isLast ? 'page-break-after: always; margin-bottom: 40px;' : ''}">
+                            ${this.generateHeader(config)}
+                            <div class="title">${docTitle}</div>
+                            ${pageBody}
+                            ${this.generateFooter(request, config)}
+                        </div>
+                    `;
+                });
+
+                return `
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>${docTitle} - ${request.reference_number}</title>
+                        <style>
+                            @page { size: letter; margin: 15mm; }
+                            body { 
+                                font-family: 'Times New Roman', serif; 
+                                margin: 0; 
+                                padding: 20px; 
+                                background: white;
+                                font-size: 14px;
+                                line-height: 1.6;
+                            }
+                            .certificate-container { 
+                                max-width: 800px; 
+                                margin: 0 auto; 
+                                background: white; 
+                                border: 2px solid #000;
+                                padding: 20px;
+                                page-break-inside: avoid;
+                            }
+                            .title { 
+                                font-size: 24px; 
+                                font-weight: bold; 
+                                margin: 20px 0; 
+                                text-align: center;
+                                text-transform: uppercase;
+                            }
+                            .details-grid {
+                                display: grid;
+                                grid-template-columns: auto auto 1fr;
+                                gap: 8px 15px;
+                                margin: 20px 0;
+                                align-items: baseline;
+                            }
+                            .detail-label { font-weight: bold; }
+                            .detail-value { text-transform: uppercase; }
+                            .signature-section {
+                                display: flex;
+                                justify-content: space-between;
+                                margin-top: 50px;
+                                padding: 0 30px;
+                            }
+                            @media print {
+                                body { margin: 0; padding: 0; }
+                                .certificate-container { border: none; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${pages.join('\n')}
+                    </body>
+                    </html>
+                `;
+            }
+        }
+
         // Check if this clearance has physical inspection data
         const inspectionData = await this.getPhysicalInspectionData(request.id, history, lastReturnTime);
         const hasInspectionData = inspectionData && Object.keys(inspectionData.areas).some(area =>
@@ -425,16 +703,16 @@ class CertificateGenerationService {
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
-                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${request.sex || '-'}</span>
-                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${request.civil_status || '-'}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${request.address || '-'}</span>
+                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                 </div>
 
-                <div style="margin: 30px 0;">
+                <div style="margin: 25px 0;">
                     <p>This certification is being issued upon the request of above mentioned person for below purpose(s):</p>
-                    <p style="padding-left: 20px; font-weight: bold; font-size: 1.1em; margin-top: 10px;">• ${request.purpose ? request.purpose.toUpperCase() : 'GENERAL PURPOSES'}</p>
+                    ${formatPurposesHtml(request.purpose)}
                 </div>`;
 
         // Add physical inspection section if data exists
@@ -481,13 +759,13 @@ class CertificateGenerationService {
         }
 
         bodyHtml += `
-                <p style="margin-bottom: 40px;">
+                <p style="margin-bottom: 25px;">
                     Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName}, ${config.headerInfo.municipality}, ${config.headerInfo.province}.
                 </p>
 
-                <div class="signature-section">
+                <div class="signature-section" style="margin-top: 35px;">
                     <div class="sig-block">
-                        <div class="sig-line" style="border-bottom: 1px solid #000; width: 300px; height: 40px; margin: 20px 0 5px 0;">
+                        <div class="sig-line" style="border-bottom: 1px solid #000; width: 300px; height: 40px; margin: 28px 0 5px 0;">
                             <p style="font-size: 12px; margin: 0; padding-top: 45px;">Resident's Signature / Thumb Mark</p>
                         </div>
                     </div>
@@ -497,7 +775,7 @@ class CertificateGenerationService {
             </div>
         `;
 
-        return this.generateDocument('BARANGAY CLEARANCE CERTIFICATE', bodyHtml, request, config);
+        return this.generateDocument(docTitle, bodyHtml, request, config);
     }
 
     generateIndigencyContent(request, config, captainApproval = null) {
@@ -516,16 +794,16 @@ class CertificateGenerationService {
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
-                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${request.sex || '-'}</span>
-                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${request.civil_status || '-'}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${request.address || '-'}</span>
+                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                 </div>
 
-                <div style="margin: 30px 0;">
+                <div style="margin: 25px 0;">
                     <p>This certification is being issued upon the request of above mentioned person for below purpose(s):</p>
-                    <p style="padding-left: 20px; font-weight: bold; font-size: 1.1em; margin-top: 10px;">• ${request.purpose ? request.purpose.toUpperCase() : 'GENERAL PURPOSES'}</p>
+                    ${formatPurposesHtml(request.purpose)}
                 </div>
 
                 <p style="margin-bottom: 40px;">
@@ -565,16 +843,16 @@ class CertificateGenerationService {
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
-                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${request.sex || '-'}</span>
-                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${request.civil_status || '-'}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${request.address || '-'}</span>
+                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                 </div>
 
-                <div style="margin: 30px 0;">
+                <div style="margin: 25px 0;">
                     <p>This certification is being issued upon the request of above mentioned person for below purpose(s):</p>
-                    <p style="padding-left: 20px; font-weight: bold; font-size: 1.1em; margin-top: 10px;">• ${request.purpose ? request.purpose.toUpperCase() : 'GENERAL PURPOSES'}</p>
+                    ${formatPurposesHtml(request.purpose)}
                 </div>
 
                 <p style="margin-bottom: 40px;">
@@ -634,7 +912,7 @@ class CertificateGenerationService {
                     <div class="info-row">
                         <span class="info-label">Residential Address</span>
                         <span class="info-colon">:</span>
-                        <span class="info-value">${request.address || '-'}</span>
+                        <span class="info-value">${cleanResidentialAddress(request.address)}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Age</span>
@@ -645,14 +923,14 @@ class CertificateGenerationService {
 
                 <div style="margin: 15px 0;">
                     <p>This certification is being issued upon the request of above mentioned person for below purpose(s):</p>
-                    <p style="padding-left: 20px; font-weight: bold; font-size: 1.1em; margin-top: 10px;">• ${request.purpose ? request.purpose.toUpperCase() : 'GENERAL PURPOSES'}</p>
+                    ${formatPurposesHtml(request.purpose)}
                 </div>
 
                 <p style="margin-bottom: 10px;">
                     Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName}, ${config.headerInfo.municipality}, ${config.headerInfo.province}.
                 </p>
 
-                <div class="signature-section">
+                <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
                     <div class="sig-block">
                         <div class="sig-line" style="border-bottom: 1px solid #000; width: 300px; height: 40px; margin: 20px auto 5px auto;">
                             <p style="font-size: 12px; margin: 0; padding-top: 45px;">Resident's Signature / Thumb Mark</p>
@@ -1569,7 +1847,7 @@ class CertificateGenerationService {
                         Issued this at Barangay Iba O' Este, Calumpit, Bulacan.
                     </div>
                     
-                    <div class="signature-section">
+                    <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
                         <div class="payment-details">
                             <div class="payment-title">Details of Payment</div>
                             <div class="payment-row">OR NO. : <strong>${orData?.or_number || '_____________'}</strong></div>
@@ -1606,15 +1884,15 @@ class CertificateGenerationService {
                 <p style="margin: 20px 0;">This is to certify that below person is under the guardianship of <strong>${(details.guardianName || '').toUpperCase()}</strong>, both bona fide residents of this barangay:</p>
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(request.full_name || '').toUpperCase()}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${(request.address || '').toUpperCase()}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address).toUpperCase()}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
-                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${(request.sex || '').toUpperCase()}</span>
-                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${(request.civil_status || '').toUpperCase()}</span>
+                    <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Guardian's Relationship</span><span>:</span><span class="detail-value">${(details.guardianRelationship || '').toUpperCase()}</span>
                 </div>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName}, ${config.headerInfo.municipality}, ${config.headerInfo.province} upon the request of above mentioned persons for any legal purposes it may serve.</p>
-                <div class="signature-section">
+                <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
                     ${this.renderTrulyYours(captainApproval, officials)}
                 </div>
             </div>
@@ -1634,14 +1912,14 @@ class CertificateGenerationService {
                 <p style="margin: 20px 0;">This is to certify that the persons named below are living together as husband and wife without the benefit of marriage for <strong>${details.livingTogetherYears || '0'} year(s) and ${details.livingTogetherMonths || '0'} month(s)</strong>:</p>
                 <div class="details-grid">
                     <span class="detail-label">Name (1)</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(request.full_name || '').toUpperCase()}</span>
-                    <span class="detail-label">Age/Sex/DOB</span><span>:</span><span class="detail-value">${request.age || '-'} / ${(request.sex || '').toUpperCase()} / ${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString() : '-'}</span>
+                    <span class="detail-label">Age/Sex/DOB</span><span>:</span><span class="detail-value">${request.age || '-'} / ${formatSexFull(request.sex)} / ${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString() : '-'}</span>
                     <span class="detail-label">Name (2)</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(details.partnerFullName || '').toUpperCase()}</span>
-                    <span class="detail-label">Partner Age/Sex/DOB</span><span>:</span><span class="detail-value">${details.partnerAge || '-'} / ${(details.partnerSex || '').toUpperCase()} / ${details.partnerDateOfBirth ? new Date(details.partnerDateOfBirth).toLocaleDateString() : '-'}</span>
+                    <span class="detail-label">Partner Age/Sex/DOB</span><span>:</span><span class="detail-value">${details.partnerAge || '-'} / ${formatSexFull(details.partnerSex)} / ${details.partnerDateOfBirth ? new Date(details.partnerDateOfBirth).toLocaleDateString() : '-'}</span>
                     <span class="detail-label">No. of Children</span><span>:</span><span class="detail-value">${details.noOfChildren || '0'}</span>
-                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${(request.address || '').toUpperCase()}</span>
+                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address).toUpperCase()}</span>
                 </div>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName} for legal purposes.</p>
-                <div class="signature-section">
+                <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
                     ${this.renderTrulyYours(captainApproval, officials)}
                 </div>
             </div>
@@ -1658,10 +1936,10 @@ class CertificateGenerationService {
         const bodyHtml = `
             <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
-                <p style="margin: 20px 0;">This is to certify that <strong>${(request.full_name || '').toUpperCase()}</strong>, a resident of ${request.address || ''}, passed away on <strong>${details.dateOfDeath ? new Date(details.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</strong> due to <strong>${(details.causeOfDeath || 'NATURAL CAUSES').toUpperCase()}</strong>.</p>
+                <p style="margin: 20px 0;">This is to certify that <strong>${(request.full_name || '').toUpperCase()}</strong>, a resident of ${cleanResidentialAddress(request.address)}, passed away on <strong>${details.dateOfDeath ? new Date(details.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</strong> due to <strong>${(details.causeOfDeath || 'NATURAL CAUSES').toUpperCase()}</strong>.</p>
                 <p style="margin: 20px 0;">This also certifies that the death was <strong>${details.covidRelated ? 'COVID-19' : 'NON-COVID'}</strong> related.</p>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> for burial/legal purposes.</p>
-                <div class="signature-section">
+                <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
                     ${this.renderTrulyYours(captainApproval, officials)}
                 </div>
             </div>
@@ -1681,19 +1959,422 @@ class CertificateGenerationService {
                 <p style="margin: 20px 0;">This is a REQUEST FOR MEDICO LEGAL for the following person:</p>
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value">${(request.full_name || '').toUpperCase()}</span>
-                    <span class="detail-label">Age/Sex</span><span>:</span><span class="detail-value">${request.age || '-'} / ${(request.sex || '').toUpperCase()}</span>
-                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${(request.address || '').toUpperCase()}</span>
+                    <span class="detail-label">Age/Sex</span><span>:</span><span class="detail-value">${request.age || '-'} / ${formatSexFull(request.sex)}</span>
+                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address).toUpperCase()}</span>
                     <span class="detail-label">Date of Exam</span><span>:</span><span class="detail-value">${details.dateOfExamination || '-'}</span>
                     <span class="detail-label">Usaping Brgy</span><span>:</span><span class="detail-value">${details.usapingBarangay || '-'}</span>
                     <span class="detail-label">Date of Hearing</span><span>:</span><span class="detail-value">${details.dateOfHearing || '-'}</span>
                 </div>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> for medical record purposes.</p>
-                <div class="signature-section">
+                <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
                     ${this.renderTrulyYours(captainApproval, officials)}
                 </div>
             </div>
         `;
         return this.generateDocument('REQUEST FOR MEDICO LEGAL', bodyHtml, request, config);
+    }
+
+    async generateJobSeekerAContent(request, config, captainApproval = null, history = null, lastReturnTime = 0) {
+        const { officials, styles, logos, headerInfo } = config;
+        
+        let details = {};
+        if (request.details) {
+            try {
+                details = typeof request.details === 'string' ? JSON.parse(request.details) : request.details;
+            } catch (e) {
+                console.error('Error parsing details:', e);
+            }
+        }
+
+        const applicantName = (request.full_name || request.applicant_name || '').toUpperCase();
+        const applicantAge = request.age || details.age || '-';
+        const applicantAddress = cleanResidentialAddress(request.address);
+
+        const residentYears = request.years_of_residency || details.years_of_residency || details.yearsOfResidency || '';
+        const currentYear = new Date().getFullYear();
+        const displaySinceYear = residentYears
+            ? (currentYear - parseInt(residentYears, 10))
+            : (details.since_year || details.sinceYear || (request.age ? (currentYear - Math.min(parseInt(request.age, 10) || 1, 15)) : currentYear));
+
+        const dateMeta = formatJobSeekerDates(captainApproval?.created_at);
+        const chairmanName = captainApproval?.officialName || officials.chairman || 'ALEXANDER C. MANIO';
+        const councilorName = officials.councilors?.[3] || officials.councilors?.[0] || 'JOPHET M. TURLA';
+
+        const leftLogoSrc = logos?.leftLogo || '';
+        const rightLogoSrc = logos?.rightLogo || '';
+        const logoSize = logos?.logoSize && logos.logoSize > 80 ? logos.logoSize : 110;
+
+        return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>JOB SEEKER A - ${request.reference_number}</title>
+            <style>
+                @page { size: letter; margin: 15mm; }
+                body {
+                    font-family: Arial, Helvetica, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background: white;
+                    color: #000;
+                    font-size: 13.5px;
+                    line-height: 1.6;
+                }
+                .cert-container {
+                    width: 100%;
+                    max-width: 780px;
+                    margin: 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    min-height: 980px;
+                    justify-content: space-between;
+                }
+                .cert-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-bottom: 2px solid #111;
+                    padding-bottom: 12px;
+                }
+                .cert-header-text {
+                    text-align: center;
+                    flex: 1;
+                    padding: 0 10px;
+                }
+                .cert-header-text p {
+                    margin: 0;
+                    line-height: 1.25;
+                }
+                .body-content {
+                    padding: 30px 10px 20px;
+                    flex: 1;
+                }
+                .title-block {
+                    margin-bottom: 25px;
+                }
+                .title-block p {
+                    font-weight: bold;
+                    margin: 0 0 6px 0;
+                    font-size: 14px;
+                }
+                .cert-paragraph {
+                    margin-bottom: 26px;
+                    text-align: justify;
+                    text-indent: 40px;
+                    line-height: 1.7;
+                    font-size: 14px;
+                }
+                .signatures-block {
+                    margin-top: 45px;
+                }
+                .sig-block-item {
+                    margin-bottom: 40px;
+                }
+                .sig-block-title {
+                    font-weight: bold;
+                    margin-bottom: 85px;
+                    font-size: 13.5px;
+                }
+                .sig-block-name {
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    font-size: 15px;
+                    margin: 0;
+                }
+                .sig-block-role {
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    font-size: 12.5px;
+                    color: #111;
+                    margin: 2px 0 0 0;
+                }
+                .cert-footer {
+                    border-top: 1px solid #111;
+                    padding-top: 8px;
+                    font-size: 11px;
+                    line-height: 1.4;
+                    color: #222;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="cert-container">
+                <div>
+                    <div class="cert-header">
+                        <div style="width: ${logoSize}px; height: ${logoSize}px; flex-shrink: 0;">
+                            ${leftLogoSrc ? `<img src="${leftLogoSrc}" style="width: 100%; height: 100%; object-fit: contain;">` : ''}
+                        </div>
+                        <div class="cert-header-text">
+                            <p style="font-size: 12px;">${headerInfo.country || 'Republic of the Philippines'}</p>
+                            <p style="font-size: 12px;">${headerInfo.province || 'Province of Bulacan'}</p>
+                            <p style="font-size: 12px;">${headerInfo.municipality || 'Municipality of Calumpit'}</p>
+                            <p style="font-size: 18px; font-weight: bold; color: #1e40af; margin-top: 4px;">${headerInfo.barangayName || "BARANGAY IBA O' ESTE"}</p>
+                            <p style="font-size: 13px; font-weight: bold; color: #b91c1c; margin-top: 4px; letter-spacing: 0.5px;">OFFICE OF THE BARANGAY CHAIRMAN</p>
+                        </div>
+                        <div style="width: ${logoSize}px; height: ${logoSize}px; flex-shrink: 0;">
+                            ${rightLogoSrc ? `<img src="${rightLogoSrc}" style="width: 100%; height: 100%; object-fit: contain;">` : ''}
+                        </div>
+                    </div>
+
+                    <div class="body-content">
+                        <div class="title-block">
+                            <p>TO WHOM IT MAY CONCERN:</p>
+                            <p style="margin-top: 15px; text-align: center; font-size: 15px; letter-spacing: 0.5px;">RE: BARANGAY CERTIFICATION</p>
+                        </div>
+
+                        <p class="cert-paragraph">
+                            This is to certify that <strong>${applicantName}</strong>, <strong>${applicantAge}</strong> years old, resident of <strong>${applicantAddress}</strong>, since <strong>${displaySinceYear}</strong> is a qualified beneficiary of RA 11261 or known First Time Jobseekers Assistance Act of 2019.
+                        </p>
+
+                        <p class="cert-paragraph">
+                            I further certify that the bearer has been informed of his / her rights including the duties and responsibilities accorded by RA 11261 through the Oath of Undertaking executed and signed in the presence of Barangay Official.
+                        </p>
+
+                        <p class="cert-paragraph">
+                            Signed and given this <strong>${dateMeta.dayOrdinal} day of ${dateMeta.monthName}, ${dateMeta.yearNumber}</strong> at Barangay Iba O' Este, Calumpit, Bulacan valid until <strong>${dateMeta.expiryMonth} ${dateMeta.expiryDay}, ${dateMeta.expiryYear}</strong> i. e. one (1) year from date of issuance.
+                        </p>
+
+                        <div class="signatures-block">
+                            <div class="sig-block-item" style="text-align: left;">
+                                <div class="sig-block-title" style="margin-bottom: 95px;">TRULY YOURS,</div>
+                                <div style="position: relative; display: inline-block;">
+                                    ${captainApproval?.signature_data ? `
+                                        <div style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 6px; width: 300px; height: 130px; pointer-events: none;">
+                                            <img src="${captainApproval.signature_data}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transform: scale(1.2);">
+                                        </div>
+                                    ` : ''}
+                                    <p class="sig-block-name">${chairmanName}</p>
+                                    <p class="sig-block-role">BARANGAY CHAIRMAN</p>
+                                </div>
+                            </div>
+                            <div class="sig-block-item" style="text-align: left;">
+                                <div class="sig-block-title">WITNESSED BY:</div>
+                                <div style="position: relative; display: inline-block;">
+                                    ${captainApproval?.witness_signature ? `
+                                        <div style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 8px; width: 250px; height: 110px; pointer-events: none;">
+                                            <img src="${captainApproval.witness_signature}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply;">
+                                        </div>
+                                    ` : ''}
+                                    <p class="sig-block-name">${captainApproval?.witness_name || councilorName}</p>
+                                    <p class="sig-block-role">BARANGAY COUNCILOR</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                ${this.generateFooter(request, config)}
+            </div>
+        </body>
+        </html>
+        `;
+    }
+
+    async generateJobSeekerBContent(request, config, captainApproval = null, history = null, lastReturnTime = 0) {
+        const { officials } = config;
+        let details = {};
+        if (request.details) {
+            try {
+                details = typeof request.details === 'string' ? JSON.parse(request.details) : request.details;
+            } catch (e) {
+                console.error('Error parsing details:', e);
+            }
+        }
+
+        const applicantName = (request.full_name || request.applicant_name || '').toUpperCase();
+        const applicantAge = request.age || details.age || '-';
+        const applicantAddress = cleanResidentialAddress(request.address);
+
+        const residentYears = request.years_of_residency || details.years_of_residency || details.yearsOfResidency || '';
+        const currentYear = new Date().getFullYear();
+        const displaySinceYear = residentYears
+            ? (currentYear - parseInt(residentYears, 10))
+            : (details.since_year || details.sinceYear || (request.age ? (currentYear - Math.min(parseInt(request.age, 10) || 1, 15)) : currentYear));
+        const displayYearsOfResidency = residentYears || (displaySinceYear ? (currentYear - parseInt(displaySinceYear, 10)) : (request.age || '-'));
+
+        const dateMeta = formatJobSeekerDates(captainApproval?.created_at);
+        const councilorName = officials.councilors?.[3] || officials.councilors?.[0] || 'JOPHET M. TURLA';
+
+        return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>JOB SEEKER B - ${request.reference_number}</title>
+            <style>
+                @page { size: legal; margin: 15mm; }
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background: white;
+                    color: #111;
+                    font-size: 12.5px;
+                    line-height: 1.5;
+                }
+                .oath-container {
+                    width: 100%;
+                    max-width: 800px;
+                    min-height: 310mm;
+                    margin: 0 auto;
+                    padding: 10px 20px;
+                    box-sizing: border-box;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                }
+                .revised-tag {
+                    text-align: right;
+                    font-size: 11px;
+                    color: #444;
+                    margin-bottom: 20px;
+                }
+                .title-block {
+                    text-align: center;
+                    margin-bottom: 25px;
+                }
+                .title-block h1 {
+                    font-size: 18px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    margin: 0 0 5px 0;
+                    letter-spacing: 0.5px;
+                }
+                .title-block p {
+                    font-size: 13px;
+                    font-weight: 600;
+                    margin: 0;
+                }
+                .preamble {
+                    text-align: justify;
+                    margin-bottom: 18px;
+                    line-height: 1.6;
+                }
+                .undertakings-list {
+                    margin: 0 0 20px 0;
+                    padding-left: 20px;
+                }
+                .undertakings-list li {
+                    margin-bottom: 8px;
+                    text-align: justify;
+                    line-height: 1.45;
+                }
+                .date-line {
+                    margin: 25px 0;
+                    font-size: 13px;
+                }
+                .signatures-row {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-top: 65px;
+                    padding: 0 20px;
+                }
+                .sig-box {
+                    min-width: 250px;
+                }
+                .sig-box-title {
+                    font-size: 14px;
+                    margin-bottom: 90px;
+                }
+                .sig-box-name {
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    font-size: 16px;
+                    margin: 0;
+                }
+                .sig-box-role {
+                    font-weight: bold;
+                    font-size: 12.5px;
+                    color: #222;
+                    margin: 2px 0 0 0;
+                }
+                .minor-section {
+                    margin-top: auto;
+                    margin-bottom: 25px;
+                    padding-top: 15px;
+                    border-top: 1px dashed #666;
+                    font-size: 11px;
+                    line-height: 1.5;
+                }
+                .minor-section-title {
+                    font-style: italic;
+                    font-weight: bold;
+                    margin-bottom: 8px;
+                }
+                .line-fill {
+                    display: inline-block;
+                    border-bottom: 1px solid #000;
+                    min-width: 80px;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="oath-container">
+                <div class="revised-tag">Revised as of 16 June 2021</div>
+
+                <div class="title-block">
+                    <h1>OATH OF UNDERTAKING</h1>
+                    <p>Republic Act 11261 &ndash; First Jobseekers Assistance Act</p>
+                </div>
+
+                <div class="preamble">
+                    I, <strong>${applicantName}</strong>, <strong>${applicantAge}</strong> years of age, resident of <strong>${applicantAddress}</strong> for <strong>${displayYearsOfResidency}</strong> years, availing the benefits of Republic Act 11261, otherwise known as the First Jobseekers Act of 2019, do hereby declare, agree and undertake to abide and be bound by the following:
+                </div>
+
+                <ol class="undertakings-list">
+                    <li>That this is the first time that I will actively look for a job, and therefore requesting that a Barangay Certification be issued in my favor to avail the benefits of the law.</li>
+                    <li>That I am aware that the benefit and privileges under the said law shall be valid only for one (1) year from the date that the Barangay certification is issued.</li>
+                    <li>That I can avail the benefits of the law only once.</li>
+                    <li>That I understand that my personal information shall be included in the Roster/List of First Time Jobseekers and will not be used for any unlawful purpose.</li>
+                    <li>That I will inform and/or report to the Barangay personally, through text or other means or through my family relatives once I get employed.</li>
+                    <li>That I am not a beneficiary of the Job Start Program under RA No. 10869 and other laws that give similar exemptions for the documents or transactions exempted under RA no. 11261.</li>
+                    <li>That if issued the requested Certification, I will not use the same in any fraud, neither falsifies nor help and/or assist in the fabrication of the said certification.</li>
+                    <li>That this undertaking is made solely for the purpose of obtaining a Barangay Certification consistent with the objective of RA No. 11261 and not for any other purpose and</li>
+                    <li>That I consent to the use of my personal information pursuant to the Data Privacy Act and other applicable laws, rules, and regulations.</li>
+                </ol>
+
+                <div class="date-line">
+                    Signed this <strong>${dateMeta.dayOrdinal} day of ${dateMeta.monthName}, ${dateMeta.yearNumber}</strong> in the City / Municipality of Calumpit.
+                </div>
+
+                <div class="signatures-row">
+                    <div class="sig-box">
+                        <div class="sig-box-title">Signed:</div>
+                        <div style="position: relative; display: inline-block;">
+                            ${request.applicant_signature ? `
+                                <div style="position: absolute; left: 0; bottom: 15px; width: 200px; height: 90px; pointer-events: none;">
+                                    <img src="${request.applicant_signature}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply;">
+                                </div>
+                            ` : ''}
+                            <p class="sig-box-name">${applicantName}</p>
+                            <p class="sig-box-role">FIRST TIME JOBSEEKER</p>
+                        </div>
+                    </div>
+                    <div class="sig-box">
+                        <div class="sig-box-title">Witnessed by:</div>
+                        <div style="position: relative; display: inline-block;">
+                            ${captainApproval?.witness_signature ? `
+                                <div style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 8px; width: 250px; height: 110px; pointer-events: none;">
+                                    <img src="${captainApproval.witness_signature}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply;">
+                                </div>
+                            ` : ''}
+                            <p class="sig-box-name">${captainApproval?.witness_name || councilorName}</p>
+                            <p class="sig-box-role">BARANGAY COUNCILOR</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: auto; padding-top: 15px;">
+                    ${this.generateFooter(request, config)}
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
     }
 
     renderSignature(signatureData, offsetTop = -65) {
@@ -1722,7 +2403,7 @@ class CertificateGenerationService {
         const secretaryName = captainApproval.secretary_name || officials.secretary;
         return `
             <div class="sig-block" style="margin-top: 20px; text-align: left;">
-                <p style="font-weight: bold; margin: 20px 0 10px 0;">TRULY YOURS,</p>
+                <p style="font-weight: bold; margin: 26px 0 20px 0;">TRULY YOURS,</p>
                 <div style="display: flex; align-items: center; gap: 5px; position: relative; z-index: 10;">
                     <div style="position: relative; display: inline-block;">
                         <div style="position: absolute; left: 50%; transform: translateX(-50%) translateY(-65%); top: 0; width: 240px; height: 120px; pointer-events: none; z-index: 20; display: flex; align-items: center; justify-content: center;">

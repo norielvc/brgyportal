@@ -61,8 +61,10 @@ import {
   ArrowRight,
   Info,
   BookOpen,
+  UserCheck,
 } from "lucide-react";
 import BarangayClearanceModal from "@/components/Forms/BarangayClearanceModal";
+import FirstTimeJobSeekerModal from "@/components/Forms/FirstTimeJobSeekerModal";
 import IndigencyCertificateModal from "@/components/Forms/IndigencyCertificateModal";
 import ResidencyCertificateModal from "@/components/Forms/ResidencyCertificateModal";
 import BusinessPermitModal from "@/components/Forms/BusinessPermitModal";
@@ -354,6 +356,7 @@ export default function PortalPageContent({ initialTenantId }) {
     color: "text-yellow-400",
   });
   const [showClearanceModal, setShowClearanceModal] = useState(false);
+  const [showFirstTimeJobSeekerModal, setShowFirstTimeJobSeekerModal] = useState(false);
   const [showIndigencyModal, setShowIndigencyModal] = useState(false);
   const [showResidencyModal, setShowResidencyModal] = useState(false);
   const [showBusinessPermitModal, setShowBusinessPermitModal] = useState(false);
@@ -402,6 +405,7 @@ export default function PortalPageContent({ initialTenantId }) {
 
   const isAnyPortalModalOpen = Boolean(
     showClearanceModal ||
+    showFirstTimeJobSeekerModal ||
     showIndigencyModal ||
     showResidencyModal ||
     showBusinessPermitModal ||
@@ -455,8 +459,8 @@ export default function PortalPageContent({ initialTenantId }) {
       return false;
     }
     
-    // Standard plan - basic 3 certificates + portal sections always unlocked
-    const basicCertificates = ['barangay_clearance', 'certificate_of_indigency', 'barangay_residency'];
+    // Standard plan - basic certificates + portal sections always unlocked
+    const basicCertificates = ['barangay_clearance', 'first_time_job_seeker', 'certificate_of_indigency', 'barangay_residency'];
     const standardFeatures = ['facilities', 'programs', 'achievements'];
     
     if (subscription.planId === 'standard') {
@@ -491,6 +495,14 @@ export default function PortalPageContent({ initialTenantId }) {
         locked: isFeatureLocked("barangay_clearance"),
         onClick: () =>
           handleFeatureClick("barangay_clearance", pick("barangay_clearance").title, setShowClearanceModal),
+      },
+      {
+        ...pick("first_time_job_seeker"),
+        icon: UserCheck,
+        color: "emerald",
+        locked: isFeatureLocked("first_time_job_seeker"),
+        onClick: () =>
+          handleFeatureClick("first_time_job_seeker", pick("first_time_job_seeker").title, setShowFirstTimeJobSeekerModal),
       },
       {
         ...pick("certificate_of_indigency"),
@@ -1109,10 +1121,19 @@ export default function PortalPageContent({ initialTenantId }) {
 
     if (!isSilent) setIsChatSyncing(true);
     try {
+      const sinceIso =
+        isSilent && chatMessages.length > 0
+          ? chatMessages.reduce((max, m) => {
+              const t = m.created_at ? new Date(m.created_at).toISOString() : "";
+              return t && (!max || t > max) ? t : max;
+            }, null)
+          : null;
+
       const res = await kapchatAPI.getMessages({
         contact: contactToQuery,
         resident_id: residentId,
         resident_name: residentName,
+        ...(sinceIso ? { since: sinceIso } : {}),
       });
       if (res?.messages) {
         const thread = filterKapchatMessagesForResident(
@@ -1134,7 +1155,17 @@ export default function PortalPageContent({ initialTenantId }) {
             is_admin: m.is_admin,
             resident_id: m.resident_id,
           }));
-        setChatMessages(mapped);
+        if (sinceIso && mapped.length > 0) {
+          setChatMessages((prev) => {
+            const map = new Map(prev.map((m) => [m.id, m]));
+            mapped.forEach((m) => map.set(m.id, m));
+            return [...map.values()].sort(
+              (a, b) => new Date(a.created_at) - new Date(b.created_at),
+            );
+          });
+        } else if (!sinceIso) {
+          setChatMessages(mapped);
+        }
       }
     } catch (err) {
       console.error("Error fetching live KapChat messages:", err);
@@ -1143,7 +1174,7 @@ export default function PortalPageContent({ initialTenantId }) {
     }
   };
 
-  // Live polling for KapChat (every 3 seconds when open)
+  // Live polling for KapChat (every 8s when chat is open and tab visible)
   useEffect(() => {
     if (
       !showAssistance ||
@@ -1162,16 +1193,32 @@ export default function PortalPageContent({ initialTenantId }) {
       chatUserInfo.name,
     );
 
-    const interval = setInterval(() => {
+    let intervalId = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
       fetchLiveKapChatMessages(
         chatUserInfo.contact,
         true,
         chatUserInfo.residentId,
         chatUserInfo.name,
       );
-    }, 3000);
+    }, 8000);
 
-    return () => clearInterval(interval);
+    const onVisibility = () => {
+      if (!document.hidden) {
+        fetchLiveKapChatMessages(
+          chatUserInfo.contact,
+          true,
+          chatUserInfo.residentId,
+          chatUserInfo.name,
+        );
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [
     showAssistance,
     assistanceMode,
@@ -2409,7 +2456,7 @@ export default function PortalPageContent({ initialTenantId }) {
       </section>
 
       {/* Track Your Request Section */}
-      <section id="track" className="py-12 md:py-16 w-full border-t border-gray-100" style={{ background: `linear-gradient(135deg, ${tenantConfig.primaryColor}08 0%, ${tenantConfig.accentColor}05 100%)` }}>
+      <section id="track" className="py-12 md:py-16 w-full border-t border-gray-100 scroll-mt-20 md:scroll-mt-24" style={{ background: `linear-gradient(135deg, ${tenantConfig.primaryColor}08 0%, ${tenantConfig.accentColor}05 100%)` }}>
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-12">
           <div className="max-w-2xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest mb-4 border" style={{ color: tenantConfig.primaryColor, borderColor: `${tenantConfig.primaryColor}30`, backgroundColor: `${tenantConfig.primaryColor}08` }}>
@@ -3964,6 +4011,14 @@ export default function PortalPageContent({ initialTenantId }) {
       <BarangayClearanceModal
         isOpen={showClearanceModal}
         onClose={() => setShowClearanceModal(false)}
+        isDemo={tenantId === "demo"}
+        tenantConfig={{ ...tenantConfig, tenant_id: tenantId }}
+      />
+
+      {/* First Time Job Seeker Modal */}
+      <FirstTimeJobSeekerModal
+        isOpen={showFirstTimeJobSeekerModal}
+        onClose={() => setShowFirstTimeJobSeekerModal(false)}
         isDemo={tenantId === "demo"}
         tenantConfig={{ ...tenantConfig, tenant_id: tenantId }}
       />
@@ -6451,14 +6506,14 @@ function TrackRequestWidget({ tenantId, tenantConfig, labels: labelsProp }) {
     labels.trackStepReleased,
   ];
 
-  const handleTrack = async (e) => {
-    e.preventDefault();
-    if (!refNumber.trim()) return;
+  const executeTrack = React.useCallback(async (targetRef) => {
+    const query = (targetRef || "").trim();
+    if (!query) return;
     setLoading(true);
     setError('');
     setResult(null);
     try {
-      const res = await fetch(`/api/portal/track?ref=${encodeURIComponent(refNumber.trim())}`, {
+      const res = await fetch(`/api/portal/track?ref=${encodeURIComponent(query)}`, {
         headers: { 'x-tenant-id': tenantId }
       });
       const data = await res.json();
@@ -6472,6 +6527,50 @@ function TrackRequestWidget({ tenantId, tenantConfig, labels: labelsProp }) {
     } finally {
       setLoading(false);
     }
+  }, [tenantId, labels.trackNotFound, labels.trackError]);
+
+  React.useEffect(() => {
+    const handleAutoTrackEvent = (e) => {
+      const targetRef = e?.detail?.ref;
+      if (targetRef) {
+        setRefNumber(targetRef);
+        executeTrack(targetRef);
+
+        const scrollToTrackSection = () => {
+          const trackElem = document.getElementById("track");
+          if (trackElem) {
+            const navOffset = 80;
+            const y = trackElem.getBoundingClientRect().top + (window.pageYOffset || window.scrollY || 0) - navOffset;
+            window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+          }
+        };
+
+        // Scroll immediately and after modal closes / unlocks
+        scrollToTrackSection();
+        setTimeout(scrollToTrackSection, 100);
+        setTimeout(scrollToTrackSection, 300);
+        setTimeout(scrollToTrackSection, 600);
+      }
+    };
+    window.addEventListener("brgydesk:auto-track", handleAutoTrackEvent);
+
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlRef = urlParams.get("track") || urlParams.get("ref");
+      if (urlRef) {
+        setRefNumber(urlRef);
+        executeTrack(urlRef);
+      }
+    }
+
+    return () => {
+      window.removeEventListener("brgydesk:auto-track", handleAutoTrackEvent);
+    };
+  }, [executeTrack]);
+
+  const handleTrack = async (e) => {
+    e?.preventDefault();
+    executeTrack(refNumber);
   };
 
   const cfg = result ? (statusConfig[result.status] || { label: result.status, color: 'bg-gray-100 text-gray-600', step: 1 }) : null;

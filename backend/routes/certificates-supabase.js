@@ -95,6 +95,7 @@ router.get('/next-reference/:type', async (req, res) => {
     // Map type to prefix
     const prefixMap = {
       'barangay_clearance': 'BC',
+      'first_time_job_seeker': 'FTJS',
       'certificate_of_indigency': 'CI',
       'barangay_residency': 'BR',
       'natural_death': 'ND',
@@ -180,6 +181,7 @@ router.get('/next-reference/:type', async (req, res) => {
     const { type } = req.params;
     const prefixMap = {
       'barangay_clearance': 'BC',
+      'first_time_job_seeker': 'FTJS',
       'certificate_of_indigency': 'CI',
       'barangay_residency': 'BR',
       'natural_death': 'ND',
@@ -214,6 +216,9 @@ router.get('/', async (req, res) => {
         *,
         residents:resident_id (
           *
+        ),
+        workflow_assignments (
+          id, step_id, step_name, assigned_user_id, status, created_at
         )
       `)
       .eq('tenant_id', tenantId); // MULTI-TENANT FILTER
@@ -229,7 +234,18 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ success: false, message: error.message, details: error.details });
     }
 
-    res.json({ success: true, certificates: data || [] });
+    const certificates = (data || []).map(cert => {
+      const assignments = cert.workflow_assignments || [];
+      const pendingAssignment = assignments
+        .filter(a => a.status === 'pending')
+        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
+      return {
+        ...cert,
+        workflow_assignment: pendingAssignment || null
+      };
+    });
+
+    res.json({ success: true, certificates });
   } catch (error) {
     console.error('❌ Unexpected error fetching certificates:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -247,6 +263,9 @@ router.get('/:id', async (req, res) => {
         *,
         residents:resident_id (
           *
+        ),
+        workflow_assignments (
+          id, step_id, step_name, assigned_user_id, status, created_at
         )
       `)
       .eq('id', req.params.id)
@@ -256,7 +275,17 @@ router.get('/:id', async (req, res) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ success: false, message: 'Certificate not found' });
 
-    res.json({ success: true, data });
+    const assignments = data.workflow_assignments || [];
+    const pendingAssignment = assignments
+      .filter(a => a.status === 'pending')
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
+
+    const certWithAssignment = {
+      ...data,
+      workflow_assignment: pendingAssignment || null
+    };
+
+    res.json({ success: true, data: certWithAssignment });
   } catch (error) {
     console.error('Error fetching certificate:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -1394,7 +1423,8 @@ router.put('/:id/status', async (req, res) => {
       'pending', 'submitted', 'processing', 'under_review',
       'approved', 'rejected', 'returned', 'ready',
       'ready_for_pickup', 'released', 'cancelled',
-      'staff_review', 'captain_approval', 'oic_review', 'completed'
+      'staff_review', 'captain_approval', 'oic_review', 'completed',
+      'secretary_approval', 'witness_verification', 'Witness Verification'
     ];
 
     if (status && !validStatuses.includes(status)) {
@@ -1771,6 +1801,7 @@ router.get('/stats/summary', async (req, res) => {
       total: all.length,
       byType: {
         barangay_clearance: all.filter(c => c.certificate_type === 'barangay_clearance').length,
+        first_time_job_seeker: all.filter(c => c.certificate_type === 'first_time_job_seeker').length,
         certificate_of_indigency: all.filter(c => c.certificate_type === 'certificate_of_indigency').length,
         barangay_cohabitation: all.filter(c => c.certificate_type === 'barangay_cohabitation').length
       },

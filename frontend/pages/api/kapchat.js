@@ -36,7 +36,7 @@ export default async function handler(req, res) {
           success: false,
           code: "KAPCHAT_CLOSED",
           message:
-            "KapChat is closed. Resident hours: Mon–Fri 9:00–10:00 AM and 3:00–4:00 PM, Sat 9:00–10:00 AM (Philippine Time).",
+            "KapChat is closed. Resident hours: Mon–Fri 8:00 AM–5:00 PM, Sat 8:00 AM–12:00 NN (Philippine Time).",
         });
       }
 
@@ -149,6 +149,7 @@ export default async function handler(req, res) {
           const emailEnabled = await isEmailNotificationsEnabled(supabase);
           const seenEmails = new Set();
 
+          // 1. Staff notifications: ONLY users explicitly checked in "New message email receivers"
           for (const rec of recipients) {
             if (emailEnabled && rec.email) {
               const emailKey = String(rec.email).trim().toLowerCase();
@@ -156,7 +157,7 @@ export default async function handler(req, res) {
                 seenEmails.add(emailKey);
                 const recipientName =
                   `${rec.first_name || ""} ${rec.last_name || ""}`.trim() ||
-                  "Brgy. Captain";
+                  "Barangay Staff";
                 const sent = await sendKapchatNotification({
                   recipientEmail: rec.email,
                   recipientName,
@@ -164,9 +165,10 @@ export default async function handler(req, res) {
                   contactNumber: sContact || "",
                   message: message.trim(),
                   tenantId,
+                  isResidentConfirmation: false,
                 });
                 if (sent.success) {
-                  console.log(`📧 KapChat email sent to ${rec.email}`);
+                  console.log(`📧 KapChat email sent to staff ${rec.email}`);
                 } else {
                   console.warn(`⚠️ KapChat email failed (${rec.email}):`, sent.error);
                 }
@@ -189,6 +191,38 @@ export default async function handler(req, res) {
               ]);
             }
           }
+
+          // 2. Resident confirmation email (if resident has an email)
+          const { isValidEmail } = await import("../../src/lib/sendTransactionalEmail");
+          let residentEmail = null;
+          if (isValidEmail(sContact)) {
+            residentEmail = sContact.trim();
+          } else if (isValidEmail(req.body?.email)) {
+            residentEmail = req.body.email.trim();
+          } else if (resident_id) {
+            const { data: resData } = await supabase
+              .from("residents")
+              .select("email")
+              .eq("id", resident_id)
+              .maybeSingle();
+            if (isValidEmail(resData?.email)) {
+              residentEmail = resData.email.trim();
+            }
+          }
+
+          if (emailEnabled && residentEmail && !seenEmails.has(residentEmail.toLowerCase())) {
+            seenEmails.add(residentEmail.toLowerCase());
+            await sendKapchatNotification({
+              recipientEmail: residentEmail,
+              recipientName: sName,
+              senderName: sName,
+              contactNumber: sContact || "",
+              message: message.trim(),
+              tenantId,
+              isResidentConfirmation: true,
+            });
+            console.log(`📧 KapChat confirmation sent to resident ${residentEmail}`);
+          }
         } catch (notifyErr) {
           console.error("❌ KapChat notification error:", notifyErr.message);
         }
@@ -202,12 +236,15 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "GET") {
-      const { status, contact, order, resident_id } = req.query;
+      const { status, contact, order, resident_id, since, limit: limitParam } =
+        req.query;
 
       const isAsc = order === "asc" || Boolean(contact);
+      const columns =
+        "id, contact, sender_name, message, status, is_admin, resident_id, created_at, tenant_id";
       let query = supabase
         .from("kapchat_messages")
-        .select("*", { count: "exact" })
+        .select(columns, { count: "exact" })
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: isAsc });
 
@@ -217,6 +254,19 @@ export default async function handler(req, res) {
 
       if (status) {
         query = query.eq("status", status);
+      }
+
+      if (since) {
+        const sinceDate = new Date(String(since));
+        if (!Number.isNaN(sinceDate.getTime())) {
+          query = query.gt("created_at", sinceDate.toISOString());
+        }
+      } else if (!contact) {
+        const cap = Math.min(
+          Math.max(parseInt(String(limitParam || "500"), 10) || 500, 50),
+          2000,
+        );
+        query = query.limit(cap);
       }
 
       let { data, error, count } = await query;

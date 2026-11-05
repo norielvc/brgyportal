@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
@@ -76,11 +76,25 @@ import {
   joinNameParts,
   resolveApplicantNameParts,
 } from "@/lib/personName";
-import { resolveRequestResidentialAddress } from "@/lib/addressHelper";
+import {
+  resolveRequestResidentialAddress,
+  formatSexFull,
+  formatCivilStatusFull,
+  stripProvinceOf,
+} from "@/lib/addressHelper";
 import { pendingCaseRows } from "@/lib/caseRecordHistory";
 import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
 // API Configuration
 const API_URL = "/api";
+
+const FIRST_TIME_JOB_SEEKER_PURPOSES = [
+  "NATIONAL BUREAU OF INVESTIGATION (NBI) REQUIREMENT",
+  "TAXPAYER IDENTIFICATION NUMBER (TIN) REQUIREMENT",
+  "SOCIAL SECURITY SYSTEM (SSS) REQUIREMENT",
+  "PAG-IBIG REQUIREMENT",
+  "PHILHEALTH REQUIREMENT",
+  "*TAXPAYER IDENTIFICATION NUMBERS (TIN) REQUIREMENT",
+];
 
 const PURPOSE_LIST_1 = [
   "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (CITY OF MALOLOS, BULACAN)",
@@ -194,6 +208,18 @@ const STATUS_OPTIONS = [
 
 function formatRequestStatus(status, certificateType, workflowStepName = "") {
   const key = String(status || "").toLowerCase();
+  const step = String(workflowStepName || "").toLowerCase();
+
+  if (certificateType === "first_time_job_seeker") {
+    if (
+      step.includes("witness") ||
+      key.includes("witness") ||
+      (key === "processing" && (step.includes("witness") || !step))
+    ) {
+      return "WITNESS VERIFICATION";
+    }
+  }
+
   if (key === "oic_review" && certificateType === "business_permit") {
     const step = String(workflowStepName || "").toLowerCase();
     if (step.includes("releasing")) {
@@ -218,6 +244,7 @@ function formatRequestStatus(status, certificateType, workflowStepName = "") {
 
 const TYPE_OPTIONS = [
   { value: "barangay_clearance", label: "Clearance" },
+  { value: "first_time_job_seeker", label: "First Time Job Seeker" },
   { value: "certificate_of_indigency", label: "Indigency" },
   { value: "barangay_residency", label: "Residency" },
   { value: "natural_death", label: "Natural Death" },
@@ -563,6 +590,36 @@ export default function RequestsPage() {
     }
   };
 
+  const loadFullRequestIfNeeded = async (request) => {
+    if (!request?.id) return request;
+    if (!request._listView) {
+      return request;
+    }
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${API_URL}/certificates/${request.id}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (data.success && (data.certificate || data.data)) {
+        return data.certificate || data.data;
+      }
+    } catch (err) {
+      console.error("Failed to load full request detail:", err);
+    }
+    return request;
+  };
+
+  const openRequestDetail = async (request) => {
+    if (!request?.id) return;
+    setSelectedRequest(request);
+    const full = await loadFullRequestIfNeeded(request);
+    setSelectedRequest(full);
+  };
+
   const fetchRequests = async (
     activeWorkflows = workflows,
     activeUser = currentUser,
@@ -588,9 +645,12 @@ export default function RequestsPage() {
         : [];
 
       // 2. Fetch All Requests
-      const allRes = await fetchWithTimeout(`${API_URL}/certificates`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const allRes = await fetchWithTimeout(
+        `${API_URL}/certificates?view=list`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const allData = await allRes.json();
       const allCertificates = allData.success ? allData.certificates || [] : [];
       setAllRequests(allCertificates);
@@ -818,6 +878,12 @@ export default function RequestsPage() {
       currentStep = workflowSteps.find((step) =>
         workflowStatusesMatch(step.status, "secretary_approval"),
       );
+    } else if (s.includes("witness") || (s.includes("processing") && request.certificate_type === "first_time_job_seeker")) {
+      currentStep = workflowSteps.find((step) =>
+        workflowStatusesMatch(step.status, "witness_verification") ||
+        workflowStatusesMatch(step.status, "Witness Verification") ||
+        String(step.name || "").toLowerCase().includes("witness"),
+      );
     } else if (s.includes("processing")) {
       // Find the first step that requires approval and isn't staff/oic
       currentStep = workflowSteps.find(
@@ -889,6 +955,14 @@ export default function RequestsPage() {
 
     // 2. Fallback to status-based search
     if (currentStatus === "processing") {
+      if (request.certificate_type === "first_time_job_seeker") {
+        const witnessStep = workflowSteps.find(
+          (s) =>
+            String(s.name || "").toLowerCase().includes("witness") ||
+            String(s.status || "").toLowerCase().includes("witness")
+        );
+        if (witnessStep) return witnessStep;
+      }
       const activeStep = workflowSteps.find(
         (s) =>
           s.status !== "staff_review" &&
@@ -916,6 +990,9 @@ export default function RequestsPage() {
       under_review: "bg-purple-100 text-purple-800 border-purple-200",
       processing: "bg-purple-100 text-purple-800 border-purple-200",
       captain_approval: "bg-purple-100 text-purple-800 border-purple-200",
+      secretary_approval: "bg-purple-100 text-purple-800 border-purple-200",
+      witness_verification: "bg-purple-100 text-purple-800 border-purple-200",
+      "Witness Verification": "bg-purple-100 text-purple-800 border-purple-200",
       physical_inspection: "bg-amber-100 text-amber-800 border-amber-200",
       verifying: "bg-teal-100 text-teal-800 border-teal-200",
       Treasury: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -972,38 +1049,40 @@ export default function RequestsPage() {
     });
   };
 
-  const handleAction = (request, action) => {
+  const handleAction = async (request, action) => {
+    const req = await loadFullRequestIfNeeded(request);
+
     // ⚡ DIRECT ACTION: Business permit — inspection done → next workflow step (Finance / Captain)
     if (
       action === "approve" &&
-      request.certificate_type === "business_permit" &&
-      request.status === "physical_inspection"
+      req.certificate_type === "business_permit" &&
+      req.status === "physical_inspection"
     ) {
       return submitAction(
         null,
-        request,
+        req,
         action,
         "Physical inspection completed and forwarded to the next workflow step.",
       );
     }
 
     // ⚡ DIRECT ACTION: Skip modal for "Ready to Pickup" (OIC approve)
-    if (action === "approve" && request.status === "oic_review") {
-      return submitAction(null, request, action);
+    if (action === "approve" && req.status === "oic_review") {
+      return submitAction(null, req, action);
     }
 
     // 📦 PICKUP MODAL: Show specialized pickup modal for final release
     if (
       action === "approve" &&
-      ["ready", "ready_for_pickup"].includes(request.status)
+      ["ready", "ready_for_pickup"].includes(req.status)
     ) {
-      setSelectedRequest(request);
-      setPickupName(request.applicant_name || request.full_name || "");
+      setSelectedRequest(req);
+      setPickupName(req.applicant_name || req.full_name || "");
       setShowPickupModal(true);
       return;
     }
 
-    setSelectedRequest(request);
+    setSelectedRequest(req);
     setActionType(action);
     setActionComment("");
     setShowActionModal(true);
@@ -1080,8 +1159,15 @@ export default function RequestsPage() {
 
       const currentKey = String(currentStatus || "").toLowerCase();
 
+      if (certType === "first_time_job_seeker") {
+        if (currentKey === "secretary_approval") return "witness_verification";
+        if (currentKey === "witness_verification" || currentKey === "witness verification") return "captain_approval";
+      }
+
       // Status progression mapping - must follow the workflow steps exactly
       const statusFlow = {
+        witness_verification: "captain_approval",
+        "witness verification": "captain_approval",
         pending: "secretary_approval",  // After staff review, goes to secretary
         staff_review: "secretary_approval",
         returned: "secretary_approval",
@@ -1142,6 +1228,9 @@ export default function RequestsPage() {
             else if (req.status === "captain_approval")
               defaultComment =
                 "Request approved by Barangay Chairman and forwarded to Pickup Management";
+            else if (String(req.status || "").toLowerCase().includes("witness"))
+              defaultComment =
+                "Request witnessed and forwarded to Barangay Chairman for approval";
             else if (req.status === "Treasury")
               defaultComment =
                 "Payment processed and forwarded to Releasing Team";
@@ -1305,9 +1394,10 @@ export default function RequestsPage() {
               )));
         const isSecretaryApproval = req.status === "secretary_approval";
         const isCaptainApproval = req.status === "captain_approval";
+        const isWitnessApproval = String(req.status || "").toLowerCase().includes("witness");
 
         const needsPageReload =
-          isStaffReviewStage || isReturnedStatus || isPhysicalInspectionAction || isSecretaryApproval || isCaptainApproval;
+          isStaffReviewStage || isReturnedStatus || isPhysicalInspectionAction || isSecretaryApproval || isCaptainApproval || isWitnessApproval;
 
         console.log(`[SUBMIT-ACTION] Reload check:`, {
           reqStatus: req.status,
@@ -1917,7 +2007,7 @@ export default function RequestsPage() {
                 return (
                   <div
                     key={`${request.id}-${index}`}
-                    onClick={() => setSelectedRequest(request)}
+                    onClick={() => openRequestDetail(request)}
                     className={`p-2.5 bg-white transition-all active:bg-blue-50/50 cursor-pointer ${
                       canAct ? "bg-blue-50/20 border-l-2 border-l-[#03254c]" : ""
                     }`}
@@ -2053,7 +2143,7 @@ export default function RequestsPage() {
                     return (
                       <tr
                         key={`${request.id}-${index}`}
-                        onClick={() => setSelectedRequest(request)}
+                        onClick={() => openRequestDetail(request)}
                         className={`hover:bg-gray-50 transition-colors cursor-pointer ${
                           canAct ? "bg-blue-50/30" : ""
                         }`}
@@ -2070,7 +2160,7 @@ export default function RequestsPage() {
                                 !e.altKey
                               ) {
                                 e.preventDefault();
-                                setSelectedRequest(request);
+                                openRequestDetail(request);
                                 router.push(
                                   {
                                     pathname: router.pathname,
@@ -2395,6 +2485,15 @@ function RequestDetailsModal({
   } catch (e) {
     console.error("Error parsing details", e);
   }
+
+  const pickupMethodRaw = String(
+    request.pickup_method ||
+    additionalDetails.pickup_method ||
+    additionalDetails.pickupMethod ||
+    request.pickupMethod ||
+    "pickup"
+  ).toLowerCase().trim();
+  const isOnlineDelivery = pickupMethodRaw === "online";
 
   // Helper to calculate age from date string
   const calculateAge = (dob) => {
@@ -2996,7 +3095,7 @@ function RequestDetailsModal({
       if (currentPurpose.includes(selectedValue)) return prev;
 
       const newPurpose = currentPurpose
-        ? `${currentPurpose} / ${selectedValue}`
+        ? `${currentPurpose}\n${selectedValue}`
         : selectedValue;
 
       return { ...prev, purpose: newPurpose };
@@ -3779,6 +3878,7 @@ function RequestDetailsModal({
 
                     {[
                       "barangay_clearance",
+                      "first_time_job_seeker",
                       "certificate_of_indigency",
                       "barangay_residency",
                     ].includes(request.certificate_type) && (
@@ -3796,41 +3896,57 @@ function RequestDetailsModal({
                                 rows="3"
                                 placeholder="ENTER PURPOSE HERE..."
                               />
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                <select
-                                  onChange={handlePurposeSelect}
-                                  className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
-                                >
-                                  <option value="">-- PURPOSE 1 --</option>
-                                  {PURPOSE_LIST_1.map((p, i) => (
-                                    <option key={i} value={p}>
-                                      {p}
-                                    </option>
-                                  ))}
-                                </select>
-                                <select
-                                  onChange={handlePurposeSelect}
-                                  className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-sm outline-none cursor-pointer uppercase"
-                                >
-                                  <option value="">-- PURPOSE 2 --</option>
-                                  {PURPOSE_LIST_2.map((p, i) => (
-                                    <option key={i} value={p}>
-                                      {p}
-                                    </option>
-                                  ))}
-                                </select>
-                                <select
-                                  onChange={handlePurposeSelect}
-                                  className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
-                                >
-                                  <option value="">-- PURPOSE 3 --</option>
-                                  {PURPOSE_LIST_3.map((p, i) => (
-                                    <option key={i} value={p}>
-                                      {p}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
+                              {request.certificate_type === "first_time_job_seeker" ? (
+                                <div className="grid grid-cols-1 gap-2">
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- SELECT FIRST TIME JOB SEEKER REQUIREMENT (RA 11261) --</option>
+                                    {FIRST_TIME_JOB_SEEKER_PURPOSES.map((p, i) => (
+                                      <option key={i} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- PURPOSE 1 --</option>
+                                    {PURPOSE_LIST_1.map((p, i) => (
+                                      <option key={i} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- PURPOSE 2 --</option>
+                                    {PURPOSE_LIST_2.map((p, i) => (
+                                      <option key={i} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- PURPOSE 3 --</option>
+                                    {PURPOSE_LIST_3.map((p, i) => (
+                                      <option key={i} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
                             </>
                           ) : (
                             <div className="bg-slate-50 p-3 sm:p-3.5 rounded-lg border border-slate-100">
@@ -4183,11 +4299,18 @@ function RequestDetailsModal({
                                         <td className="py-3 px-2">
                                           <select
                                             className={`w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-amber-500 transition-all ${
-                                              inspectionData.areas[area].findings === "PASSED"
+                                              ["PASSED", "YES"].includes(
+                                                inspectionData.areas[area].findings,
+                                              )
                                                 ? "text-emerald-700"
-                                                : inspectionData.areas[area].findings === "FAILED"
+                                                : ["FAILED", "NO"].includes(
+                                                      inspectionData.areas[area].findings,
+                                                    )
                                                   ? "text-red-700"
-                                                  : "text-gray-500"
+                                                  : inspectionData.areas[area].findings ===
+                                                      "NOT APPLICABLE"
+                                                    ? "text-blue-700"
+                                                    : "text-gray-500"
                                             }`}
                                             value={
                                               inspectionData.areas[area].findings || ""
@@ -4201,8 +4324,18 @@ function RequestDetailsModal({
                                             }
                                           >
                                             <option value="">Select</option>
-                                            <option value="PASSED">PASSED</option>
-                                            <option value="FAILED">FAILED</option>
+                                            {area?.trim().toUpperCase() === "BUILDING PERMIT" ? (
+                                              <>
+                                                <option value="YES">YES</option>
+                                                <option value="NO">NO</option>
+                                                <option value="NOT APPLICABLE">NOT APPLICABLE</option>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <option value="PASSED">PASSED</option>
+                                                <option value="FAILED">FAILED</option>
+                                              </>
+                                            )}
                                           </select>
                                         </td>
                                         <td className="py-3 px-2">
@@ -5594,6 +5727,8 @@ function RequestDetailsModal({
             "physical_inspection",
             "verifying",
             "secretary_approval",
+            "witness_verification",
+            "witness verification",
             "captain_approval",
             "Treasury",
             "oic_review",
@@ -5848,7 +5983,9 @@ function RequestDetailsModal({
                                 ? "Forward to Barangay Chairman"
                                 : isBusinessPermitReleasingStage
                                   ? "Set as Ready"
-                                  : "Forward to Next"}
+                                  : String(request.status || "").toLowerCase().includes("witness")
+                                    ? "Witness & Forward"
+                                    : "Forward to Next"}
                       </button>
                     </>
                   )}
@@ -6056,11 +6193,19 @@ function ActionModal({
             title:
               String(request.status || "").toLowerCase() === "verifying"
                 ? "Verify Inspection"
-                : "Approve Request",
+                : (String(request.status || "").toLowerCase().includes("witness") ||
+                   String(currentStep?.name || "").toLowerCase().includes("witness") ||
+                   String(request.workflow_assignment?.step_name || "").toLowerCase().includes("witness"))
+                  ? "Witness & Sign Request"
+                  : "Approve Request",
             description:
               String(request.status || "").toLowerCase() === "verifying"
                 ? "Confirm the physical inspection result and sign to forward this request."
-                : "Are you sure you want to approve this certificate request?",
+                : (String(request.status || "").toLowerCase().includes("witness") ||
+                   String(currentStep?.name || "").toLowerCase().includes("witness") ||
+                   String(request.workflow_assignment?.step_name || "").toLowerCase().includes("witness"))
+                  ? "Confirm you witnessed the Oath of Undertaking and sign to forward this request to the Barangay Chairman."
+                  : "Are you sure you want to approve this certificate request?",
             icon: CheckCircle,
             iconBg: "bg-green-100",
             iconColor: "text-green-600",
@@ -6068,7 +6213,11 @@ function ActionModal({
             buttonText:
               String(request.status || "").toLowerCase() === "verifying"
                 ? "Verified"
-                : currentStep?.status === "Treasury" ||
+                : (String(request.status || "").toLowerCase().includes("witness") ||
+                   String(currentStep?.name || "").toLowerCase().includes("witness") ||
+                   String(request.workflow_assignment?.step_name || "").toLowerCase().includes("witness"))
+                  ? "Witness"
+                  : currentStep?.status === "Treasury" ||
                 request.status === "Treasury"
                 ? "Mark as Paid & Generate OR"
                 : currentStep?.status === "captain_approval" ||
@@ -6550,7 +6699,32 @@ function computeLastReturnTimeFromHistory(history) {
     : 0;
 }
 
-/** US Letter vs A4 — business permit clearance & inspection stay on A4. */
+function splitPurposesList(purpose) {
+  if (!purpose) return [];
+  if (Array.isArray(purpose)) {
+    return purpose.flatMap((p) => splitPurposesList(p));
+  }
+  const raw = String(purpose).trim();
+  if (!raw) return [];
+
+  const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const items = [];
+  for (const line of lines) {
+    if (line.includes(" / ")) {
+      items.push(...line.split(/\s+\/\s+/).map((p) => p.trim()).filter(Boolean));
+    } else if (line.includes(" ; ")) {
+      items.push(...line.split(/\s*;\s*/).map((p) => p.trim()).filter(Boolean));
+    } else {
+      items.push(line);
+    }
+  }
+
+  return items
+    .map((item) => item.replace(/^(\d+[\.\)]\s*|[•\-\*]\s*)/, "").trim())
+    .filter(Boolean);
+}
+
+/** US Letter vs A4 — business permit clearance & inspection stay on A4. Legal for Job Seeker B. */
 const CERT_PAGE_SIZES = {
   a4: {
     id: "a4",
@@ -6568,15 +6742,30 @@ const CERT_PAGE_SIZES = {
     heightPx: 1056,
     jsPdfFormat: "letter",
   },
+  legal: {
+    id: "legal",
+    widthMm: 215.9,
+    heightMm: 355.6,
+    widthPx: 816,
+    heightPx: 1344,
+    jsPdfFormat: "legal",
+  },
 };
 
 function getCertificatePageSpec({
   certificateType,
   businessPreviewVariant = "default",
+  jobSeekerVariant = null,
 } = {}) {
   const type = String(certificateType || "").toLowerCase();
   if (type === "business_permit") {
     return CERT_PAGE_SIZES.a4;
+  }
+  if (type === "first_time_job_seeker") {
+    if (jobSeekerVariant === "JOB SEEKER B") {
+      return CERT_PAGE_SIZES.legal;
+    }
+    return CERT_PAGE_SIZES.letter;
   }
   return CERT_PAGE_SIZES.letter;
 }
@@ -6637,12 +6826,30 @@ async function buildCertificatePdfFromElement(
             }
             .certificate-container {
               width: ${spec.widthMm}mm !important;
-              min-height: 0 !important;
-              height: auto !important;
+              min-height: ${spec.id === "business_permit" ? "0 !important" : `${spec.heightMm}mm !important`};
+              height: ${spec.id === "business_permit" ? "auto !important" : `${spec.heightMm}mm !important`};
+              max-height: ${spec.id === "business_permit" ? "none !important" : `${spec.heightMm}mm !important`};
               box-sizing: border-box !important;
               margin: 0 !important;
               box-shadow: none !important;
-              overflow: visible !important;
+              overflow: hidden !important;
+              display: flex !important;
+              flex-direction: column !important;
+            }
+            .certificate-container .cert-header-section {
+              flex-shrink: 0 !important;
+            }
+            .certificate-container .cert-main-content {
+              flex: 1 1 0% !important;
+              min-height: 0 !important;
+            }
+            .certificate-container .cert-doc-body {
+              flex: 1 1 0% !important;
+              min-height: 0 !important;
+            }
+            .certificate-container .cert-footer-anchor {
+              margin-top: auto !important;
+              flex-shrink: 0 !important;
             }
             .cert-header-section {
               border-bottom: 2px solid #111827 !important;
@@ -6667,9 +6874,57 @@ async function buildCertificatePdfFromElement(
     setTimeout(resolve, 350);
   });
 
-  const captureTarget =
-    iframeDoc.querySelector(".certificate-container") || iframeDoc.body;
+  const containers = Array.from(
+    iframeDoc.querySelectorAll(".certificate-container"),
+  );
 
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: spec.jsPdfFormat,
+    compress: true,
+  });
+
+  const pdfW = spec.widthMm;
+  const pdfH = spec.heightMm;
+
+  if (containers.length > 1) {
+    for (let i = 0; i < containers.length; i++) {
+      if (i > 0) {
+        pdf.addPage(spec.jsPdfFormat, "portrait");
+      }
+      const pageEl = containers[i];
+      await waitForDocumentImages(pageEl);
+      const canvas = await html2canvas(pageEl, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        windowWidth: iframe.offsetWidth,
+        windowHeight: iframe.offsetHeight,
+        onclone: (_el, clonedDoc) => normalizeCloneForCanvasCapture(clonedDoc),
+      });
+
+      const imgData = canvas.toDataURL("image/png", 1.0);
+      const imgWidthMm = pdfW;
+      const imgHeightMm = (canvas.height * pdfW) / canvas.width;
+
+      if (imgHeightMm <= pdfH) {
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
+      } else {
+        const scale = pdfH / imgHeightMm;
+        const scaledWidth = imgWidthMm * scale;
+        const xOffset = (pdfW - scaledWidth) / 2;
+        pdf.addImage(imgData, "PNG", xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
+      }
+    }
+
+    document.body.removeChild(iframe);
+    return pdf;
+  }
+
+  const captureTarget = containers[0] || iframeDoc.body;
   await waitForDocumentImages(captureTarget);
 
   const canvas = await html2canvas(captureTarget, {
@@ -6686,15 +6941,6 @@ async function buildCertificatePdfFromElement(
   document.body.removeChild(iframe);
 
   const imgData = canvas.toDataURL("image/png", 1.0);
-  const pdf = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: spec.jsPdfFormat,
-    compress: true,
-  });
-
-  const pdfW = spec.widthMm;
-  const pdfH = spec.heightMm;
   const imgWidthMm = pdfW;
   const imgHeightMm = (canvas.height * pdfW) / canvas.width;
 
@@ -6799,6 +7045,8 @@ function CertificatePreviewModal({
   const containerRef = useRef(null);
   const isBusinessPermitRequest =
     String(request.certificate_type || "").toLowerCase() === "business_permit";
+  const isJobSeekerRequest =
+    String(request.certificate_type || "").toLowerCase() === "first_time_job_seeker";
   const isCompletedOrReady = ["ready", "ready_for_pickup", "released", "oic_review"].includes(
     String(request.status || "").toLowerCase(),
   );
@@ -6807,11 +7055,21 @@ function CertificatePreviewModal({
       ? "permit"
       : "inspection",
   );
+  const [jobSeekerPreviewTab, setJobSeekerPreviewTab] = useState("FIRST TIME JOB SEEKER");
+  const jobSeekerACertRef = useRef(null);
+  const jobSeekerBCertRef = useRef(null);
+
   const activeCertificateRef = isBusinessPermitRequest
     ? businessPreviewTab === "permit"
       ? businessPermitCertRef
       : certificateRef
-    : certificateRef;
+    : isJobSeekerRequest
+      ? jobSeekerPreviewTab === "JOB SEEKER A"
+        ? jobSeekerACertRef
+        : jobSeekerPreviewTab === "JOB SEEKER B"
+          ? jobSeekerBCertRef
+          : certificateRef
+      : certificateRef;
   const [officials, setOfficials] = useState(() => {
     if (typeof window === "undefined") return defaultOfficials;
     try {
@@ -6823,15 +7081,7 @@ function CertificatePreviewModal({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [history, setHistory] = useState([]);
-  const [historyLoaded, setHistoryLoaded] = useState(() => {
-    let details = request?.details;
-    if (typeof details === "string") {
-      try {
-        details = JSON.parse(details);
-      } catch {}
-    }
-    return Boolean(details?.captain_signature);
-  });
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [requestLoaded, setRequestLoaded] = useState(() => Boolean(request?.reference_number));
   const [directPdfBlobUrl, setDirectPdfBlobUrl] = useState(null);
   const directPdfStartedRef = useRef(false);
@@ -6841,6 +7091,14 @@ function CertificatePreviewModal({
   const [previewRequest, setPreviewRequest] = useState(request);
   const [currentDate, setCurrentDate] = useState("");
   const [inspectionData, setInspectionData] = useState(null);
+  const [selectedJobSeekerPurposeIndex, setSelectedJobSeekerPurposeIndex] = useState("all");
+
+  const jobSeekerPurposes = useMemo(() => {
+    if (!isJobSeekerRequest) return [];
+    const p = previewRequest?.purpose || request?.purpose;
+    const list = splitPurposesList(p);
+    return list.length > 0 ? list : (p ? [p] : []);
+  }, [isJobSeekerRequest, previewRequest?.purpose, request?.purpose]);
   // Responsive Zoom & Mobile Fit Controls
   const [zoom, setZoom] = useState("auto"); // "auto" | number (e.g. 0.5, 0.75, 1, 1.25)
   const [containerWidth, setContainerWidth] = useState(0);
@@ -6853,6 +7111,7 @@ function CertificatePreviewModal({
         ? "permit"
         : "inspection"
       : "default",
+    jobSeekerVariant: isJobSeekerRequest ? jobSeekerPreviewTab : null,
   });
   const PREVIEW_WIDTH_PX = previewPageSpec.widthPx;
   const PREVIEW_HEIGHT_PX = previewPageSpec.heightPx;
@@ -6877,18 +7136,31 @@ function CertificatePreviewModal({
 
   // Measure document height dynamically when content changes
   useEffect(() => {
-    if (!certificateRef.current) return;
+    const targetRef = isBusinessPermitRequest
+      ? businessPreviewTab === "permit"
+        ? businessPermitCertRef
+        : certificateRef
+      : isJobSeekerRequest
+        ? jobSeekerPreviewTab === "JOB SEEKER A"
+          ? jobSeekerACertRef
+          : jobSeekerPreviewTab === "JOB SEEKER B"
+            ? jobSeekerBCertRef
+            : certificateRef
+        : certificateRef;
+
+    const targetEl = targetRef?.current || certificateRef.current;
+    if (!targetEl) return;
     const updateDocHeight = () => {
-      if (certificateRef.current) {
-        const h = certificateRef.current.offsetHeight || certificateRef.current.scrollHeight || PREVIEW_HEIGHT_PX;
+      if (targetEl) {
+        const h = targetEl.offsetHeight || targetEl.scrollHeight || PREVIEW_HEIGHT_PX;
         setDocHeight(h);
       }
     };
     updateDocHeight();
     const observer = new ResizeObserver(updateDocHeight);
-    observer.observe(certificateRef.current);
+    observer.observe(targetEl);
     return () => observer.disconnect();
-  }, [officials, request, businessPreviewTab, PREVIEW_HEIGHT_PX]);
+  }, [officials, request, businessPreviewTab, jobSeekerPreviewTab, selectedJobSeekerPurposeIndex, PREVIEW_HEIGHT_PX, isBusinessPermitRequest, isJobSeekerRequest]);
 
   // Compute scale factor
   const isMobileView = containerWidth > 0 && containerWidth < 840;
@@ -7183,7 +7455,8 @@ function CertificatePreviewModal({
     if (
       !directPdf ||
       directPdfStartedRef.current ||
-      !officials
+      !officials ||
+      !historyLoaded
     ) {
       return;
     }
@@ -7207,10 +7480,10 @@ function CertificatePreviewModal({
         console.error("Error auto-generating direct PDF:", error);
         directPdfStartedRef.current = false;
       }
-    }, 180);
+    }, 250);
 
     return () => clearTimeout(timer);
-  }, [directPdf, officials, previewPageSpec, request.reference_number]);
+  }, [directPdf, officials, previewPageSpec, request.reference_number, historyLoaded]);
 
   // ── Print: same A4 PDF as Download, then browser print on that PDF ──
   const handlePrintPDF = async () => {
@@ -7253,7 +7526,20 @@ function CertificatePreviewModal({
         activeCertificateRef.current,
         previewPageSpec,
       );
-      pdf.save(`${request.reference_number}.pdf`);
+      let downloadName = `${request.reference_number}.pdf`;
+      if (isJobSeekerRequest) {
+        if (jobSeekerPreviewTab === "FIRST TIME JOB SEEKER") {
+          downloadName =
+            jobSeekerPurposes.length > 1 && selectedJobSeekerPurposeIndex === "all"
+              ? `FIRST TIME JOB SEEKER (All ${jobSeekerPurposes.length} Clearances) - ${request.reference_number}.pdf`
+              : jobSeekerPurposes.length > 1
+                ? `FIRST TIME JOB SEEKER (Clearance ${Number(selectedJobSeekerPurposeIndex) + 1}) - ${request.reference_number}.pdf`
+                : `FIRST TIME JOB SEEKER - ${request.reference_number}.pdf`;
+        } else {
+          downloadName = `${jobSeekerPreviewTab} - ${request.reference_number}.pdf`;
+        }
+      }
+      pdf.save(downloadName);
     } catch (error) {
       console.error("PDF download error:", error);
       alert("Could not generate PDF. Please try again.");
@@ -7305,7 +7591,15 @@ function CertificatePreviewModal({
                   ? businessPreviewTab === "permit"
                     ? "Business Clearance Preview"
                     : "Inspection & Preparation Preview"
-                  : "Certificate Preview"}
+                  : isJobSeekerRequest
+                    ? jobSeekerPreviewTab === "JOB SEEKER B"
+                      ? "JOB SEEKER B (Oath of Undertaking)"
+                      : jobSeekerPreviewTab === "JOB SEEKER A"
+                        ? "JOB SEEKER A (Barangay Certification)"
+                        : selectedJobSeekerPurposeIndex === "all"
+                          ? `Barangay Clearance (All ${jobSeekerPurposes.length} Clearances)`
+                          : `Barangay Clearance (Clearance ${Number(selectedJobSeekerPurposeIndex) + 1} of ${jobSeekerPurposes.length})`
+                    : "Certificate Preview"}
               </h2>
               <p className="text-slate-400 font-mono text-[10px] sm:text-xs font-bold truncate mt-0.5">
                 {request.reference_number}
@@ -7374,6 +7668,186 @@ function CertificatePreviewModal({
             >
               Business Clearance
             </button>
+          </div>
+        )}
+
+        {isJobSeekerRequest && (
+          <div className="flex border-b border-slate-200 bg-slate-50 px-3 sm:px-6 shrink-0">
+            <button
+              type="button"
+              onClick={() => setJobSeekerPreviewTab("FIRST TIME JOB SEEKER")}
+              className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5 ${
+                jobSeekerPreviewTab === "FIRST TIME JOB SEEKER"
+                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <span>BARANGAY CLEARANCE</span>
+              {jobSeekerPurposes.length > 1 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    jobSeekerPreviewTab === "FIRST TIME JOB SEEKER"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-slate-200 text-slate-600"
+                  }`}
+                >
+                  {jobSeekerPurposes.length}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setJobSeekerPreviewTab("JOB SEEKER A")}
+              className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${
+                jobSeekerPreviewTab === "JOB SEEKER A"
+                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              JOB SEEKER A (Certification)
+            </button>
+            <button
+              type="button"
+              onClick={() => setJobSeekerPreviewTab("JOB SEEKER B")}
+              className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${
+                jobSeekerPreviewTab === "JOB SEEKER B"
+                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              JOB SEEKER B (Oath)
+            </button>
+          </div>
+        )}
+
+        {isJobSeekerRequest && jobSeekerPreviewTab === "FIRST TIME JOB SEEKER" && jobSeekerPurposes.length > 1 && (
+          <div className="bg-slate-100/95 border-b border-slate-200 px-3.5 sm:px-6 py-2 shrink-0">
+            <div className="flex flex-wrap items-center justify-between gap-2.5">
+              {/* Left Side: Segmented Quick Navigation */}
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                  Clearance:
+                </span>
+
+                {/* All Clearances Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedJobSeekerPurposeIndex("all")}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                    selectedJobSeekerPurposeIndex === "all"
+                      ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600"
+                      : "bg-white text-slate-700 hover:bg-slate-200 border border-slate-300"
+                  }`}
+                  title={`View all ${jobSeekerPurposes.length} clearances in continuous scroll`}
+                >
+                  <span>All Pages</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      selectedJobSeekerPurposeIndex === "all"
+                        ? "bg-emerald-700 text-white"
+                        : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {jobSeekerPurposes.length}
+                  </span>
+                </button>
+
+                <div className="h-4 w-px bg-slate-300 mx-0.5" />
+
+                {/* Previous Clearance Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedJobSeekerPurposeIndex === "all") {
+                      setSelectedJobSeekerPurposeIndex(0);
+                    } else {
+                      const prev = Number(selectedJobSeekerPurposeIndex) - 1;
+                      setSelectedJobSeekerPurposeIndex(prev >= 0 ? prev : jobSeekerPurposes.length - 1);
+                    }
+                  }}
+                  title="Previous clearance"
+                  className="w-7 h-7 rounded-md text-xs font-bold bg-white text-slate-700 hover:bg-slate-200 border border-slate-300 flex items-center justify-center transition-colors shadow-sm"
+                >
+                  ‹
+                </button>
+
+                {/* Compact Numbered Pills (#1, #2, #3, ...) */}
+                {jobSeekerPurposes.map((p, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedJobSeekerPurposeIndex(idx)}
+                    className={`w-7 h-7 rounded-md text-[11px] font-bold transition-all flex items-center justify-center ${
+                      selectedJobSeekerPurposeIndex === idx
+                        ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600 scale-105"
+                        : "bg-white text-slate-700 hover:bg-slate-200 border border-slate-300"
+                    }`}
+                    title={`Clearance #${idx + 1}: ${p}`}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+
+                {/* Next Clearance Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedJobSeekerPurposeIndex === "all") {
+                      setSelectedJobSeekerPurposeIndex(0);
+                    } else {
+                      const next = Number(selectedJobSeekerPurposeIndex) + 1;
+                      setSelectedJobSeekerPurposeIndex(next < jobSeekerPurposes.length ? next : 0);
+                    }
+                  }}
+                  title="Next clearance"
+                  className="w-7 h-7 rounded-md text-xs font-bold bg-white text-slate-700 hover:bg-slate-200 border border-slate-300 flex items-center justify-center transition-colors shadow-sm"
+                >
+                  ›
+                </button>
+              </div>
+
+              {/* Right Side: Purpose Dropdown Selector */}
+              <div className="flex items-center gap-1.5 min-w-[220px] max-w-full sm:max-w-md">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 hidden sm:inline">
+                  Purpose:
+                </span>
+                <select
+                  value={selectedJobSeekerPurposeIndex}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedJobSeekerPurposeIndex(val === "all" ? "all" : Number(val));
+                  }}
+                  className="w-full text-[11px] font-medium bg-white border border-slate-300 text-slate-800 rounded-md px-2.5 py-1 shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer truncate"
+                  title={
+                    selectedJobSeekerPurposeIndex === "all"
+                      ? `All Clearances (${jobSeekerPurposes.length} Pages)`
+                      : `Clearance #${Number(selectedJobSeekerPurposeIndex) + 1}: ${jobSeekerPurposes[selectedJobSeekerPurposeIndex]}`
+                  }
+                >
+                  <option value="all">
+                    📄 All Clearances ({jobSeekerPurposes.length} Pages)
+                  </option>
+                  {jobSeekerPurposes.map((p, idx) => (
+                    <option key={idx} value={idx}>
+                      #{idx + 1}: {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Active Purpose Banner for the Selected Clearance */}
+            {selectedJobSeekerPurposeIndex !== "all" && jobSeekerPurposes[selectedJobSeekerPurposeIndex] && (
+              <div className="mt-1.5 pt-1.5 border-t border-slate-200/80 flex items-center gap-2 text-[11px]">
+                <span className="bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                  Clearance {Number(selectedJobSeekerPurposeIndex) + 1} of {jobSeekerPurposes.length}
+                </span>
+                <span className="font-semibold text-slate-700 truncate">
+                  {jobSeekerPurposes[selectedJobSeekerPurposeIndex]}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -7471,12 +7945,12 @@ function CertificatePreviewModal({
                     financeTeamUsers={financeTeamUsers}
                     businessPreviewVariant="permit"
                   />
-                ) : (
+                ) : isJobSeekerRequest && jobSeekerPreviewTab === "JOB SEEKER A" ? (
                   <ClearancePreviewForRequests
                     request={previewRequest}
                     currentDate={currentDate}
                     officials={officials}
-                    certificateRef={certificateRef}
+                    certificateRef={jobSeekerACertRef}
                     history={history}
                     inspectionData={inspectionData}
                     orData={orData}
@@ -7485,10 +7959,106 @@ function CertificatePreviewModal({
                     tenantUsers={tenantUsers}
                     workflowAssignments={workflowAssignments}
                     financeTeamUsers={financeTeamUsers}
-                    businessPreviewVariant={
-                      isBusinessPermitRequest ? "inspection" : "default"
-                    }
+                    jobSeekerVariant="JOB SEEKER A"
                   />
+                ) : isJobSeekerRequest && jobSeekerPreviewTab === "JOB SEEKER B" ? (
+                  <ClearancePreviewForRequests
+                    request={previewRequest}
+                    currentDate={currentDate}
+                    officials={officials}
+                    certificateRef={jobSeekerBCertRef}
+                    history={history}
+                    inspectionData={inspectionData}
+                    orData={orData}
+                    currentUser={currentUser}
+                    userSignature={userSignature}
+                    tenantUsers={tenantUsers}
+                    workflowAssignments={workflowAssignments}
+                    financeTeamUsers={financeTeamUsers}
+                    jobSeekerVariant="JOB SEEKER B"
+                  />
+                ) : (
+                  <div ref={certificateRef} className="flex flex-col items-center w-full">
+                    {isJobSeekerRequest && jobSeekerPurposes.length > 1 ? (
+                      selectedJobSeekerPurposeIndex === "all" ? (
+                        <div className="flex flex-col gap-10 items-center w-full">
+                          {jobSeekerPurposes.map((singlePurpose, idx) => (
+                            <div key={idx} className="flex flex-col items-center w-full">
+                              <div className="w-full max-w-[816px] mb-2 px-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-[10px]">
+                                  Clearance {idx + 1} of {jobSeekerPurposes.length}
+                                </span>
+                                <span className="text-slate-600 truncate max-w-[450px]">
+                                  {singlePurpose}
+                                </span>
+                              </div>
+                              <ClearancePreviewForRequests
+                                request={previewRequest}
+                                currentDate={currentDate}
+                                officials={officials}
+                                history={history}
+                                inspectionData={inspectionData}
+                                orData={orData}
+                                currentUser={currentUser}
+                                userSignature={userSignature}
+                                tenantUsers={tenantUsers}
+                                workflowAssignments={workflowAssignments}
+                                financeTeamUsers={financeTeamUsers}
+                                jobSeekerVariant="FIRST TIME JOB SEEKER"
+                                specificPurpose={singlePurpose}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center w-full">
+                          <div className="w-full max-w-[816px] mb-2 px-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-[10px]">
+                              Clearance {Number(selectedJobSeekerPurposeIndex) + 1} of {jobSeekerPurposes.length}
+                            </span>
+                            <span className="text-slate-600 truncate max-w-[450px]">
+                              {jobSeekerPurposes[selectedJobSeekerPurposeIndex]}
+                            </span>
+                          </div>
+                          <ClearancePreviewForRequests
+                            request={previewRequest}
+                            currentDate={currentDate}
+                            officials={officials}
+                            history={history}
+                            inspectionData={inspectionData}
+                            orData={orData}
+                            currentUser={currentUser}
+                            userSignature={userSignature}
+                            tenantUsers={tenantUsers}
+                            workflowAssignments={workflowAssignments}
+                            financeTeamUsers={financeTeamUsers}
+                            jobSeekerVariant="FIRST TIME JOB SEEKER"
+                            specificPurpose={jobSeekerPurposes[selectedJobSeekerPurposeIndex]}
+                          />
+                        </div>
+                      )
+                    ) : (
+                      <ClearancePreviewForRequests
+                        request={previewRequest}
+                        currentDate={currentDate}
+                        officials={officials}
+                        history={history}
+                        inspectionData={inspectionData}
+                        orData={orData}
+                        currentUser={currentUser}
+                        userSignature={userSignature}
+                        tenantUsers={tenantUsers}
+                        workflowAssignments={workflowAssignments}
+                        financeTeamUsers={financeTeamUsers}
+                        businessPreviewVariant={
+                          isBusinessPermitRequest ? "inspection" : "default"
+                        }
+                        jobSeekerVariant={
+                          isJobSeekerRequest ? "FIRST TIME JOB SEEKER" : null
+                        }
+                      />
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -7514,6 +8084,8 @@ function ClearancePreviewForRequests({
   workflowAssignments = [],
   financeTeamUsers = [],
   businessPreviewVariant = "default",
+  jobSeekerVariant = null,
+  specificPurpose = null,
 }) {
   const logos = officials.logos || {};
   const headerStyle = officials.headerStyle || {};
@@ -7538,9 +8110,9 @@ function ClearancePreviewForRequests({
   const formData = {
     fullName: request.applicant_name || request.full_name || "",
     age: request.age || "",
-    sex: request.sex || "",
-    civilStatus: request.civil_status || "",
-    address: resolveRequestResidentialAddress(request),
+    sex: formatSexFull(request.sex || ""),
+    civilStatus: formatCivilStatusFull(request.civil_status || ""),
+    address: stripProvinceOf(resolveRequestResidentialAddress(request)),
     dateOfBirth: request.date_of_birth || "",
     placeOfBirth: request.place_of_birth || "",
     dateOfDeath:
@@ -7556,7 +8128,7 @@ function ClearancePreviewForRequests({
     guardianRelationship: request.guardian_relationship || request.details?.guardian_relationship || "",
     partnerFullName: request.partner_full_name || request.details?.partnerFullName || request.details?.partner_name || "",
     partnerAge: request.partner_age || request.details?.partnerAge || "",
-    partnerSex: request.partner_sex || request.details?.partnerSex || "",
+    partnerSex: formatSexFull(request.partner_sex || request.details?.partnerSex || ""),
     partnerDateOfBirth: request.partner_date_of_birth || request.details?.partnerDateOfBirth || "",
     noOfChildren: request.no_of_children || request.details?.noOfChildren || "",
     livingTogetherYears: request.living_together_years || request.details?.livingTogetherYears || "",
@@ -7620,9 +8192,15 @@ function ClearancePreviewForRequests({
   const isBusinessClearanceDoc =
     isBusinessPermit && businessPreviewVariant === "permit";
 
+  const isJobSeeker =
+    String(request.certificate_type || "").toLowerCase() === "first_time_job_seeker";
+  const isJobSeekerDocA = isJobSeeker && jobSeekerVariant === "JOB SEEKER A";
+  const isJobSeekerDocB = isJobSeeker && jobSeekerVariant === "JOB SEEKER B";
+
   const pageSpec = getCertificatePageSpec({
     certificateType: request.certificate_type,
     businessPreviewVariant,
+    jobSeekerVariant,
   });
   const isLetterPage = pageSpec.id === "letter";
 
@@ -7637,6 +8215,38 @@ function ClearancePreviewForRequests({
   } catch (e) {
     console.error("Error parsing details", e);
   }
+
+  const pickupMethodRaw = String(
+    request.pickup_method ||
+    additionalDetails.pickup_method ||
+    additionalDetails.pickupMethod ||
+    request.pickupMethod ||
+    "pickup"
+  ).toLowerCase().trim();
+  const isOnlineDelivery = pickupMethodRaw === "online";
+
+  const residentYears =
+    request.years_of_residency ||
+    additionalDetails.years_of_residency ||
+    additionalDetails.yearsOfResidency ||
+    additionalDetails.residency_years ||
+    "";
+  const currentCalendarYear = new Date().getFullYear();
+  const displaySinceYear = residentYears
+    ? currentCalendarYear - parseInt(residentYears, 10)
+    : additionalDetails.since_year ||
+      additionalDetails.sinceYear ||
+      (request.age
+        ? currentCalendarYear - Math.min(parseInt(request.age, 10) || 1, 15)
+        : currentCalendarYear);
+  const displayYearsOfResidency =
+    residentYears ||
+    (displaySinceYear
+      ? currentCalendarYear - parseInt(displaySinceYear, 10)
+      : request.age || "-");
+
+  const councilorWitnessName =
+    officials.councilors?.[3] || officials.councilors?.[0] || "JOPHET M. TURLA";
 
   const name1 =
     request.name_1 ||
@@ -7719,8 +8329,13 @@ function ClearancePreviewForRequests({
     .filter(h => h.signature_data && (h.action === 'approve' || h.action === 'forward') &&
       new Date(h.created_at).getTime() > lastReturnTime &&
       !((h.step_name || '').toUpperCase().includes('SECRETARY')) &&
+      !((h.step_name || '').toUpperCase().includes('WITNESS')) &&
+      !((h.step_name || '').toUpperCase().includes('COUNCILOR')) &&
       !((h.officialRole || h.official_role || '').toUpperCase().includes('SECRETARY')) &&
-      !((h.users?.role || '').toUpperCase().includes('SECRETARY')))
+      !((h.officialRole || h.official_role || '').toUpperCase().includes('WITNESS')) &&
+      !((h.officialRole || h.official_role || '').toUpperCase().includes('COUNCILOR')) &&
+      !((h.users?.role || '').toUpperCase().includes('SECRETARY')) &&
+      !((h.users?.role || '').toUpperCase().includes('WITNESS')))
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
   
   const effectiveCaptain = captainApproval || fallbackCaptain;
@@ -7858,6 +8473,83 @@ function ClearancePreviewForRequests({
   const financeSignatureData =
     financeApproval?.signature_data || storedFinanceSignature || null;
     
+  const isWitnessVerificationEntry = (h) => {
+    if (!h) return false;
+    const prev = String(h.previous_status || "").toLowerCase();
+    const step = String(h.step_name || "").toLowerCase();
+    const role = String(h.official_role || h.officialRole || "").toLowerCase();
+
+    // 1. Explicitly EXCLUDE any Secretary, Captain/Chairman, Staff Review, or Treasury steps
+    if (
+      step.includes("secretary") ||
+      role.includes("secretary") ||
+      prev.includes("secretary") ||
+      step.includes("captain") ||
+      role.includes("captain") ||
+      step.includes("chairman") ||
+      role.includes("chairman") ||
+      step.includes("punong") ||
+      role.includes("punong") ||
+      step.includes("treasury") ||
+      step.includes("review") ||
+      step.includes("inspection")
+    ) {
+      return false;
+    }
+
+    // 2. Must be an actual witness approval step
+    return (
+      step.includes("witness") ||
+      role.includes("witness") ||
+      prev.includes("witness") ||
+      (step.includes("councilor") && !step.includes("secretary"))
+    );
+  };
+
+  const witnessApproval = !history
+    ? null
+    : [...history]
+        .filter((h) => {
+          if (!(h.action === "approve" || h.action === "forward")) return false;
+          if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+          return isWitnessVerificationEntry(h);
+        })
+        .sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )[0] || null;
+
+  const isCurrentUserWitness =
+    currentUserFullName &&
+    (currentUserFullName.toUpperCase().includes("JOPHET") ||
+      currentUserFullName.toUpperCase().includes("TURLA") ||
+      (councilorWitnessName &&
+        currentUserFullName.toUpperCase() === councilorWitnessName.toUpperCase()));
+
+  const storedWitnessSignedAtMs = additionalDetails.witness_signed_at
+    ? new Date(additionalDetails.witness_signed_at).getTime()
+    : 0;
+  const storedWitnessSignatureRaw =
+    additionalDetails.witness_signature ||
+    additionalDetails.witnessSignature ||
+    null;
+  const storedWitnessSignature =
+    storedWitnessSignatureRaw &&
+    (!lastReturnTime || storedWitnessSignedAtMs > lastReturnTime)
+      ? storedWitnessSignatureRaw
+      : null;
+
+  const effectiveWitnessSignature =
+    witnessApproval?.signature_data ||
+    storedWitnessSignature ||
+    null;
+
+  const witnessMiddleInitial = witnessApproval?.users?.middle_name
+    ? `${witnessApproval.users.middle_name.trim().charAt(0).toUpperCase()}. `
+    : "";
+  const witnessSignerName = witnessApproval?.users
+    ? `${witnessApproval.users.first_name || ""} ${witnessMiddleInitial}${witnessApproval.users.last_name || ""}`.trim()
+    : witnessApproval?.performed_by_name || councilorWitnessName;
+
   const detectedRole = "BARANGAY CHAIRMAN";
 
   const getSignatureForCommittee = (committee) => {
@@ -7935,9 +8627,19 @@ function ClearancePreviewForRequests({
     "";
 
   // Collect all unique employee codes from previous processors in chronological order, AFTER the most recent return
+  const getEmployeeCodeForHistory = (h) => {
+    if (h.users?.employee_code) return String(h.users.employee_code).trim().toUpperCase();
+    if (h.performed_by && Array.isArray(tenantUsers)) {
+      const match = tenantUsers.find((u) => String(u.id || u._id) === String(h.performed_by));
+      if (match?.employee_code) return String(match.employee_code).trim().toUpperCase();
+    }
+    return null;
+  };
+
   const previousProcessors = (history || [])
     .filter((h) => {
-      if (!h.users?.employee_code) return false;
+      const code = getEmployeeCodeForHistory(h);
+      if (!code) return false;
       if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
       if (
         ["create", "submitted", "approve", "forward", "physical_inspection"].includes(
@@ -7952,10 +8654,28 @@ function ClearancePreviewForRequests({
       );
     })
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-    .map((h) => h.users.employee_code);
+    .map((h) => getEmployeeCodeForHistory(h));
 
-  const processorCodeList = [...new Set(previousProcessors)];
+  const processorCodeList = [...new Set(previousProcessors.filter(Boolean))];
+
+  // Fallback: If no codes found in history, check completed workflowAssignments
+  if (processorCodeList.length === 0 && Array.isArray(workflowAssignments)) {
+    for (const wa of workflowAssignments) {
+      if (["approved", "completed"].includes(String(wa.status || "").toLowerCase())) {
+        const code =
+          wa.users?.employee_code ||
+          (Array.isArray(tenantUsers) &&
+            tenantUsers.find((u) => String(u.id || u._id) === String(wa.assigned_user_id))?.employee_code);
+        if (code && !processorCodeList.includes(String(code).trim().toUpperCase())) {
+          processorCodeList.push(String(code).trim().toUpperCase());
+        }
+      }
+    }
+  }
+
   if (
+    isBusinessClearanceDoc &&
+    (financeApproval || financeAssignmentEntry) &&
     financeDisplayCode &&
     !processorCodeList.includes(financeDisplayCode)
   ) {
@@ -7978,6 +8698,25 @@ function ClearancePreviewForRequests({
       day: "numeric",
     });
 
+  const targetDateJobSeeker = issuedDateSource?.created_at
+    ? new Date(issuedDateSource.created_at)
+    : new Date();
+  const getJobSeekerOrdinal = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+  const jsDay = targetDateJobSeeker.getDate();
+  const jsDayOrdinal = getJobSeekerOrdinal(jsDay);
+  const jsMonthName = targetDateJobSeeker.toLocaleDateString("en-US", { month: "long" });
+  const jsYear = targetDateJobSeeker.getFullYear();
+
+  const jsExpiryDate = new Date(targetDateJobSeeker);
+  jsExpiryDate.setFullYear(targetDateJobSeeker.getFullYear() + 1);
+  const jsExpiryMonth = jsExpiryDate.toLocaleDateString("en-US", { month: "long" });
+  const jsExpiryDay = jsExpiryDate.getDate();
+  const jsExpiryYear = jsExpiryDate.getFullYear();
+
   return (
     <div className="flex justify-center print:p-0">
       {/* Certificate page — Letter for standard certs; A4 for business clearance & inspection */}
@@ -7988,12 +8727,17 @@ function ClearancePreviewForRequests({
         style={{
           width: `${pageSpec.widthMm}mm`,
           minHeight: isBusinessClearanceDoc ? "auto" : `${pageSpec.heightMm}mm`,
+          height: isBusinessClearanceDoc ? undefined : `${pageSpec.heightMm}mm`,
           padding: "0",
-          paddingTop: isIndigencyCert ? "5mm" : "0",
+          paddingTop: isIndigencyCert ? "5mm" : isJobSeekerDocB ? "16mm" : "0",
+          paddingBottom: isJobSeekerDocB ? "16mm" : "0",
+          paddingLeft: isJobSeekerDocB ? "18mm" : "0",
+          paddingRight: isJobSeekerDocB ? "18mm" : "0",
           boxSizing: "border-box",
         }}
       >
         {/* Header Section */}
+        {!isJobSeekerDocB && (
         <div
           className={`cert-header-section w-full border-b-2 flex justify-center items-center flex-shrink-0 ${getFontClass(headerStyle.fontFamily)} ${
             isBusinessClearanceDoc
@@ -8100,11 +8844,12 @@ function ClearancePreviewForRequests({
             )}
           </div>
         </div>
+        )}
 
         {/* Main Content Area */}
-        <div className="flex flex-1 relative">
-          {/* Sidebar (Conditional) - Only show if enabled AND content exists AND not Medico Legal AND not Business Permit */}
-          {sidebarStyle.showSidebar && !isMedicoLegal && !isBusinessPermit && (
+        <div className="cert-main-content flex flex-1 relative min-h-0 w-full">
+          {/* Sidebar (Conditional) - Only show if enabled AND content exists AND not Medico Legal AND not Business Permit AND not Job Seeker A/B */}
+          {sidebarStyle.showSidebar && !isMedicoLegal && !isBusinessPermit && !isJobSeekerDocA && !isJobSeekerDocB && (
             <div
               className={`w-64 p-6 flex flex-col text-center flex-shrink-0 ${getFontClass(sidebarStyle.fontFamily)}`}
               style={{
@@ -8169,12 +8914,16 @@ function ClearancePreviewForRequests({
 
           {/* Document Body */}
           <div
-            className={`flex-1 relative flex flex-col ${
+            className={`cert-doc-body flex-1 relative flex flex-col h-full min-h-0 w-full ${
               isBusinessClearanceDoc
                 ? "px-12 sm:px-14 pt-4 pb-6"
-                : isLetterPage
-                  ? "px-14 pt-4 pb-3"
-                  : "px-20 pt-6 pb-2"
+                : isJobSeekerDocB
+                  ? "p-0"
+                  : isJobSeekerDocA
+                    ? "px-10 sm:px-12 pt-4 pb-6"
+                    : isLetterPage
+                      ? "px-14 pt-3 pb-6"
+                      : "px-20 pt-6 pb-3"
             }`}
             style={{
               backgroundColor: bodyStyle.bgColor || "#ffffff",
@@ -8183,7 +8932,7 @@ function ClearancePreviewForRequests({
             }}
           >
             {/* Watermark */}
-            {logos.leftLogo && (
+            {logos.leftLogo && !isJobSeekerDocB && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.06]">
                 <img
                   src={logos.leftLogo}
@@ -8195,13 +8944,13 @@ function ClearancePreviewForRequests({
             )}
 
             <div
-              className={`relative z-10 flex flex-col flex-1 ${
-                isBusinessClearanceDoc ? "items-stretch w-full" : "items-center"
+              className={`relative z-10 flex flex-col flex-1 h-full min-h-0 w-full ${
+                isBusinessClearanceDoc || isJobSeekerDocA || isJobSeekerDocB ? "items-stretch" : "items-stretch justify-between"
               }`}
             >
-              {!isBusinessPermit && (
+              {!isBusinessPermit && !isJobSeekerDocA && !isJobSeekerDocB && (
                 <h2
-                  className={`text-center font-bold ${isLetterPage ? "mb-6" : "mb-10"} w-full pb-1 px-4 uppercase leading-normal ${isSamePerson ? "block whitespace-nowrap" : "inline-block"}`}
+                  className={`text-center font-bold ${isLetterPage ? "mb-4" : "mb-10"} w-full pb-1 px-4 uppercase leading-normal ${isSamePerson ? "block whitespace-nowrap" : "inline-block"}`}
                   style={{
                     color: isMedicoLegal ? "#000000" : "#004d40",
                     fontSize: isSamePerson ? "20px" : isLetterPage ? "22px" : "24px",
@@ -8217,10 +8966,11 @@ function ClearancePreviewForRequests({
                           ? "BARANGAY CERTIFICATION BEING THE SAME PERSON"
                           : isMedicoLegal
                             ? "REQUEST FOR MEDICO LEGAL (COPY)"
-                            : request.certificate_type === "barangay_clearance"
+                            : request.certificate_type === "barangay_clearance" ||
+                              request.certificate_type === "first_time_job_seeker"
                               ? "BARANGAY CLEARANCE CERTIFICATE"
-                              : request.certificate_type ===
-                                "certificate_of_indigency"
+                                : request.certificate_type ===
+                                  "certificate_of_indigency"
                                 ? "CERTIFICATE OF INDIGENCY"
                                 : request.certificate_type ===
                                   "barangay_residency"
@@ -8280,7 +9030,7 @@ function ClearancePreviewForRequests({
                         "Owner's Address",
                         request.ownerAddress ||
                           additionalDetails.ownerAddress ||
-                          formData.address,
+                          stripProvinceOf(formData.address),
                       ],
                       [
                         "Business / Trade Name",
@@ -8530,7 +9280,7 @@ function ClearancePreviewForRequests({
                           >
                             {request.ownerAddress ||
                               additionalDetails.ownerAddress ||
-                              formData.address}
+                              stripProvinceOf(formData.address)}
                           </td>
                         </tr>
                         <tr>
@@ -8855,17 +9605,154 @@ function ClearancePreviewForRequests({
                       </tbody>
                     </table>
                   </div>
+              ) : isJobSeekerDocA ? (
+                <div
+                  className={`w-full max-w-full text-left px-2 sm:px-4 flex flex-col flex-1 justify-between text-gray-900 leading-relaxed ${getFontClass(bodyStyle.fontFamily)}`}
+                  style={{ fontFamily: bodyStyle.fontFamily || "inherit" }}
+                >
+                  <div>
+                    <div className="mb-7 font-bold text-[14px]">
+                      <p className="mb-4">TO WHOM IT MAY CONCERN:</p>
+                      <p className="text-center text-[15px] tracking-wide">RE: BARANGAY CERTIFICATION</p>
+                    </div>
+
+                    <p className="mb-7 text-justify indent-10 text-[14px] leading-relaxed">
+                      This is to certify that <strong className="uppercase">{formData.fullName}</strong>, <strong>{formData.age || "-"}</strong> years old, resident of <strong>{formData.address}</strong>, since <strong>{displaySinceYear}</strong> is a qualified beneficiary of RA 11261 or known First Time Jobseekers Assistance Act of 2019.
+                    </p>
+
+                    <p className="mb-7 text-justify indent-10 text-[14px] leading-relaxed">
+                      I further certify that the bearer has been informed of his / her rights including the duties and responsibilities accorded by RA 11261 through the Oath of Undertaking executed and signed in the presence of Barangay Official.
+                    </p>
+
+                    <p className="mb-10 text-justify text-[14px] leading-relaxed">
+                      Signed and given this <strong>{jsDayOrdinal} day of {jsMonthName}, {jsYear}</strong> at Barangay Iba O' Este, Calumpit, Bulacan valid until <strong>{jsExpiryMonth} {jsExpiryDay}, {jsExpiryYear}</strong> i. e. one (1) year from date of issuance.
+                    </p>
+
+                    <div className="mt-6 space-y-8 text-left text-[14px]">
+                      {/* TRULY YOURS, */}
+                      <div className="text-left">
+                        <p className="font-bold text-[14px] mb-20">TRULY YOURS,</p>
+                        <div className="relative inline-block text-left">
+                          {effectiveSignature && (
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-80 h-36 pointer-events-none">
+                              <img
+                                src={effectiveSignature}
+                                alt="Captain Signature"
+                                className="w-full h-full object-contain mix-blend-multiply scale-125"
+                              />
+                            </div>
+                          )}
+                          <p className="font-bold uppercase text-[14px] leading-snug">{captainName || officials.chairman}</p>
+                          <p className="font-bold uppercase text-[14px] leading-snug text-gray-900">BARANGAY CHAIRMAN</p>
+                        </div>
+                      </div>
+
+                      {/* WITNESSED BY: */}
+                      <div className="text-left">
+                        <p className="font-bold text-[14px] mb-16">WITNESSED BY:</p>
+                        <div className="relative inline-block text-left">
+                          {effectiveWitnessSignature && (
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-64 h-32 pointer-events-none">
+                              <img
+                                src={effectiveWitnessSignature}
+                                alt="Witness Signature"
+                                className="w-full h-full object-contain mix-blend-multiply scale-110"
+                              />
+                            </div>
+                          )}
+                          <p className="font-bold uppercase text-[14px] leading-snug">{witnessSignerName || councilorWitnessName}</p>
+                          <p className="font-bold uppercase text-[14px] leading-snug text-gray-900">BARANGAY COUNCILOR</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : isJobSeekerDocB ? (
+                <div
+                  className={`w-full max-w-full text-left flex flex-col flex-1 text-gray-900 text-[12px] leading-normal ${getFontClass(bodyStyle.fontFamily)}`}
+                  style={{ fontFamily: bodyStyle.fontFamily || "inherit" }}
+                >
+                  <div>
+                    <div className="text-right text-[10.5px] text-gray-700 mb-2">
+                      Revised as of 16 June 2021
+                    </div>
+
+                    <div className="text-center mb-4">
+                      <h1 className="text-[16px] font-bold uppercase tracking-wide text-gray-900 mb-0.5">
+                        OATH OF UNDERTAKING
+                      </h1>
+                      <p className="text-[12px] font-semibold text-gray-800">
+                        Republic Act 11261 &ndash; First Jobseekers Assistance Act
+                      </p>
+                    </div>
+
+                    <p className="text-justify mb-3 text-[12px] leading-relaxed">
+                      I, <strong className="uppercase">{formData.fullName}</strong>, <strong>{formData.age || "-"}</strong> years of age, resident of <strong>{formData.address}</strong> for <strong>{displayYearsOfResidency}</strong> years, availing the benefits of Republic Act 11261, otherwise known as the First Jobseekers Act of 2019, do hereby declare, agree and undertake to abide and be bound by the following:
+                    </p>
+
+                    <ol className="list-decimal pl-5 space-y-1 text-[11.5px] leading-relaxed text-justify mb-4">
+                      <li>That this is the first time that I will actively look for a job, and therefore requesting that a Barangay Certification be issued in my favor to avail the benefits of the law.</li>
+                      <li>That I am aware that the benefit and privileges under the said law shall be valid only for one (1) year from the date that the Barangay certification is issued.</li>
+                      <li>That I can avail the benefits of the law only once.</li>
+                      <li>That I understand that my personal information shall be included in the Roster/List of First Time Jobseekers and will not be used for any unlawful purpose.</li>
+                      <li>That I will inform and/or report to the Barangay personally, through text or other means or through my family relatives once I get employed.</li>
+                      <li>That I am not a beneficiary of the Job Start Program under RA No. 10869 and other laws that give similar exemptions for the documents or transactions exempted under RA no. 11261.</li>
+                      <li>That if issued the requested Certification, I will not use the same in any fraud, neither falsifies nor help and/or assist in the fabrication of the said certification.</li>
+                      <li>That this undertaking is made solely for the purpose of obtaining a Barangay Certification consistent with the objective of RA No. 11261 and not for any other purpose and</li>
+                      <li>That I consent to the use of my personal information pursuant to the Data Privacy Act and other applicable laws, rules, and regulations.</li>
+                    </ol>
+
+                    <p className="text-[12px] mb-4">
+                      Signed this <strong>{jsDayOrdinal} day of {jsMonthName}, {jsYear}</strong> in the City / Municipality of Calumpit.
+                    </p>
+
+                    <div className="flex justify-between items-start mt-12 mb-4 px-4">
+                      <div className="min-w-[250px]">
+                        <p className="text-[13px] font-semibold mb-20">Signed:</p>
+                        <div className="relative inline-block text-left">
+                          {request.applicant_signature && (
+                            <div className="absolute left-0 bottom-4 w-48 h-20 pointer-events-none">
+                              <img
+                                src={request.applicant_signature}
+                                alt="Applicant Signature"
+                                className="w-full h-full object-contain mix-blend-multiply"
+                              />
+                            </div>
+                          )}
+                          <p className="font-bold uppercase text-[15px] text-gray-900 tracking-wide">{formData.fullName}</p>
+                          <p className="font-bold text-[12px] text-gray-800 tracking-normal">FIRST TIME JOBSEEKER</p>
+                        </div>
+                      </div>
+                      <div className="min-w-[250px]">
+                        <p className="text-[13px] font-semibold mb-20">Witnessed by:</p>
+                        <div className="relative inline-block text-left">
+                          {effectiveWitnessSignature && (
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-64 h-32 pointer-events-none">
+                              <img
+                                src={effectiveWitnessSignature}
+                                alt="Witness Signature"
+                                className="w-full h-full object-contain mix-blend-multiply scale-110"
+                              />
+                            </div>
+                          )}
+                          <p className="font-bold uppercase text-[15px] text-gray-900 tracking-wide">{witnessSignerName || councilorWitnessName}</p>
+                          <p className="font-bold text-[12px] text-gray-800 tracking-normal">BARANGAY COUNCILOR</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div
                   className="w-full space-y-6 text-justify"
                   style={{ fontSize: "15px" }}
                 >
-                  <div className="flex justify-between items-center mb-6">
+                  <div className="flex justify-between items-center mb-3">
                     <p className="font-bold text-lg">TO WHOM IT MAY CONCERN:</p>
                   </div>{" "}
                   {/* Date removed for Indigency as per new layout */}
                   <>
-                    <div className="text-left mb-6 leading-relaxed">
+                    <div className="text-left mb-4 leading-relaxed">
                       {isNaturalDeath ? (
                         <p>
                           This is to certify that below mentioned person, a bona
@@ -8887,7 +9774,7 @@ function ClearancePreviewForRequests({
                           THIS IS TO CERTIFY THAT BELOW MENTIONED PERSONS, BONA
                           FIDE RESIDENTS OF THIS BARANGAY AT{" "}
                           <span className="font-bold">
-                            {formData.address?.toUpperCase() ||
+                            {stripProvinceOf(formData.address)?.toUpperCase() ||
                               "____________________"}
                           </span>
                           , ARE LIVING TOGETHER IN COMMON HOUSE (YET TO UNDERGO
@@ -8912,7 +9799,8 @@ function ClearancePreviewForRequests({
                         </p>
                       ) : (
                         <p>
-                          {request.certificate_type === "barangay_clearance"
+                          {request.certificate_type === "barangay_clearance" ||
+                          request.certificate_type === "first_time_job_seeker"
                             ? "This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:"
                             : request.certificate_type ===
                               "certificate_of_indigency"
@@ -8932,15 +9820,15 @@ function ClearancePreviewForRequests({
                               ["AGE", formData.age],
                               [
                                 "SEX",
-                                (
+                                formatSexFull(
                                   request.sex ||
                                   formData.sex ||
                                   "N/A"
-                                ).toUpperCase(),
+                                ),
                               ],
                               [
                                 "RESIDENTIAL ADDRESS",
-                                formData.address?.toUpperCase(),
+                                stripProvinceOf(formData.address)?.toUpperCase(),
                               ],
                               [
                                 "DATE OF BIRTH",
@@ -8998,17 +9886,17 @@ function ClearancePreviewForRequests({
                           let baseLabels = [
                             ["NAME", formData.fullName?.toUpperCase()],
                             ["AGE", formData.age],
-                            ["SEX", formData.sex?.toUpperCase()],
+                            ["SEX", formatSexFull(formData.sex)],
                           ];
 
                           if (!isCohabitation) {
                             baseLabels.push([
                               "CIVIL STATUS",
-                              formData.civilStatus?.toUpperCase(),
+                              formatCivilStatusFull(formData.civilStatus),
                             ]);
                             baseLabels.push([
                               "RESIDENTIAL ADDRESS",
-                              formData.address?.toUpperCase(),
+                              stripProvinceOf(formData.address)?.toUpperCase(),
                             ]);
                           }
 
@@ -9059,7 +9947,7 @@ function ClearancePreviewForRequests({
                             extraLabels = [
                               ["NAME", formData.partnerFullName?.toUpperCase()],
                               ["AGE", formData.partnerAge],
-                              ["SEX", formData.partnerSex?.toUpperCase()],
+                              ["SEX", formatSexFull(formData.partnerSex)],
                               [
                                 "DATE OF BIRTH",
                                 formData.partnerDateOfBirth
@@ -9106,13 +9994,13 @@ function ClearancePreviewForRequests({
                               ["Name (2)", name2?.toUpperCase()],
                               [
                                 "Residential Address",
-                                formData.address?.toUpperCase(),
+                                stripProvinceOf(formData.address)?.toUpperCase(),
                               ],
                               ["Age", formData.age],
-                              ["Sex", formData.sex?.toUpperCase()],
+                              ["Sex", formatSexFull(formData.sex)],
                               [
                                 "Civil Status",
-                                formData.civilStatus?.toUpperCase(),
+                                formatCivilStatusFull(formData.civilStatus),
                               ],
                               [
                                 "Date of Birth",
@@ -9229,26 +10117,28 @@ function ClearancePreviewForRequests({
                       </div>
                     ) : (
                       <>
-                        <div className="mb-6">
-                          <p className="mb-3">
+                        <div className="mb-3">
+                          <p className="mb-2">
                             Being issued upon the request of above mentioned
                             person for below purpose(s):
                           </p>
                           <div className="pl-8 space-y-1 font-bold">
-                            {formData.purpose ? (
-                              formData.purpose.split("\n").map((line, idx) => (
+                            {(() => {
+                              const purposes = splitPurposesList(specificPurpose || formData.purpose);
+                              if (purposes.length === 0) {
+                                return <p>• PURPOSE NOT SPECIFIED</p>;
+                              }
+                              return purposes.map((item, idx) => (
                                 <div key={idx} className="flex gap-2">
                                   <span>{idx + 1}.</span>
-                                  <span>{line.toUpperCase()}</span>
+                                  <span>{item.toUpperCase()}</span>
                                 </div>
-                              ))
-                            ) : (
-                              <p>• PURPOSE NOT SPECIFIED</p>
-                            )}
+                              ));
+                            })()}
                           </div>
                         </div>
 
-                        <p className={`${request.residents?.pending_case ? "mb-3" : "mb-10"} text-left`}>
+                        <p className={`${request.residents?.pending_case ? "mb-3" : "mb-4"} text-left`}>
                           Issued this {issuedDate} at Barangay Iba O' Este,
                           Calumpit, Bulacan.
                         </p>
@@ -9306,7 +10196,17 @@ function ClearancePreviewForRequests({
                             : request.certificate_type ===
                               "certificate_of_indigency"
                               ? "34px"
-                              : "24px",
+                              : "40px",
+                        // Visual-only offset (does not consume layout height),
+                        // so the signature block sits lower without pushing the footer/QR.
+                        top:
+                          isSamePerson ||
+                          isGuardianship ||
+                          isCohabitation ||
+                          isMedicoLegal ||
+                          request.certificate_type === "certificate_of_indigency"
+                            ? undefined
+                            : "40px",
                       }}
                     >
                       {isNaturalDeath && <div className="h-6"></div>}
@@ -9316,21 +10216,23 @@ function ClearancePreviewForRequests({
                         !isMedicoLegal &&
                         !isSamePerson &&
                         request.certificate_type !== "certificate_of_indigency" && (
-                          <div className="mb-4 relative top-[1.5em]">
-                            <div className="h-6"></div>
+                          <div className="mb-4">
                             <div className="border-t border-black w-64 pt-1">
-                              <p className="text-[15px]">
+                              <p className="text-[14px]">
                                 Resident's Signature / Thumb Mark
                               </p>
                             </div>
                           </div>
                         )}
 
-                      <div className="text-left mb-4 self-start cert-captain-signature-block">
+                      <div
+                        className="text-left mb-2 self-start cert-captain-signature-block relative"
+                        style={{ top: "24px" }}
+                      >
                         <div
-                          className={`relative flex items-start justify-between gap-4 ${isSamePerson ? "mb-44" : request.certificate_type === "certificate_of_indigency" ? "mb-20" : "mb-32"}`}
+                          className={`flex items-start justify-between gap-4 ${isSamePerson ? "mb-24" : request.certificate_type === "certificate_of_indigency" ? "mb-14" : "mb-14"}`}
                         >
-                          <p className="font-bold text-[15px] shrink-0 relative top-[3em]">
+                          <p className="font-bold text-[14px] shrink-0 text-gray-900">
                             TRULY YOURS,
                           </p>
                         </div>
@@ -9423,37 +10325,37 @@ function ClearancePreviewForRequests({
                 </div>
               )}
 
-              {/* BrgyDesk verification QR */}
-              <div
-                className={`w-full flex items-end justify-between gap-4 mb-2 ${
-                  isBusinessClearanceDoc ? "mt-6" : "mt-auto"
-                }`}
-              >
-                <div className="text-left flex-1 min-w-0">
-                  <p className="italic text-gray-500 text-[10px] leading-snug">
-                    This is a computer-generated document. The dry seal is replaced with a system-generated QR code—scan it to verify.
-                  </p>
+              {/* Bottom Anchored Footer Block (QR Code on right, Address/Contact at bottom) */}
+              <div className="cert-footer-anchor w-full shrink-0 mt-auto pt-0">
+                <div className="w-full flex items-end justify-between gap-4 mb-1">
+                  <div className="text-left flex-1 min-w-0">
+                    {isOnlineDelivery && (
+                      <p className="italic text-gray-500 text-[10px] leading-snug">
+                        This is a computer-generated document. The dry seal is replaced with a system-generated QR code—scan it to verify.
+                      </p>
+                    )}
+                  </div>
+                  <CertificateVerifyQR
+                    request={request}
+                    tenantId={request.tenant_id}
+                    qrSize={64}
+                    className="shrink-0 print:shrink-0"
+                  />
                 </div>
-                <CertificateVerifyQR
-                  request={request}
-                  tenantId={request.tenant_id}
-                  qrSize={80}
-                  className="shrink-0 print:shrink-0"
-                />
-              </div>
 
-              {/* Footer Divider and info */}
-              <div className="w-full border-t border-gray-400 pt-1 text-[11px] leading-tight pb-4">
-                <div className="flex flex-col items-start text-gray-700 gap-0.5">
-                  <p>
-                    <strong>Address:</strong> {officials.contactInfo?.address}
-                  </p>
-                  <p>
-                    <strong>Contact:</strong>{" "}
-                    {officials.contactInfo?.contactPerson} Tel No.:{" "}
-                    {officials.contactInfo?.telephone} email: {" "}
-                    {officials.contactInfo?.email}
-                  </p>
+                {/* Footer Divider and info */}
+                <div className="w-full border-t border-gray-400 pt-1 text-[11px] leading-tight pb-0.5 shrink-0">
+                  <div className="flex flex-col items-start text-gray-700 gap-0.5">
+                    <p>
+                      <strong>Address:</strong> {officials.contactInfo?.address}
+                    </p>
+                    <p>
+                      <strong>Contact:</strong>{" "}
+                      {officials.contactInfo?.contactPerson} Tel No.:{" "}
+                      {officials.contactInfo?.telephone} email: {" "}
+                      {officials.contactInfo?.email}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

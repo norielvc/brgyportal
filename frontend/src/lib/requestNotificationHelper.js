@@ -1,6 +1,6 @@
 /**
  * Request notification helpers:
- * - New certificate request: resident email (RECEIVED) + Barangay Captain email (SUBMITTED).
+ * - New certificate request: resident email only (RECEIVED).
  * - Captain step: email to Barangay Captain/Chairman only (APPROVED_STEP).
  * - Other staff steps receive in-app notifications only.
  */
@@ -38,7 +38,8 @@ async function createInAppNotification(supabase, payload) {
 }
 
 /**
- * Send email notification ONLY to the Barangay Captain when a request reaches captain_approval.
+ * Barangay Captain step approval email notification disabled per configuration.
+ * Returns immediately so no emails are sent when requests reach captain approval.
  */
 export async function notifyBarangayCaptainStep({
   supabase,
@@ -50,59 +51,14 @@ export async function notifyBarangayCaptainStep({
   comments = "",
   captainUserIds = [],
 }) {
-  const enabled = await isEmailNotificationsEnabled(supabase);
-  if (!enabled) {
-    return { emailsSent: 0, skipped: true };
-  }
-
-  const { sendProcessNotification } = await import("./mailer");
-  const captainUsers = await fetchBarangayCaptainUsers(
-    supabase,
-    tenantId,
-    certificateType,
-    captainUserIds,
-  );
-
-  let emailsSent = 0;
-  const seenEmails = new Set();
-  for (const cap of captainUsers) {
-    const email = String(cap.email || "").trim().toLowerCase();
-    if (!email || seenEmails.has(email)) continue;
-    seenEmails.add(email);
-
-    const result = await sendProcessNotification({
-      recipientEmail: cap.email,
-      recipientName:
-        `${cap.first_name || ""} ${cap.last_name || ""}`.trim() ||
-        "Brgy. Captain",
-      eventType: "APPROVED_STEP",
-      certificateType,
-      referenceNumber,
-      applicantName: applicantName || "Applicant",
-      comments,
-      requestId,
-      tenantId,
-    });
-    if (result.success) {
-      emailsSent += 1;
-      console.log(
-        `📧 Captain step email sent to ${cap.email} for ${referenceNumber}`,
-      );
-    } else {
-      console.warn(
-        `[notify] captain email ${cap.email}:`,
-        result.error || result.code,
-      );
-    }
-  }
-
-  return { emailsSent, captainsNotified: captainUsers.length };
+  // Captain step approval email notification disabled per configuration
+  return { emailsSent: 0, skipped: true, reason: "captain_step_email_disabled" };
 }
 
 /**
- * Notify applicant (RECEIVED) and send staff email ONLY to the Barangay Captain (SUBMITTED)
- * for a newly submitted certificate request of any type.
- * Step 1 review staff still receive in-app notifications.
+ * Notify applicant (RECEIVED) for a newly submitted certificate request.
+ * Resident receives email confirmation only (no staff/captain email for new submissions).
+ * Step 1 review staff and Barangay Captain still receive in-app notifications.
  */
 export async function notifyNewCertificateRequest({
   supabase,
@@ -140,43 +96,12 @@ export async function notifyNewCertificateRequest({
     else console.warn("[notify] resident email:", result.error || result.code);
   }
 
-  // Send staff email notification ONLY to the Barangay Captain
+  // Captain users lookup for in-app notification only
   const captainUsers = await fetchBarangayCaptainUsers(
     supabase,
     tenantId,
     certificateType,
   );
-  const seenCaptainEmails = new Set();
-  for (const cap of captainUsers) {
-    const email = String(cap.email || "").trim().toLowerCase();
-    if (!email || seenCaptainEmails.has(email)) continue;
-    seenCaptainEmails.add(email);
-
-    const result = await sendProcessNotification({
-      recipientEmail: cap.email,
-      recipientName:
-        `${cap.first_name || ""} ${cap.last_name || ""}`.trim() ||
-        "Brgy. Captain",
-      eventType: "SUBMITTED",
-      certificateType,
-      referenceNumber,
-      applicantName: applicantName || "Applicant",
-      comments: "",
-      requestId,
-      tenantId,
-    });
-    if (result.success) {
-      emailsSent += 1;
-      console.log(
-        `📧 New request email sent to Brgy. Captain (${cap.email}): ${referenceNumber}`,
-      );
-    } else {
-      console.warn(
-        `[notify] captain ${cap.email}:`,
-        result.error || result.code,
-      );
-    }
-  }
 
   // In-app notifications for Step 1 review staff + Barangay Captain
   let staffList = await fetchUsersByIds(supabase, staffUserIds, tenantId);
@@ -232,7 +157,7 @@ export async function notifyNewCertificateRequest({
 
   return {
     emailsSent,
-    captainsEmailed: captainUsers.length,
+    captainsEmailed: 0,
     staffNotified: seenInApp.size,
     skipped: false,
   };

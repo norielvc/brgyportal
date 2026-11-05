@@ -161,22 +161,82 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
 
   // Success
   if (showSuccess) {
+    const handleTrackRedirect = () => {
+      if (typeof window !== "undefined") {
+        window.__pendingScrollTarget = "track";
+      }
+      onClose();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("brgydesk:auto-track", { detail: { ref: referenceNumber } })
+        );
+        const scrollToTrack = () => {
+          const trackElem = document.getElementById("track");
+          if (trackElem) {
+            const navOffset = 80;
+            const y = trackElem.getBoundingClientRect().top + (window.pageYOffset || window.scrollY || 0) - navOffset;
+            window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+          } else {
+            window.location.href = `/track-status?ref=${encodeURIComponent(referenceNumber)}`;
+          }
+        };
+        scrollToTrack();
+        setTimeout(scrollToTrack, 100);
+        setTimeout(scrollToTrack, 300);
+      }
+    };
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onTouchMove={(e) => e.preventDefault()}>
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-in zoom-in-95 duration-300">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: `${accentColor}18` }}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 text-center animate-in zoom-in-95 duration-300">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${accentColor}18` }}>
             <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{t.successTitle}</h3>
-          <p className="text-sm text-gray-500 leading-relaxed mb-6">{t.successBody}</p>
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1.5">{t.referenceNumber}</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-1.5">{t.successTitle}</h3>
+          <p className="text-sm text-gray-500 leading-relaxed mb-4">{t.successBody}</p>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-4 text-center">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.16em] mb-1">{t.referenceNumber}</p>
             <p className="text-2xl font-bold font-mono tracking-tight" style={{ color: accentColor }}>{referenceNumber}</p>
-            <p className="text-xs text-gray-500 mt-2">{t.saveReference}</p>
+            <p className="text-xs text-gray-500 mt-1.5">{t.saveReference}</p>
           </div>
-          <button onClick={onClose} className="w-full py-3 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity" style={{ backgroundColor: accentColor }}>
-            {t.close}
-          </button>
+
+          <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 mb-5 text-left">
+            <div className="flex items-start gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                <Search className="w-3.5 h-3.5 text-blue-700" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-blue-950 uppercase tracking-wider mb-0.5">
+                  {lang === "tl" ? "Subaybayan ang Kahilingan" : "Request Tracking"}
+                </p>
+                <p className="text-xs text-blue-800 leading-relaxed">
+                  {t.trackInstruction || (lang === "tl"
+                    ? "Maaari mong subaybayan ang live na estado at pag-apruba ng iyong kahilingan gamit ang Request Tracking."
+                    : "You can monitor the real-time status and approval progress of your request using Request Tracking.")}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={handleTrackRedirect}
+              className="w-full py-3.5 px-4 text-white rounded-xl font-bold text-sm shadow-md hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+              style={{ backgroundColor: accentColor }}
+            >
+              <Search className="w-4 h-4" />
+              <span>{t.trackAction || (lang === "tl" ? "Subaybayan ang Kahilingan Ngayon" : "Track Request Now")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-2.5 px-4 text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-sm transition-colors"
+            >
+              {t.close}
+            </button>
+          </div>
         </div>
       </div>
     );

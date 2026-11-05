@@ -70,13 +70,6 @@ const mainMenuItems = [
     navBadge: "helpDesk",
   },
   {
-    name: "KapChat",
-    href: "/help-desk?tab=kapchat",
-    icon: MessageCircle,
-    description: "Resident live chat",
-    navBadge: "kapchat",
-  },
-  {
     name: "Pickup Management",
     href: "/pickup-management",
     icon: Package,
@@ -279,181 +272,56 @@ export default function Sidebar({
   const [pickupManagementCount, setPickupManagementCount] = useState(0);
 
   useEffect(() => {
-    const isCertReadyForPickup = (cert, wfMap, activeUser) => {
-      if (!cert || !activeUser) return false;
-      const isReady =
-        ["ready", "ready_for_pickup"].includes(cert.status) ||
-        (cert.status === "oic_review" && cert.certificate_type !== "business_permit");
-      if (!isReady) return false;
+    let intervalId = null;
 
-      const role = String(activeUser.role || "").toLowerCase();
-      if (["superadmin", "super_admin", "admin"].includes(role)) {
-        return true;
-      }
-      const userId = String(activeUser._id || activeUser.id || "");
-      if (!userId) return false;
-
-      if (Array.isArray(cert.releasing_user_ids) && cert.releasing_user_ids.length > 0) {
-        return cert.releasing_user_ids.some((id) => String(id) === userId);
-      }
-
-      const steps = wfMap?.[cert.certificate_type] || [];
-      const relStep =
-        steps.find((s) => String(s.name || "").toLowerCase().includes("releasing")) ||
-        steps.find(
-          (s) =>
-            String(s.status || "").toLowerCase() === "oic_review" &&
-            !String(s.name || "").toLowerCase().includes("preparation"),
-        ) ||
-        steps.find((s) =>
-          ["ready", "ready_for_pickup", "released"].includes(
-            String(s.status || "").toLowerCase(),
-          ),
-        );
-
-      if (relStep && Array.isArray(relStep.assignedUsers)) {
-        return relStep.assignedUsers.some((id) => String(id) === userId);
-      }
-      return false;
-    };
-
-    const isRequestAssignedToUser = (request, wfMap, activeUser) => {
-      if (!activeUser || !request) return false;
-      const completedStatuses = [
-        "ready",
-        "ready_for_pickup",
-        "released",
-        "cancelled",
-        "rejected",
-      ];
-      if (completedStatuses.includes(request.status)) return false;
-      if (request.status === "oic_review") {
-        if (request.certificate_type !== "business_permit") return false;
-        const stepName = String(
-          request.workflow_assignment?.step_name || "",
-        ).toLowerCase();
-        if (stepName.includes("releasing")) return false;
-      }
-
-      const bypassRoles = ["superadmin", "super_admin", "admin"];
-      if (bypassRoles.includes(String(activeUser.role || "").toLowerCase())) {
-        return true;
-      }
-
-      const currentUserId = String(activeUser._id || activeUser.id || "");
-      if (!currentUserId) return false;
-
-      if (request.workflow_assignment) {
-        const assignedId = String(
-          request.workflow_assignment.assigned_user_id ||
-            request.workflow_assignment.userId ||
-            "",
-        );
-        if (assignedId === currentUserId) return true;
-      }
-
-      if (!wfMap) return false;
-      const steps =
-        wfMap[request.certificate_type] || Object.values(wfMap)[0] || [];
-      if (!Array.isArray(steps) || !steps.length) return false;
-
-      const s = String(request.status || "").toLowerCase();
-      let currentStep = null;
-      if (
-        ["staff_review", "staff review", "pending", "returned", "submitted"].some(
-          (st) => s.includes(st),
-        )
-      ) {
-        currentStep = steps.find((st) => st.status === "staff_review");
-      } else if (s.includes("physical_inspection")) {
-        currentStep = steps.find(
-          (st) => String(st.status || "").toLowerCase() === "physical_inspection",
-        );
-      } else if (s === "verifying" || s.includes("finance")) {
-        currentStep = steps.find(
-          (st) => String(st.status || "").toLowerCase() === "verifying",
-        );
-      } else if (s.includes("treasury")) {
-        currentStep = steps.find(
-          (st) => String(st.status || "").toLowerCase() === "treasury",
-        );
-      } else if (s.includes("captain") || s === "captain_approval") {
-        currentStep = steps.find(
-          (st) =>
-            String(st.status || "").toLowerCase() === "captain_approval" ||
-            String(st.name || "").toLowerCase().includes("captain") ||
-            String(st.name || "").toLowerCase().includes("chairman"),
-        );
-      } else if (s.includes("secretary")) {
-        currentStep = steps.find(
-          (st) => String(st.status || "").toLowerCase() === "secretary_approval",
-        );
-      } else if (s.includes("oic_review")) {
-        currentStep = steps.find(
-          (st) =>
-            String(st.status || "").toLowerCase() === "oic_review" &&
-            !String(st.name || "").toLowerCase().includes("releasing"),
-        );
-      }
-
-      if (!currentStep) return false;
-      return (currentStep.assignedUsers || []).some(
-        (id) => String(id) === currentUserId,
-      );
-    };
-
-    const fetchCertificateRequestsCount = async () => {
+    const fetchNavBadges = async () => {
       try {
         const token = getAuthToken();
-        const activeUser = getUserData();
-        if (!token || !activeUser) return;
-
-        const [assignedRes, allRes, wfRes] = await Promise.all([
-          fetch("/api/workflow-assignments/my-assignments", {
-            headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => null),
-          fetch("/api/certificates", {
-            headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => null),
-          fetch("/api/workflows", {
-            headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => null),
-        ]);
-
-        const assignedJson =
-          assignedRes && assignedRes.ok ? await assignedRes.json() : {};
-        const allJson = allRes && allRes.ok ? await allRes.json() : {};
-        const wfJson = wfRes && wfRes.ok ? await wfRes.json() : {};
-
-        const myAssigned = assignedJson?.success
-          ? assignedJson.data || assignedJson.certificates || []
-          : [];
-        const allCerts = allJson?.success ? allJson.certificates || [] : [];
-        const wfMap = wfJson?.success ? wfJson.data || {} : {};
-
-        const combined = [...myAssigned];
-        let pickupCount = 0;
-        for (const cert of allCerts) {
-          if (
-            !combined.some((c) => c.id === cert.id) &&
-            isRequestAssignedToUser(cert, wfMap, activeUser)
-          ) {
-            combined.push(cert);
-          }
-          if (isCertReadyForPickup(cert, wfMap, activeUser)) {
-            pickupCount++;
-          }
+        if (!token) return;
+        const res = await fetch("/api/dashboard/nav-counts", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.status === 401 || res.status === 403) {
+          setHelpDeskNavCounts({
+            esumbong: 0,
+            assistance: 0,
+            kapchat: 0,
+            total: 0,
+          });
+          setCertificateRequestsCount(0);
+          setPickupManagementCount(0);
+          return;
         }
-        setCertificateRequestsCount(combined.length);
-        setPickupManagementCount(pickupCount);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!json.success || !json.data) return;
+        const d = json.data;
+        if (typeof d.certificateRequests === "number") {
+          setCertificateRequestsCount(d.certificateRequests);
+        }
+        if (typeof d.pickupManagement === "number") {
+          setPickupManagementCount(d.pickupManagement);
+        }
+        if (d.helpDesk) {
+          setHelpDeskNavCounts(d.helpDesk);
+        }
       } catch (e) {
         /* silent */
       }
     };
 
-    fetchCertificateRequestsCount();
-    const interval = setInterval(fetchCertificateRequestsCount, 30000);
-    const onRefresh = () => fetchCertificateRequestsCount();
+    const schedulePolling = () => {
+      if (intervalId) clearInterval(intervalId);
+      const ms =
+        typeof document !== "undefined" && document.hidden ? 90000 : 45000;
+      intervalId = setInterval(fetchNavBadges, ms);
+    };
+
+    fetchNavBadges();
+    schedulePolling();
+
+    const onVisibility = () => schedulePolling();
+    const onRefresh = () => fetchNavBadges();
     const onDirectCount = (e) => {
       if (typeof e?.detail?.count === "number") {
         setCertificateRequestsCount(e.detail.count);
@@ -464,53 +332,22 @@ export default function Sidebar({
         setPickupManagementCount(e.detail.count);
       }
     };
+
+    document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("certificate-requests-nav-refresh", onRefresh);
+    window.addEventListener("help-desk-nav-refresh", onRefresh);
     window.addEventListener("certificate-requests-count", onDirectCount);
     window.addEventListener("pickup-management-count", onPickupDirectCount);
+
     return () => {
-      clearInterval(interval);
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("certificate-requests-nav-refresh", onRefresh);
+      window.removeEventListener("help-desk-nav-refresh", onRefresh);
       window.removeEventListener("certificate-requests-count", onDirectCount);
       window.removeEventListener("pickup-management-count", onPickupDirectCount);
     };
   }, [router.pathname]);
-
-  useEffect(() => {
-    const fetchHelpDeskNavCounts = async () => {
-      try {
-        const token = getAuthToken();
-        if (!token) return;
-        const res = await fetch("/api/help-desk/nav-counts", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 401 || res.status === 403) {
-          setHelpDeskNavCounts({
-            esumbong: 0,
-            assistance: 0,
-            kapchat: 0,
-            total: 0,
-          });
-          return;
-        }
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data) {
-            setHelpDeskNavCounts(json.data);
-          }
-        }
-      } catch (e) {
-        /* silent */
-      }
-    };
-    fetchHelpDeskNavCounts();
-    const interval = setInterval(fetchHelpDeskNavCounts, 30000);
-    const onRefresh = () => fetchHelpDeskNavCounts();
-    window.addEventListener("help-desk-nav-refresh", onRefresh);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("help-desk-nav-refresh", onRefresh);
-    };
-  }, []);
 
   const getNavBadgeCount = (item) => {
     if (!item.navBadge) return 0;
@@ -523,17 +360,8 @@ export default function Sidebar({
 
   const isNavItemActive = (item) => {
     if (!item.href) return false;
-    const [path, query = ""] = item.href.split("?");
-    if (router.pathname !== path) return false;
-    if (!query) {
-      return router.pathname === "/help-desk"
-        ? router.query.tab !== "kapchat"
-        : true;
-    }
-    const params = new URLSearchParams(query);
-    const tab = params.get("tab");
-    if (tab) return router.query.tab === tab;
-    return true;
+    const [path] = item.href.split("?");
+    return router.pathname === path;
   };
 
   useEffect(() => {
@@ -712,9 +540,6 @@ export default function Sidebar({
 
   const filteredMenuItems = mainMenuItems.filter((item) => {
     if (item.href === "/pickup-management" && !isReleasingTeamMember) {
-      return false;
-    }
-    if (item.href === "/help-desk?tab=kapchat" && !canAccessKapchat) {
       return false;
     }
     if (item.adminOnly && (!role || !adminRoles.includes(role))) {

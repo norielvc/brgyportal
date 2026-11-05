@@ -89,8 +89,26 @@ export function unlockScroll() {
     document.body.classList.remove("modal-open");
     document.documentElement.classList.remove("modal-open");
 
+    const pendingTarget = window.__pendingScrollTarget;
+    window.__pendingScrollTarget = null;
     originalStyles = null;
-    restoreScrollPosition(scrollY);
+
+    if (pendingTarget) {
+      const scrollToTarget = () => {
+        const el = document.getElementById(pendingTarget);
+        if (el) {
+          const navOffset = 80;
+          const top = el.getBoundingClientRect().top + (window.pageYOffset || window.scrollY || 0) - navOffset;
+          window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        }
+      };
+      requestAnimationFrame(() => {
+        scrollToTarget();
+        setTimeout(scrollToTarget, 100);
+      });
+    } else {
+      restoreScrollPosition(scrollY);
+    }
   }
 }
 

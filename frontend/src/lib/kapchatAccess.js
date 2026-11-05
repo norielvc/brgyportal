@@ -120,6 +120,8 @@ export async function fetchKapchatNotificationRecipients(
   if (ids.length > 0) {
     return fetchUsersByIds(supabase, ids, tenantId);
   }
-  return fetchBarangayCaptainUsers(supabase, tenantId);
+  // Chairman does NOT automatically receive KapChat emails.
+  // Only staff explicitly selected in "New message email receivers" receive emails.
+  return [];
 }
 

@@ -36,6 +36,7 @@ export function normalizeCertificateStatus(status, options = {}) {
   if (key === "physical_inspection") return "physical_inspection";
   if (key === "captain_approval") return "captain_approval";
   if (key === "staff_review") return "staff_review";
+  if (key === "witness_verification" || key.includes("witness") || name.includes("witness")) return "witness_verification";
 
   if (
     certificateType === "business_permit" &&

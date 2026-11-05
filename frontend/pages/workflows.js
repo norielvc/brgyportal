@@ -42,6 +42,12 @@ const certificateTypes = [
     isUnified: true,
   },
   {
+    id: "first_time_job_seeker",
+    name: "First Time Job Seeker",
+    color: "emerald",
+    isUnified: false,
+  },
+  {
     id: "certificate_of_indigency",
     name: "Certificate of Indigency",
     color: "green",
@@ -370,7 +376,15 @@ export default function WorkflowsPage() {
       if (data.success && data.data && Object.keys(data.data).length > 0) {
         const data_workflows = data.data;
         if (data_workflows[MASTER_WORKFLOW_ID]) {
-          setWorkflows(data_workflows);
+          const initial = { ...data_workflows };
+          if (!initial["first_time_job_seeker"]) {
+            initial["first_time_job_seeker"] =
+              data_workflows["first_time_job_seeker"] ||
+              data_workflows["barangay_clearance"] ||
+              initial[MASTER_WORKFLOW_ID] ||
+              defaultSteps;
+          }
+          setWorkflows(initial);
         } else {
           // Migration/Initialization
           const initial = { ...data_workflows };
@@ -381,6 +395,13 @@ export default function WorkflowsPage() {
           if (!initial["business_permit"]) {
             initial["business_permit"] =
               data_workflows["business_permit"] || defaultSteps;
+          }
+          if (!initial["first_time_job_seeker"]) {
+            initial["first_time_job_seeker"] =
+              data_workflows["first_time_job_seeker"] ||
+              data_workflows["barangay_clearance"] ||
+              initial[MASTER_WORKFLOW_ID] ||
+              defaultSteps;
           }
           setWorkflows(initial);
         }
@@ -870,6 +891,16 @@ export default function WorkflowsPage() {
             Unified Flow
           </button>
           <button
+            onClick={() => setSelectedCertificate("first_time_job_seeker")}
+            className={`flex-1 sm:flex-none px-2.5 py-1.5 rounded-[5px] font-semibold text-[11px] transition-colors ${
+              selectedCertificate === "first_time_job_seeker"
+                ? "bg-emerald-700 text-white"
+                : "text-gray-600 hover:text-gray-900 hover:bg-white/80"
+            }`}
+          >
+            First Time Job Seeker
+          </button>
+          <button
             onClick={() => setSelectedCertificate("business_permit")}
             className={`flex-1 sm:flex-none px-2.5 py-1.5 rounded-[5px] font-semibold text-[11px] transition-colors ${
               selectedCertificate === "business_permit"
@@ -994,7 +1025,7 @@ export default function WorkflowsPage() {
           <p className="text-[10px] text-red-900 leading-snug">
             <span className="font-bold">E-Sumbong (Help Desk)</span>
             {" — "}
-            choose who gets email when a new blotter is filed and who may open the E-Sumbong tab. If lists are empty, new reports email the Barangay Captain and all help-desk staff roles keep access.
+            choose who gets email when a new blotter is filed and who may open the E-Sumbong tab. Only checked staff receive email alerts (resident always gets confirmation). If empty, no staff emails are sent.
           </p>
         </div>
       ) : selectedCertificate === KAPCHAT_SETTINGS_ID ? (
@@ -1003,7 +1034,7 @@ export default function WorkflowsPage() {
           <p className="text-[10px] text-blue-900 leading-snug">
             <span className="font-bold">KapChat (Help Desk)</span>
             {" — "}
-            choose who gets email when a resident sends a message in KapChat and who may open the KapChat tab. If lists are empty, new messages email the Barangay Captain and all help-desk staff roles keep access.
+            choose who gets email when a resident sends a message in KapChat and who may open the KapChat tab. Only checked staff receive email alerts. If empty, no staff emails are sent.
           </p>
         </div>
       ) : selectedCertificate === MASTER_WORKFLOW_ID ? (
@@ -1013,6 +1044,15 @@ export default function WorkflowsPage() {
             <span className="font-bold">Unified workflow</span>
             {" — "}
             applies to guardianship, clearance, death, and other general certificates.
+          </p>
+        </div>
+      ) : selectedCertificate === "first_time_job_seeker" ? (
+        <div className="flex items-start gap-2 px-2.5 py-2 rounded-md border border-emerald-200/80 bg-emerald-50/80">
+          <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-px" />
+          <p className="text-[10px] text-emerald-900 leading-snug">
+            <span className="font-bold">First Time Job Seeker only</span>
+            {" — "}
+            independent workflow for First Time Job Seeker (RA 11261) certificate requests.
           </p>
         </div>
       ) : (
@@ -1036,7 +1076,7 @@ export default function WorkflowsPage() {
               </h2>
             </div>
             <p className="px-3 pt-2 text-[10px] text-gray-500 leading-snug">
-              Staff who receive email when a resident submits E-Sumbong (resident still gets confirmation). Leave empty to notify Barangay Captain/Chairman only.
+              Staff who receive email when a resident submits E-Sumbong (resident always gets confirmation). Leave empty if you do not want to send staff emails.
             </p>
             <div className="p-3 max-h-[420px] overflow-y-auto space-y-1">
               {users.map((u) => {
@@ -1118,7 +1158,7 @@ export default function WorkflowsPage() {
               </h2>
             </div>
             <p className="px-3 pt-2 text-[10px] text-gray-500 leading-snug">
-              Staff who receive email when a resident sends a message in KapChat. Leave empty to notify Barangay Captain/Chairman only.
+              Staff who receive email when a resident sends a message in KapChat. Leave empty if you do not want to send staff emails.
             </p>
             <div className="p-3 max-h-[420px] overflow-y-auto space-y-1">
               {users.map((u) => {
@@ -1201,7 +1241,13 @@ export default function WorkflowsPage() {
               : "bg-gray-50 border-gray-100"
           }`}
         >
-          <Eye className={`w-3.5 h-3.5 shrink-0 ${selectedCertificate === MASTER_WORKFLOW_ID ? "text-emerald-700" : "text-purple-700"}`} />
+          <Eye className={`w-3.5 h-3.5 shrink-0 ${
+            selectedCertificate === MASTER_WORKFLOW_ID
+              ? "text-emerald-700"
+              : selectedCertificate === "first_time_job_seeker"
+                ? "text-teal-700"
+                : "text-purple-700"
+          }`} />
           <div className="min-w-0">
             <h2 className="text-[10px] font-bold text-gray-700 uppercase tracking-wide leading-none">
               Review request team
@@ -1212,7 +1258,11 @@ export default function WorkflowsPage() {
             </h2>
             <p className="text-[9px] text-gray-400 mt-0.5 leading-snug">
               Initial review for{" "}
-              {selectedCertificate === MASTER_WORKFLOW_ID ? "all unified" : "business permit"}{" "}
+              {selectedCertificate === MASTER_WORKFLOW_ID
+                ? "all unified"
+                : selectedCertificate === "first_time_job_seeker"
+                  ? "first time job seeker"
+                  : "business permit"}{" "}
               requests.
             </p>
           </div>
@@ -1270,7 +1320,9 @@ export default function WorkflowsPage() {
                   className={`w-full lg:w-auto shrink-0 px-2.5 py-1.5 text-white rounded-md text-[11px] font-semibold transition-colors ${
                     selectedCertificate === MASTER_WORKFLOW_ID
                       ? "bg-emerald-600 hover:bg-emerald-700"
-                      : "bg-purple-600 hover:bg-purple-700"
+                      : selectedCertificate === "first_time_job_seeker"
+                        ? "bg-teal-600 hover:bg-teal-700"
+                        : "bg-purple-600 hover:bg-purple-700"
                   }`}
                 >
                   Assign members
@@ -1290,7 +1342,9 @@ export default function WorkflowsPage() {
               <h2 className="text-[10px] font-bold text-gray-700 uppercase tracking-wide leading-none">
                 {selectedCertificate === MASTER_WORKFLOW_ID
                   ? "Master workflow steps"
-                  : "Business permit steps"}
+                  : selectedCertificate === "first_time_job_seeker"
+                    ? "First time job seeker steps"
+                    : "Business permit steps"}
               </h2>
               <p className="text-[9px] text-gray-400 mt-0.5">
                 Review + {visibleSteps.length} approval step{visibleSteps.length === 1 ? "" : "s"} + releasing
@@ -1481,7 +1535,12 @@ export default function WorkflowsPage() {
             </h2>
             <p className="text-[9px] text-gray-400 mt-0.5 leading-snug">
               Final print and release for{" "}
-              {selectedCertificate === MASTER_WORKFLOW_ID ? "unified" : "business permit"} requests.
+              {selectedCertificate === MASTER_WORKFLOW_ID
+                ? "unified"
+                : selectedCertificate === "first_time_job_seeker"
+                  ? "first time job seeker"
+                  : "business permit"}{" "}
+              requests.
             </p>
           </div>
         </div>

@@ -1,4 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
+import { warnIfLocalhostUsesProductionSupabase } from "../src/lib/devSupabaseGuard";
+
+warnIfLocalhostUsesProductionSupabase();
 
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;

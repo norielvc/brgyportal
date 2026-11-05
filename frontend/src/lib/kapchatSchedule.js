@@ -25,23 +25,24 @@ function inHourWindow(hour, startHour, endHourExclusive) {
 /** Residents may start or send KapChat during these windows only. */
 export function isKapchatOpenForResidents(date = new Date()) {
   const { weekday, hour } = getManilaScheduleParts(date);
-  const morning = inHourWindow(hour, 9, 10);
-  const afternoon = inHourWindow(hour, 15, 16);
 
+  // Lunes - Biyernes: 8:00 AM - 5:00 PM (8:00 - 17:00)
   if (weekday >= 1 && weekday <= 5) {
-    return morning || afternoon;
+    return inHourWindow(hour, 8, 17);
   }
+  // Sabado: 8:00 AM - 12:00 NN (8:00 - 12:00)
   if (weekday === 6) {
-    return morning;
+    return inHourWindow(hour, 8, 12);
   }
+  // Linggo: sarado
   return false;
 }
 
 export function getKapchatScheduleSummary(lang = "en") {
   if (lang === "tl") {
-    return "Lunes–Biyernes: 9:00–10:00 AM at 3:00–4:00 PM · Sabado: 9:00–10:00 AM · Linggo: sarado";
+    return "Lunes - Biyernes: 8:00 AM - 5:00 PM · Sabado: 8:00 AM - 12:00 NN · Linggo: sarado";
   }
-  return "Mon–Fri: 9:00–10:00 AM & 3:00–4:00 PM · Sat: 9:00–10:00 AM · Sun: closed";
+  return "Mon - Fri: 8:00 AM - 5:00 PM · Sat: 8:00 AM - 12:00 NN · Sun: closed";
 }
 
 export function getKapchatClosedMessage(lang = "en") {

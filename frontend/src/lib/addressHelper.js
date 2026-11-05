@@ -8,13 +8,57 @@
  * @param {Object} tenantSettings - Barangay settings from API
  * @returns {Object} { barangay, municipality, province }
  */
+/**
+ * Remove "BARANGAY" / "Brgy." / "Bgy." prefixes from barangay name
+ * @param {string} val
+ * @returns {string}
+ */
+export function cleanBarangayName(val) {
+  if (!val) return "";
+  return String(val)
+    .trim()
+    .replace(/^(barangay|brgy\.?|bgy\.?)\s+/i, "")
+    .trim();
+}
+
+/**
+ * Remove "MUNICIPALITY OF" / "MUNICIPALITY" / "BAYAN NG" prefixes from municipality name
+ * @param {string} val
+ * @returns {string}
+ */
+export function cleanMunicipalityName(val) {
+  if (!val) return "";
+  return String(val)
+    .trim()
+    .replace(/^(municipality\s+of|municipality|bayan\s+ng)\s+/i, "")
+    .trim();
+}
+
+/**
+ * Remove "PROVINCE OF" / "PROVINCE" / "LALAWIGAN NG" prefixes from province name
+ * @param {string} val
+ * @returns {string}
+ */
+export function cleanProvinceName(val) {
+  if (!val) return "";
+  return String(val)
+    .trim()
+    .replace(/^(province\s+of|province|lalawigan\s+ng)\s+/i, "")
+    .trim();
+}
+
+/**
+ * Get barangay, municipality, and province from tenant settings
+ * @param {Object} tenantSettings - Barangay settings from API
+ * @returns {Object} { barangay, municipality, province }
+ */
 export function getAutoAddressFields(tenantSettings) {
-  const headerInfo = tenantSettings?.certificate_settings?.headerInfo || {};
+  const headerInfo = tenantSettings?.certificate_settings?.headerInfo || tenantSettings?.headerInfo || {};
   
   return {
-    barangay: headerInfo.barangayName || '',
-    municipality: headerInfo.municipality || '',
-    province: headerInfo.province || 'Province of Bulacan',
+    barangay: cleanBarangayName(headerInfo.barangayName || ''),
+    municipality: cleanMunicipalityName(headerInfo.municipality || ''),
+    province: cleanProvinceName(headerInfo.province || 'Bulacan'),
   };
 }
 
@@ -62,15 +106,18 @@ export function generateFullAddress(addressData) {
   }
 
   if (barangay?.trim()) {
-    parts.push(barangay.trim().toUpperCase());
+    const cleanB = cleanBarangayName(barangay);
+    if (cleanB) parts.push(cleanB.toUpperCase());
   }
 
   if (municipality?.trim()) {
-    parts.push(municipality.trim().toUpperCase());
+    const cleanM = cleanMunicipalityName(municipality);
+    if (cleanM) parts.push(cleanM.toUpperCase());
   }
 
   if (province?.trim()) {
-    parts.push(province.trim().toUpperCase());
+    const cleanP = cleanProvinceName(province);
+    if (cleanP) parts.push(cleanP.toUpperCase());
   }
 
   return parts.join(', ');
@@ -80,43 +127,97 @@ export function generateFullAddress(addressData) {
  * Full residential address for certificate requests — prefers structured
  * resident fields (house no., purok, barangay, etc.) when linked.
  */
+/**
+ * Strip "PROVINCE OF", "MUNICIPALITY OF", and "BARANGAY" prefixes from address string
+ * @param {string} addressString
+ * @returns {string}
+ */
+export function stripProvinceOf(addressString) {
+  if (!addressString) return "";
+  return String(addressString)
+    .replace(/,\s*PROVINCE\s+OF\s+/gi, ', ')
+    .replace(/\bPROVINCE\s+OF\s+/gi, '')
+    .replace(/,\s*MUNICIPALITY\s+OF\s+/gi, ', ')
+    .replace(/\bMUNICIPALITY\s+OF\s+/gi, '')
+    .replace(/,\s*BARANGAY\s+/gi, ', ')
+    .replace(/\bBARANGAY\s+/gi, '')
+    .replace(/,\s*BRGY\.?\s+/gi, ', ')
+    .replace(/\bBRGY\.?\s+/gi, '')
+    .trim();
+}
+
+/**
+ * Format sex to full word (MALE, FEMALE)
+ * @param {string} val
+ * @returns {string}
+ */
+export function formatSexFull(val) {
+  if (!val) return "";
+  const s = String(val).trim().toUpperCase();
+  if (s === "M" || s === "MALE") return "MALE";
+  if (s === "F" || s === "FEMALE") return "FEMALE";
+  return s;
+}
+
+/**
+ * Format civil status to full word (SINGLE, MARRIED, WIDOWED, SEPARATED, DIVORCED, etc.)
+ * @param {string} val
+ * @returns {string}
+ */
+export function formatCivilStatusFull(val) {
+  if (!val) return "";
+  const c = String(val).trim().toUpperCase();
+  if (c === "S" || c.startsWith("SINGLE")) return "SINGLE";
+  if (c === "M" || c.startsWith("MARRIED")) return "MARRIED";
+  if (c === "W" || c.startsWith("WIDOW")) return "WIDOWED";
+  if (c === "D" || c.startsWith("DIVORCED")) return "DIVORCED";
+  if (c === "SEP" || c.startsWith("SEPARAT")) return "SEPARATED";
+  if (c === "C" || c.startsWith("LIVE") || c.startsWith("COHAB")) return "LIVE-IN";
+  return c;
+}
+
 export function resolveRequestResidentialAddress(request) {
   if (!request) return "";
 
+  let result = "";
   if (request.certificate_type === "barangay_cohabitation") {
-    return (
+    result = (
       request.details?.currentAddress ||
       request.address ||
       ""
     ).trim();
-  }
+  } else {
+    const r = request.residents;
+    const fromStructured = r ? generateFullAddress(r) : "";
+    const stored = (
+      request.address ||
+      request.details?.currentAddress ||
+      ""
+    ).trim();
 
-  const r = request.residents;
-  const fromStructured = r ? generateFullAddress(r) : "";
-  const stored = (
-    request.address ||
-    request.details?.currentAddress ||
-    ""
-  ).trim();
-
-  if (fromStructured) {
-    const storedUpper = stored.toUpperCase();
-    const builtUpper = fromStructured.toUpperCase();
-    const builtHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(builtUpper);
-    const storedHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(storedUpper);
-    if (!stored || (builtHasHouse && !storedHasHouse)) {
-      return fromStructured;
+    if (fromStructured) {
+      const storedUpper = stored.toUpperCase();
+      const builtUpper = fromStructured.toUpperCase();
+      const builtHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(builtUpper);
+      const storedHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(storedUpper);
+      if (!stored || (builtHasHouse && !storedHasHouse)) {
+        result = fromStructured;
+      } else if (builtUpper.length > storedUpper.length && storedUpper && !builtUpper.includes(storedUpper)) {
+        result = fromStructured;
+      }
     }
-    if (builtUpper.length > storedUpper.length && storedUpper && !builtUpper.includes(storedUpper)) {
-      return fromStructured;
+
+    if (!result) {
+      if (stored) result = normalizeNorthvilleInText(stored);
+      else if (r?.residential_address?.trim()) {
+        result = normalizeNorthvilleInText(r.residential_address.trim());
+      } else {
+        result = normalizeNorthvilleInText(fromStructured);
+      }
     }
   }
 
-  if (stored) return normalizeNorthvilleInText(stored);
-  if (r?.residential_address?.trim()) {
-    return normalizeNorthvilleInText(r.residential_address.trim());
-  }
-  return normalizeNorthvilleInText(fromStructured);
+  return stripProvinceOf(result);
 }
 
 /**
@@ -204,9 +305,9 @@ export function validateAddress(addressData) {
 export const SUBDIVISIONS_CONFIG = {
   'HAZEL HEIGHTS': { subdivision: 'HAZEL HEIGHTS', parentPurok: 'Purok 1', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 1 - HAZEL HEIGHTS' },
   'CREEKSTONE': { subdivision: 'CREEKSTONE', parentPurok: 'Purok 1', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 1 - CREEKSTONE' },
-  'NORTH VILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTHVILLE 9' },
-  'NORTHVILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTHVILLE 9' },
-  'NV9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: true, label: 'PUROK 2 - NORTHVILLE 9' },
+  'NORTH VILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 2 - NORTHVILLE 9' },
+  'NORTHVILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 2 - NORTHVILLE 9' },
+  'NV9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 2 - NORTHVILLE 9' },
   'SITIO BANAWE': { subdivision: 'SITIO BANAWE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 2 - SITIO BANAWE' },
   'BANAWE': { subdivision: 'SITIO BANAWE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 2 - SITIO BANAWE' },
   'SITIO BANAUE': { subdivision: 'SITIO BANAWE', parentPurok: 'Purok 2', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 2 - SITIO BANAWE' },

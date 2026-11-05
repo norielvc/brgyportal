@@ -45,7 +45,11 @@ import Modal, { ConfirmModal } from "@/components/UI/Modal";
 import ESumbongForm from "@/components/Forms/ESumbongForm";
 import { toast } from "react-hot-toast";
 import useScrollLock from "@/lib/useScrollLock";
-import { buildKapchatHelpDeskThreads } from "@/lib/kapchatThread";
+import {
+  buildKapchatHelpDeskThreads,
+  mergeKapchatMessages,
+  latestKapchatCreatedAt,
+} from "@/lib/kapchatThread";
 import {
   BLOTTER_DOC_VARIANT,
   downloadBlotterDocumentPdf,
@@ -153,10 +157,13 @@ export default function HelpDesk() {
   const [petsaDraft, setPetsaDraft] = useState("");
   const [petsaTimeDraft, setPetsaTimeDraft] = useState("");
   const [isSavingPetsa, setIsSavingPetsa] = useState(false);
+  const [purposeDraft, setPurposeDraft] = useState("");
+  const [isSavingPurpose, setIsSavingPurpose] = useState(false);
   const [isEditingEsumbong, setIsEditingEsumbong] = useState(false);
   const [esumbongEditDraft, setEsumbongEditDraft] = useState({
     complainant_name: "",
     respondent_name: "",
+    purpose: "",
     contact_number: "",
     email: "",
     incident_date: "",
@@ -277,6 +284,7 @@ export default function HelpDesk() {
   const [mobileChatViewActive, setMobileChatViewActive] = useState(false);
   const [messengerReplyInput, setMessengerReplyInput] = useState("");
   const messengerEndRef = useRef(null);
+  const kapchatSyncSinceRef = useRef(null);
 
   // KapChat reply state (for modal)
   const [replyMessage, setReplyMessage] = useState("");
@@ -292,20 +300,45 @@ export default function HelpDesk() {
     }
   }, [items, activeThreadKey, activeTab]);
 
-  // Live polling for KapChat (every 4s) to receive incoming resident messages
+  // KapChat: incremental poll (since last sync) every 10s while tab is visible
   useEffect(() => {
     if (activeTab !== "kapchat" || !canAccessKapchat) return;
-    const interval = setInterval(async () => {
+
+    let intervalId = null;
+
+    const pollKapchat = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
-        const res = await kapchatAPI.getMessages();
-        if (res?.messages) {
+        const params = kapchatSyncSinceRef.current
+          ? { since: kapchatSyncSinceRef.current }
+          : {};
+        const res = await kapchatAPI.getMessages(params);
+        if (!res?.messages?.length) return;
+
+        if (kapchatSyncSinceRef.current) {
+          setItems((prev) => mergeKapchatMessages(prev, res.messages));
+        } else {
           setItems(res.messages);
         }
+        const latest = latestKapchatCreatedAt(res.messages);
+        if (latest) kapchatSyncSinceRef.current = latest;
       } catch (e) {
         // silent polling error
       }
-    }, 4000);
-    return () => clearInterval(interval);
+    };
+
+    pollKapchat();
+    intervalId = setInterval(pollKapchat, 10000);
+
+    const onVisibility = () => {
+      if (!document.hidden) pollKapchat();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [activeTab, canAccessKapchat]);
 
   // Fetch data on tab change once E-Sumbong & KapChat access check completes
@@ -461,8 +494,11 @@ export default function HelpDesk() {
         const res = await assistanceAPI.getInquiries();
         setItems(res.inquiries || []);
       } else {
+        kapchatSyncSinceRef.current = null;
         const res = await kapchatAPI.getMessages();
-        setItems(res.messages || []);
+        const messages = res.messages || [];
+        setItems(messages);
+        kapchatSyncSinceRef.current = latestKapchatCreatedAt(messages);
       }
       fetchAllChannelCounts(canAccessEsumbong, canAccessKapchat);
     } catch (error) {
@@ -699,7 +735,14 @@ export default function HelpDesk() {
   }, [isDetailsModalOpen, selectedItem?.id, activeTab, selectedItem?.staff_response]);
 
   useEffect(() => {
-    if (activeTab !== "esumbong" || !selectedItem?.petsa_ng_paghaharap) {
+    if (activeTab !== "esumbong" || !selectedItem) {
+      setPetsaDraft("");
+      setPetsaTimeDraft("");
+      setPurposeDraft("");
+      return;
+    }
+    setPurposeDraft(selectedItem.purpose || "");
+    if (!selectedItem.petsa_ng_paghaharap) {
       setPetsaDraft("");
       setPetsaTimeDraft("");
       return;
@@ -712,6 +755,7 @@ export default function HelpDesk() {
   }, [
     activeTab,
     selectedItem?.id,
+    selectedItem?.purpose,
     selectedItem?.petsa_ng_paghaharap,
     selectedItem?.oras_ng_paghaharap,
   ]);
@@ -846,36 +890,63 @@ export default function HelpDesk() {
 
   const renderEsumbongDocActions = (report, variant, compactLabel) => {
     const downloadKey = `${report.id}:${variant}`;
+    const isSummons = variant === BLOTTER_DOC_VARIANT.SUMMONS;
+    const formCode = isSummons ? "KP Form 9 (Patawag)" : "KP Form 7 (Sumbong)";
+    const isDownloading = blotterPdfDownloadingKey === downloadKey;
+
     return (
-      <div className="flex flex-wrap items-center gap-1.5 px-2.5 py-2 bg-white border border-gray-200 rounded-lg">
-        <span className="text-[11px] font-semibold text-gray-800 mr-1 min-w-0">
-          {compactLabel}
-        </span>
-        <button
-          type="button"
-          onClick={() => handlePreviewBlotterSlip(report, variant)}
-          className="p-1 text-gray-600 hover:bg-gray-100 rounded-md"
-          title={`Preview — ${compactLabel}`}
-        >
-          <Eye className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => void handlePrintBlotterSlip(report, variant)}
-          className="p-1 text-gray-600 hover:bg-gray-100 rounded-md"
-          title={`Print — ${compactLabel}`}
-        >
-          <Printer className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => void handleDownloadBlotterPdf(report, variant)}
-          disabled={blotterPdfDownloadingKey === downloadKey}
-          className="p-1 text-gray-600 hover:bg-gray-100 rounded-md disabled:opacity-40"
-          title={`Download PDF — ${compactLabel}`}
-        >
-          <Download className="w-3.5 h-3.5" />
-        </button>
+      <div className="group relative flex items-center justify-between p-3.5 bg-white border border-slate-200/90 hover:border-[#03254c]/40 rounded-xl transition-all shadow-xs hover:shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+              isSummons
+                ? "bg-amber-50 text-amber-700 border border-amber-200/60"
+                : "bg-blue-50 text-blue-700 border border-blue-200/60"
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-slate-900 group-hover:text-[#03254c] transition-colors truncate">
+              {compactLabel}
+            </p>
+            <p className="text-[11px] font-semibold text-slate-400">
+              {formCode}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          <button
+            type="button"
+            onClick={() => handlePreviewBlotterSlip(report, variant)}
+            className="p-1.5 text-slate-600 hover:text-[#03254c] hover:bg-slate-100 rounded-lg transition-colors"
+            title={`Preview — ${compactLabel}`}
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => void handlePrintBlotterSlip(report, variant)}
+            className="p-1.5 text-slate-600 hover:text-[#03254c] hover:bg-slate-100 rounded-lg transition-colors"
+            title={`Print — ${compactLabel}`}
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleDownloadBlotterPdf(report, variant)}
+            disabled={isDownloading}
+            className="p-1.5 text-slate-600 hover:text-[#03254c] hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
+            title={`Download PDF — ${compactLabel}`}
+          >
+            {isDownloading ? (
+              <span className="w-4 h-4 border-2 border-slate-400 border-t-[#03254c] rounded-full animate-spin inline-block" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+          </button>
+        </div>
       </div>
     );
   };
@@ -904,9 +975,15 @@ export default function HelpDesk() {
 
   const handleVerifyEsumbong = async () => {
     if (!selectedItem?.id) return;
+    if (!purposeDraft?.trim()) {
+      toast.error("Kailangan ilagay ang 'Para sa:' (purpose ng sumbong) bago i-verify.");
+      return;
+    }
     setIsVerifyingBlotter(true);
     try {
-      const res = await blotterAPI.verifyReport(selectedItem.id);
+      const res = await blotterAPI.verifyReport(selectedItem.id, {
+        purpose: purposeDraft.trim(),
+      });
       const report = res.report;
       setItems((prev) =>
         prev.map((item) => (item.id === report.id ? report : item)),
@@ -925,6 +1002,34 @@ export default function HelpDesk() {
       );
     } finally {
       setIsVerifyingBlotter(false);
+    }
+  };
+
+  const handleSavePurpose = async () => {
+    if (!selectedItem?.id) return;
+    if (!purposeDraft?.trim()) {
+      toast.error("Kailangan ilagay ang 'Para sa:' (purpose ng sumbong).");
+      return;
+    }
+    setIsSavingPurpose(true);
+    try {
+      const res = await blotterAPI.updatePurpose(
+        selectedItem.id,
+        purposeDraft.trim(),
+      );
+      const report = res.report;
+      setItems((prev) =>
+        prev.map((item) => (item.id === report.id ? report : item)),
+      );
+      setSelectedItem(report);
+      toast.success("Na-save ang 'Para sa:'");
+    } catch (error) {
+      console.error("Update purpose error:", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to save 'Para sa:'",
+      );
+    } finally {
+      setIsSavingPurpose(false);
     }
   };
 
@@ -965,6 +1070,7 @@ export default function HelpDesk() {
     setEsumbongEditDraft({
       complainant_name: item.complainant_name || "",
       respondent_name: item.respondent_name || "",
+      purpose: item.purpose || "",
       contact_number: item.contact_number || "",
       email: item.email || "",
       incident_date: item.incident_date ? String(item.incident_date).slice(0, 10) : "",
@@ -998,6 +1104,10 @@ export default function HelpDesk() {
     }
     if (!esumbongEditDraft.details.trim()) {
       toast.error("Kailangan ang detalye ng sumbong.");
+      return;
+    }
+    if (!esumbongEditDraft.purpose?.trim()) {
+      toast.error("Kailangan ang 'Para sa:' (layunin o paksa ng sumbong).");
       return;
     }
 
@@ -1106,6 +1216,17 @@ export default function HelpDesk() {
 
   const currentTabConfig = TABS.find((t) => t.id === activeTab) || TABS[0];
   const currentStatusOptions = STATUS_CONFIGS[activeTab] || [];
+
+  const isPetsaModified =
+    Boolean(selectedItem && petsaDraft) &&
+    (petsaDraft !== String(selectedItem.petsa_ng_paghaharap || "").slice(0, 10) ||
+      petsaTimeDraft !==
+        (orasNgPaghaharapInputValue(selectedItem.oras_ng_paghaharap) || "09:00"));
+
+  const isPurposeModified =
+    Boolean(selectedItem) &&
+    (purposeDraft || "").trim() !== (selectedItem.purpose || "").trim() &&
+    Boolean((purposeDraft || "").trim());
 
   return (
     <Layout
@@ -2231,85 +2352,212 @@ export default function HelpDesk() {
 
               {activeTab === "esumbong" && (
                 <div className="space-y-5">
-                  {isBlotterVerified(selectedItem) && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-gray-50/80 border border-gray-200">
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">
-                          Usaping barangay no.
-                        </p>
-                        <p className="text-base font-semibold text-gray-900 font-mono tracking-tight">
-                          {selectedItem.usaping_barangay_number}
-                        </p>
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="petsa-ng-paghaharap"
-                          className="text-xs font-medium text-gray-500 mb-1 block"
-                        >
-                          Petsa ng paghaharap
-                        </label>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <input
-                            id="petsa-ng-paghaharap"
-                            type="date"
-                            value={petsaDraft}
-                            onChange={(e) => setPetsaDraft(e.target.value)}
-                            disabled={isSavingPetsa}
-                            className="px-2 py-1.5 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50"
-                          />
-                          <input
-                            id="oras-ng-paghaharap"
-                            type="time"
-                            value={petsaTimeDraft}
-                            onChange={(e) => setPetsaTimeDraft(e.target.value)}
-                            disabled={isSavingPetsa}
-                            className="px-2 py-1.5 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50"
-                            aria-label="Oras ng paghaharap"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => void handleSavePetsaNgPaghaharap()}
-                            disabled={
-                              isSavingPetsa ||
-                              !petsaDraft ||
-                              (petsaDraft ===
-                                String(selectedItem.petsa_ng_paghaharap || "").slice(
-                                  0,
-                                  10,
-                                ) &&
-                                petsaTimeDraft ===
-                                  (orasNgPaghaharapInputValue(
-                                    selectedItem.oras_ng_paghaharap,
-                                  ) || "09:00"))
-                            }
-                            className="px-2.5 py-1.5 text-xs font-semibold text-[#03254c] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40"
-                          >
-                            {isSavingPetsa ? "Saving…" : "Save"}
-                          </button>
+                  {!isBlotterVerified(selectedItem) &&
+                    selectedItem.status !== "dismissed" &&
+                    !isEditingEsumbong && (
+                      <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/90 to-indigo-50/60 border border-blue-200/90 space-y-3 shadow-xs">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-[#03254c] text-white flex items-center justify-center shadow-xs">
+                            <BadgeCheck className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold uppercase tracking-wider text-[#03254c] block">
+                              E-Sumbong Verification Pending
+                            </span>
+                            <span className="text-[11px] text-slate-500">
+                              Ilagay ang layunin o paksa bago kumpirmahin ang verification
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1.5 leading-snug">
-                          {formatHearingScheduleDisplay({
-                            petsa_ng_paghaharap:
-                              petsaDraft || selectedItem.petsa_ng_paghaharap,
-                            oras_ng_paghaharap:
-                              petsaTimeDraft || selectedItem.oras_ng_paghaharap,
-                          })}
-                        </p>
+                        <div>
+                          <label
+                            htmlFor="verify-purpose-input"
+                            className="text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1"
+                          >
+                            <span>Para sa:</span>
+                            <span className="text-red-500">*</span>
+                            <span className="text-[11px] font-normal text-slate-500 ml-1">
+                              (Layunin o paksa ng sumbong na ilalagay sa Lupong Tagapamayapa document)
+                            </span>
+                          </label>
+                          <input
+                            id="verify-purpose-input"
+                            type="text"
+                            required
+                            placeholder="Halimbawa: Paninirang puri, Alitan sa bakod, Pananakit..."
+                            value={purposeDraft}
+                            onChange={(e) => setPurposeDraft(e.target.value)}
+                            className="w-full px-3.5 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] shadow-xs outline-none transition-all"
+                          />
+                        </div>
                       </div>
-                      {selectedItem.verified_at && (
-                        <p className="sm:col-span-2 text-xs text-gray-500">
-                          Verified {formatDate(selectedItem.verified_at)}
-                        </p>
-                      )}
+                    )}
+
+                  {isBlotterVerified(selectedItem) && (
+                    <div className="bg-gradient-to-br from-slate-50/90 via-white to-blue-50/30 rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
+                      {/* Top Header Row: Usaping Barangay & Verified Badge */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-[#03254c] text-white flex items-center justify-center shadow-xs">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                              Usaping Barangay Blg.
+                            </p>
+                            <p className="text-base sm:text-lg font-bold text-[#03254c] font-mono tracking-tight">
+                              {selectedItem.usaping_barangay_number}
+                            </p>
+                          </div>
+                        </div>
+
+                        {selectedItem.verified_at && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                            <BadgeCheck className="w-4 h-4 text-emerald-600" />
+                            <span>Verified {formatDate(selectedItem.verified_at)}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* 2-Column Grid: Petsa ng Paghaharap & Para sa */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+                        {/* Petsa ng Paghaharap */}
+                        <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-2xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label
+                              htmlFor="petsa-ng-paghaharap"
+                              className="text-xs font-bold text-slate-800 flex items-center gap-1.5"
+                            >
+                              <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                              Petsa at Oras ng Paghaharap
+                            </label>
+                            {isPetsaModified && (
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                Unsaved
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <input
+                              id="petsa-ng-paghaharap"
+                              type="date"
+                              value={petsaDraft}
+                              onChange={(e) => setPetsaDraft(e.target.value)}
+                              disabled={isSavingPetsa}
+                              className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-slate-50/70 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50 transition-all outline-none"
+                            />
+                            <input
+                              id="oras-ng-paghaharap"
+                              type="time"
+                              value={petsaTimeDraft}
+                              onChange={(e) => setPetsaTimeDraft(e.target.value)}
+                              disabled={isSavingPetsa}
+                              className="w-28 px-2 py-1.5 text-xs font-semibold text-slate-900 bg-slate-50/70 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50 transition-all outline-none"
+                              aria-label="Oras ng paghaharap"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => void handleSavePetsaNgPaghaharap()}
+                              disabled={isSavingPetsa || !petsaDraft || !isPetsaModified}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all shrink-0 flex items-center gap-1.5 ${
+                                isPetsaModified
+                                  ? "bg-[#03254c] hover:bg-[#021c38] text-white shadow-xs cursor-pointer"
+                                  : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                              }`}
+                              title="Save hearing date and time"
+                            >
+                              {isSavingPetsa ? (
+                                <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                              ) : (
+                                <Check className="w-3.5 h-3.5" />
+                              )}
+                              <span>{isSavingPetsa ? "Saving…" : "Save"}</span>
+                            </button>
+                          </div>
+
+                          <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5 pt-0.5">
+                            <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="truncate">
+                              {formatHearingScheduleDisplay({
+                                petsa_ng_paghaharap:
+                                  petsaDraft || selectedItem.petsa_ng_paghaharap,
+                                oras_ng_paghaharap:
+                                  petsaTimeDraft || selectedItem.oras_ng_paghaharap,
+                              })}
+                            </span>
+                          </p>
+                        </div>
+
+                        {/* Para sa (Paksa ng Sumbong) */}
+                        <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-2xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label
+                              htmlFor="purpose-field"
+                              className="text-xs font-bold text-slate-800 flex items-center gap-1.5"
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Para sa (Paksa ng Sumbong)</span>
+                              <span className="text-red-500">*</span>
+                            </label>
+                            {isPurposeModified && (
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                Unsaved
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <input
+                              id="purpose-field"
+                              type="text"
+                              required
+                              placeholder="Halimbawa: Paninirang puri, Pananakit..."
+                              value={purposeDraft}
+                              onChange={(e) => setPurposeDraft(e.target.value)}
+                              disabled={isSavingPurpose}
+                              className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-medium text-slate-900 bg-slate-50/70 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50 transition-all outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => void handleSavePurpose()}
+                              disabled={isSavingPurpose || !purposeDraft.trim() || !isPurposeModified}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all shrink-0 flex items-center gap-1.5 ${
+                                isPurposeModified
+                                  ? "bg-[#03254c] hover:bg-[#021c38] text-white shadow-xs cursor-pointer"
+                                  : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                              }`}
+                              title="Save purpose / subject"
+                            >
+                              {isSavingPurpose ? (
+                                <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                              ) : (
+                                <Check className="w-3.5 h-3.5" />
+                              )}
+                              <span>{isSavingPurpose ? "Saving…" : "Save"}</span>
+                            </button>
+                          </div>
+
+                          <p className="text-[11px] text-slate-500 truncate pt-0.5">
+                            Lalabas sa &quot;-para sa-&quot; ng Lupong Tagapamayapa document
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
 
                   {isBlotterVerified(selectedItem) && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                        Documents
-                      </p>
-                      <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-slate-500" />
+                          Official Documents
+                        </p>
+                        <span className="text-[11px] font-medium text-slate-400 hidden sm:inline">
+                          Lupong Tagapamayapa Forms
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {renderEsumbongDocActions(
                           selectedItem,
                           BLOTTER_DOC_VARIANT.BLOTTER,
@@ -2453,6 +2701,31 @@ export default function HelpDesk() {
                         </div>
                       </div>
 
+                      {/* Para sa (Purpose) */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 block mb-1">
+                          Para sa: <span className="text-red-500">*</span>{" "}
+                          <span className="font-normal text-gray-500">(Subject / Purpose ng sumbong para sa Lupong Tagapamayapa)</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={esumbongEditDraft.purpose || ""}
+                          onChange={(e) =>
+                            setEsumbongEditDraft((d) => ({
+                              ...d,
+                              purpose: e.target.value,
+                            }))
+                          }
+                          className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none ${
+                            !esumbongEditDraft.purpose?.trim()
+                              ? "border-amber-300"
+                              : "border-gray-300"
+                          }`}
+                          placeholder="Halimbawa: Paninirang puri, Alitan sa bakod, Pananakit..."
+                        />
+                      </div>
+
                       {/* Detalye ng Sumbong Section */}
                       <div>
                         <label className="text-xs font-semibold text-gray-700 block mb-1.5">
@@ -2499,68 +2772,84 @@ export default function HelpDesk() {
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-px rounded-lg border border-gray-200 overflow-hidden bg-gray-200 text-[11px] leading-snug">
-                        <div className="bg-white px-3 py-2 space-y-1">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                            Nagsusumbong
-                          </p>
-                          <p className="text-xs font-semibold text-gray-900 flex flex-wrap items-center gap-2">
-                            {selectedItem.complainant_name}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {/* Nagsusumbong Card */}
+                        <div className="p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs space-y-2.5">
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                              <User className="w-3.5 h-3.5 text-blue-600" />
+                              Nagsusumbong (Complainant)
+                            </span>
                             {selectedItem.intake_source === "walk_in" && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-amber-100 text-amber-900 border border-amber-200">
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-amber-100 text-amber-900 border border-amber-200">
                                 Walk-in intake
                               </span>
                             )}
+                          </div>
+                          <p className="text-sm font-bold text-slate-900 leading-snug">
+                            {selectedItem.complainant_name}
                           </p>
-                          <div className="space-y-0.5 text-[11px] text-gray-600">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 pt-0.5">
                             {selectedItem.contact_number && (
                               <a
                                 href={`tel:${selectedItem.contact_number}`}
-                                className="flex items-center gap-1.5 hover:text-[#03254c] font-mono"
+                                className="inline-flex items-center gap-1.5 hover:text-[#03254c] font-mono transition-colors"
                               >
-                                <Phone className="w-3 h-3 shrink-0 text-gray-400" />
-                                {selectedItem.contact_number}
+                                <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{selectedItem.contact_number}</span>
                               </a>
                             )}
                             {selectedItem.email && (
                               <a
                                 href={`mailto:${selectedItem.email}`}
-                                className="flex items-center gap-1.5 break-all hover:text-[#03254c]"
+                                className="inline-flex items-center gap-1.5 hover:text-[#03254c] truncate max-w-full transition-colors"
                               >
-                                <Mail className="w-3 h-3 shrink-0 text-gray-400" />
-                                {selectedItem.email}
+                                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span className="truncate">{selectedItem.email}</span>
                               </a>
                             )}
                           </div>
                         </div>
-                        <div className="bg-white px-3 py-2 space-y-1">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                            Inirereklamo
-                          </p>
-                          <p className="text-xs font-semibold text-gray-900">
+
+                        {/* Inirereklamo Card */}
+                        <div className="p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs space-y-2.5">
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                              Inirereklamo (Respondent)
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-900 leading-snug">
                             {selectedItem.respondent_name}
                           </p>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-gray-600">
-                            <span className="inline-flex items-center gap-1">
-                              <Calendar className="w-3 h-3 shrink-0 text-gray-400" />
-                              {selectedItem.incident_date || "—"}
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 pt-0.5">
+                            <span className="inline-flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>{selectedItem.incident_date || "—"}</span>
                             </span>
                             {selectedItem.incident_time ? (
-                              <span className="inline-flex items-center gap-1">
-                                <Clock className="w-3 h-3 shrink-0 text-gray-400" />
-                                {selectedItem.incident_time}
+                              <span className="inline-flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{selectedItem.incident_time}</span>
                               </span>
                             ) : null}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex flex-col min-h-0 flex-1">
-                        <p className="text-xs font-medium text-gray-500 mb-2">
-                          Detalye ng sumbong
-                        </p>
-                        <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 sm:p-5 text-sm sm:text-[15px] text-gray-800 leading-relaxed min-h-[14rem] max-h-[min(28rem,50vh)] overflow-y-auto whitespace-pre-wrap [overflow-wrap:anywhere]">
-                          {selectedItem.details || "No narrative provided."}
+                      {/* Detalye ng sumbong Card */}
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs space-y-2.5">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-slate-500" />
+                            Detalye ng Sumbong
+                          </p>
+                          <span className="text-[11px] font-medium text-slate-400">
+                            Buong Salaysay
+                          </span>
+                        </div>
+                        <div className="rounded-lg bg-slate-50/70 p-4 text-xs sm:text-sm text-slate-800 leading-relaxed max-h-56 overflow-y-auto whitespace-pre-wrap [overflow-wrap:anywhere] border border-slate-100">
+                          {selectedItem.details || "Walang naitalang detalye."}
                         </div>
                       </div>
                     </>

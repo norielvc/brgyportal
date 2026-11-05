@@ -1,3 +1,27 @@
+export function mergeKapchatMessages(existing, incoming) {
+  if (!Array.isArray(incoming) || incoming.length === 0) {
+    return existing || [];
+  }
+  const map = new Map((existing || []).map((m) => [m.id, m]));
+  for (const msg of incoming) {
+    if (msg?.id) map.set(msg.id, msg);
+  }
+  return [...map.values()].sort(
+    (a, b) => new Date(a.created_at) - new Date(b.created_at),
+  );
+}
+
+export function latestKapchatCreatedAt(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) return null;
+  let max = null;
+  for (const m of messages) {
+    if (!m?.created_at) continue;
+    const iso = new Date(m.created_at).toISOString();
+    if (!max || iso > max) max = iso;
+  }
+  return max;
+}
+
 /**
  * KapChat portal thread: only messages for this verified resident.
  * Admin replies appear only after that resident has sent at least one message

@@ -60,6 +60,46 @@ function formatTagalogFilingDate(dateVal) {
   return { day, month, year };
 }
 
+const TAGALOG_DAYS = [
+  "Linggo", "Lunes", "Martes", "Miyerkules", "Huwebes", "Biyernes", "Sabado"
+];
+
+function formatTagalogHearingSchedule(report) {
+  let petsaText = "—";
+  let arawText = "—";
+  let orasText = "Ika - 9:00 N. U.";
+
+  if (report?.petsa_ng_paghaharap) {
+    const raw = String(report.petsa_ng_paghaharap).slice(0, 10);
+    const parts = raw.split("-");
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+        const dt = new Date(y, m, d);
+        petsaText = `Ika - ${d} ng ${TAGALOG_MONTHS[m] || ""}, ${y}`;
+        arawText = TAGALOG_DAYS[dt.getDay()] || "—";
+      }
+    }
+  }
+
+  if (report?.oras_ng_paghaharap) {
+    const t = String(report.oras_ng_paghaharap).trim();
+    const match = t.match(/^(\d{1,2}):(\d{2})/);
+    if (match) {
+      let h = parseInt(match[1], 10);
+      const min = match[2];
+      const isPm = h >= 12;
+      const h12 = h % 12 || 12;
+      const period = isPm ? "N. H." : "N. U.";
+      orasText = `Ika - ${h12}:${min} ${period}`;
+    }
+  }
+
+  return { petsaText, arawText, orasText };
+}
+
 function formatTagalogGeoName(name, prefix) {
   if (!name) return "";
   let clean = String(name).trim();
@@ -122,6 +162,23 @@ function buildPartiesSectionHtml(report) {
   `;
 }
 
+function formatPurposeLines(purposeText) {
+  const text = String(purposeText || "").trim();
+  if (!text) return { line1: "", line2: "" };
+  if (text.length <= 42) return { line1: text, line2: "" };
+  const words = text.split(/\s+/);
+  let line1 = "";
+  let line2 = "";
+  for (const word of words) {
+    if (!line2 && (line1 + " " + word).trim().length <= 42) {
+      line1 = (line1 + " " + word).trim();
+    } else {
+      line2 = (line2 + " " + word).trim();
+    }
+  }
+  return { line1, line2 };
+}
+
 /**
  * @param {object} report
  * @param {{ autoPrint?: boolean, embedded?: boolean, officials?: object, variant?: BlotterDocVariant }} options
@@ -142,6 +199,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
   const verified = isBlotterVerified(report);
   const variant = normalizeBlotterDocVariant(variantOption, report);
   const isSummons = variant === BLOTTER_DOC_VARIANT.SUMMONS;
+  const isLegal = true;
 
   const refBlotter = `BL-${String(report?.id || "").substring(0, 8).toUpperCase()}`;
   const usapingNo = esc(report.usaping_barangay_number || "—");
@@ -151,20 +209,13 @@ export function buildBlotterDocumentHtml(report, options = {}) {
     ? "PAANYAYA SA PAGHAHARAP"
     : "TANGGAPAN NG LUPONG TAGAPAMAYAPA";
   const docSubtitle = isSummons
-    ? "Summons to Appear / Usaping Barangay"
+    ? "Form 9 — PATAWAG"
     : "SUMBONG";
 
   const filed = esc(formatFiledDate(report?.created_at));
   const filingDate = formatTagalogFilingDate(report?.created_at);
   const caseYear = filingDate.year;
-  const petsaDisplay = esc(
-    formatPetsaNgPaghaharapDisplay(report.petsa_ng_paghaharap),
-  );
-  const orasDisplay = formatOrasNgPaghaharapDisplay(report?.oras_ng_paghaharap);
-  const hearingScheduleDisplay = esc(formatHearingScheduleDisplay(report));
-  const orasLine = orasDisplay
-    ? esc(orasDisplay)
-    : "9:00 AM (default kung walang oras na nakasaad)";
+  const hearingSchedule = formatTagalogHearingSchedule(report);
 
   const leftLogoUrl = officials?.logos?.leftLogo || "/iba-o-este.png";
   const rightLogoUrl = "/dilg.png";
@@ -176,84 +227,23 @@ export function buildBlotterDocumentHtml(report, options = {}) {
     ? `<div class="kp-captain-sig-img-wrap"><img src="${esc(officials.signature || officials.captainSignature)}" alt="Signature" class="kp-captain-sig-img" /></div>`
     : "";
 
-  const usapingNumberDisplay = report?.usaping_barangay_number ? esc(report.usaping_barangay_number) : "_________";
-  const casePurpose1 = report?.purpose
-    ? esc(report.purpose)
-    : (report?.incident_date ? `REKLAMO SA INSIDENTE NOONG ${esc(report.incident_date)}` : "");
-  const casePurpose2 = "";
+  const usapingNumberDisplay = report?.usaping_barangay_number ? esc(report.usaping_barangay_number) : "";
+  const rawPurpose = report?.purpose
+    ? String(report.purpose).trim()
+    : (report?.incident_date ? `REKLAMO SA INSIDENTE NOONG ${report.incident_date}` : "");
+  const { line1: casePurpose1, line2: casePurpose2 } = formatPurposeLines(rawPurpose);
 
-  const verifiedMeta =
-    verified && report?.verified_at && !isSummons
-      ? `<div class="meta-cell"><span class="meta-label">Verified</span><span class="meta-value">${esc(
-          new Date(report.verified_at).toLocaleString("en-PH", {
-            dateStyle: "medium",
-            timeStyle: "short",
-          }),
-        )}</span></div>`
-      : "";
-
-  const usapingMetaCell =
-    verified && !isSummons
-      ? `<div class="meta-cell"><span class="meta-label">Usaping no.</span><span class="meta-value mono">${usapingNo}</span></div>`
-      : "";
-
-  const metaGridHtml = isSummons
-    ? `
-      <div class="meta-grid">
-        <div class="meta-cell">
-          <span class="meta-label">Usaping barangay no.</span>
-          <span class="meta-value mono">${usapingNo}</span>
-        </div>
-        <div class="meta-cell">
-          <span class="meta-label">Petsa ng paghaharap</span>
-          <span class="meta-value">${hearingScheduleDisplay}</span>
-        </div>
-        <div class="meta-cell">
-          <span class="meta-label">Blotter ref.</span>
-          <span class="meta-value mono">${esc(refBlotter)}</span>
-        </div>
-        <div class="meta-cell">
-          <span class="meta-label">Status</span>
-          <span class="meta-value"><span class="status-pill">${formatStatusLabel(report?.status)}</span></span>
-        </div>
-      </div>
-    `
-    : "";
-
-  const summonsBodyHtml = `
-      <section class="summons-letter">
-        <p class="summons-salutation">SA LAHAT NG KAUUKULAN:</p>
-        <p class="summons-para">
-          Kayo ay <strong>INAANYAYAHAN</strong> na humarap sa Tanggapan ng Punong Barangay / Barangay Hall
-          para sa <strong>Usaping Barangay</strong> alinsunod sa sumbong na naitala sa Blotter Ref.
-          <span class="mono">${esc(refBlotter)}</span>.
-        </p>
-        <p class="summons-para">
-          <strong>Petsa ng paghaharap:</strong> ${petsaDisplay}.
-          <strong> Oras:</strong> ${orasLine}.
-          Magdala ng valid ID at anumang ebidensya o dokumentong may kaugnayan.
-        </p>
-        <p class="summons-para">
-          Ang hindi pagdalo nang walang matibay na dahilan ay maaaring gamitin bilang batayan sa susunod na hakbang
-          ayon sa batas at sa mga alituntunin ng barangay.
-        </p>
-      </section>
-      ${buildPartiesSectionHtml(report)}
-      <p class="notice">
-        Ito ay opisyal na paanyaya para sa paghaharap sa usaping barangay. Para sa kumpletong tala ng insidente,
-        tingnan ang Barangay Blotter Record (${esc(refBlotter)}).
-      </p>
-      <div class="signatures">
-        <div>
-          <div class="sig-line">&nbsp;</div>
-          <p class="sig-caption">Punong Barangay / Lupon Tagapamayapa</p>
-        </div>
-        <div>
-          <div class="sig-line">&nbsp;</div>
-          <p class="sig-caption">Barangay Secretary</p>
-        </div>
-      </div>
-  `;
+  const complainantAddress =
+    report?.complainant_address ||
+    report?.complainant_resident_address ||
+    report?.complainant_resident?.address ||
+    report?.tirahan_nagsusumbong ||
+    "Barangay Iba O' Este, Calumpit, Bulacan";
+  const respondentAddress =
+    report?.respondent_address ||
+    report?.tirahan_ipinagsusumbong ||
+    report?.respondent_tirahan ||
+    "Barangay Iba O' Este, Calumpit, Bulacan";
 
   return `<!DOCTYPE html>
 <html lang="tl" class="${embedded ? "embedded-preview" : ""}">
@@ -281,7 +271,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
       body {
         margin: 0;
         padding: ${embedded ? "0" : "24px 16px 32px"};
-        font-family: ${isSummons ? bodyFont : "'Times New Roman', Times, Georgia, serif"};
+        font-family: ${bodyFont};
         font-size: ${bodyFontSize}px;
         line-height: 1.45;
         color: ${isSummons ? esc(bodyTextColor) : "#000000"};
@@ -329,7 +319,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         background: #fff;
         padding: ${isSummons ? "0" : "0.45in 0.75in 0.45in 0.75in"};
         box-shadow: ${embedded ? "none" : "0 8px 32px rgba(0,0,0,.12)"};
-        min-height: 11in;
+        min-height: ${isLegal ? "14in" : "11in"};
         display: flex;
         flex-direction: column;
         box-sizing: border-box;
@@ -383,6 +373,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         line-height: 1.35;
         color: #000;
         font-family: inherit;
+        font-weight: normal;
       }
       .kp-office-heading {
         margin: 10px 0 6px 0;
@@ -399,62 +390,112 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         border-top: 1.5px solid #000;
         margin: 0 0 14px 0;
       }
+      .kp-print-layout-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: none;
+        margin: 0;
+        padding: 0;
+      }
+      .kp-print-layout-table > thead {
+        display: table-header-group;
+      }
+      .kp-print-layout-table > tbody {
+        display: table-row-group;
+      }
+      .kp-print-layout-table > thead > tr > td,
+      .kp-print-layout-table > tbody > tr > td {
+        border: none;
+        padding: 0;
+        margin: 0;
+        vertical-align: top;
+      }
 
       /* Parties & Case Meta Grid */
       .kp-parties-row {
         display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
+        flex-direction: column;
         width: 100%;
         font-size: 11pt;
         margin-bottom: 12px;
       }
+      .kp-parties-row-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+      }
+      .kp-parties-row-item.kp-row-mid {
+        align-items: center;
+        margin: 6px 0;
+      }
       .kp-parties-left {
         width: 48%;
       }
-      .kp-underlined-name {
-        border-bottom: 1px solid #000;
-        min-height: 1.3em;
+      .kp-name-field {
+        width: 100%;
+        border-bottom: 1.5px solid #000;
+        min-height: 24px;
+        line-height: 1.35;
+        padding-bottom: 5px;
         font-weight: bold;
-        font-size: 11pt;
-        padding-bottom: 1px;
+        font-size: 10.5pt;
         word-break: break-word;
+        box-sizing: border-box;
       }
       .kp-parties-label {
-        font-size: 10.5pt;
-        margin-top: 2px;
+        font-size: 10pt;
+        margin-top: 3px;
         padding-left: 1px;
       }
       .kp-parties-vs {
         text-align: center;
         font-size: 10.5pt;
-        margin: 6px 0;
+        margin: 0;
       }
       .kp-parties-right {
         width: 48%;
-        text-align: right;
       }
       .kp-case-no-line {
         font-size: 11pt;
         white-space: nowrap;
+        text-align: right;
       }
-      .kp-case-no-fill {
+      .kp-case-num-slot {
+        display: inline-block;
+        min-width: 120px;
+        border-bottom: 1.5px solid #000;
+        text-align: center;
         font-weight: bold;
-        border-bottom: 1px solid #000;
-        padding: 0 6px 1px;
+        font-size: 10.5pt;
+        line-height: 1.2;
+        padding: 0 6px 3px 6px;
+        box-sizing: border-box;
+        vertical-align: baseline;
       }
       .kp-case-for-label {
         text-align: center;
         font-size: 10.5pt;
-        margin: 6px 0 4px;
+        margin: 0;
       }
-      .kp-case-purpose-line {
-        border-bottom: 1px solid #000;
-        min-height: 1.3em;
+      .kp-purpose-wrap {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .kp-purpose-line {
+        width: 100%;
+        border-bottom: 1.5px solid #000;
+        min-height: 22px;
+        line-height: 1.3;
+        padding-bottom: 4px;
         font-size: 9.5pt;
+        font-weight: 600;
         text-align: center;
-        margin-top: 3px;
         word-break: break-word;
+        box-sizing: border-box;
+      }
+      .kp-purpose-line-second {
+        margin-top: 8px;
       }
 
       /* Title & Statement */
@@ -476,22 +517,19 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         margin: 0 0 10px 0;
       }
 
-      /* Ruled Narrative Container */
+      /* Narrative Container */
       .kp-narrative-lined {
         width: 100%;
-        min-height: 250px;
-        background-image: repeating-linear-gradient(to bottom, transparent, transparent 25px, #333333 25px, #333333 26px);
-        background-size: 100% 26px;
-        line-height: 26px;
-        font-size: 11pt;
+        min-height: 120px;
         box-sizing: border-box;
-        padding-top: 1px;
+        margin: 8px 0 12px 0;
       }
       .kp-narrative-text {
         font-family: inherit;
         font-size: 11pt;
-        line-height: 26px;
+        line-height: 1.6;
         text-align: justify;
+        text-indent: 2em;
         white-space: pre-wrap;
         word-break: break-word;
         margin: 0;
@@ -503,11 +541,19 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         text-align: center;
         font-size: 11pt;
         margin: 14px 0 18px 0;
+        line-height: 1.8;
       }
-      .kp-date-u {
-        border-bottom: 1px solid #000;
-        padding: 0 8px 1px;
+      .kp-date-slot {
+        display: inline-block;
+        border-bottom: 1.5px solid #000;
+        text-align: center;
         font-weight: bold;
+        font-size: 10.5pt;
+        line-height: 1.2;
+        padding: 0 6px 3px 6px;
+        box-sizing: border-box;
+        vertical-align: baseline;
+        margin: 0 4px;
       }
 
       /* Signatures of Parties */
@@ -521,17 +567,21 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         width: 44%;
         text-align: center;
       }
-      .kp-sig-line-text {
-        border-bottom: 1px solid #000;
-        min-height: 1.3em;
+      .kp-sig-underline-box {
+        width: 100%;
+        border-bottom: 1.5px solid #000;
         font-weight: bold;
         font-size: 10.5pt;
-        padding-bottom: 2px;
+        line-height: 1.35;
+        padding-bottom: 5px;
+        min-height: 24px;
+        text-align: center;
         word-break: break-word;
+        box-sizing: border-box;
       }
       .kp-sig-caption {
         font-size: 10pt;
-        margin-top: 3px;
+        margin-top: 4px;
       }
 
       /* Pagpapatunay */
@@ -555,8 +605,10 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         display: flex;
         justify-content: flex-end;
         width: 100%;
-        margin-top: 18px;
+        margin-top: 20px;
+        margin-bottom: 24px;
         page-break-inside: avoid;
+        break-inside: avoid;
       }
       .kp-captain-signature-col {
         min-width: 240px;
@@ -586,126 +638,231 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         margin-top: 2px;
       }
 
-      /* Summons specific styles */
-      .doc-title-block { text-align: center; margin-bottom: 18px; }
-      .doc-title {
-        margin: 0;
-        font-size: 15pt;
-        font-weight: bold;
-        color: #991b1b;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
+      /* Form 9 Patawag Specific Styles */
+      .kp-form9-top-row {
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
+        margin-bottom: -4px;
       }
-      .doc-sub { font-size: 10pt; color: #6b7280; margin: 6px 0 0; font-style: italic; }
-      .meta-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 12px 24px;
-        margin-bottom: 20px;
-        padding: 0;
-      }
-      .meta-cell { display: flex; flex-direction: column; gap: 2px; }
-      .meta-label {
-        font-size: 8pt;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #6b7280;
-      }
-      .meta-value { font-size: 11pt; font-weight: bold; }
-      .meta-value.mono { font-family: ${monoFont}; letter-spacing: 0.02em; }
-      .status-pill {
-        display: inline;
-        font-weight: bold;
-        color: #92400e;
-      }
-      .summons-letter {
-        padding: 16px 20px;
-        border: 2px solid #b91c1c;
-        border-radius: 8px;
-        background: #fef2f2;
-        margin-bottom: 22px;
-      }
-      .summons-salutation {
-        color: #991b1b;
-        font-weight: bold;
-        text-transform: uppercase;
-        margin: 0 0 12px;
-        font-size: 10.5pt;
-      }
-      .summons-para {
-        margin: 0 0 12px;
-        font-size: 11pt;
-        line-height: 1.55;
-        text-align: justify;
-      }
-      .notice {
-        font-size: 9.5pt;
-        color: #6b7280;
-        font-style: italic;
-        margin-top: 16px;
-      }
-      .signatures {
-        margin-top: 36px;
-        margin-bottom: 8px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 48px;
-        text-align: center;
+      .kp-form-tag {
         font-size: 10pt;
-        page-break-inside: avoid;
-      }
-      .sig-line {
-        border-top: 1px solid #111;
-        margin-top: 48px;
-        padding-top: 6px;
         font-weight: bold;
+        color: #374151;
+      }
+      .kp-patawag-heading {
+        color: #d32f2f !important; /* RED heading matching official Form 9! */
+        margin: 6px 0 4px 0 !important;
+      }
+      .patawag-case-bar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
         font-size: 10.5pt;
-        text-transform: uppercase;
-      }
-      .sig-caption { color: #6b7280; font-size: 9pt; margin-top: 4px; }
-      .parties {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 8px;
-      }
-      .party-box {
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 12px 14px;
-        background: #f9fafb;
-      }
-      .party-label {
-        font-size: 8.5pt;
         font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #6b7280;
-        margin: 0 0 6px;
       }
-      .party-name {
-        font-size: 12pt;
-        font-weight: bold;
-        margin: 0 0 8px;
+      .patawag-case-label {
+        letter-spacing: 0.04em;
       }
-      .kv-table {
+      .patawag-case-box {
+        background: #e5e7eb;
+        padding: 2px 14px;
+        border-radius: 3px;
+        letter-spacing: 0.06em;
+      }
+      .patawag-parties-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: stretch;
+        gap: 12px;
+        width: 100%;
+        margin-bottom: 12px;
+      }
+      .patawag-parties-left {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .patawag-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 9.5pt;
+        border: 1.5px solid #000;
+        font-size: 9pt;
       }
-      .kv-table th {
+      .patawag-table th {
+        border: 1.5px solid #000;
+        padding: 3px 6px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 8.5pt;
+        background: #f9fafb;
+        letter-spacing: 0.03em;
+      }
+      .patawag-table td {
+        border: 1.5px solid #000;
+        padding: 4px 8px;
+        font-size: 9pt;
+        vertical-align: top;
+        line-height: 1.35;
+        min-height: 34px;
+      }
+      .patawag-name-cell {
+        font-weight: bold;
+      }
+      .patawag-addr-cell {
+        font-size: 8.5pt;
+      }
+      .patawag-vs-line {
+        text-align: center;
+        font-weight: bold;
+        font-size: 9pt;
+        letter-spacing: 0.04em;
+        margin: 4px 0;
+      }
+      .patawag-purpose-box {
+        width: 32%;
+        min-width: 180px;
+        border: 1.5px solid #000;
+        background: #fef08a; /* Light yellow background */
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+      .patawag-purpose-header {
+        font-size: 8.5pt;
+        font-weight: bold;
+        letter-spacing: 0.03em;
+        margin-bottom: 6px;
         text-align: left;
-        color: #6b7280;
-        font-weight: normal;
-        padding: 2px 8px 2px 0;
-        width: 38%;
-        vertical-align: top;
       }
-      .kv-table td {
-        padding: 2px 0;
-        font-weight: 500;
-        vertical-align: top;
+      .patawag-purpose-body {
+        font-size: 9.5pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        line-height: 1.35;
+        word-break: break-word;
+      }
+      .patawag-title-box {
+        text-align: center;
+        margin: 10px 0 8px 0;
+      }
+      .patawag-main-title {
+        font-size: 13.5pt;
+        font-weight: bold;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+        letter-spacing: 0.1em;
+      }
+      .patawag-text-para {
+        font-size: 9.5pt;
+        line-height: 1.45;
+        text-align: justify;
+        margin: 0 0 8px 0;
+      }
+      .patawag-schedule-block {
+        margin: 6px 0 10px 48px;
+        font-size: 9.5pt;
+        line-height: 1.55;
+      }
+      .patawag-sched-row {
+        display: flex;
+        gap: 8px;
+      }
+      .patawag-sched-label {
+        font-weight: bold;
+        min-width: 50px;
+      }
+      .patawag-sched-val {
+        font-weight: bold;
+      }
+      .patawag-pb-container {
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
+        margin-top: 10px;
+        margin-bottom: 12px;
+      }
+      .patawag-pb-block {
+        min-width: 220px;
+        text-align: center;
+      }
+      .patawag-pb-name {
+        font-size: 10.5pt;
+        font-weight: bold;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .patawag-pb-sub {
+        font-size: 8.5pt;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-top: 2px;
+      }
+      .patawag-server-block {
+        width: 100%;
+        margin-top: 8px;
+        font-size: 9pt;
+      }
+      .patawag-server-heading {
+        font-weight: bold;
+        letter-spacing: 0.04em;
+        margin-bottom: 2px;
+      }
+      .patawag-server-sub {
+        margin-bottom: 5px;
+        font-size: 8.5pt;
+      }
+      .patawag-checklist {
+        margin-left: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: 8pt;
+        line-height: 1.3;
+      }
+      .patawag-check-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .patawag-check-box {
+        white-space: nowrap;
+        font-family: monospace;
+      }
+      .patawag-receipt-signatures {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin-top: 14px;
+        margin-bottom: 8px;
+      }
+      .patawag-receipt-col {
+        width: 44%;
+      }
+      .patawag-receipt-header {
+        font-weight: bold;
+        font-size: 8.5pt;
+        letter-spacing: 0.04em;
+        margin-bottom: 16px;
+      }
+      .patawag-receipt-field {
+        margin-top: 14px;
+        text-align: center;
+      }
+      .patawag-sig-line {
+        border-bottom: 1.5px solid #000;
+        width: 100%;
+        margin-bottom: 3px;
+      }
+      .patawag-sig-sub {
+        font-size: 8pt;
+        font-weight: bold;
+        letter-spacing: 0.04em;
+        text-align: center;
       }
 
       @media print {
@@ -716,22 +873,41 @@ export function buildBlotterDocumentHtml(report, options = {}) {
           width: 8.5in;
           max-width: 8.5in;
           min-height: 0;
-          padding: ${isSummons ? "0" : "0.35in 0.65in 0.35in 0.65in"} !important;
+          height: auto !important;
+          padding: 0.35in 0.65in 0.35in 0.65in !important;
           margin: 0;
         }
         .page-body.kp-sheet-body {
           padding-top: 0 !important;
-          padding-bottom: 0 !important;
+          padding-bottom: 24px !important;
+        }
+        .kp-print-layout-table > thead {
+          display: table-header-group !important;
         }
         .print-sheet-header {
-          position: ${isSummons ? "fixed" : "static"} !important;
+          position: static !important;
         }
         .print-sheet-footer {
-          position: ${isSummons ? "fixed" : "static"} !important;
+          position: static !important;
+        }
+        .kp-parties-row,
+        .kp-title-box,
+        .kp-parties-signatures,
+        .kp-papatunay-heading,
+        .kp-papatunay-body,
+        .kp-punong-barangay-block,
+        .patawag-parties-container,
+        .patawag-title-box,
+        .patawag-schedule-block,
+        .patawag-pb-container,
+        .patawag-server-block,
+        .patawag-receipt-signatures {
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
       }
       @page {
-        size: letter portrait;
+        size: legal portrait;
         margin: 0;
       }
     </style>
@@ -747,118 +923,337 @@ export function buildBlotterDocumentHtml(report, options = {}) {
     </div>
     ` : ""}
 
-    <article class="page ${!isSummons ? "kp-page" : ""}">
+    <article class="page kp-page">
       ${isSummons ? `
-      <div class="print-sheet-header">
-        ${buildClearanceLetterheadHtml(officials)}
-      </div>
-      <div class="page-body print-sheet-body">
-        <header class="doc-title-block">
-          <h1 class="doc-title">${esc(docTitle)}</h1>
-          <p class="doc-sub">${esc(docSubtitle)}</p>
-        </header>
+      <!-- FORM 9: PATAWAG (PAANYAYA SA PAGHAHARAP) -->
+      <table class="kp-print-layout-table">
+        <thead>
+          <tr>
+            <td>
+              <div class="print-sheet-header">
+                <div class="kp-form9-top-row">
+                  <span class="kp-form-tag">Form 9</span>
+                </div>
+                <div class="kp-header-container">
+                  <div class="kp-logo-box">
+                    <img src="${esc(leftLogoUrl)}" alt="Barangay Logo" class="kp-logo-img" />
+                  </div>
+                  <div class="kp-header-center">
+                    <p class="kp-geo-line">Republika ng Pilipinas</p>
+                    <p class="kp-geo-line">${esc(provinceLine)}</p>
+                    <p class="kp-geo-line">${esc(municipalityLine)}</p>
+                    <p class="kp-geo-line">${esc(barangayLine)}</p>
+                    <h1 class="kp-office-heading kp-patawag-heading">TANGGAPAN NG LUPON NG TAGAPAMAYAPA</h1>
+                  </div>
+                  <div class="kp-logo-box">
+                    <img src="${esc(rightLogoUrl)}" alt="DILG Logo" class="kp-logo-img" />
+                  </div>
+                </div>
+                <div class="kp-header-divider"></div>
+              </div>
+            </td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="page-body print-sheet-body kp-sheet-body">
+                <!-- Case Number Bar -->
+                <div class="patawag-case-bar">
+                  <span class="patawag-case-label">USAPING BARANGAY BILANG:</span>
+                  <span class="patawag-case-box">${esc(usapingNumberDisplay || "—")}</span>
+                </div>
 
-        ${metaGridHtml}
+                <!-- Parties & Reklamo Grid -->
+                <div class="patawag-parties-container">
+                  <div class="patawag-parties-left">
+                    <!-- Complainant Table -->
+                    <table class="patawag-table">
+                      <thead>
+                        <tr>
+                          <th style="width: 42%;">NAGSUSUMBONG</th>
+                          <th style="width: 58%;">TIRAHAN</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="patawag-name-cell">${esc(report?.complainant_name || "—")}</td>
+                          <td class="patawag-addr-cell">${esc(complainantAddress)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
 
-        ${summonsBodyHtml}
-      </div>
-      <div class="print-sheet-footer">
-        ${buildClearanceFooterHtml(officials, { documentRef: refBlotter })}
-      </div>
+                    <div class="patawag-vs-line">LABAN KAY / KINA</div>
+
+                    <!-- Respondent Table -->
+                    <table class="patawag-table">
+                      <thead>
+                        <tr>
+                          <th style="width: 42%;">IPINAGSUSUMBONG</th>
+                          <th style="width: 58%;">TIRAHAN</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="patawag-name-cell">${esc(report?.respondent_name || "—")}</td>
+                          <td class="patawag-addr-cell">${esc(respondentAddress)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Para sa Reklamong Box -->
+                  <div class="patawag-purpose-box">
+                    <div class="patawag-purpose-header">PARA SA REKLAMONG:</div>
+                    <div class="patawag-purpose-body">
+                      ${esc(rawPurpose || "—")}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Title -->
+                <div class="patawag-title-box">
+                  <span class="patawag-main-title">PATAWAG</span>
+                </div>
+
+                <!-- Opening paragraph -->
+                <p class="patawag-text-para">
+                  Ikaw ay tinatawagan upang humarap sa akin ng personal kasama ang iyong mga saksi sa sumusunod na petsa, araw at oras:
+                </p>
+
+                <!-- Schedule details -->
+                <div class="patawag-schedule-block">
+                  <div class="patawag-sched-row">
+                    <span class="patawag-sched-label">Petsa:</span>
+                    <span class="patawag-sched-val">${hearingSchedule.petsaText}</span>
+                  </div>
+                  <div class="patawag-sched-row">
+                    <span class="patawag-sched-label">Araw:</span>
+                    <span class="patawag-sched-val">${hearingSchedule.arawText}</span>
+                  </div>
+                  <div class="patawag-sched-row">
+                    <span class="patawag-sched-label">Oras:</span>
+                    <span class="patawag-sched-val">${hearingSchedule.orasText}</span>
+                  </div>
+                </div>
+
+                <p class="patawag-text-para">
+                  Upang doon ay sumagot sa sumbong na inihain sa akin, kalakip nito ang sipi ng sumbong, para ito ay maayos o magkaroon kayo ng kasunduan ng nagsusumbong.
+                </p>
+
+                <p class="patawag-text-para">
+                  Binibigyan ka ng babala na kung hindi mo ito bibigyan ng pansin o tahasang balewalain na humarap bilang pagtupad sa patawag na ito, ikaw ay mawawalan ng karapatan para ihain ang iyong kontra reklamo kung mayroon man sa hukuman o alin mang tanggapan sa pamahalan, o kaya ikaw ay mapaparusahan katulad ng mga taong nagkasala ng di-tuwirang paghamak sa hukuman.
+                </p>
+
+                <p class="patawag-text-para" style="margin-top: 14px;">
+                  Nilagdaan ngayong Ika - ${filingDate.day} ng ${filingDate.month}, ${filingDate.year}
+                </p>
+
+                <!-- Punong Barangay block -->
+                <div class="patawag-pb-container">
+                  <div class="patawag-pb-block">
+                    ${captainSigImg}
+                    <div class="patawag-pb-name">${esc(captainName)}</div>
+                    <div class="patawag-pb-sub">PUNONG BARANGAY</div>
+                  </div>
+                </div>
+
+                <!-- Server block -->
+                <div class="patawag-server-block">
+                  <div class="patawag-server-heading">OPISYAL NA NAGDALA NG PATAWAG:</div>
+                  <div class="patawag-server-sub">Ipinatanggap ko ang Patawag na ito sa Ipinagsusumbong sa pamamagitan ng:</div>
+                  <div class="patawag-checklist">
+                    <div class="patawag-check-item">
+                      <span class="patawag-check-box">( &nbsp; )</span>
+                      <span>Personal na pagbibigay sa kanya; o</span>
+                    </div>
+                    <div class="patawag-check-item">
+                      <span class="patawag-check-box">( &nbsp; )</span>
+                      <span>Ibinigay sa kanya subalit tumanggi siya; o</span>
+                    </div>
+                    <div class="patawag-check-item">
+                      <span class="patawag-check-box">( &nbsp; )</span>
+                      <span>Iniwanan ang Patawag kay ________________________, isang taong may sapat na gulang at pagpapasiya na nakatira sa kanyang bahay; o</span>
+                    </div>
+                    <div class="patawag-check-item">
+                      <span class="patawag-check-box">( &nbsp; )</span>
+                      <span>Iniwanan ang Patawag kay ________________________, isang taong namamahala sa kanyang tanggapan / lugar ng hanapbuhay.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Receipt signatures -->
+                <div class="patawag-receipt-signatures">
+                  <div class="patawag-receipt-col">
+                    <div class="patawag-receipt-header">TINANGGAP NG IPINAGSUSUMBONG:</div>
+                    <div class="patawag-receipt-field">
+                      <div class="patawag-sig-line"></div>
+                      <div class="patawag-sig-sub">PANGALAN AT LAGDA</div>
+                    </div>
+                    <div class="patawag-receipt-field">
+                      <div class="patawag-sig-line"></div>
+                      <div class="patawag-sig-sub">PETSA</div>
+                    </div>
+                  </div>
+
+                  <div class="patawag-receipt-col">
+                    <div class="patawag-receipt-header" style="visibility: hidden;">&nbsp;</div>
+                    <div class="patawag-receipt-field">
+                      <div class="patawag-sig-line"></div>
+                      <div class="patawag-sig-sub">NAGDALA NG PATAWAG</div>
+                    </div>
+                    <div class="patawag-receipt-field">
+                      <div class="patawag-sig-line"></div>
+                      <div class="patawag-sig-sub">PETSA</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="print-sheet-footer" style="height:0;min-height:0;margin:0;padding:0;"></div>
       ` : `
-      <div class="print-sheet-header">
-        <div class="kp-header-container">
-          <div class="kp-logo-box">
-            <img src="${esc(leftLogoUrl)}" alt="Barangay Logo" class="kp-logo-img" />
-          </div>
-          <div class="kp-header-center">
-            <p class="kp-geo-line">Republika ng Pilipinas</p>
-            <p class="kp-geo-line">${esc(provinceLine)}</p>
-            <p class="kp-geo-line">${esc(municipalityLine)}</p>
-            <p class="kp-geo-line">${esc(barangayLine)}</p>
-            <h1 class="kp-office-heading">TANGGAPAN NG LUPONG TAGAPAMAYAPA</h1>
-          </div>
-          <div class="kp-logo-box">
-            <img src="${esc(rightLogoUrl)}" alt="DILG Logo" class="kp-logo-img" />
-          </div>
-        </div>
-        <div class="kp-header-divider"></div>
-      </div>
+      <table class="kp-print-layout-table">
+        <thead>
+          <tr>
+            <td>
+              <div class="print-sheet-header">
+                <div class="kp-header-container">
+                  <div class="kp-logo-box">
+                    <img src="${esc(leftLogoUrl)}" alt="Barangay Logo" class="kp-logo-img" />
+                  </div>
+                  <div class="kp-header-center">
+                    <p class="kp-geo-line">Republika ng Pilipinas</p>
+                    <p class="kp-geo-line">${esc(provinceLine)}</p>
+                    <p class="kp-geo-line">${esc(municipalityLine)}</p>
+                    <p class="kp-geo-line">${esc(barangayLine)}</p>
+                    <h1 class="kp-office-heading">TANGGAPAN NG LUPONG TAGAPAMAYAPA</h1>
+                  </div>
+                  <div class="kp-logo-box">
+                    <img src="${esc(rightLogoUrl)}" alt="DILG Logo" class="kp-logo-img" />
+                  </div>
+                </div>
+                <div class="kp-header-divider"></div>
+              </div>
+            </td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="page-body print-sheet-body kp-sheet-body">
+                <!-- Parties & Usaping Barangay No -->
+                <div class="kp-parties-row">
+                  <!-- Top Row: Complainant and Case No -->
+                  <div class="kp-parties-row-item kp-row-top">
+                    <div class="kp-parties-left">
+                      <div class="kp-name-field">
+                        ${esc(report?.complainant_name || "")}${report?.complainant_name ? "," : "&nbsp;"}
+                      </div>
+                      <div class="kp-parties-label">Nagsusumbong,</div>
+                    </div>
+                    <div class="kp-parties-right">
+                      <div class="kp-case-no-line">
+                        Usaping Barangay Blg. <span class="kp-case-num-slot">${esc(usapingNumberDisplay || "") || "&nbsp;"}</span> ${caseYear}
+                      </div>
+                    </div>
+                  </div>
 
-      <div class="page-body print-sheet-body kp-sheet-body">
-        <!-- Parties & Usaping Barangay No -->
-        <div class="kp-parties-row">
-          <div class="kp-parties-left">
-            <div class="kp-underlined-name">${esc(report?.complainant_name || "")},</div>
-            <div class="kp-parties-label">Nagsusumbong,</div>
-            <div class="kp-parties-vs">-laban-</div>
-            <div class="kp-underlined-name">${esc(report?.respondent_name || "")},</div>
-            <div class="kp-parties-label">Ipinagreklamo</div>
-          </div>
-          <div class="kp-parties-right">
-            <div class="kp-case-no-line">
-              Usaping Barangay Blg. <span class="kp-case-no-fill">${esc(usapingNumberDisplay)}</span> ${caseYear}
-            </div>
-            <div class="kp-case-for-label">-para sa-</div>
-            <div class="kp-case-purpose-line">${esc(casePurpose1)}</div>
-            <div class="kp-case-purpose-line">${esc(casePurpose2)}</div>
-          </div>
-        </div>
+                  <!-- Middle Row: -laban- and -para sa- on the exact same line -->
+                  <div class="kp-parties-row-item kp-row-mid">
+                    <div class="kp-parties-left">
+                      <div class="kp-parties-vs">-laban-</div>
+                    </div>
+                    <div class="kp-parties-right">
+                      <div class="kp-case-for-label">-para sa-</div>
+                    </div>
+                  </div>
 
-        <!-- Document Title -->
-        <div class="kp-title-box">
-          <span class="kp-main-title">SUMBONG</span>
-        </div>
+                  <!-- Bottom Row: Respondent and Purpose -->
+                  <div class="kp-parties-row-item kp-row-bot">
+                    <div class="kp-parties-left">
+                      <div class="kp-name-field">
+                        ${esc(report?.respondent_name || "")}${report?.respondent_name ? "," : "&nbsp;"}
+                      </div>
+                      <div class="kp-parties-label">Ipinagreklamo</div>
+                    </div>
+                    <div class="kp-parties-right">
+                      <div class="kp-purpose-wrap">
+                        <div class="kp-purpose-line">${esc(casePurpose1 || "") || "&nbsp;"}</div>
+                        <div class="kp-purpose-line kp-purpose-line-second">${esc(casePurpose2 || "") || "&nbsp;"}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-        <!-- Opening Statement -->
-        <p class="kp-text-para">
-          Ako / Kami ay nagsusumbong laban sa mga taong binabanggit sa itaas dahil sa paglabag sa akin / aming karapatan ayon sa mga sumusunod na paraan:
-        </p>
+                <!-- Document Title -->
+                <div class="kp-title-box">
+                  <span class="kp-main-title">SUMBONG</span>
+                </div>
 
-        <!-- Ruled Narrative Lines -->
-        <div class="kp-narrative-lined">
-          <div class="kp-narrative-text">${esc(report?.details || "Walang detalye na naitala.")}</div>
-        </div>
+                <!-- Opening Statement -->
+                <p class="kp-text-para">
+                  Ako / Kami ay nagsusumbong laban sa mga taong binabanggit sa itaas dahil sa paglabag sa akin / aming karapatan ayon sa mga sumusunod na paraan:
+                </p>
 
-        <!-- Closing Request Statement -->
-        <p class="kp-text-para" style="margin-top: 14px; margin-bottom: 10px;">
-          Dahil dito, ako / kami ay magalang na humihiling na inyong ipagkaloob sa akin / amin ang nararapat ayon sa batas o katwiran.
-        </p>
+                <!-- Ruled Narrative Lines -->
+                <div class="kp-narrative-lined">
+                  <div class="kp-narrative-text">${esc(report?.details || "Walang detalye na naitala.")}</div>
+                </div>
 
-        <!-- Filing Date -->
-        <div class="kp-filing-date">
-          Itinala ngayong ika <span class="kp-date-u">&nbsp;${filingDate.day}&nbsp;</span> ng <span class="kp-date-u">&nbsp;${filingDate.month}&nbsp;</span>, ${filingDate.year}
-        </div>
+                <!-- Closing Request Statement -->
+                <p class="kp-text-para" style="margin-top: 14px; margin-bottom: 10px;">
+                  Dahil dito, ako / kami ay magalang na humihiling na inyong ipagkaloob sa akin / amin ang nararapat ayon sa batas o katwiran.
+                </p>
 
-        <!-- Signatures of Parties -->
-        <div class="kp-parties-signatures">
-          <div class="kp-party-sig">
-            <div class="kp-sig-line-text">${esc(report?.complainant_name || "")}</div>
-            <div class="kp-sig-caption">Nagsusumbong</div>
-          </div>
-          <div class="kp-party-sig">
-            <div class="kp-sig-line-text">&nbsp;</div>
-            <div class="kp-sig-caption">Ipinagsusumbong</div>
-          </div>
-        </div>
+                <!-- Filing Date -->
+                <div class="kp-filing-date">
+                  Itinala ngayong ika 
+                  <span class="kp-date-slot" style="min-width: 44px;">${filingDate.day || "&nbsp;"}</span> 
+                  ng 
+                  <span class="kp-date-slot" style="min-width: 110px;">${filingDate.month || "&nbsp;"}</span>, 
+                  ${filingDate.year}
+                </div>
 
-        <!-- PAGPAPATUNAY Section -->
-        <div class="kp-papatunay-heading">
-          PAGPAPATUNAY
-        </div>
-        <p class="kp-papatunay-body">
-          Na aking pinapatunayan ang mga nakasaad sa kasunduang ito ay kusang loob na ginawa at napagka - sunduan ng magkabilang panig matapos kong ipaliwanag sa kanila ang katangian at kalalabasan nito.
-        </p>
+                <!-- Signatures of Parties -->
+                <div class="kp-parties-signatures">
+                  <div class="kp-party-sig">
+                    <div class="kp-sig-underline-box">
+                      ${esc(report?.complainant_name || "") || "&nbsp;"}
+                    </div>
+                    <div class="kp-sig-caption">Nagsusumbong</div>
+                  </div>
+                  <div class="kp-party-sig">
+                    <div class="kp-sig-underline-box">
+                      &nbsp;
+                    </div>
+                    <div class="kp-sig-caption">Ipinagsusumbong</div>
+                  </div>
+                </div>
 
-        <!-- Punong Barangay Signature Block -->
-        <div class="kp-punong-barangay-block">
-          <div class="kp-captain-signature-col">
-            ${captainSigImg}
-            <div class="kp-captain-fullname">${esc(captainName)}</div>
-            <div class="kp-captain-designation">PUNONG BARANGAY</div>
-          </div>
-        </div>
-      </div>
+                <!-- PAGPAPATUNAY Section -->
+                <div class="kp-papatunay-heading">
+                  PAGPAPATUNAY
+                </div>
+                <p class="kp-papatunay-body">
+                  Na aking pinapatunayan ang mga nakasaad sa kasunduang ito ay kusang loob na ginawa at napagka - sunduan ng magkabilang panig matapos kong ipaliwanag sa kanila ang katangian at kalalabasan nito.
+                </p>
+
+                <!-- Punong Barangay Signature Block -->
+                <div class="kp-punong-barangay-block">
+                  <div class="kp-captain-signature-col">
+                    ${captainSigImg}
+                    <div class="kp-captain-fullname">${esc(captainName)}</div>
+                    <div class="kp-captain-designation">PUNONG BARANGAY</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       <div class="print-sheet-footer" style="height:0;min-height:0;margin:0;padding:0;"></div>
       `}
@@ -993,13 +1388,17 @@ function canvasHeightToMm(canvas, pageWidthMm) {
 }
 
 function addCanvasRegionToPdf(pdf, canvas, sx, sy, sw, sh, xMm, yMm, wMm, hMm) {
-  if (sh <= 0 || sw <= 0) return;
+  if (sh <= 0 || sw <= 0 || !canvas || canvas.width <= 0 || canvas.height <= 0) return;
   const slice = document.createElement("canvas");
-  slice.width = sw;
-  slice.height = sh;
-  slice.getContext("2d").drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+  slice.width = Math.max(1, Math.floor(sw));
+  slice.height = Math.max(1, Math.floor(sh));
+  const ctx = slice.getContext("2d");
+  if (!ctx) return;
+  ctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, slice.width, slice.height);
+  const dataUrl = slice.toDataURL("image/png", 1.0);
+  if (!dataUrl || !dataUrl.startsWith("data:image/png;base64,") || dataUrl.length < 50) return;
   pdf.addImage(
-    slice.toDataURL("image/png", 1.0),
+    dataUrl,
     "PNG",
     xMm,
     yMm,
@@ -1019,6 +1418,9 @@ export async function downloadBlotterDocumentPdf(report, { officials, variant } 
   }
 
   const docVariant = normalizeBlotterDocVariant(variant, report);
+  const isLegal = true;
+  const pdfSpec = { format: "legal", width: 215.9, height: 355.6, iframeH: 1344 };
+
   const html = buildBlotterDocumentHtml(report, {
     autoPrint: false,
     officials,
@@ -1026,8 +1428,7 @@ export async function downloadBlotterDocumentPdf(report, { officials, variant } 
   });
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
-  iframe.style.cssText =
-    "position:fixed;right:0;bottom:0;width:816px;height:1056px;visibility:hidden;border:0;z-index:-1;pointer-events:none";
+  iframe.style.cssText = `position:fixed;right:0;bottom:0;width:816px;height:${pdfSpec.iframeH}px;visibility:hidden;border:0;z-index:-1;pointer-events:none`;
   document.body.appendChild(iframe);
 
   const iframeWin = iframe.contentWindow;
@@ -1046,10 +1447,15 @@ export async function downloadBlotterDocumentPdf(report, { officials, variant } 
     setTimeout(resolve, 2500);
   });
 
+  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+    import("html2canvas"),
+    import("jspdf"),
+  ]);
+
   const headerEl = iframeDoc.querySelector(".print-sheet-header");
   const bodyEl = iframeDoc.querySelector(".print-sheet-body");
   const footerEl = iframeDoc.querySelector(".print-sheet-footer");
-  if (!headerEl || !bodyEl || !footerEl) {
+  if (!headerEl || !bodyEl) {
     document.body.removeChild(iframe);
     return { ok: false, error: "render_failed" };
   }
@@ -1061,23 +1467,21 @@ export async function downloadBlotterDocumentPdf(report, { officials, variant } 
     /* ignore */
   }
 
-  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-    import("html2canvas"),
-    import("jspdf"),
-  ]);
-
   let headerCanvas;
   let bodyCanvas;
   let footerCanvas;
   try {
     [headerCanvas, bodyCanvas, footerCanvas] = await Promise.all([
-      html2canvas(headerEl, HTML2CANVAS_OPTS),
+      html2canvas(headerEl, {
+        ...HTML2CANVAS_OPTS,
+        windowWidth: 816,
+      }),
       html2canvas(bodyEl, {
         ...HTML2CANVAS_OPTS,
-        windowWidth: bodyEl.scrollWidth,
+        windowWidth: 816,
         windowHeight: bodyEl.scrollHeight,
       }),
-      html2canvas(footerEl, HTML2CANVAS_OPTS),
+      footerEl && footerEl.offsetHeight > 0 ? html2canvas(footerEl, HTML2CANVAS_OPTS) : null,
     ]);
   } catch (err) {
     document.body.removeChild(iframe);
@@ -1089,71 +1493,139 @@ export async function downloadBlotterDocumentPdf(report, { officials, variant } 
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "mm",
-    format: "letter",
+    format: pdfSpec.format,
     compress: true,
   });
 
-  const pageWidth = LETTER_PAGE_MM.width;
-  const pageHeight = LETTER_PAGE_MM.height;
-  const headerHmm = canvasHeightToMm(headerCanvas, pageWidth);
-  const footerHmm = canvasHeightToMm(footerCanvas, pageWidth);
-  const contentSlotHmm = Math.max(
-    pageHeight - headerHmm - footerHmm,
-    pageHeight * 0.45,
+  const pageWidth = pdfSpec.width;
+  const pageHeight = pdfSpec.height;
+  const marginX = isLegal ? 17 : 14;
+  const marginY = isLegal ? 14 : 12;
+  const printableWidth = pageWidth - 2 * marginX;
+
+  const headerHmm = (headerCanvas.height * printableWidth) / headerCanvas.width;
+  const footerHmm = footerCanvas && footerCanvas.height > 0 ? (footerCanvas.height * printableWidth) / footerCanvas.width : 0;
+  const headerGapMm = 4;
+  const bodyY = marginY + headerHmm + headerGapMm;
+  const safetyBottomMm = 14;
+  const maxSliceHmm = Math.max(
+    pageHeight - marginY - bodyY - (footerHmm > 0 ? footerHmm + 4 : safetyBottomMm),
+    pageHeight * 0.4,
   );
-  const bodyHmm = canvasHeightToMm(bodyCanvas, pageWidth);
-  const pageCount = Math.max(1, Math.ceil(bodyHmm / contentSlotHmm));
+  const contentSlotHmm = maxSliceHmm;
+  const bodyHmm = (bodyCanvas.height * printableWidth) / bodyCanvas.width;
+
+  // Function to scan upwards for a clean blank pixel row between text lines
+  function findBlankRowY(ctx, width, targetY, maxSearchPx = 90) {
+    const minY = Math.max(0, targetY - maxSearchPx);
+    try {
+      for (let y = targetY; y >= minY; y -= 1) {
+        const row = ctx.getImageData(0, y, width, 1).data;
+        let isBlank = true;
+        for (let x = 0; x < row.length; x += 16) {
+          if (row[x] < 248 || row[x + 1] < 248 || row[x + 2] < 248) {
+            isBlank = false;
+            break;
+          }
+        }
+        if (isBlank) return y;
+      }
+    } catch {
+      /* ignore */
+    }
+    return targetY;
+  }
+
+  // Pre-calculate clean page slice boundaries without cutting lines of text in half
+  const bodyCtx = bodyCanvas.getContext("2d");
+  const pxPerMm = bodyCanvas.width / printableWidth;
+  const contentSlotPx = Math.floor(contentSlotHmm * pxPerMm);
+  const isSinglePage = bodyCanvas.height <= contentSlotPx;
+  const slices = [];
+
+  if (isSinglePage) {
+    slices.push({ startY: 0, height: bodyCanvas.height });
+  } else {
+    let currentY = 0;
+    while (currentY < bodyCanvas.height) {
+      const remainingPx = bodyCanvas.height - currentY;
+      if (remainingPx <= contentSlotPx) {
+        slices.push({ startY: currentY, height: remainingPx });
+        break;
+      }
+      let rawCutY = Math.min(bodyCanvas.height, Math.round(currentY + contentSlotPx));
+      let cleanCutY = findBlankRowY(bodyCtx, bodyCanvas.width, rawCutY, 120);
+      if (cleanCutY <= currentY + 60) {
+        cleanCutY = rawCutY;
+      }
+      let sliceHeight = Math.max(50, cleanCutY - currentY);
+      slices.push({ startY: currentY, height: sliceHeight });
+      currentY = cleanCutY;
+    }
+  }
 
   const headerImg = headerCanvas.toDataURL("image/png", 1.0);
-  const footerImg = footerCanvas.toDataURL("image/png", 1.0);
-  const contentSlotPx =
-    bodyCanvas.height > 0 ? (contentSlotHmm / bodyHmm) * bodyCanvas.height : 0;
+  const footerImg = footerCanvas && footerCanvas.height > 0 ? footerCanvas.toDataURL("image/png", 1.0) : null;
+  const totalPages = slices.length;
 
-  for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+  for (let pageIndex = 0; pageIndex < totalPages; pageIndex += 1) {
     if (pageIndex > 0) pdf.addPage();
 
-    pdf.addImage(
-      headerImg,
-      "PNG",
-      0,
-      0,
-      pageWidth,
-      headerHmm,
-      undefined,
-      "FAST",
-    );
+    // RETAIN HEADER ON EVERY PAGE with proper margins
+    if (headerHmm > 0 && headerImg && headerImg.startsWith("data:image/png;base64,")) {
+      pdf.addImage(
+        headerImg,
+        "PNG",
+        marginX,
+        marginY,
+        printableWidth,
+        headerHmm,
+        undefined,
+        "FAST",
+      );
+    }
 
-    const startPx = pageIndex * contentSlotPx;
-    const slicePx = Math.min(
-      contentSlotPx,
-      Math.max(0, bodyCanvas.height - startPx),
-    );
-    if (slicePx > 0) {
-      const sliceHmm = (slicePx * pageWidth) / bodyCanvas.width;
+    const slice = slices[pageIndex];
+    if (slice && slice.height > 0) {
+      let sliceHmm = (slice.height * printableWidth) / bodyCanvas.width;
+      let drawWmm = printableWidth;
+      let drawXmm = marginX;
+
+      // Extra safeguard: if sliceHmm somehow exceeds maxSliceHmm, scale it down proportionally
+      // so PUNONG BARANGAY and any bottom elements have guaranteed clearance above page bottom!
+      if (sliceHmm > maxSliceHmm) {
+        const scale = maxSliceHmm / sliceHmm;
+        sliceHmm = maxSliceHmm;
+        drawWmm = printableWidth * scale;
+        drawXmm = marginX + (printableWidth - drawWmm) / 2;
+      }
+
       addCanvasRegionToPdf(
         pdf,
         bodyCanvas,
         0,
-        startPx,
+        slice.startY,
         bodyCanvas.width,
-        slicePx,
-        0,
-        headerHmm,
-        pageWidth,
+        slice.height,
+        drawXmm,
+        bodyY,
+        drawWmm,
         sliceHmm,
       );
     }
 
-    pdf.addImage(
-      footerImg,
-      "PNG",
-      0,
-      pageHeight - footerHmm,
-      pageWidth,
-      footerHmm,
-      undefined,
-      "FAST",
-    );
+    if (footerHmm > 0 && footerImg && footerImg.startsWith("data:image/png;base64,")) {
+      pdf.addImage(
+        footerImg,
+        "PNG",
+        marginX,
+        pageHeight - marginY - footerHmm,
+        printableWidth,
+        footerHmm,
+        undefined,
+        "FAST",
+      );
+    }
   }
 
   pdf.save(blotterPdfFilename(report, docVariant));
