@@ -370,6 +370,7 @@ class CertificateGenerationService {
             let certificateContent;
             switch (request.certificate_type) {
                 case 'barangay_clearance':
+                case 'first_time_job_seeker':
                     certificateContent = await this.generateBarangayClearanceContent(request, config, signatureContext, history, lastReturnTime);
                     break;
                 case 'first_time_job_seeker':
@@ -568,7 +569,10 @@ class CertificateGenerationService {
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const bodyStyle = styles.bodyStyle || {};
 
-        const docTitle = 'BARANGAY CLEARANCE CERTIFICATE';
+        const docTitle =
+            request.certificate_type === 'first_time_job_seeker'
+                ? 'FIRST TIME JOB SEEKER CERTIFICATE'
+                : 'BARANGAY CLEARANCE CERTIFICATE';
 
         // For first time job seeker, if multiple purposes are selected, issue 1 Barangay Clearance for each purpose
         if (request.certificate_type === 'first_time_job_seeker') {

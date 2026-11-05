@@ -8966,9 +8966,10 @@ function ClearancePreviewForRequests({
                           ? "BARANGAY CERTIFICATION BEING THE SAME PERSON"
                           : isMedicoLegal
                             ? "REQUEST FOR MEDICO LEGAL (COPY)"
-                            : request.certificate_type === "barangay_clearance" ||
-                              request.certificate_type === "first_time_job_seeker"
-                              ? "BARANGAY CLEARANCE CERTIFICATE"
+                            : request.certificate_type === "first_time_job_seeker"
+                              ? "FIRST TIME JOB SEEKER CERTIFICATE"
+                              : request.certificate_type === "barangay_clearance"
+                                ? "BARANGAY CLEARANCE CERTIFICATE"
                                 : request.certificate_type ===
                                   "certificate_of_indigency"
                                 ? "CERTIFICATE OF INDIGENCY"

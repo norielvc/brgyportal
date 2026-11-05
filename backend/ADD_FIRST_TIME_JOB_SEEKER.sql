@@ -105,4 +105,3 @@ WHERE conname IN (
     'chk_workflow_history_request_type',
     'chk_config_certificate_type'
 );
-
