@@ -5,6 +5,14 @@ import {
   computeStaffNavCounts,
 } from "../../../src/lib/certificateNavCounts";
 import { getWorkflowMapForTenant } from "../../../src/lib/workflowMap";
+import {
+  getEsumbongSettings,
+  userHasEsumbongAccess,
+} from "../../../src/lib/esumbongAccess";
+import {
+  getKapchatSettings,
+  userHasKapchatAccess,
+} from "../../../src/lib/kapchatAccess";
 
 const OPEN_REQUEST_STATUSES = [
   "pending",
@@ -69,6 +77,8 @@ export default async function handler(req, res) {
       esumbongRes,
       assistanceRes,
       kapchatUnread,
+      esumbongSettings,
+      kapchatSettings,
       wfMap,
       wfConfigsRes,
       myAssignRes,
@@ -91,6 +101,8 @@ export default async function handler(req, res) {
         .eq("tenant_id", tenantId)
         .in("status", ASSISTANCE_OPEN),
       countKapchatUnread(tenantId),
+      getEsumbongSettings(supabase, tenantId),
+      getKapchatSettings(supabase, tenantId),
       getWorkflowMapForTenant(tenantId),
       supabase
         .from("workflow_configurations")
@@ -166,9 +178,13 @@ export default async function handler(req, res) {
       releasingAssignmentsByRequestId,
     });
 
-    const esumbong = esumbongRes.error ? 0 : esumbongRes.count ?? 0;
+    const includeEsumbong = userHasEsumbongAccess(user, esumbongSettings);
+    const includeKapchat = userHasKapchatAccess(user, kapchatSettings);
+
+    const esumbong =
+      includeEsumbong && !esumbongRes.error ? esumbongRes.count ?? 0 : 0;
     const assistance = assistanceRes.error ? 0 : assistanceRes.count ?? 0;
-    const kapchat = kapchatUnread;
+    const kapchat = includeKapchat ? kapchatUnread : 0;
     const helpDeskTotal = esumbong + assistance + kapchat;
 
     res.setHeader("Cache-Control", "private, max-age=15");

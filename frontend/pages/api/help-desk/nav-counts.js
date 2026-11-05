@@ -1,5 +1,13 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
+import {
+  getEsumbongSettings,
+  userHasEsumbongAccess,
+} from "../../../src/lib/esumbongAccess";
+import {
+  getKapchatSettings,
+  userHasKapchatAccess,
+} from "../../../src/lib/kapchatAccess";
 
 const ESUMBONG_OPEN = ["pending", "under_review"];
 const ASSISTANCE_OPEN = ["pending", "in_progress"];
@@ -28,7 +36,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [esumbongRes, assistanceRes, kapchatRes] = await Promise.all([
+    const [esumbongRes, assistanceRes, kapchatRes, esumbongSettings, kapchatSettings] =
+      await Promise.all([
       supabase
         .from("blotter_reports")
         .select("id", { count: "exact", head: true })
@@ -45,11 +54,18 @@ export default async function handler(req, res) {
         .eq("tenant_id", tenantId)
         .eq("is_admin", false)
         .eq("status", "unread"),
+      getEsumbongSettings(supabase, tenantId),
+      getKapchatSettings(supabase, tenantId),
     ]);
 
-    const esumbong = esumbongRes.error ? 0 : esumbongRes.count ?? 0;
+    const includeEsumbong = userHasEsumbongAccess(user, esumbongSettings);
+    const includeKapchat = userHasKapchatAccess(user, kapchatSettings);
+
+    const esumbong =
+      includeEsumbong && !esumbongRes.error ? esumbongRes.count ?? 0 : 0;
     const assistance = assistanceRes.error ? 0 : assistanceRes.count ?? 0;
-    const kapchat = kapchatRes.error ? 0 : kapchatRes.count ?? 0;
+    const kapchat =
+      includeKapchat && !kapchatRes.error ? kapchatRes.count ?? 0 : 0;
 
     const total = esumbong + assistance + kapchat;
 
