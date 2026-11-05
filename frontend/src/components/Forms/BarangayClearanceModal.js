@@ -501,6 +501,20 @@ export default function BarangayClearanceModal({
     if (errors.purpose) setErrors((prev) => ({ ...prev, purpose: false }));
   };
 
+  const handleJobSeekerPurposeToggle = (reqItem) => {
+    setFormData((prev) => {
+      const lines = (prev.purpose || "")
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+      const next = lines.includes(reqItem)
+        ? lines.filter((l) => l !== reqItem)
+        : [...lines, reqItem];
+      return { ...prev, purpose: next.join("\n") };
+    });
+    if (errors.purpose) setErrors((prev) => ({ ...prev, purpose: false }));
+  };
+
   const validateForm = () => {
     if (formData.pending_case) return false;
     const required = ["fullName", "contactNumber", "purpose"];
@@ -729,7 +743,15 @@ export default function BarangayClearanceModal({
                   </div>
                 </div>
 
-                <div className={currentStep === 3 ? certModalScrollPurposeClass : certModalScrollClass}>
+                <div
+                  className={
+                    currentStep === 3
+                      ? certType === "first_time_job_seeker"
+                        ? `${certModalScrollClass} max-sm:pb-4`
+                        : certModalScrollPurposeClass
+                      : certModalScrollClass
+                  }
+                >
                   <div>
                     {currentStep === 1 && (
                       <div className="space-y-4">
@@ -894,6 +916,76 @@ export default function BarangayClearanceModal({
 
                     {currentStep === 3 && (
                       <div className="space-y-5 animate-in fade-in duration-300">
+                        {certType === "first_time_job_seeker" ? (
+                          <>
+                            <div>
+                              <h3 className="text-base font-bold text-gray-900 mb-1">
+                                {t.purposeHeading}
+                              </h3>
+                              <p className="text-sm text-gray-500 leading-relaxed">
+                                {lang === "tl"
+                                  ? "Piliin ang mga pangangailangan sa RA 11261. Maaari mong i-tap muli ang napili para alisin."
+                                  : "Select the RA 11261 requirements you need. Tap a selected item again to remove it."}
+                              </p>
+                            </div>
+
+                            <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 sm:p-4">
+                              <p className="text-[10px] sm:text-[11px] font-bold text-emerald-800 uppercase tracking-[0.1em] mb-3">
+                                {lang === "tl"
+                                  ? "Mga karaniwang pangangailangan · RA 11261"
+                                  : "Common requirements · RA 11261"}
+                              </p>
+                              <div className="grid grid-cols-1 gap-2">
+                                {FIRST_TIME_JOB_SEEKER_PURPOSES.map((reqItem, idx) => {
+                                  const isAdded = (formData.purpose || "").includes(reqItem);
+                                  return (
+                                    <button
+                                      key={idx}
+                                      type="button"
+                                      onClick={() => handleJobSeekerPurposeToggle(reqItem)}
+                                      className={`w-full min-h-[44px] text-left text-xs sm:text-[13px] leading-snug px-3 py-2.5 rounded-lg border font-semibold transition-all touch-manipulation ${
+                                        isAdded
+                                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                          : "bg-white text-gray-800 border-gray-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
+                                      }`}
+                                    >
+                                      <span className="inline-flex items-start gap-2">
+                                        <span className="shrink-0 w-5 text-center" aria-hidden>
+                                          {isAdded ? "✓" : "+"}
+                                        </span>
+                                        <span className="flex-1 min-w-0 break-words">{reqItem}</span>
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label htmlFor="bc-purpose" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                                {lang === "tl" ? "Buod ng napiling pangangailangan" : "Selected requirements summary"}{" "}
+                                <span className="text-red-600">*</span>
+                              </label>
+                              <textarea
+                                id="bc-purpose"
+                                name="purpose"
+                                value={formData.purpose}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder={
+                                  lang === "tl"
+                                    ? "Lalabas dito ang mga napili mo sa itaas, o maaari kang mag-type."
+                                    : "Your selections appear here, or type your own."
+                                }
+                                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border rounded-lg text-sm sm:text-[15px] text-gray-900 outline-none transition-colors resize-none focus:ring-2 ${errors.purpose ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                              />
+                              {errors.purpose && (
+                                <p className="text-xs text-red-600 mt-1.5">{t.errPurpose}</p>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <>
                         <div>
                           <h3 className="text-base font-bold text-gray-900 mb-1">
                             {t.purposeHeading}
@@ -923,45 +1015,8 @@ export default function BarangayClearanceModal({
 
                         <div className="pt-1">
                           <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.12em] mb-2.5">
-                            {t.quickAdd} {certType === "first_time_job_seeker" ? "· First Time Job Seeker (RA 11261)" : ""}
+                            {t.quickAdd}
                           </p>
-                          {certType === "first_time_job_seeker" ? (
-                            <div className="space-y-3">
-                              <CertSearchableDropdown
-                                label={lang === "tl" ? "Mga Pangangailangan (RA 11261)" : "Jobseeker Requirements (RA 11261)"}
-                                placeholder={t.select}
-                                items={FIRST_TIME_JOB_SEEKER_PURPOSES}
-                                onSelect={handlePurposeSelect}
-                                colorClass={{
-                                  label: "text-emerald-700",
-                                  text: "text-gray-800",
-                                  icon: "text-emerald-500",
-                                  bg: "bg-emerald-50/60",
-                                  ring: "ring-emerald-200",
-                                }}
-                              />
-                              <div className="flex flex-wrap gap-1.5 pt-1">
-                                {FIRST_TIME_JOB_SEEKER_PURPOSES.map((reqItem, idx) => {
-                                  const isAdded = (formData.purpose || "").includes(reqItem);
-                                  return (
-                                    <button
-                                      key={idx}
-                                      type="button"
-                                      onClick={() => handlePurposeSelect(reqItem)}
-                                      className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-semibold transition-all text-left ${
-                                        isAdded
-                                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
-                                      }`}
-                                    >
-                                      {isAdded ? "✓ " : "+ "}
-                                      {reqItem}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               <CertSearchableDropdown
                                 label={t.catWork}
@@ -1003,8 +1058,9 @@ export default function BarangayClearanceModal({
                                 }}
                               />
                             </div>
-                          )}
                         </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
