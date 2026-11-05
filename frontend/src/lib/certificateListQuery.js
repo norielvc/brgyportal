@@ -8,15 +8,15 @@ export const CERTIFICATE_LIST_SELECT = `
   certificate_type,
   status,
   full_name,
-  applicant_name,
   email,
   purpose,
   address,
-  phone,
+  contact_number,
   created_at,
   updated_at,
   resident_id,
-  released_at,
+  date_released,
+  pickup_method,
   workflow_assignments (
     id,
     step_id,
@@ -63,6 +63,9 @@ export function attachPendingWorkflowAssignment(cert) {
     )[0];
   return {
     ...cert,
+    applicant_name: cert.applicant_name || cert.full_name || null,
+    phone: cert.phone || cert.contact_number || null,
+    released_at: cert.released_at || cert.date_released || null,
     workflow_assignment: pendingAssignment || null,
   };
 }
