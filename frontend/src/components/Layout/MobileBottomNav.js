@@ -61,7 +61,8 @@ export default function MobileBottomNav({ onOpenMenu, onOpenInstall }) {
       window.removeEventListener("help-desk-nav-refresh", onRefresh);
       router.events?.off("routeChangeComplete", onRouteChange);
     };
-  }, [router.events, router.pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.pathname]);
 
   const navItems = [
     {

@@ -343,7 +343,8 @@ export default function Sidebar({
       window.removeEventListener("pickup-management-count", onPickupDirectCount);
       router.events?.off("routeChangeComplete", onRouteChange);
     };
-  }, [router.pathname, router.events]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh badges on route path change only
+  }, [router.pathname]);
 
   const getNavBadgeCount = (item) => {
     if (!item.navBadge) return 0;
