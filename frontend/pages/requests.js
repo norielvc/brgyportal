@@ -7340,6 +7340,8 @@ function CertificatePreviewModal({
   };
 
   useEffect(() => {
+    if (request.certificate_type !== "business_permit") return;
+
     const loadPreviewSupportData = async () => {
       try {
         const token = getAuthToken();
@@ -7385,7 +7387,7 @@ function CertificatePreviewModal({
       }
     };
     loadPreviewSupportData();
-  }, [request?.tenant_id]);
+  }, [request?.tenant_id, request.certificate_type]);
 
   useEffect(() => {
     // Fetch officials from API for real-time sync
