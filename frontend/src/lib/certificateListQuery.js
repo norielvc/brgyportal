@@ -27,9 +27,18 @@ export const CERTIFICATE_LIST_SELECT = `
   ),
   residents:resident_id (
     id,
+    first_name,
+    middle_name,
+    last_name,
+    suffix,
     full_name,
     email,
     contact_number,
+    gender,
+    age,
+    civil_status,
+    date_of_birth,
+    place_of_birth,
     residential_address,
     house_number,
     purok,
@@ -38,6 +47,36 @@ export const CERTIFICATE_LIST_SELECT = `
     province
   )
 `;
+
+/** Pickup queue — no workflow embed; only statuses staff release from. */
+export const CERTIFICATE_PICKUP_SELECT = `
+  id,
+  tenant_id,
+  reference_number,
+  certificate_type,
+  status,
+  full_name,
+  email,
+  contact_number,
+  created_at,
+  updated_at,
+  resident_id,
+  date_released,
+  pickup_method,
+  residents:resident_id (
+    id,
+    full_name,
+    email,
+    contact_number
+  )
+`;
+
+export const PICKUP_QUEUE_STATUSES = [
+  "ready",
+  "ready_for_pickup",
+  "oic_review",
+  "released",
+];
 
 export const CERTIFICATE_FULL_SELECT = `
   *,
@@ -376,13 +415,23 @@ export async function fetchCertificateById(tenantId, id, { view = "full" } = {})
 
 export async function fetchCertificatesForTenant(
   tenantId,
-  { type, status, view = "list" } = {},
+  { type, status, view = "list", pickupQueue = false } = {},
 ) {
   const isFull = view === "full" || view === "1" || view === "true";
+  const isPickup = Boolean(pickupQueue) && !isFull;
+
+  let select = CERTIFICATE_LIST_SELECT;
+  if (isFull) select = CERTIFICATE_FULL_SELECT;
+  else if (isPickup) select = CERTIFICATE_PICKUP_SELECT;
+
   let query = supabase
     .from("certificate_requests")
-    .select(isFull ? CERTIFICATE_FULL_SELECT : CERTIFICATE_LIST_SELECT)
+    .select(select)
     .eq("tenant_id", tenantId);
+
+  if (isPickup) {
+    query = query.in("status", PICKUP_QUEUE_STATUSES);
+  }
 
   if (type && type !== "all") query = query.eq("certificate_type", type);
   if (status && status !== "all") query = query.eq("status", status);

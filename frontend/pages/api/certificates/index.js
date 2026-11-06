@@ -12,15 +12,18 @@ export default async function handler(req, res) {
       .json({ success: false, message: "Tenant context required" });
 
   if (req.method === "GET") {
-    const { type, status, view, full } = req.query;
+    const { type, status, view, full, pickup } = req.query;
     const viewMode =
       full === "1" || full === "true" ? "full" : view || "list";
+    const pickupQueue =
+      pickup === "1" || pickup === "true" || viewMode === "pickup";
 
     try {
       const certificates = await fetchCertificatesForTenant(tenantId, {
         type,
         status,
-        view: viewMode,
+        view: viewMode === "pickup" ? "list" : viewMode,
+        pickupQueue,
       });
       return res.json({ success: true, certificates, view: viewMode });
     } catch (error) {

@@ -120,6 +120,80 @@ function resolveResidentSinceYearFromRequest(request) {
   return d.since_year || d.sinceYear || d.resident_since_year || "";
 }
 
+function formatDateForInput(val) {
+  if (!val) return "";
+  if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+    return val.slice(0, 10);
+  }
+  const d = new Date(val);
+  if (Number.isNaN(d.getTime())) return "";
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60 * 1000);
+  return local.toISOString().slice(0, 10);
+}
+
+/** Request row + linked resident — used for edit form and when list view loads full detail. */
+function buildCertificateEditFormState(request) {
+  const r = request?.residents;
+  const details = parseRequestDetails(request);
+  const names = resolveApplicantNameParts(request);
+  const dobRaw = request?.date_of_birth || r?.date_of_birth || "";
+  let age = request?.age;
+  if (age === "" || age === null || age === undefined) {
+    age = r?.age ?? "";
+  } else if (Number(age) === 0 && r?.age) {
+    age = r.age;
+  }
+
+  return {
+    first_name: names.first_name || "",
+    middle_name: names.middle_name || "",
+    last_name: names.last_name || "",
+    suffix: names.suffix || "",
+    full_name: request?.full_name || request?.applicant_name || "",
+    contact_number: request?.contact_number || r?.contact_number || "",
+    email: request?.email || r?.email || "",
+    age: age === 0 ? "" : age,
+    sex: (request?.sex || r?.gender || r?.sex || "").toUpperCase(),
+    civil_status: (request?.civil_status || r?.civil_status || "").toUpperCase(),
+    date_of_birth: formatDateForInput(dobRaw),
+    place_of_birth: request?.place_of_birth || r?.place_of_birth || "",
+    address: resolveRequestResidentialAddress(request),
+    purpose: request?.purpose || "",
+    date_of_death: request?.date_of_death || details.date_of_death || "",
+    cause_of_death: request?.cause_of_death || details.cause_of_death || "",
+    covid_related: request?.covid_related ?? details.covid_related ?? false,
+    requestor_name: request?.requestor_name || "",
+    guardian_name: request?.guardian_name || details.guardian_name || "",
+    guardian_relationship:
+      request?.guardian_relationship || details.guardian_relationship || "",
+    alias_name:
+      request?.alias_name || details.alias_name || details.aliasName || "",
+    partner_full_name:
+      request?.partner_full_name ||
+      details.partner_name ||
+      details.partnerFullName ||
+      "",
+    partner_sex:
+      request?.partner_sex || details.partner_sex || details.partnerSex || "",
+    partner_date_of_birth:
+      formatDateForInput(
+        request?.partner_date_of_birth || details.partnerDateOfBirth || "",
+      ) || "",
+    partner_residential_address:
+      request?.partner_residential_address ||
+      details.partnerResidentialAddress ||
+      "",
+    partner_address:
+      request?.partner_address || request?.address || details.currentAddress || "",
+    no_of_children: request?.no_of_children || "0",
+    living_together_years: request?.living_together_years || "0",
+    living_together_months: request?.living_together_months || "0",
+    date_of_examination: request?.date_of_examination || "",
+    usaping_barangay: request?.usaping_barangay || "",
+    date_of_hearing: request?.date_of_hearing || "",
+    resident_since_year: resolveResidentSinceYearFromRequest(request),
+  };
+}
 
 const PURPOSE_LIST_1 = [
   "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (CITY OF MALOLOS, BULACAN)",
@@ -2570,53 +2644,35 @@ function RequestDetailsModal({
   const [isEditResidentMode, setIsEditResidentMode] = useState(false);
   const [residentFormData, setResidentFormData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
-  const initialNameParts = resolveApplicantNameParts(request);
-  const [editFormData, setEditFormData] = useState({
-    first_name: initialNameParts.first_name || "",
-    middle_name: initialNameParts.middle_name || "",
-    last_name: initialNameParts.last_name || "",
-    suffix: initialNameParts.suffix || "",
-    full_name: request.full_name || request.applicant_name || "",
-    contact_number: request.contact_number || "",
-    age: request.age || "",
-    sex: request.sex || "",
-    civil_status: request.civil_status || "",
-    date_of_birth: request.date_of_birth || "",
-    place_of_birth: request.place_of_birth || "",
-    address: resolveRequestResidentialAddress(request),
-    purpose: request.purpose || "",
-    date_of_death: request.date_of_death || request.details?.date_of_death || "",
-    cause_of_death: request.cause_of_death || request.details?.cause_of_death || "",
-    covid_related: request.covid_related ?? request.details?.covid_related ?? false,
-    requestor_name: request.requestor_name || "",
-    guardian_name: request.guardian_name || request.details?.guardian_name || "",
-    guardian_relationship: request.guardian_relationship || request.details?.guardian_relationship || "",
-    alias_name: request.alias_name || request.details?.alias_name || request.details?.aliasName || "",
-    partner_full_name: request.partner_full_name || request.details?.partner_name || request.details?.partnerFullName || "",
-    partner_sex: request.partner_sex || request.details?.partner_sex || request.details?.partnerSex || "",
-    partner_date_of_birth: request.partner_date_of_birth || request.details?.partnerDateOfBirth || "",
-    partner_residential_address: request.partner_residential_address || request.details?.partnerResidentialAddress || "",
-    partner_address: request.partner_address || request.address || request.details?.currentAddress || "",
-    no_of_children: request.no_of_children || "0",
-    living_together_years: request.living_together_years || "0",
-    living_together_months: request.living_together_months || "0",
-    date_of_examination: request.date_of_examination || "",
-    usaping_barangay: request.usaping_barangay || "",
-    date_of_hearing: request.date_of_hearing || "",
-    resident_since_year: resolveResidentSinceYearFromRequest(request),
-  });
+  const [editFormData, setEditFormData] = useState(() =>
+    buildCertificateEditFormState(request),
+  );
+
+  const editFormResidentSyncKey = [
+    request.id,
+    request.updated_at,
+    request._listView,
+    request.date_of_birth,
+    request.sex,
+    request.email,
+    request.place_of_birth,
+    request.age,
+    request.residents?.id,
+    request.residents?.date_of_birth,
+    request.residents?.gender,
+    request.residents?.email,
+    request.residents?.place_of_birth,
+    request.residents?.age,
+    request.residents?.civil_status,
+  ].join("|");
+
+  useEffect(() => {
+    if (isEditing) return;
+    setEditFormData(buildCertificateEditFormState(request));
+  }, [editFormResidentSyncKey, isEditing]);
 
   const handleStartEditing = () => {
-    const names = resolveApplicantNameParts(request);
-    setEditFormData((prev) => ({
-      ...prev,
-      first_name: names.first_name,
-      middle_name: names.middle_name,
-      last_name: names.last_name,
-      suffix: names.suffix,
-      address: resolveRequestResidentialAddress(request),
-      resident_since_year: resolveResidentSinceYearFromRequest(request),
-    }));
+    setEditFormData(buildCertificateEditFormState(request));
     setIsEditing(true);
   };
 

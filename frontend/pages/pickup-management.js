@@ -18,7 +18,6 @@ export default function PickupManagementPage() {
   const [certificates, setCertificates] = useState([]);
   const [workflows, setWorkflows] = useState({});
   const [currentUser, setCurrentUser] = useState(null);
-  const [pickupRecords, setPickupRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ready');
@@ -93,60 +92,50 @@ export default function PickupManagementPage() {
   useEffect(() => {
     const user = getUserData();
     setCurrentUser(user);
-    fetchCertificates();
-    fetchPickupRecords();
+    fetchCertificates({ showLoading: true });
+    fetchWorkflows();
   }, []);
 
-  const fetchCertificates = async () => {
-    setLoading(true);
+  const fetchWorkflows = async () => {
     try {
       const token = getAuthToken();
-      const [certRes, wfRes] = await Promise.all([
-        fetch(`${API_URL}/certificates?view=list`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch(`${API_URL}/workflows`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).catch(() => null),
-      ]);
-      if (wfRes && wfRes.ok) {
-        const wfData = await wfRes.json().catch(() => ({}));
-        if (wfData.success && wfData.data) {
-          setWorkflows(wfData.data);
-        }
+      const wfRes = await fetch(`${API_URL}/workflows`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!wfRes.ok) return;
+      const wfData = await wfRes.json().catch(() => ({}));
+      if (wfData.success && wfData.data) {
+        setWorkflows(wfData.data);
       }
+    } catch (error) {
+      console.warn("Workflow config load skipped:", error);
+    }
+  };
+
+  const fetchCertificates = async ({ showLoading = false } = {}) => {
+    if (showLoading) setLoading(true);
+    try {
+      const token = getAuthToken();
+      const certRes = await fetch(
+        `${API_URL}/certificates?view=list&pickup=1`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const data = await certRes.json();
       if (data.success) {
         setCertificates(data.certificates || []);
       }
     } catch (error) {
-      console.error('Error fetching certificates:', error);
+      console.error("Error fetching certificates:", error);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPickupRecords = async () => {
-    try {
-      const token = getAuthToken();
-      // This would be a new endpoint to get all pickup records
-      const response = await fetch(`${API_URL}/pickup/all`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setPickupRecords(data.pickups || []);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching pickup records:', error);
+      if (showLoading) setLoading(false);
     }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchCertificates(), fetchPickupRecords()]);
+    await fetchCertificates({ showLoading: false });
     setRefreshing(false);
   };
 
