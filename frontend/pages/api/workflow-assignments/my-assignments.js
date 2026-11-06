@@ -23,8 +23,14 @@ export default async function handler(req, res) {
       certificate_requests:request_id (
         id, reference_number, certificate_type, status, full_name, purpose, address,
         contact_number, email, created_at, updated_at, resident_id,
+        first_name, middle_name, last_name, suffix, age, sex, civil_status,
+        date_of_birth, place_of_birth,
         residents:resident_id (
-          id, full_name, email, contact_number, residential_address,
+          id,
+          first_name, middle_name, last_name, suffix,
+          full_name, email, contact_number, gender, age, civil_status,
+          date_of_birth, place_of_birth,
+          residential_address,
           house_number, purok, barangay, municipality, province
         )
       )`,
@@ -116,6 +122,7 @@ export default async function handler(req, res) {
 
       return {
         ...cert,
+        _listView: true,
         workflow_assignment: {
           id: assignment.id,
           step_id: assignment.step_id,

@@ -696,9 +696,8 @@ export default function RequestsPage() {
 
   const loadFullRequestIfNeeded = async (request) => {
     if (!request?.id) return request;
-    if (!request._listView) {
-      return request;
-    }
+    if (request._detailLoaded) return request;
+
     try {
       const token = getAuthToken();
       const res = await fetch(`${API_URL}/certificates/${request.id}`, {
@@ -709,7 +708,15 @@ export default function RequestsPage() {
       });
       const data = await res.json();
       if (data.success && (data.certificate || data.data)) {
-        return data.certificate || data.data;
+        const full = data.certificate || data.data;
+        return {
+          ...full,
+          _detailLoaded: true,
+          workflow_assignment:
+            request.workflow_assignment ||
+            full.workflow_assignment ||
+            null,
+        };
       }
     } catch (err) {
       console.error("Failed to load full request detail:", err);
@@ -717,11 +724,24 @@ export default function RequestsPage() {
     return request;
   };
 
+  const [requestDetailLoading, setRequestDetailLoading] = useState(false);
+
   const openRequestDetail = async (request) => {
     if (!request?.id) return;
     setSelectedRequest(request);
+    setRequestDetailLoading(true);
+    try {
+      const full = await loadFullRequestIfNeeded(request);
+      setSelectedRequest(full);
+    } finally {
+      setRequestDetailLoading(false);
+    }
+  };
+
+  const ensureFullRequestDetail = async (request) => {
     const full = await loadFullRequestIfNeeded(request);
     setSelectedRequest(full);
+    return full;
   };
 
   const fetchRequests = async (
@@ -869,7 +889,7 @@ export default function RequestsPage() {
           String(r.reference_number) === String(certId),
       );
       if (target) {
-        setSelectedRequest(target);
+        void openRequestDetail(target);
         return;
       }
     }
@@ -892,7 +912,8 @@ export default function RequestsPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && (data.certificate || data.data)) {
-          setSelectedRequest(data.certificate || data.data);
+          const row = data.certificate || data.data;
+          setSelectedRequest({ ...row, _detailLoaded: true });
         }
       })
       .catch((err) => console.error("Error direct loading cert for deep link:", err));
@@ -2428,6 +2449,8 @@ export default function RequestsPage() {
           directPdf={directPdfFromQuery}
           initialJobSeekerPreviewTab={jobSeekerPdfFromQuery}
           initialBusinessPreviewTab={businessPermitPdfFromQuery}
+          detailLoading={requestDetailLoading}
+          onEnsureFullDetail={ensureFullRequestDetail}
         />
       )}
 
@@ -2561,6 +2584,8 @@ function RequestDetailsModal({
   directPdf = false,
   initialJobSeekerPreviewTab = null,
   initialBusinessPreviewTab = null,
+  detailLoading = false,
+  onEnsureFullDetail,
 }) {
   useScrollLock(true);
   const currentStep = getCurrentWorkflowStep(request);
@@ -2669,6 +2694,7 @@ function RequestDetailsModal({
     request.residents?.place_of_birth,
     request.residents?.age,
     request.residents?.civil_status,
+    request._detailLoaded,
   ].join("|");
 
   useEffect(() => {
@@ -2676,8 +2702,11 @@ function RequestDetailsModal({
     setEditFormData(buildCertificateEditFormState(request));
   }, [editFormResidentSyncKey, isEditing]);
 
-  const handleStartEditing = () => {
-    setEditFormData(buildCertificateEditFormState(request));
+  const handleStartEditing = async () => {
+    const full = onEnsureFullDetail
+      ? await onEnsureFullDetail(request)
+      : request;
+    setEditFormData(buildCertificateEditFormState(full));
     setIsEditing(true);
   };
 
@@ -3395,12 +3424,15 @@ function RequestDetailsModal({
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {!isEditing && canAct && !["oic_review", "ready", "ready_for_pickup"].includes(request.status) && (
               <button
-                onClick={handleStartEditing}
-                className="px-2.5 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
+                onClick={() => void handleStartEditing()}
+                disabled={detailLoading}
+                className="px-2.5 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700 disabled:opacity-50"
                 title="Edit Request"
               >
                 <Edit className="w-3.5 h-3.5 text-blue-400" />
-                <span className="hidden sm:inline">Edit</span>
+                <span className="hidden sm:inline">
+                  {detailLoading ? "Loading…" : "Edit"}
+                </span>
               </button>
             )}
             {isEditing && (
