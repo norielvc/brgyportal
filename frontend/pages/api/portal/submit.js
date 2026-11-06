@@ -304,6 +304,20 @@ export default async function handler(req, res) {
       place_of_birth: formData.placeOfBirth?.toUpperCase() || "",
       resident_id: formData.residentId || null,
       pickup_method: formData.pickupMethod || "pickup",
+      ...((
+        ["barangay_clearance", "certificate_of_indigency", "barangay_residency"].includes(
+          canonicalType,
+        ) && String(formData.guardianName || "").trim()
+      )
+        ? {
+            guardian_name: String(formData.guardianName).trim().toUpperCase(),
+            guardian_relationship: String(
+              formData.guardianRelationship || "",
+            )
+              .trim()
+              .toUpperCase(),
+          }
+        : {}),
       status: "staff_review",
       date_issued: new Date().toISOString(),
       created_at: new Date().toISOString(),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   X,
   FileText,
@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Heart,
   Home,
+  Shield,
+  Link,
 } from "lucide-react";
 import ResidentSearchModal from "../Modals/ResidentSearchModal";
 import { getStrings } from "../../lib/certLang";
@@ -53,6 +55,15 @@ import {
   BARANGAY_CLEARANCE_MAIN_PURPOSES,
   BARANGAY_CLEARANCE_UTILITY_SUB,
 } from "@/lib/barangayClearancePurposes";
+import {
+  GUARDIAN_RELATIONSHIP_TO_APPLICANT_OPTIONS,
+  labelForGuardianRelationshipToApplicant,
+  requiresGuardianForMinor,
+} from "@/lib/minorGuardianFields";
+import {
+  buildGuardianFullName,
+  guardianNamePartsComplete,
+} from "@/lib/guardianNameParts";
 
 const API_URL = "/api";
 
@@ -283,8 +294,20 @@ export default function BarangayClearanceModal({
     case_record_history: "",
     pickupMethod: "pickup",
     residentSinceYear: "",
+    guardianFirstName: "",
+    guardianMiddleName: "",
+    guardianLastName: "",
+    guardianSuffix: "",
+    guardianName: "",
+    guardianRelationship: "",
   });
   const [pickupError, setPickupError] = useState("");
+
+  const needsGuardian = requiresGuardianForMinor(
+    certType,
+    formData.age,
+    formData.dateOfBirth,
+  );
 
   const residentSinceYearOptions = useMemo(
     () => buildResidentSinceYearOptions(formData.residentSinceYear),
@@ -337,16 +360,52 @@ export default function BarangayClearanceModal({
     }
   };
 
+  const resetForm = useCallback(() => {
+    setFormData({
+      fullName: "",
+      age: "",
+      sex: "",
+      civilStatus: "",
+      address: "",
+      purok: "",
+      subdivision: "",
+      barangay: "",
+      contactNumber: "",
+      email: "",
+      dateOfBirth: "",
+      placeOfBirth: "",
+      purpose: "",
+      residentId: null,
+      pending_case: false,
+      case_record_history: "",
+      pickupMethod: "pickup",
+      residentSinceYear: "",
+      guardianFirstName: "",
+      guardianMiddleName: "",
+      guardianLastName: "",
+      guardianSuffix: "",
+      guardianName: "",
+      guardianRelationship: "",
+    });
+    setPickupError("");
+    setCurrentStep(1);
+    setShowConfirmationPopup(false);
+    setShowSuccessModal(false);
+    setSubmittedReferenceNumber("");
+    setReferenceNumber("");
+    setConsentChecked(false);
+    setConsentExpanded(false);
+    setShowPrivacyModal(false);
+    setErrors({});
+    setNotification(null);
+  }, []);
+
   useEffect(() => {
     if (!isOpen) {
+      resetForm();
       setLang(null);
-      setCurrentStep(1);
-      setShowConfirmationPopup(false);
-      setShowSuccessModal(false);
-      setErrors({});
-      setNotification(null);
     }
-  }, [isOpen]);
+  }, [isOpen, resetForm]);
 
   useEffect(() => {
     const now = new Date();
@@ -403,9 +462,36 @@ export default function BarangayClearanceModal({
   }, [notification]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value: rawValue } = e.target;
+    const value =
+      name === "guardianFirstName" ||
+      name === "guardianMiddleName" ||
+      name === "guardianLastName" ||
+      name === "guardianSuffix"
+        ? rawValue.toUpperCase()
+        : rawValue;
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      if (
+        name === "guardianFirstName" ||
+        name === "guardianMiddleName" ||
+        name === "guardianLastName" ||
+        name === "guardianSuffix"
+      ) {
+        next.guardianName = buildGuardianFullName(next);
+      }
+      return next;
+    });
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: false }));
+    if (
+      (name === "guardianFirstName" ||
+        name === "guardianMiddleName" ||
+        name === "guardianLastName" ||
+        name === "guardianSuffix") &&
+      errors.guardianName
+    ) {
+      setErrors((prev) => ({ ...prev, guardianName: false }));
+    }
   };
 
   const handlePurposeSelect = (e) => {
@@ -448,6 +534,21 @@ export default function BarangayClearanceModal({
       if (!formData[f]) newErrors[f] = true;
     });
     if (
+      certType === "barangay_clearance" &&
+      requiresGuardianForMinor(
+        certType,
+        formData.age,
+        formData.dateOfBirth,
+      )
+    ) {
+      if (!guardianNamePartsComplete(formData)) {
+        newErrors.guardianName = true;
+      }
+      if (!String(formData.guardianRelationship || "").trim()) {
+        newErrors.guardianRelationship = true;
+      }
+    }
+    if (
       certType === "first_time_job_seeker" &&
       !isValidResidentSinceYear(formData.residentSinceYear)
     ) {
@@ -459,6 +560,27 @@ export default function BarangayClearanceModal({
 
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
+    if (
+      certType === "barangay_clearance" &&
+      requiresGuardianForMinor(
+        certType,
+        formData.age,
+        formData.dateOfBirth,
+      ) &&
+      (!guardianNamePartsComplete(formData) ||
+        !String(formData.guardianRelationship || "").trim())
+    ) {
+      const nextErrors = {};
+      if (!guardianNamePartsComplete(formData)) {
+        nextErrors.guardianName = true;
+      }
+      if (!String(formData.guardianRelationship || "").trim()) {
+        nextErrors.guardianRelationship = true;
+      }
+      setErrors(nextErrors);
+      setCurrentStep(2);
+      return;
+    }
     if (!validateForm()) return;
     setShowConfirmationPopup(true);
   };
@@ -521,34 +643,6 @@ export default function BarangayClearanceModal({
       return;
     }
     onClose();
-  };
-
-  const resetForm = () => {
-    setFormData({
-      fullName: "",
-      age: "",
-      sex: "",
-      civilStatus: "",
-      address: "",
-      purok: "",
-      subdivision: "",
-      barangay: "",
-      contactNumber: "",
-      email: "",
-      dateOfBirth: "",
-      placeOfBirth: "",
-      purpose: "",
-      residentId: null,
-      pickupMethod: "pickup",
-    });
-    setPickupError("");
-    setCurrentStep(1);
-    setShowConfirmationPopup(false);
-    setShowSuccessModal(false);
-    setSubmittedReferenceNumber("");
-    setConsentChecked(false);
-    setConsentExpanded(false);
-    setShowPrivacyModal(false);
   };
 
   if (!isOpen) return null;
@@ -883,6 +977,115 @@ export default function BarangayClearanceModal({
                             )}
                           </div>
                         )}
+
+                        {certType === "barangay_clearance" && needsGuardian && (
+                          <div className="pt-2 border-t border-gray-200 space-y-4">
+                            <div>
+                              <h4 className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
+                                <Shield className="w-4 h-4 shrink-0" style={{ color: accentColor }} />
+                                {t.guardianHeading}
+                              </h4>
+                              <p className="text-xs text-gray-500">{t.guardianHelp}</p>
+                            </div>
+                            <div className="space-y-3">
+                              <p className="text-sm font-semibold text-gray-800">
+                                {t.guardianNameLabel} <span className="text-red-600">*</span>
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <label htmlFor="bc-guardian-fn" className="block text-xs font-medium text-gray-600 mb-1">
+                                    {t.guardianFirstNameLabel} <span className="text-red-600">*</span>
+                                  </label>
+                                  <input
+                                    id="bc-guardian-fn"
+                                    type="text"
+                                    name="guardianFirstName"
+                                    value={formData.guardianFirstName}
+                                    onChange={handleInputChange}
+                                    autoComplete="given-name"
+                                    placeholder={t.guardianFirstNamePlaceholder}
+                                    className={`w-full px-4 py-3 bg-white border rounded-lg text-[15px] uppercase text-gray-900 outline-none transition-colors focus:ring-2 ${errors.guardianName ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="bc-guardian-mn" className="block text-xs font-medium text-gray-600 mb-1">
+                                    {t.guardianMiddleNameLabel} <span className="text-red-600">*</span>
+                                  </label>
+                                  <input
+                                    id="bc-guardian-mn"
+                                    type="text"
+                                    name="guardianMiddleName"
+                                    value={formData.guardianMiddleName}
+                                    onChange={handleInputChange}
+                                    autoComplete="additional-name"
+                                    placeholder={t.guardianMiddleNamePlaceholder}
+                                    className={`w-full px-4 py-3 bg-white border rounded-lg text-[15px] uppercase text-gray-900 outline-none transition-colors focus:ring-2 ${errors.guardianName ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                                  />
+                                </div>
+                                <div className="sm:col-span-2 sm:grid sm:grid-cols-2 sm:gap-3">
+                                  <div>
+                                    <label htmlFor="bc-guardian-ln" className="block text-xs font-medium text-gray-600 mb-1">
+                                      {t.guardianLastNameLabel} <span className="text-red-600">*</span>
+                                    </label>
+                                    <input
+                                      id="bc-guardian-ln"
+                                      type="text"
+                                      name="guardianLastName"
+                                      value={formData.guardianLastName}
+                                      onChange={handleInputChange}
+                                      autoComplete="family-name"
+                                      placeholder={t.guardianLastNamePlaceholder}
+                                      className={`w-full px-4 py-3 bg-white border rounded-lg text-[15px] uppercase text-gray-900 outline-none transition-colors focus:ring-2 ${errors.guardianName ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label htmlFor="bc-guardian-sx" className="block text-xs font-medium text-gray-600 mb-1">
+                                      {t.guardianSuffixLabel}{" "}
+                                      <span className="font-normal text-gray-400">{t.guardianSuffixOptional}</span>
+                                    </label>
+                                    <input
+                                      id="bc-guardian-sx"
+                                      type="text"
+                                      name="guardianSuffix"
+                                      value={formData.guardianSuffix}
+                                      onChange={handleInputChange}
+                                      placeholder={t.guardianSuffixPlaceholder}
+                                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] uppercase text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                              {errors.guardianName && (
+                                <p className="text-xs text-red-600">{t.errGuardianNameParts}</p>
+                              )}
+                            </div>
+                            <div>
+                              <label htmlFor="bc-guardian-rel" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                                {t.guardianRelationshipLabel} <span className="text-red-600">*</span>
+                              </label>
+                              <div className="relative">
+                                <select
+                                  id="bc-guardian-rel"
+                                  name="guardianRelationship"
+                                  value={formData.guardianRelationship}
+                                  onChange={handleInputChange}
+                                  className={`w-full appearance-none cursor-pointer pl-4 pr-10 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 ${errors.guardianRelationship ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                                >
+                                  <option value="">{t.guardianRelationshipSelect}</option>
+                                  {GUARDIAN_RELATIONSHIP_TO_APPLICANT_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {lang === "en" ? opt.en : opt.tl}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronRight className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none rotate-90" />
+                              </div>
+                              {errors.guardianRelationship && (
+                                <p className="text-xs text-red-600 mt-1.5">{t.errGuardianRelationship}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1078,6 +1281,21 @@ export default function BarangayClearanceModal({
                           ) {
                             stepErrors.residentSinceYear = true;
                           }
+                          if (
+                            certType === "barangay_clearance" &&
+                            requiresGuardianForMinor(
+                              certType,
+                              formData.age,
+                              formData.dateOfBirth,
+                            )
+                          ) {
+                            if (!guardianNamePartsComplete(formData)) {
+                              stepErrors.guardianName = true;
+                            }
+                            if (!String(formData.guardianRelationship || "").trim()) {
+                              stepErrors.guardianRelationship = true;
+                            }
+                          }
                           if (Object.keys(stepErrors).length) {
                             setErrors(stepErrors);
                             return;
@@ -1152,14 +1370,26 @@ export default function BarangayClearanceModal({
                         "address",
                         "dateOfBirth",
                         "placeOfBirth",
+                        "guardianFirstName",
+                        "guardianMiddleName",
+                        "guardianLastName",
+                        "guardianSuffix",
                       ];
                       if (!v || skip.includes(k)) return null;
+                      if (
+                        (k === "guardianName" || k === "guardianRelationship") &&
+                        !needsGuardian
+                      ) {
+                        return null;
+                      }
 
                       const iconMap = {
                         fullName: User,
                         contactNumber: Phone,
                         email: Mail,
                         purpose: FileText,
+                        guardianName: Shield,
+                        guardianRelationship: Link,
                       };
                       const Icon = iconMap[k] || Info;
                       const labelMap = {
@@ -1169,6 +1399,8 @@ export default function BarangayClearanceModal({
                         purpose: t.purposeLabel,
                         pickupMethod: t.pickupMethodLabel,
                         residentSinceYear: t.residentSinceYearLabel,
+                        guardianName: `${t.guardianNameLabel} / Pangalan ng magulang o tagapag-alaga`,
+                        guardianRelationship: `${t.guardianRelationshipLabel} / Ugnayan`,
                       };
                       const label = labelMap[k] || k.replace(/([A-Z])/g, " $1");
 
@@ -1201,6 +1433,10 @@ export default function BarangayClearanceModal({
                             ) : k === "pickupMethod" ? (
                               <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
                                 {v === "online" ? t.pickupOnline : t.pickupPickup}
+                              </span>
+                            ) : k === "guardianRelationship" ? (
+                              <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
+                                {labelForGuardianRelationshipToApplicant(v, lang)}
                               </span>
                             ) : (
                               <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">

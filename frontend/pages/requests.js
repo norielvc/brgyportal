@@ -93,6 +93,11 @@ import { pendingCaseRows } from "@/lib/caseRecordHistory";
 import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
 import { buildResidentSinceYearOptions } from "@/lib/residentSinceYear";
 import {
+  ageYearsFromForm,
+  labelForGuardianRelationshipToApplicant,
+  MINOR_GUARDIAN_CERT_TYPES,
+} from "@/lib/minorGuardianFields";
+import {
   BARANGAY_CLEARANCE_MAIN_PURPOSES,
   BARANGAY_CLEARANCE_UTILITY_SUB,
 } from "@/lib/barangayClearancePurposes";
@@ -6947,9 +6952,9 @@ function splitPurposesList(purpose) {
   const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const items = [];
   for (const line of lines) {
-    if (line.includes(" / ")) {
-      items.push(...line.split(/\s+\/\s+/).map((p) => p.trim()).filter(Boolean));
-    } else if (line.includes(" ; ")) {
+    // Do not split on " / " — official purpose labels use slashes (e.g. WORK / JOB APPLICATION).
+    // Multiple purposes are separated by newlines (or semicolons below).
+    if (line.includes(" ; ")) {
       items.push(...line.split(/\s*;\s*/).map((p) => p.trim()).filter(Boolean));
     } else {
       items.push(line);
@@ -8414,6 +8419,18 @@ function ClearancePreviewForRequests({
       mono: "font-sans",
     })[font] || "";
 
+  // Parse details before formData — API often returns details as a JSON string.
+  let additionalDetails = {};
+  try {
+    if (typeof request.details === "string") {
+      additionalDetails = JSON.parse(request.details);
+    } else if (typeof request.details === "object") {
+      additionalDetails = request.details || {};
+    }
+  } catch (e) {
+    console.error("Error parsing details", e);
+  }
+
   // Map request data to formData format
   const formData = {
     fullName: requestRow.applicant_name || requestRow.full_name || "",
@@ -8424,23 +8441,31 @@ function ClearancePreviewForRequests({
     dateOfBirth: requestRow.date_of_birth || "",
     placeOfBirth: requestRow.place_of_birth || "",
     dateOfDeath:
-      request.date_of_death || request.details?.date_of_death || request.residents?.date_of_death || "",
+      request.date_of_death || additionalDetails.date_of_death || request.residents?.date_of_death || "",
     causeOfDeath:
-      request.cause_of_death || request.details?.cause_of_death || request.residents?.cause_of_death || "",
+      request.cause_of_death || additionalDetails.cause_of_death || request.residents?.cause_of_death || "",
     covidRelated:
-      (request.covid_related ?? request.details?.covid_related ?? request.residents?.covid_related)
+      (request.covid_related ?? additionalDetails.covid_related ?? request.residents?.covid_related)
         ? "Yes"
         : "No",
     requestorName: request.requestor_name || "",
-    guardianName: request.guardian_name || request.details?.guardian_name || "",
-    guardianRelationship: request.guardian_relationship || request.details?.guardian_relationship || "",
-    partnerFullName: request.partner_full_name || request.details?.partnerFullName || request.details?.partner_name || "",
-    partnerAge: request.partner_age || request.details?.partnerAge || "",
-    partnerSex: formatSexFull(request.partner_sex || request.details?.partnerSex || ""),
-    partnerDateOfBirth: request.partner_date_of_birth || request.details?.partnerDateOfBirth || "",
-    noOfChildren: request.no_of_children || request.details?.noOfChildren || "",
-    livingTogetherYears: request.living_together_years || request.details?.livingTogetherYears || "",
-    livingTogetherMonths: request.living_together_months || request.details?.livingTogetherMonths || "",
+    guardianName:
+      request.guardian_name ||
+      additionalDetails.guardian_name ||
+      additionalDetails.guardianName ||
+      "",
+    guardianRelationship:
+      request.guardian_relationship ||
+      additionalDetails.guardian_relationship ||
+      additionalDetails.guardianRelationship ||
+      "",
+    partnerFullName: request.partner_full_name || additionalDetails.partnerFullName || additionalDetails.partner_name || "",
+    partnerAge: request.partner_age || additionalDetails.partnerAge || "",
+    partnerSex: formatSexFull(request.partner_sex || additionalDetails.partnerSex || ""),
+    partnerDateOfBirth: request.partner_date_of_birth || additionalDetails.partnerDateOfBirth || "",
+    noOfChildren: request.no_of_children || additionalDetails.noOfChildren || "",
+    livingTogetherYears: request.living_together_years || additionalDetails.livingTogetherYears || "",
+    livingTogetherMonths: request.living_together_months || additionalDetails.livingTogetherMonths || "",
     dateOfExamination: request.date_of_examination || "",
     usapingBarangay: request.usaping_barangay || "",
     dateOfHearing: request.date_of_hearing || "",
@@ -8512,17 +8537,16 @@ function ClearancePreviewForRequests({
   });
   const isLetterPage = pageSpec.id === "letter";
 
-  // Parse details if string
-  let additionalDetails = {};
-  try {
-    if (typeof request.details === "string") {
-      additionalDetails = JSON.parse(request.details);
-    } else if (typeof request.details === "object") {
-      additionalDetails = request.details || {};
-    }
-  } catch (e) {
-    console.error("Error parsing details", e);
-  }
+  const applicantAgeYears = ageYearsFromForm(
+    formData.age,
+    formData.dateOfBirth,
+  );
+  const certTypeLower = String(request.certificate_type || "").toLowerCase();
+  const showGuardianOnMinorCertPreview =
+    MINOR_GUARDIAN_CERT_TYPES.includes(certTypeLower) &&
+    applicantAgeYears !== null &&
+    applicantAgeYears < 18 &&
+    String(formData.guardianName || "").trim().length > 0;
 
   const pickupMethodRaw = String(
     request.pickup_method ||
@@ -10562,9 +10586,30 @@ function ClearancePreviewForRequests({
                         <div
                           className={`flex items-start justify-between gap-4 ${isSamePerson ? "mb-24" : request.certificate_type === "certificate_of_indigency" ? "mb-14" : "mb-14"}`}
                         >
-                          <p className="font-bold text-[14px] shrink-0 text-gray-900">
+                          <p
+                            className={`font-bold text-[14px] shrink-0 text-gray-900 ${isIndigencyCert && showGuardianOnMinorCertPreview ? "m-0" : ""}`}
+                          >
                             TRULY YOURS,
                           </p>
+                          {showGuardianOnMinorCertPreview && (
+                            <div
+                              className={`text-right max-w-[320px] min-w-[240px] shrink-0 ml-auto ${isIndigencyCert && showGuardianOnMinorCertPreview ? "mt-[2.8em]" : "-mt-7"}`}
+                            >
+                              <div className="border-b border-black w-full pb-0 mb-1" />
+                              <p className="text-[14px] text-gray-900 leading-snug break-words mb-0.5 mt-0 font-normal">
+                                {String(formData.guardianName || "").trim()}
+                              </p>
+                              <p className="text-[14px] text-gray-900 leading-snug mt-0 font-normal whitespace-nowrap">
+                                {formData.guardianRelationship
+                                  ? labelForGuardianRelationshipToApplicant(
+                                      formData.guardianRelationship,
+                                      "en",
+                                    )
+                                  : "____________"}{" "}
+                                / Guardian&apos;s Signature
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         <div className="relative inline-block">

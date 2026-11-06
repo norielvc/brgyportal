@@ -16,6 +16,15 @@ import {
   formatResidentPurokForPortal,
   generateFullAddress,
 } from '@/lib/addressHelper';
+import {
+  GUARDIAN_RELATIONSHIP_TO_APPLICANT_OPTIONS,
+  labelForGuardianRelationshipToApplicant,
+  requiresGuardianForMinor,
+} from '@/lib/minorGuardianFields';
+import {
+  buildGuardianFullName,
+  guardianNamePartsComplete,
+} from '@/lib/guardianNameParts';
 import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
   certModalOverlayClass,
@@ -94,6 +103,12 @@ export default function UnifiedCertModal({
     address: '', purok: '', subdivision: '', dateOfBirth: '', placeOfBirth: '',
     contactNumber: '', email: '', purpose: '',
     pickupMethod: 'pickup',
+    guardianFirstName: '',
+    guardianMiddleName: '',
+    guardianLastName: '',
+    guardianSuffix: '',
+    guardianName: '',
+    guardianRelationship: '',
   });
   const [pickupError, setPickupError] = useState('');
   const panelRef = useRef(null);
@@ -111,7 +126,7 @@ export default function UnifiedCertModal({
       setLang(null);
       setCurrentStep(1); setShowConfirmation(false); setShowSuccess(false);
       setErrors({}); setNotification(null); setConsentChecked(false); setConsentExpanded(false); setShowPrivacyModal(false);
-      setFormData({ fullName: '', residentId: null, age: '', sex: '', civilStatus: '', address: '', purok: '', subdivision: '', dateOfBirth: '', placeOfBirth: '', contactNumber: '', email: '', purpose: '', pickupMethod: 'pickup' });
+      setFormData({ fullName: '', residentId: null, age: '', sex: '', civilStatus: '', address: '', purok: '', subdivision: '', dateOfBirth: '', placeOfBirth: '', contactNumber: '', email: '', purpose: '', pickupMethod: 'pickup', guardianFirstName: '', guardianMiddleName: '', guardianLastName: '', guardianSuffix: '', guardianName: '', guardianRelationship: '' });
       setPickupError('');
     }
   }, [isOpen]);
@@ -160,9 +175,36 @@ export default function UnifiedCertModal({
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value: rawValue } = e.target;
+    const value =
+      name === 'guardianFirstName' ||
+      name === 'guardianMiddleName' ||
+      name === 'guardianLastName' ||
+      name === 'guardianSuffix'
+        ? rawValue.toUpperCase()
+        : rawValue;
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      if (
+        name === 'guardianFirstName' ||
+        name === 'guardianMiddleName' ||
+        name === 'guardianLastName' ||
+        name === 'guardianSuffix'
+      ) {
+        next.guardianName = buildGuardianFullName(next);
+      }
+      return next;
+    });
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: false }));
+    if (
+      (name === 'guardianFirstName' ||
+        name === 'guardianMiddleName' ||
+        name === 'guardianLastName' ||
+        name === 'guardianSuffix') &&
+      errors.guardianName
+    ) {
+      setErrors((prev) => ({ ...prev, guardianName: false }));
+    }
   };
 
   const handlePurposeSelect = (purpose) => {
@@ -218,6 +260,11 @@ export default function UnifiedCertModal({
   if (!isOpen) return null;
 
   const accentColor = tenantConfig.primaryColor || '#059669';
+  const needsGuardian = requiresGuardianForMinor(
+    certType,
+    formData.age,
+    formData.dateOfBirth,
+  );
 
   // Success Modal
   if (showSuccess) {
@@ -304,7 +351,7 @@ export default function UnifiedCertModal({
 
   // Confirmation Modal
   if (showConfirmation) {
-    const skip = ['residentId', 'age', 'sex', 'civilStatus', 'address', 'dateOfBirth', 'placeOfBirth', 'partnerId', 'partnerAge', 'partnerSex', 'partnerDateOfBirth', 'partnerResidentialAddress'];
+    const skip = ['residentId', 'age', 'sex', 'civilStatus', 'address', 'dateOfBirth', 'placeOfBirth', 'partnerId', 'partnerAge', 'partnerSex', 'partnerDateOfBirth', 'partnerResidentialAddress', 'purok', 'subdivision', 'guardianFirstName', 'guardianMiddleName', 'guardianLastName', 'guardianSuffix'];
 
     const iconMap = {
       fullName: User,
@@ -338,8 +385,8 @@ export default function UnifiedCertModal({
       yearsLiving: 'Years Together / Taon ng Pagsasama',
       numberOfChildren: 'No. of Children / Bilang ng Anak',
       aliasName: 'Second Name / Other Name',
-      guardianName: "Guardian's Name",
-      guardianRelationship: 'Relationship / Relasyon',
+      guardianName: `${t.guardianNameLabel} / Pangalan ng magulang o tagapag-alaga`,
+      guardianRelationship: `${t.guardianRelationshipLabel} / Ugnayan`,
       partnerAge: 'Partner Age',
       partnerSex: 'Partner Sex',
       partnerDateOfBirth: 'Partner Date of Birth',
@@ -394,6 +441,10 @@ export default function UnifiedCertModal({
                       ) : k === 'pickupMethod' ? (
                         <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
                           {v === 'online' ? t.pickupOnline : t.pickupPickup}
+                        </span>
+                      ) : k === 'guardianRelationship' ? (
+                        <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
+                          {labelForGuardianRelationshipToApplicant(v, lang)}
                         </span>
                       ) : (
                         <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">{v.toString()}</span>
@@ -663,6 +714,115 @@ export default function UnifiedCertModal({
                       </p>
                     )}
                   </div>
+
+                  {needsGuardian && (
+                    <div className="pt-2 border-t border-gray-200 space-y-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
+                          <Shield className="w-4 h-4 shrink-0" style={{ color: accentColor }} />
+                          {t.guardianHeading}
+                        </h4>
+                        <p className="text-xs text-gray-500">{t.guardianHelp}</p>
+                      </div>
+                      <div className="space-y-3">
+                        <p className="text-sm font-semibold text-gray-800">
+                          {t.guardianNameLabel} <span className="text-red-600">*</span>
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label htmlFor="uc-guardian-fn" className="block text-xs font-medium text-gray-600 mb-1">
+                              {t.guardianFirstNameLabel} <span className="text-red-600">*</span>
+                            </label>
+                            <input
+                              id="uc-guardian-fn"
+                              type="text"
+                              name="guardianFirstName"
+                              value={formData.guardianFirstName}
+                              onChange={handleInputChange}
+                              autoComplete="given-name"
+                              placeholder={t.guardianFirstNamePlaceholder}
+                              className={`w-full px-4 py-3 bg-white border rounded-lg text-[15px] uppercase text-gray-900 outline-none transition-colors focus:ring-2 ${errors.guardianName ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="uc-guardian-mn" className="block text-xs font-medium text-gray-600 mb-1">
+                              {t.guardianMiddleNameLabel} <span className="text-red-600">*</span>
+                            </label>
+                            <input
+                              id="uc-guardian-mn"
+                              type="text"
+                              name="guardianMiddleName"
+                              value={formData.guardianMiddleName}
+                              onChange={handleInputChange}
+                              autoComplete="additional-name"
+                              placeholder={t.guardianMiddleNamePlaceholder}
+                              className={`w-full px-4 py-3 bg-white border rounded-lg text-[15px] uppercase text-gray-900 outline-none transition-colors focus:ring-2 ${errors.guardianName ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                            />
+                          </div>
+                          <div className="sm:col-span-2 sm:grid sm:grid-cols-2 sm:gap-3">
+                            <div>
+                              <label htmlFor="uc-guardian-ln" className="block text-xs font-medium text-gray-600 mb-1">
+                                {t.guardianLastNameLabel} <span className="text-red-600">*</span>
+                              </label>
+                              <input
+                                id="uc-guardian-ln"
+                                type="text"
+                                name="guardianLastName"
+                                value={formData.guardianLastName}
+                                onChange={handleInputChange}
+                                autoComplete="family-name"
+                                placeholder={t.guardianLastNamePlaceholder}
+                                className={`w-full px-4 py-3 bg-white border rounded-lg text-[15px] uppercase text-gray-900 outline-none transition-colors focus:ring-2 ${errors.guardianName ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="uc-guardian-sx" className="block text-xs font-medium text-gray-600 mb-1">
+                                {t.guardianSuffixLabel}{' '}
+                                <span className="font-normal text-gray-400">{t.guardianSuffixOptional}</span>
+                              </label>
+                              <input
+                                id="uc-guardian-sx"
+                                type="text"
+                                name="guardianSuffix"
+                                value={formData.guardianSuffix}
+                                onChange={handleInputChange}
+                                placeholder={t.guardianSuffixPlaceholder}
+                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] uppercase text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        {errors.guardianName && (
+                          <p className="text-xs text-red-600 mt-1.5">{t.errGuardianNameParts}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label htmlFor="uc-guardian-rel" className="block text-sm font-semibold text-gray-800 mb-1.5">
+                          {t.guardianRelationshipLabel} <span className="text-red-600">*</span>
+                        </label>
+                        <div className="relative">
+                          <select
+                            id="uc-guardian-rel"
+                            name="guardianRelationship"
+                            value={formData.guardianRelationship}
+                            onChange={handleInputChange}
+                            className={`w-full appearance-none cursor-pointer pl-4 pr-10 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 ${errors.guardianRelationship ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                          >
+                            <option value="">{t.guardianRelationshipSelect}</option>
+                            {GUARDIAN_RELATIONSHIP_TO_APPLICANT_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {lang === 'en' ? opt.en : opt.tl}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronRight className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none rotate-90" />
+                        </div>
+                        {errors.guardianRelationship && (
+                          <p className="text-xs text-red-600 mt-1.5">{t.errGuardianRelationship}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -744,6 +904,19 @@ export default function UnifiedCertModal({
                       } else {
                         setPickupError('');
                       }
+                      const g = requiresGuardianForMinor(
+                        certType,
+                        formData.age,
+                        formData.dateOfBirth,
+                      );
+                      if (g) {
+                        if (!guardianNamePartsComplete(formData)) {
+                          stepErrors.guardianName = true;
+                        }
+                        if (!String(formData.guardianRelationship || "").trim()) {
+                          stepErrors.guardianRelationship = true;
+                        }
+                      }
                       if (Object.keys(stepErrors).length) {
                         setErrors(stepErrors);
                         return;
@@ -758,6 +931,22 @@ export default function UnifiedCertModal({
               return (
                 <button type="button" onClick={() => {
                   if (requirePurpose && !formData.purpose.trim()) { setErrors({ purpose: true }); return; }
+                  if (
+                    requiresGuardianForMinor(
+                      certType,
+                      formData.age,
+                      formData.dateOfBirth,
+                    ) &&
+                    (!guardianNamePartsComplete(formData) ||
+                      !String(formData.guardianRelationship || "").trim())
+                  ) {
+                    const e = {};
+                    if (!guardianNamePartsComplete(formData)) e.guardianName = true;
+                    if (!String(formData.guardianRelationship || "").trim()) e.guardianRelationship = true;
+                    setErrors(e);
+                    setCurrentStep(2);
+                    return;
+                  }
                   setShowConfirmation(true);
                 }} className={certModalFooterPrimaryClass} style={{ backgroundColor: accentColor }}>
                   <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> <span className="truncate">{t.reviewSubmit}</span>

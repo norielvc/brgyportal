@@ -40,6 +40,114 @@ function escapeRegExp(text) {
     return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function escapeHtmlForCert(val) {
+    return String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+const MINOR_GUARDIAN_CERTIFICATE_TYPES = [
+    'barangay_clearance',
+    'certificate_of_indigency',
+    'barangay_residency',
+];
+
+function parseRequestDetailsObject(request) {
+    if (!request || !request.details) return {};
+    try {
+        return typeof request.details === 'string' ? JSON.parse(request.details) : request.details;
+    } catch (e) {
+        return {};
+    }
+}
+
+/** English labels for portal guardian_relationship codes (matches frontend minorGuardianFields). */
+function englishGuardianRelationshipForCertificate(raw) {
+    const v = String(raw || '').trim().toUpperCase();
+    if (!v) return '____________';
+    const map = {
+        MOTHER: 'PARENT',
+        FATHER: 'PARENT',
+        PARENT: 'PARENT',
+        GRANDPARENT: 'GRANDPARENT',
+        SIBLING: 'SIBLING',
+        'AUNT/UNCLE': 'AUNT/UNCLE',
+        'LEGAL GUARDIAN': 'LEGAL GUARDIAN',
+        'OTHER RELATIVE': 'OTHER RELATIVE',
+    };
+    if (map[v]) return map[v];
+    return v;
+}
+
+/** Same tone as "Resident&apos;s Signature / Thumb Mark" on the PDF (14px, normal weight). */
+function englishGuardianRelationshipLabelSentenceCase(raw) {
+    const v = String(raw || '').trim().toUpperCase();
+    if (!v) return '____________';
+    const map = {
+        MOTHER: 'Parent',
+        FATHER: 'Parent',
+        PARENT: 'Parent',
+        GRANDPARENT: 'Grandparent',
+        SIBLING: 'Sibling',
+        'AUNT/UNCLE': 'Aunt / Uncle',
+        'LEGAL GUARDIAN': 'Legal guardian',
+        'OTHER RELATIVE': 'Other relative',
+    };
+    if (map[v]) return map[v];
+    return String(raw || '').trim();
+}
+
+function applicantAgeYearsForCert(request, details) {
+    const ageRaw = request.age ?? details.age;
+    const parsed = parseInt(String(ageRaw || '').trim(), 10);
+    if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
+    const dob = request.date_of_birth || details.dateOfBirth || details.date_of_birth;
+    if (!dob) return null;
+    const d = new Date(dob);
+    if (Number.isNaN(d.getTime())) return null;
+    const today = new Date();
+    let years = today.getFullYear() - d.getFullYear();
+    const m = today.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < d.getDate())) years--;
+    return Math.max(0, years);
+}
+
+function guardianTrulyYoursRightColumnHtml(request) {
+    if (!request) return '';
+    const certType = String(request.certificate_type || '').toLowerCase();
+    if (!MINOR_GUARDIAN_CERTIFICATE_TYPES.includes(certType)) return '';
+    const details = parseRequestDetailsObject(request);
+    const years = applicantAgeYearsForCert(request, details);
+    if (years === null || years >= 18) return '';
+    const guardianName = (
+        request.guardian_name ||
+        details.guardian_name ||
+        details.guardianName ||
+        ''
+    ).trim();
+    if (!guardianName) return '';
+    const guardianRel = (
+        request.guardian_relationship ||
+        details.guardian_relationship ||
+        details.guardianRelationship ||
+        ''
+    ).trim();
+    const nameEsc = escapeHtmlForCert(guardianName.trim());
+    const relEsc = escapeHtmlForCert(englishGuardianRelationshipLabelSentenceCase(guardianRel));
+    /** Certificate of indigency: align with "TRULY YOURS," row, then drop ~2 text lines for name + label. */
+    const guardianColMarginTop =
+        certType === 'certificate_of_indigency' ? '2.8em' : '-28px';
+    return `
+        <div style="flex: 0 0 auto; max-width: 320px; min-width: 240px; text-align: right; margin-left: auto; margin-top: ${guardianColMarginTop};">
+            <div style="border-bottom: 1px solid #000; width: 100%; margin: 0 0 4px 0;"></div>
+            <div style="font-weight: normal; font-size: 14px; line-height: 1.4; word-break: break-word; margin: 0 0 2px 0; font-family: inherit;">${nameEsc}</div>
+            <p style="font-size: 14px; margin: 0; line-height: 1.4; font-weight: normal; font-family: inherit; white-space: nowrap;">${relEsc} / Guardian&apos;s Signature</p>
+        </div>
+    `;
+}
+
 /** Commas after barangay and municipality only (certificate standard). */
 function formatCertificateResidentialAddress(address, geo = {}) {
     const raw = String(address || '')
@@ -127,9 +235,8 @@ function splitPurposesList(purpose) {
     let lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     let items = [];
     for (const line of lines) {
-        if (line.includes(' / ')) {
-            items.push(...line.split(/\s+\/\s+/).map(p => p.trim()).filter(Boolean));
-        } else if (line.includes(' ; ')) {
+        // Do not split on " / " — purpose labels use slashes (e.g. WORK / JOB APPLICATION).
+        if (line.includes(' ; ')) {
             items.push(...line.split(/\s*;\s*/).map(p => p.trim()).filter(Boolean));
         } else {
             items.push(line);
@@ -145,9 +252,7 @@ function formatPurposesHtml(purpose) {
     let lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     let items = [];
     for (const line of lines) {
-        if (line.includes(' / ')) {
-            items.push(...line.split(/\s+\/\s+/).map(p => p.trim()).filter(Boolean));
-        } else if (line.includes(' ; ')) {
+        if (line.includes(' ; ')) {
             items.push(...line.split(/\s*;\s*/).map(p => p.trim()).filter(Boolean));
         } else {
             items.push(line);
@@ -674,7 +779,7 @@ class CertificateGenerationService {
                                     </div>
                                 </div>
 
-                                ${this.renderTrulyYours(captainApproval, officials)}
+                                ${this.renderTrulyYours(captainApproval, officials, request)}
                             </div>
                         </div>
                     `;
@@ -834,7 +939,7 @@ class CertificateGenerationService {
                         </div>
                     </div>
 
-                    ${this.renderTrulyYours(captainApproval, officials)}
+                    ${this.renderTrulyYours(captainApproval, officials, request)}
                 </div>
             </div>
         `;
@@ -876,7 +981,7 @@ class CertificateGenerationService {
 
                 <div class="signature-section" style="margin-top: 20px;">
                     <div class="sig-block" style="text-align: left; position: relative; min-width: 320px;">
-                        ${this.renderTrulyYours(captainApproval, officials)}
+                        ${this.renderTrulyYours(captainApproval, officials, request)}
                     </div>
                 </div>
             </div>
@@ -930,7 +1035,7 @@ class CertificateGenerationService {
                     </div>
 
                     <div class="sig-block" style="text-align: left; position: relative; min-width: 320px;">
-                        ${this.renderTrulyYours(captainApproval, officials)}
+                        ${this.renderTrulyYours(captainApproval, officials, request)}
                     </div>
                 </div>
             </div>
@@ -1001,7 +1106,7 @@ class CertificateGenerationService {
                         </div>
                     </div>
 
-                    ${this.renderTrulyYours(captainApproval, officials)}
+                    ${this.renderTrulyYours(captainApproval, officials, request)}
                 </div>
             </div>
         `;
@@ -1920,7 +2025,7 @@ class CertificateGenerationService {
                         </div>
                         
                         <div class="signature-block">
-                             ${this.renderTrulyYours(captainApproval, officials)}
+                             ${this.renderTrulyYours(captainApproval, officials, request)}
                         </div>
                     </div>
                 </div>
@@ -1957,7 +2062,7 @@ class CertificateGenerationService {
                 </div>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName}, ${config.headerInfo.municipality}, ${config.headerInfo.province} upon the request of above mentioned persons for any legal purposes it may serve.</p>
                 <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
-                    ${this.renderTrulyYours(captainApproval, officials)}
+                    ${this.renderTrulyYours(captainApproval, officials, request)}
                 </div>
             </div>
         `;
@@ -1984,7 +2089,7 @@ class CertificateGenerationService {
                 </div>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName} for legal purposes.</p>
                 <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
-                    ${this.renderTrulyYours(captainApproval, officials)}
+                    ${this.renderTrulyYours(captainApproval, officials, request)}
                 </div>
             </div>
         `;
@@ -2004,7 +2109,7 @@ class CertificateGenerationService {
                 <p style="margin: 20px 0;">This also certifies that the death was <strong>${details.covidRelated ? 'COVID-19' : 'NON-COVID'}</strong> related.</p>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> for burial/legal purposes.</p>
                 <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
-                    ${this.renderTrulyYours(captainApproval, officials)}
+                    ${this.renderTrulyYours(captainApproval, officials, request)}
                 </div>
             </div>
         `;
@@ -2031,7 +2136,7 @@ class CertificateGenerationService {
                 </div>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> for medical record purposes.</p>
                 <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
-                    ${this.renderTrulyYours(captainApproval, officials)}
+                    ${this.renderTrulyYours(captainApproval, officials, request)}
                 </div>
             </div>
         `;
@@ -2462,12 +2567,22 @@ class CertificateGenerationService {
         `;
     }
 
-    renderTrulyYours(captainApproval, officials) {
-        const chairmanName = captainApproval.officialName || officials.chairman;
-        const secretaryName = captainApproval.secretary_name || officials.secretary;
+    renderTrulyYours(captainApproval, officials, request = null) {
+        const chairmanName = String(captainApproval?.officialName || officials?.chairman || '');
+        const secretaryName = String(captainApproval?.secretary_name || officials?.secretary || '');
+        const guardianRight = request ? guardianTrulyYoursRightColumnHtml(request) : '';
+        const certTypeLower = String(request?.certificate_type || '').toLowerCase();
+        const indigencyGuardianRow =
+            certTypeLower === 'certificate_of_indigency' && guardianRight;
+        const trulyYoursMargin = indigencyGuardianRow
+            ? '0 0 20px 0'
+            : '26px 0 20px 0';
         return `
-            <div class="sig-block" style="margin-top: 20px; text-align: left;">
-                <p style="font-weight: bold; margin: 26px 0 20px 0;">TRULY YOURS,</p>
+            <div class="sig-block" style="margin-top: 20px; text-align: left; width: 100%;">
+                <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 16px; width: 100%;">
+                    <p style="font-weight: bold; margin: ${trulyYoursMargin}; flex-shrink: 0;">TRULY YOURS,</p>
+                    ${guardianRight}
+                </div>
                 <div style="display: flex; align-items: center; gap: 5px; position: relative; z-index: 10;">
                     <div style="position: relative; display: inline-block;">
                         <div style="position: absolute; left: 50%; transform: translateX(-50%) translateY(-65%); top: 0; width: 240px; height: 120px; pointer-events: none; z-index: 20; display: flex; align-items: center; justify-content: center;">
@@ -2475,8 +2590,8 @@ class CertificateGenerationService {
                         </div>
                         <div style="position: absolute; left: 95%; top: 0; transform: translateY(-130%); font-size: 4px; color: #888; white-space: nowrap; line-height: 1.2; opacity: 0.8; z-index: 30; border-left: 0.5px solid #ccc; padding-left: 2px;">
                             <div style="font-weight: bold; color: #666; font-size: 4.5px;">${chairmanName.toUpperCase()}</div>
-                            <div>${new Date(captainApproval?.created_at).toLocaleDateString("en-US")}</div>
-                            <div>${new Date(captainApproval?.created_at).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+                            <div>${captainApproval?.created_at ? new Date(captainApproval.created_at).toLocaleDateString("en-US") : ''}</div>
+                            <div>${captainApproval?.created_at ? new Date(captainApproval.created_at).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}</div>
                         </div>
                         <p style="font-weight: bold; margin: 0; text-transform: uppercase; font-size: 1.1em; white-space: nowrap;">${chairmanName}</p>
                     </div>
@@ -2487,14 +2602,14 @@ class CertificateGenerationService {
                         </div>
                         <div style="font-size: 4px; color: #888; white-space: nowrap; line-height: 1.2; opacity: 0.8; align-self: flex-end; margin-bottom: 8px; border-left: 0.5px solid #ccc; padding-left: 2px;">
                             <div style="font-weight: bold; color: #666; font-size: 4.5px;">${secretaryName.toUpperCase()}</div>
-                            <div>${new Date(captainApproval?.secretary_created_at).toLocaleDateString("en-US")}</div>
-                            <div>${new Date(captainApproval?.secretary_created_at).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+                            <div>${captainApproval?.secretary_created_at ? new Date(captainApproval.secretary_created_at).toLocaleDateString("en-US") : ''}</div>
+                            <div>${captainApproval?.secretary_created_at ? new Date(captainApproval.secretary_created_at).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}</div>
                         </div>
                     </div>
                     ` : ''}
                 </div>
                 <div style="position: relative; margin-top: -3px;">
-                    <p style="font-size: 10px; font-weight: bold; margin: 0; line-height: 1;">${captainApproval.officialRole || 'BARANGAY CHAIRMAN'}</p>
+                    <p style="font-size: 10px; font-weight: bold; margin: 0; line-height: 1;">${captainApproval?.officialRole || 'BARANGAY CHAIRMAN'}</p>
                     ${this.renderAdditionalSignatures(captainApproval?.forwarderSignatures)}
                 </div>
                 ${captainApproval?.users?.employee_code ? `<p style="font-size: 11px; font-weight: bold; margin: 0; color: #000;">${captainApproval.users.employee_code}</p>` : ''}

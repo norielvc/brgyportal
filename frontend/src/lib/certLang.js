@@ -62,6 +62,27 @@ const STRINGS = {
     residentSinceYearPlaceholder: "e.g. 2009",
     residentSinceYearSelect: "Select year",
     errResidentSinceYear: "Please select the year you started residing in this barangay.",
+    guardianHeading: "Parent or guardian (required if under 18)",
+    guardianHelp:
+      "If the person named on the certificate is below 18 years old, enter the name of a parent or legal guardian and how they are related.",
+    guardianNameLabel: "Guardian / parent name",
+    guardianNamePlaceholder: "Full name",
+    guardianFirstNameLabel: "First name",
+    guardianMiddleNameLabel: "Middle name",
+    guardianLastNameLabel: "Last name",
+    guardianSuffixLabel: "Suffix",
+    guardianSuffixOptional: "(optional)",
+    guardianFirstNamePlaceholder: "First name",
+    guardianMiddleNamePlaceholder: "Middle name",
+    guardianLastNamePlaceholder: "Last name",
+    guardianSuffixPlaceholder: "e.g. Jr., III",
+    guardianRelationshipLabel: "Relationship to the applicant",
+    guardianRelationshipPlaceholder: "e.g. Mother, Father, Legal guardian",
+    guardianRelationshipSelect: "Select relationship...",
+    errGuardianName: "Please enter the parent or guardian's full name.",
+    errGuardianNameParts:
+      "Please enter the guardian's first name, middle name, and last name.",
+    errGuardianRelationship: "Please select the relationship from the list.",
 
     // Step 3 — purpose
     purposeHeading: "What will this document be used for?",
@@ -256,6 +277,27 @@ const STRINGS = {
     residentSinceYearSelect: "Pumili ng taon",
     errResidentSinceYear:
       "Mangyaring piliin ang taon na nagsimula kang tumira sa barangay na ito.",
+    guardianHeading: "Magulang o tagapag-alaga (kailangan kung wala pang 18 taon)",
+    guardianHelp:
+      "Kung ang humihingi ng sertipiko ay wala pang 18 taong gulang, ilagay ang pangalan ng magulang o legal na tagapag-alaga at ang kanilang ugnayan sa aplikante.",
+    guardianNameLabel: "Pangalan ng magulang / tagapag-alaga",
+    guardianNamePlaceholder: "Buong pangalan",
+    guardianFirstNameLabel: "Pangalan (Unang pangalan)",
+    guardianMiddleNameLabel: "Gitnang pangalan",
+    guardianLastNameLabel: "Apelyido",
+    guardianSuffixLabel: "Suffix",
+    guardianSuffixOptional: "(opsyonal)",
+    guardianFirstNamePlaceholder: "Unang pangalan",
+    guardianMiddleNamePlaceholder: "Gitnang pangalan",
+    guardianLastNamePlaceholder: "Apelyido",
+    guardianSuffixPlaceholder: "hal. Jr., III",
+    guardianRelationshipLabel: "Ugnayan sa aplikante",
+    guardianRelationshipPlaceholder: "hal. Ina, Ama, Legal na tagapag-alaga",
+    guardianRelationshipSelect: "Pumili ng ugnayan...",
+    errGuardianName: "Mangyaring ilagay ang buong pangalan ng magulang o tagapag-alaga.",
+    errGuardianNameParts:
+      "Mangyaring ilagay ang unang pangalan, gitnang pangalan, at apelyido ng tagapangalaga.",
+    errGuardianRelationship: "Mangyaring pumili ng ugnayan mula sa listahan.",
 
     // Step 3 — purpose
     purposeHeading: "Para saan gagamitin ang dokumentong ito?",
