@@ -11,6 +11,39 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 const outPath = path.join(root, "src", "data", "ph-birthplaces.json");
 
+const NCR_PSGC = "1300000000";
+const NCR_PROVINCE_LABEL = "METRO MANILA (NCR)";
+
+/** Region-level cities (HUCs / special areas) not listed under a province in geoph-lite. */
+const REGION_LOCALITY_PROVINCE = {
+  "City of Baguio": "Benguet",
+  "City of Angeles": "Pampanga",
+  "City of Olongapo": "Zambales",
+  "City of Lucena": "Quezon",
+  "City of Puerto Princesa": "Palawan",
+  "City of Iloilo": "Iloilo",
+  "City of Bacolod": "Negros Occidental",
+  "City of Cebu": "Cebu",
+  "City of Lapu-Lapu": "Cebu",
+  "City of Mandaue": "Cebu",
+  "City of Tacloban": "Leyte",
+  "City of Isabela": "Basilan",
+  "City of Zamboanga": "Zamboanga del Sur",
+  "City of Cagayan De Oro": "Misamis Oriental",
+  "City of Iligan": "Lanao del Norte",
+  "City of Davao": "Davao del Sur",
+  "City of General Santos": "South Cotabato",
+  "City of Butuan": "Agusan del Norte",
+  Kapalawan: "Maguindanao del Sur",
+  "Old Kaabakan": "Maguindanao del Sur",
+  Kadayangan: "Maguindanao del Sur",
+  Nabalawag: "Maguindanao del Sur",
+  Pahamuddin: "Maguindanao del Sur",
+  Malidegao: "Maguindanao del Sur",
+  Ligawasan: "Maguindanao del Sur",
+  Tugunan: "Maguindanao del Sur",
+};
+
 function cleanLocalityName(name) {
   return String(name)
     .replace(/^City of /i, "")
@@ -43,9 +76,21 @@ for (const regionMeta of regions) {
     }
   }
 
-  const ncrLabel = "METRO MANILA (NCR)";
   for (const locality of region.localities || []) {
-    labels.add(formatLabel(locality.name, ncrLabel));
+    if (String(region.psgc_code) === NCR_PSGC) {
+      labels.add(formatLabel(locality.name, NCR_PROVINCE_LABEL));
+      continue;
+    }
+    const provinceName =
+      REGION_LOCALITY_PROVINCE[locality.name] ||
+      REGION_LOCALITY_PROVINCE[cleanLocalityName(locality.name)];
+    if (provinceName) {
+      labels.add(formatLabel(locality.name, provinceName));
+    } else {
+      console.warn(
+        `[build-ph-birthplaces] Unmapped region locality: ${locality.name} (${region.name})`,
+      );
+    }
   }
 }
 

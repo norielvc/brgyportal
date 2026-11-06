@@ -10,10 +10,59 @@ export function normalizeBirthPlaceKey(value) {
     .toUpperCase();
 }
 
+const NCR_PROVINCE_KEY = normalizeBirthPlaceKey("METRO MANILA (NCR)");
+
+/** Province suffix aliases for matching saved / typed values (e.g. "Quezon City, NCR"). */
+function normalizeProvinceSuffix(provincePart) {
+  const p = normalizeBirthPlaceKey(provincePart);
+  if (
+    p === "NCR" ||
+    p === "METRO MANILA" ||
+    p === "METRO MANILA NCR" ||
+    p === "NATIONAL CAPITAL REGION" ||
+    p === "NATIONAL CAPITAL REGION NCR" ||
+    p === NCR_PROVINCE_KEY
+  ) {
+    return NCR_PROVINCE_KEY;
+  }
+  return p;
+}
+
+function birthPlaceKeysEquivalent(a, b) {
+  const keyA = normalizeBirthPlaceKey(a);
+  const keyB = normalizeBirthPlaceKey(b);
+  if (keyA === keyB) return true;
+
+  const split = (key) => {
+    const idx = key.lastIndexOf(", ");
+    if (idx < 0) return { city: key, province: "" };
+    return {
+      city: key.slice(0, idx),
+      province: normalizeProvinceSuffix(key.slice(idx + 2)),
+    };
+  };
+
+  const pa = split(keyA);
+  const pb = split(keyB);
+  return pa.city === pb.city && pa.province && pa.province === pb.province;
+}
+
 export function findBirthPlaceInCatalog(value) {
   const key = normalizeBirthPlaceKey(value);
   if (!key) return null;
-  return phBirthplaces.find((entry) => normalizeBirthPlaceKey(entry) === key) || null;
+  return (
+    phBirthplaces.find((entry) => birthPlaceKeysEquivalent(entry, key)) || null
+  );
+}
+
+const PROVINCE_DISPLAY = {
+  [NCR_PROVINCE_KEY]: "NCR / Metro Manila",
+};
+
+function sortProvinces(a, b) {
+  if (a === NCR_PROVINCE_KEY) return -1;
+  if (b === NCR_PROVINCE_KEY) return 1;
+  return a.localeCompare(b);
 }
 
 function parseCatalogEntry(full) {
@@ -89,7 +138,7 @@ export default function BirthPlaceSelect({
   }, []);
 
   const provinces = useMemo(
-    () => [...provinceMap.keys()].sort((a, b) => a.localeCompare(b)),
+    () => [...provinceMap.keys()].sort(sortProvinces),
     [provinceMap],
   );
 
@@ -195,7 +244,7 @@ export default function BirthPlaceSelect({
               <option value="">— Select province —</option>
               {provinces.map((p) => (
                 <option key={p} value={p}>
-                  {titleCaseWords(p)}
+                  {PROVINCE_DISPLAY[p] || titleCaseWords(p)}
                 </option>
               ))}
             </select>
