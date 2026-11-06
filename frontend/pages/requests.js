@@ -191,7 +191,12 @@ function buildCertificateEditFormState(request) {
     date_of_examination: request?.date_of_examination || "",
     usaping_barangay: request?.usaping_barangay || "",
     date_of_hearing: request?.date_of_hearing || "",
-    resident_since_year: resolveResidentSinceYearFromRequest(request),
+    ...(String(request?.certificate_type || "").toLowerCase() ===
+    "first_time_job_seeker"
+      ? {
+          resident_since_year: resolveResidentSinceYearFromRequest(request),
+        }
+      : {}),
   };
 }
 
@@ -3297,28 +3302,26 @@ function RequestDetailsModal({
     ];
 
     const sanitized = { ...editFormData, full_name: combinedName };
+    const sinceYearFromForm = String(sanitized.resident_since_year || "").trim();
+    const { resident_since_year: _dropSinceYear, ...sanitizedWithoutSinceYear } =
+      sanitized;
 
-    let payload = sanitized;
+    let payload = { ...sanitizedWithoutSinceYear };
     if (request.certificate_type === "first_time_job_seeker") {
       const prevDetails = parseRequestDetails(request);
-      const sinceYear = String(sanitized.resident_since_year || "").trim();
-      const { resident_since_year, ...rest } = sanitized;
-      payload = {
-        ...rest,
-        details: {
-          ...prevDetails,
-          ...(sinceYear
-            ? {
-                since_year: sinceYear,
-                sinceYear,
-                resident_since_year: sinceYear,
-              }
-            : {
-                since_year: null,
-                sinceYear: null,
-                resident_since_year: null,
-              }),
-        },
+      payload.details = {
+        ...prevDetails,
+        ...(sinceYearFromForm
+          ? {
+              since_year: sinceYearFromForm,
+              sinceYear: sinceYearFromForm,
+              resident_since_year: sinceYearFromForm,
+            }
+          : {
+              since_year: null,
+              sinceYear: null,
+              resident_since_year: null,
+            }),
       };
     }
 
