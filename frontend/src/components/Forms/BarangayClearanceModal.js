@@ -49,6 +49,10 @@ import {
   buildResidentSinceYearOptions,
   isValidResidentSinceYear,
 } from "@/lib/residentSinceYear";
+import {
+  BARANGAY_CLEARANCE_MAIN_PURPOSES,
+  BARANGAY_CLEARANCE_UTILITY_SUB,
+} from "@/lib/barangayClearancePurposes";
 
 const API_URL = "/api";
 
@@ -159,95 +163,6 @@ const FIRST_TIME_JOB_SEEKER_PURPOSES = [
   "PHILHEALTH REQUIREMENT",
   "*TAXPAYER IDENTIFICATION NUMBERS (TIN) REQUIREMENT",
 ];
-
-const PURPOSE_LIST_1 = [
-  "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (CITY OF MALOLOS, BULACAN)",
-  "TESDA / SCHOOLING REQUIREMENT",
-  "NATIONAL BUREAU OF INVESTIGATION (NBI) REQUIREMENT",
-  "TAXPAYER IDENTIFICATION NUMBER (TIN) REQUIREMENT",
-  "SOCIAL SECURITY SYSTEM (SSS) REQUIREMENT",
-  "PAG-IBIG REQUIREMENT",
-  "PHILHEALTH REQUIREMENT",
-  "*TAXPAYER IDENTIFICATION NUMBERS (TIN) REQUIREMENT",
-  "PERSONAL LOAN - BPI BANKO (CALUMPIT, BULACAN BRANCH)",
-  "PERSONAL LOAN* - MERZON & SON FINANCING CORPORATION",
-  "POSTAL ID REQUIREMENT - WORK / JOB APPLICATION",
-  "CONVERGE INTERNET CONNECTION REQUIREMNET",
-  "APPLICATION FOR PERSON WITH DISABILITIES (PWD)*",
-  "APPLICATION FOR SENIOR CITIZEN'S ID*",
-  "APPLICATION FOR WATER SERVICE CONNECTION (CAWADI)",
-  "APPLICATION FOR ELECTRICAL SERVICE CONNECTION (MERALCO)",
-  "SCHOLARSHIP ASSISTANCE - LCDFI*",
-  "APPLICATION FOR ELECTRICAL SERVICE CONNECTION (MERALCO)*",
-  "APPLICATION FOR SENIOR CITIZEN'S ID (OSCA)*",
-  "TESDA* - NATIONAL CERTIFICATE II (NCII) APPLICATION REQUIREMENT",
-  "SCHOLARSHIP ASSISTANCE* - LA CONSOLACION UNIVERSITY PHILPPINES (LCUP)",
-  "PERSONAL LOAN* - LIFEBANK MICROFINANCE FOUNDATION INC.",
-  "PERSONAL LOAN - ASA PHILIPPINES FOUNDATION MICRO FINANCE (CAL., BUL)",
-  "PERSONAL LOAN - BPI BANKO (CALUMPIT, BULACAN BRANCH)",
-  "PERSONAL LOAN - CASHLINE LENDING CORP. (PULILAN, BULACAN)",
-  "PERSONAL LOAN - FAST AND EASY LENDING CORP. (CITY OF MAL., BUL.)",
-  "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (PULILAN, BULACAN)",
-  "PERSONAL LOAN - KASAGANA (MALOLOS, BULACAN)",
-  "PERSONAL LOAN - KASAGANA LENDING (CITY OF MALOLOS, BUL.)",
-  "PERSONAL LOAN - LIBERTY LENDING (APALIT, PAMPANGA)",
-  "PERSONAL LOAN - LIGHT MICRO FINANCE (MALOLOS, BULACAN)",
-  "PERSONAL LOAN - PAG-ASA LENDING (CITY OF MALOLOS, BUL.)",
-  "PERSONAL LOAN - SKY GO (CALUMPIT, BULACAN)",
-  "PERSONAL LOAN - SUPERBIKES CENTER (CALUMPIT, BULACAN)",
-  "PERSONAL LOAN - TALETE MICRO FINANCE (LONGOS, CITY OF MAL., BUL.)",
-  "PERSONAL LOAN - WHEELTEK (CITY OF MALOLOS, BULACAN BRANCH)",
-  "PERSONAL LOAN* - MITSUKOSHI MOTORS PHILIPPINES INC.",
-  "PERSONAL LOAN - DSE LENDING INC. (CALUMPIT, BULACAN)",
-  "PERSONAL LOAN - 7R FINANCE CO. (MALOLOS, BULACAN)",
-  "PERSONAL LOAN - C4 STAR KAAGAPAY (MALOLOS, BULACAN)",
-  "CANIOGAN COOPERATIVE MEMBERSHIP REQUIREMENT",
-  "PERSONAL LOAN - NWOW EBIKE (CALUMPIT, BULACAN) CO-MAKER",
-  "PERSONAL LOAN* - L5 AND SONS FINANCING CORPORATION",
-  "PERSONAL LOAN - 3R LENDING (APALIT, PAMPANGA)",
-  "PERSONAL LOAN - BISIKLETA STA. RITA (CALUMPIT, BULACAN)",
-  "PERSONAL LOAN - FASTER LENDING (CITY OF MALOLOS, BULACAN)",
-  "PERSONAL LOAN* - JEMS MERCADO AND SONS LENDING CORP.",
-  "PERSONAL LOAN - L5 MICROFINANCE (CITY OF MALOLOS, BUL.)",
-  "APPLICATION FOR INTERNET SERVICE CONNECTION",
-  "FOR NATASHA REQUIREMENT",
-  "ON THE JOB TRAINING (OJT) REQUIREMENT",
-  "POLICE CLEARANCE REQUIREMENT - FOR RENEWAL OF LTOP*",
-  "PERSONAL LOAN - BPI BANKO (APALIT, PAMPANGA)",
-  "PERSONAL LOAN - AJ MICROFINANCE (CITY OF MALOLOS, BULACAN)",
-  "MERALCO - TRANSFER OF METER",
-  "PERSONAL LOAN - GABAY ALAY (MALOLOS, BULACAN)",
-  "PERSONAL LOAN - E1 LENDING (PULILAN, BULACAN)",
-  "BANK TRANSACTION - OPEN ACCOUNT",
-  "APPLICATION FOR BUILDING PERMIT REQUIREMENT",
-  "POLICE CLEARANCE REQUIREMENT - WORK / JOB APPLICATION",
-  "FOR SCHOOL ADMISSION REQUIREMENT",
-].sort((a, b) => a.localeCompare(b));
-
-const PURPOSE_LIST_2 = [
-  "CALUMPIT BRANCH",
-  "BUREAU OF INTERNAL REVENUE (TIKTOK CONTENT CREATOR)",
-  "PULILAN, BULACAN BRANCH",
-  "APPLYING FOR INTERNET INSTALLATION REQUIREMENT",
-  "MEDICAL CERTIFICATE ATTACHED",
-  "OFFICE OF SENIOR CITIZENS AFFAIRS (OSCA)",
-  "LANDBANK COUNTRYSIDE DEVELOPMENT FOUNDATION, INC.",
-  "OFFICE OF THE SENIOR CITIZENS AFFAIR (OSCA)",
-  "SOLAR NET METERING",
-  "OFFICE OF THE SENIOR CITIZEN'S AFFAIR",
-  "TECHNICAL EDUCATION AND SKILLS DEVELOPMENT AUTHORITY",
-  "CITY OF MALOLOS, BULACAN",
-  "IKABUHI",
-  "DAKILA MALOLOS, BULACAN BRANCH",
-  "CALUMPIT, BULACAN",
-  "LICENSE TO OWN AND POSSESS FIREARMS",
-].sort((a, b) => a.localeCompare(b));
-
-const PURPOSE_LIST_3 = [
-  "Medical Bill",
-  "Medical abstract",
-  "MEDICAL prescription",
-].sort((a, b) => a.localeCompare(b));
 
 const Notification = React.memo(({ type, title, message, onClose }) => {
   const styles = {
@@ -1074,14 +989,15 @@ export default function BarangayClearanceModal({
                           <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.12em] mb-2.5">
                             {t.quickAdd}
                           </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <CertSearchableDropdown
-                                label={t.catWork}
+                                label={t.catMainPurpose}
                                 placeholder={t.select}
-                                items={PURPOSE_LIST_1}
+                                items={BARANGAY_CLEARANCE_MAIN_PURPOSES}
                                 onSelect={handlePurposeSelect}
+                                searchPlaceholder={t.purposeSearchPlaceholder}
                                 colorClass={{
-                                  label: "text-gray-500",
+                                  label: "text-gray-800",
                                   text: "text-gray-800",
                                   icon: "text-gray-400",
                                   bg: "bg-gray-50",
@@ -1089,29 +1005,17 @@ export default function BarangayClearanceModal({
                                 }}
                               />
                               <CertSearchableDropdown
-                                label={t.catUtility}
+                                label={t.catUtilitySub}
                                 placeholder={t.select}
-                                items={PURPOSE_LIST_2}
+                                items={BARANGAY_CLEARANCE_UTILITY_SUB}
                                 onSelect={handlePurposeSelect}
+                                searchPlaceholder={t.purposeSearchPlaceholder}
                                 colorClass={{
-                                  label: "text-gray-500",
+                                  label: "text-gray-800",
                                   text: "text-gray-800",
                                   icon: "text-gray-400",
-                                  bg: "bg-gray-50",
-                                  ring: "ring-gray-200",
-                                }}
-                              />
-                              <CertSearchableDropdown
-                                label={t.catMedical}
-                                placeholder={t.select}
-                                items={PURPOSE_LIST_3}
-                                onSelect={handlePurposeSelect}
-                                colorClass={{
-                                  label: "text-gray-500",
-                                  text: "text-gray-800",
-                                  icon: "text-gray-400",
-                                  bg: "bg-gray-50",
-                                  ring: "ring-gray-200",
+                                  bg: "bg-sky-50/90",
+                                  ring: "ring-sky-200/80",
                                 }}
                               />
                             </div>

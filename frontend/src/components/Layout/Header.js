@@ -15,6 +15,55 @@ import { getInitials } from "@/lib/utils";
 import { useRouter } from "next/router";
 import { resolveNotificationNavigationLink } from "@/lib/notificationHelper";
 
+function emailQuotaUsagePercent(quota) {
+  if (!quota) return 0;
+  if (quota.dailyLimit != null && quota.dailyLimit > 0) {
+    return Math.min(
+      100,
+      Math.round((quota.dailyUsed / quota.dailyLimit) * 100),
+    );
+  }
+  if (quota.monthlyLimit != null && quota.monthlyLimit > 0) {
+    return Math.min(
+      100,
+      Math.round((quota.monthlyUsed / quota.monthlyLimit) * 100),
+    );
+  }
+  return 0;
+}
+
+function formatResendResetAt(iso) {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return null;
+  }
+}
+
+function emailQuotaCompactLabel(quota) {
+  if (quota.dailyLimit != null) {
+    return `${quota.dailyUsed}/${quota.dailyLimit}`;
+  }
+  if (quota.monthlyLimit != null) {
+    return `${quota.monthlyUsed}/${quota.monthlyLimit}`;
+  }
+  return String(quota.dailyUsed ?? 0);
+}
+
+function emailQuotaTitle(quota) {
+  if (quota.dailyLimit != null) {
+    return `Resend Email: ${quota.dailyUsed} / ${quota.dailyLimit} used today (${quota.remainingToday ?? 0} left)`;
+  }
+  if (quota.monthlyLimit != null) {
+    return `Resend Email: ${quota.monthlyUsed} / ${quota.monthlyLimit} used this month (no daily cap on your plan)`;
+  }
+  return `Resend Email: ${quota.dailyUsed} sent today`;
+}
+
 export default function Header({
   title,
   subtitle,
@@ -230,27 +279,33 @@ export default function Header({
           </button>
 
           {/* Real-time Resend Email Quota Widget */}
-          {emailQuota && (
+          {emailQuota && (() => {
+            const usagePct = emailQuotaUsagePercent(emailQuota);
+            const dailyResetLabel = formatResendResetAt(emailQuota.dailyResetsAt);
+            const monthlyResetLabel = formatResendResetAt(
+              emailQuota.monthlyResetsAt,
+            );
+            return (
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowQuotaDropdown(!showQuotaDropdown)}
-                title={`Resend Email: ${emailQuota.dailyUsed} / ${emailQuota.dailyLimit} used today (${emailQuota.remainingToday} left)`}
+                title={emailQuotaTitle(emailQuota)}
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all",
-                  emailQuota.dailyUsed >= 90
+                  usagePct >= 90
                     ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-                    : emailQuota.dailyUsed >= 70
+                    : usagePct >= 70
                     ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
                     : "bg-blue-50/80 text-[#03254c] border-blue-200/80 hover:bg-blue-100/70",
                 )}
               >
                 <Mail className="w-3.5 h-3.5 text-[#03254c] shrink-0" />
                 <span className="font-mono font-bold text-[11px]">
-                  {emailQuota.dailyUsed}/{emailQuota.dailyLimit}
+                  {emailQuotaCompactLabel(emailQuota)}
                 </span>
                 <span className="hidden xl:inline text-[10px] text-gray-500 font-normal">
-                  today
+                  {emailQuota.dailyLimit != null ? "today" : "month"}
                 </span>
               </button>
 
@@ -284,43 +339,84 @@ export default function Header({
                     {/* Daily Quota Progress */}
                     <div className="space-y-1.5 mb-3">
                       <div className="flex justify-between text-xs">
-                        <span className="font-medium text-gray-600">Daily Limit (24h)</span>
+                        <span className="font-medium text-gray-600">
+                          {emailQuota.dailyLimit != null
+                            ? "Daily quota (UTC day)"
+                            : "Today (no daily cap)"}
+                        </span>
                         <span className="font-bold text-gray-900 font-mono">
-                          {emailQuota.dailyUsed} / {emailQuota.dailyLimit}
+                          {emailQuota.dailyLimit != null
+                            ? `${emailQuota.dailyUsed} / ${emailQuota.dailyLimit}`
+                            : emailQuota.dailyUsed}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-2 rounded-full transition-all duration-500",
-                            emailQuota.dailyUsed >= 90
-                              ? "bg-red-500"
-                              : emailQuota.dailyUsed >= 70
-                              ? "bg-amber-500"
-                              : "bg-emerald-500",
-                          )}
-                          style={{
-                            width: `${Math.min(
-                              100,
-                              Math.round((emailQuota.dailyUsed / emailQuota.dailyLimit) * 100),
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-[10px] text-gray-400">
-                        <span>{emailQuota.remainingToday} emails left today</span>
-                        <span>Resets rolling 24h</span>
-                      </div>
+                      {emailQuota.dailyLimit != null ? (
+                        <>
+                          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-2 rounded-full transition-all duration-500",
+                                usagePct >= 90
+                                  ? "bg-red-500"
+                                  : usagePct >= 70
+                                  ? "bg-amber-500"
+                                  : "bg-emerald-500",
+                              )}
+                              style={{ width: `${usagePct}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-gray-400">
+                            <span>
+                              {emailQuota.remainingToday} emails left today
+                            </span>
+                            <span>
+                              {dailyResetLabel
+                                ? `Resets ${dailyResetLabel}`
+                                : "Resets midnight UTC"}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-[10px] text-gray-500 leading-snug">
+                          Your Resend plan has no daily send limit. Count shown
+                          is emails used in the current UTC day window.
+                        </p>
+                      )}
                     </div>
 
                     {/* Monthly Quota */}
-                    <div className="space-y-1 mb-3 pt-2.5 border-t border-gray-100 text-xs">
+                    <div className="space-y-1.5 mb-3 pt-2.5 border-t border-gray-100 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-gray-500 font-medium">Monthly Usage:</span>
+                        <span className="text-gray-500 font-medium">
+                          Monthly usage
+                        </span>
                         <span className="font-semibold text-gray-800 font-mono">
-                          {emailQuota.monthlyUsed} / {emailQuota.monthlyLimit}
+                          {emailQuota.monthlyLimit != null
+                            ? `${emailQuota.monthlyUsed} / ${emailQuota.monthlyLimit}`
+                            : emailQuota.monthlyUsed}
                         </span>
                       </div>
+                      {emailQuota.dailyLimit == null &&
+                        emailQuota.monthlyLimit != null && (
+                          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-2 rounded-full transition-all duration-500",
+                                usagePct >= 90
+                                  ? "bg-red-500"
+                                  : usagePct >= 70
+                                  ? "bg-amber-500"
+                                  : "bg-emerald-500",
+                              )}
+                              style={{ width: `${usagePct}%` }}
+                            />
+                          </div>
+                        )}
+                      {monthlyResetLabel && (
+                        <p className="text-[10px] text-gray-400">
+                          Monthly period resets {monthlyResetLabel}
+                        </p>
+                      )}
                     </div>
 
                     {/* Footer link to Resend */}
@@ -341,7 +437,8 @@ export default function Header({
                 </>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Notifications */}
           <div className="relative">

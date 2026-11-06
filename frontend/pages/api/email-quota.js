@@ -4,6 +4,76 @@ let cachedQuota = null;
 let lastFetchTime = 0;
 const CACHE_TTL_MS = 30000; // 30s cache to stay well within Resend API limits
 
+function fallbackPayload(extra = {}) {
+  return {
+    dailyUsed: 0,
+    dailyLimit: null,
+    monthlyUsed: 0,
+    monthlyLimit: null,
+    remainingToday: null,
+    dailyResetsAt: null,
+    monthlyResetsAt: null,
+    ...extra,
+  };
+}
+
+function parseResendUsage(usage) {
+  const daily = usage?.emails?.daily || {};
+  const monthly = usage?.emails?.monthly || {};
+
+  const dailyUsed = Number(daily.used) || 0;
+  const dailyLimit =
+    daily.limit === null || daily.limit === undefined
+      ? null
+      : Number(daily.limit);
+  const monthlyUsed = Number(monthly.used) || 0;
+  const monthlyLimit =
+    monthly.limit === null || monthly.limit === undefined
+      ? null
+      : Number(monthly.limit);
+
+  const remainingToday =
+    dailyLimit != null ? Math.max(0, dailyLimit - dailyUsed) : null;
+
+  return {
+    dailyUsed,
+    dailyLimit,
+    monthlyUsed,
+    monthlyLimit,
+    remainingToday,
+    dailyResetsAt: daily.resets_at || null,
+    monthlyResetsAt: monthly.resets_at || null,
+    dailySent:
+      daily.sent === null || daily.sent === undefined
+        ? null
+        : Number(daily.sent),
+    dailyReceived:
+      daily.received === null || daily.received === undefined
+        ? null
+        : Number(daily.received),
+  };
+}
+
+async function fetchResendUsage(apiKey) {
+  const response = await fetch("https://api.resend.com/usage", {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    const err = new Error(
+      `Resend usage API ${response.status}${text ? `: ${text.slice(0, 200)}` : ""}`,
+    );
+    err.status = response.status;
+    throw err;
+  }
+
+  return response.json();
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res
@@ -19,11 +89,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       configured: false,
-      dailyUsed: 0,
-      dailyLimit: 100,
-      monthlyUsed: 0,
-      monthlyLimit: 3000,
-      remainingToday: 100,
+      ...fallbackPayload(),
     });
   }
 
@@ -40,63 +106,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      if (cachedQuota) {
-        return res.status(200).json({
-          success: true,
-          configured: true,
-          ...cachedQuota,
-          stale: true,
-        });
-      }
-      return res.status(200).json({
-        success: true,
-        configured: true,
-        dailyUsed: 0,
-        dailyLimit: 100,
-        monthlyUsed: 0,
-        monthlyLimit: 3000,
-        remainingToday: 100,
-      });
-    }
-
-    const json = await response.json();
-    const emails = Array.isArray(json.data) ? json.data : [];
-
-    const oneDayAgo = now - 24 * 60 * 60 * 1000;
-    const startOfMonth = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth(),
-      1,
-    ).getTime();
-
-    const dailyUsed = emails.filter((e) => {
-      const time = new Date(e.created_at).getTime();
-      return time >= oneDayAgo;
-    }).length;
-
-    const monthlyUsed = emails.filter((e) => {
-      const time = new Date(e.created_at).getTime();
-      return time >= startOfMonth;
-    }).length;
-
-    const dailyLimit = 100;
-    const monthlyLimit = 3000;
-    const remainingToday = Math.max(0, dailyLimit - dailyUsed);
+    const usageJson = await fetchResendUsage(apiKey);
+    const parsed = parseResendUsage(usageJson);
 
     cachedQuota = {
-      dailyUsed,
-      dailyLimit,
-      monthlyUsed,
-      monthlyLimit,
-      remainingToday,
+      ...parsed,
       updatedAt: new Date().toISOString(),
     };
     lastFetchTime = now;
@@ -120,11 +134,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       configured: true,
-      dailyUsed: 0,
-      dailyLimit: 100,
-      monthlyUsed: 0,
-      monthlyLimit: 3000,
-      remainingToday: 100,
+      ...fallbackPayload(),
       error: error.message,
     });
   }

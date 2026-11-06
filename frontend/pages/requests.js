@@ -91,6 +91,10 @@ import {
 import { pendingCaseRows } from "@/lib/caseRecordHistory";
 import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
 import { buildResidentSinceYearOptions } from "@/lib/residentSinceYear";
+import {
+  BARANGAY_CLEARANCE_MAIN_PURPOSES,
+  BARANGAY_CLEARANCE_UTILITY_SUB,
+} from "@/lib/barangayClearancePurposes";
 // API Configuration
 const API_URL = "/api";
 
@@ -4111,6 +4115,31 @@ function RequestDetailsModal({
                                     <option value="">-- SELECT FIRST TIME JOB SEEKER REQUIREMENT (RA 11261) --</option>
                                     {FIRST_TIME_JOB_SEEKER_PURPOSES.map((p, i) => (
                                       <option key={i} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ) : request.certificate_type === "barangay_clearance" ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- MAIN PURPOSE --</option>
+                                    {BARANGAY_CLEARANCE_MAIN_PURPOSES.map((p) => (
+                                      <option key={p} value={p}>
+                                        {p}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    onChange={handlePurposeSelect}
+                                    className="w-full text-[11px] p-2 bg-white border border-sky-200 rounded-lg font-black text-sky-700 focus:ring-2 focus:ring-sky-500 shadow-sm outline-none cursor-pointer uppercase"
+                                  >
+                                    <option value="">-- SUB CATEGORY (UTILITY / MERALCO) --</option>
+                                    {BARANGAY_CLEARANCE_UTILITY_SUB.map((p) => (
+                                      <option key={p} value={p}>
                                         {p}
                                       </option>
                                     ))}
