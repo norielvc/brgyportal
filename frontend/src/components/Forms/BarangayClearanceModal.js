@@ -45,6 +45,10 @@ import {
   formatResidentPurokForPortal,
   generateFullAddress,
 } from "@/lib/addressHelper";
+import {
+  buildResidentSinceYearOptions,
+  isValidResidentSinceYear,
+} from "@/lib/residentSinceYear";
 
 const API_URL = "/api";
 
@@ -363,8 +367,14 @@ export default function BarangayClearanceModal({
     pending_case: false,
     case_record_history: "",
     pickupMethod: "pickup",
+    residentSinceYear: "",
   });
   const [pickupError, setPickupError] = useState("");
+
+  const residentSinceYearOptions = useMemo(
+    () => buildResidentSinceYearOptions(formData.residentSinceYear),
+    [formData.residentSinceYear],
+  );
 
   const handleResidentSelect = (resident) => {
     if (!resident) {
@@ -522,6 +532,12 @@ export default function BarangayClearanceModal({
     required.forEach((f) => {
       if (!formData[f]) newErrors[f] = true;
     });
+    if (
+      certType === "first_time_job_seeker" &&
+      !isValidResidentSinceYear(formData.residentSinceYear)
+    ) {
+      newErrors.residentSinceYear = true;
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -911,6 +927,47 @@ export default function BarangayClearanceModal({
                             </p>
                           )}
                         </div>
+
+                        {certType === "first_time_job_seeker" && (
+                          <div>
+                            <label
+                              htmlFor="bc-resident-since-year"
+                              className="block text-sm font-semibold text-gray-800 mb-1.5"
+                            >
+                              {t.residentSinceYearLabel}{" "}
+                              <span className="text-red-600">*</span>
+                            </label>
+                            <div className="relative">
+                              <Home className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+                              <select
+                                id="bc-resident-since-year"
+                                name="residentSinceYear"
+                                value={formData.residentSinceYear}
+                                onChange={handleInputChange}
+                                className={`w-full pl-10 pr-10 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-offset-0 appearance-none cursor-pointer ${errors.residentSinceYear ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                              >
+                                <option value="">
+                                  {t.residentSinceYearSelect}
+                                </option>
+                                {residentSinceYearOptions.map((year) => (
+                                  <option key={year} value={String(year)}>
+                                    {year}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronRight className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none rotate-90" />
+                            </div>
+                            {errors.residentSinceYear ? (
+                              <p className="text-xs text-red-600 mt-1.5">
+                                {t.errResidentSinceYear}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                                {t.residentSinceYearHelp}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1111,6 +1168,12 @@ export default function BarangayClearanceModal({
                           } else {
                             setPickupError("");
                           }
+                          if (
+                            certType === "first_time_job_seeker" &&
+                            !isValidResidentSinceYear(formData.residentSinceYear)
+                          ) {
+                            stepErrors.residentSinceYear = true;
+                          }
                           if (Object.keys(stepErrors).length) {
                             setErrors(stepErrors);
                             return;
@@ -1201,6 +1264,7 @@ export default function BarangayClearanceModal({
                         email: t.emailLabel,
                         purpose: t.purposeLabel,
                         pickupMethod: t.pickupMethodLabel,
+                        residentSinceYear: t.residentSinceYearLabel,
                       };
                       const label = labelMap[k] || k.replace(/([A-Z])/g, " $1");
 

@@ -90,6 +90,7 @@ import {
 } from "@/lib/addressHelper";
 import { pendingCaseRows } from "@/lib/caseRecordHistory";
 import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
+import { buildResidentSinceYearOptions } from "@/lib/residentSinceYear";
 // API Configuration
 const API_URL = "/api";
 
@@ -101,6 +102,24 @@ const FIRST_TIME_JOB_SEEKER_PURPOSES = [
   "PHILHEALTH REQUIREMENT",
   "*TAXPAYER IDENTIFICATION NUMBERS (TIN) REQUIREMENT",
 ];
+
+function parseRequestDetails(request) {
+  try {
+    if (!request?.details) return {};
+    if (typeof request.details === "string") {
+      return JSON.parse(request.details) || {};
+    }
+    return request.details || {};
+  } catch {
+    return {};
+  }
+}
+
+function resolveResidentSinceYearFromRequest(request) {
+  const d = parseRequestDetails(request);
+  return d.since_year || d.sinceYear || d.resident_since_year || "";
+}
+
 
 const PURPOSE_LIST_1 = [
   "PERSONAL LOAN - GM SYNERGY MICROFINANCE INC. (CITY OF MALOLOS, BULACAN)",
@@ -2584,6 +2603,7 @@ function RequestDetailsModal({
     date_of_examination: request.date_of_examination || "",
     usaping_barangay: request.usaping_barangay || "",
     date_of_hearing: request.date_of_hearing || "",
+    resident_since_year: resolveResidentSinceYearFromRequest(request),
   });
 
   const handleStartEditing = () => {
@@ -2595,6 +2615,7 @@ function RequestDetailsModal({
       last_name: names.last_name,
       suffix: names.suffix,
       address: resolveRequestResidentialAddress(request),
+      resident_since_year: resolveResidentSinceYearFromRequest(request),
     }));
     setIsEditing(true);
   };
@@ -3221,19 +3242,43 @@ function RequestDetailsModal({
 
     const sanitized = { ...editFormData, full_name: combinedName };
 
+    let payload = sanitized;
+    if (request.certificate_type === "first_time_job_seeker") {
+      const prevDetails = parseRequestDetails(request);
+      const sinceYear = String(sanitized.resident_since_year || "").trim();
+      const { resident_since_year, ...rest } = sanitized;
+      payload = {
+        ...rest,
+        details: {
+          ...prevDetails,
+          ...(sinceYear
+            ? {
+                since_year: sinceYear,
+                sinceYear,
+                resident_since_year: sinceYear,
+              }
+            : {
+                since_year: null,
+                sinceYear: null,
+                resident_since_year: null,
+              }),
+        },
+      };
+    }
+
     dateFields.forEach((field) => {
-      if (sanitized[field] === "") sanitized[field] = null;
+      if (payload[field] === "") payload[field] = null;
     });
 
     integerFields.forEach((field) => {
-      if (sanitized[field] === "" || sanitized[field] === null) {
-        sanitized[field] = null;
+      if (payload[field] === "" || payload[field] === null) {
+        payload[field] = null;
       } else {
-        sanitized[field] = parseInt(sanitized[field]) || null;
+        payload[field] = parseInt(payload[field]) || null;
       }
     });
 
-    const success = await onUpdate(request.id, sanitized);
+    const success = await onUpdate(request.id, payload);
     if (success) {
       setIsEditing(false);
     }
@@ -3912,6 +3957,39 @@ function RequestDetailsModal({
                         </p>
                       )}
                     </div>
+
+                    {request.certificate_type === "first_time_job_seeker" && (
+                      <div>
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                          Resident Since (Year)
+                        </p>
+                        {isEditing ? (
+                          <select
+                            name="resident_since_year"
+                            value={editFormData.resident_since_year || ""}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                          >
+                            <option value="">Select year</option>
+                            {buildResidentSinceYearOptions(
+                              editFormData.resident_since_year,
+                            ).map((year) => (
+                              <option key={year} value={String(year)}>
+                                {year}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm">
+                            {resolveResidentSinceYearFromRequest(request) ||
+                              "NOT RECORDED"}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          Shown on certificate after the address (since YYYY).
+                        </p>
+                      </div>
+                    )}
 
                     {[
                       "barangay_clearance",
@@ -9066,11 +9144,10 @@ function ClearancePreviewForRequests({
                           ? "BARANGAY CERTIFICATION BEING THE SAME PERSON"
                           : isMedicoLegal
                             ? "REQUEST FOR MEDICO LEGAL (COPY)"
-                            : request.certificate_type === "first_time_job_seeker"
-                              ? "FIRST TIME JOB SEEKER CERTIFICATE"
-                              : request.certificate_type === "barangay_clearance"
-                                ? "BARANGAY CLEARANCE CERTIFICATE"
-                                : request.certificate_type ===
+                            : request.certificate_type === "first_time_job_seeker" ||
+                                request.certificate_type === "barangay_clearance"
+                              ? "BARANGAY CLEARANCE CERTIFICATE"
+                              : request.certificate_type ===
                                   "certificate_of_indigency"
                                 ? "CERTIFICATE OF INDIGENCY"
                                 : request.certificate_type ===

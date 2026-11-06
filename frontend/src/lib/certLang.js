@@ -56,6 +56,12 @@ const STRINGS = {
     errMobile: "Please enter your mobile number.",
     emailLabel: "Email Address",
     optional: "(optional)",
+    residentSinceYearLabel: "Year you started living in this barangay",
+    residentSinceYearHelp:
+      "This year appears on your certificate after your address (e.g. “…since 2009”).",
+    residentSinceYearPlaceholder: "e.g. 2009",
+    residentSinceYearSelect: "Select year",
+    errResidentSinceYear: "Please select the year you started residing in this barangay.",
 
     // Step 3 — purpose
     purposeHeading: "What will this document be used for?",
@@ -240,6 +246,13 @@ const STRINGS = {
     errMobile: "Mangyaring ilagay ang numero ng iyong cellphone.",
     emailLabel: "Email",
     optional: "(opsyonal)",
+    residentSinceYearLabel: "Taong nagsimulang tumira sa barangay na ito",
+    residentSinceYearHelp:
+      "Ilalagay sa sertipiko pagkatapos ng tirahan (hal. “…since 2009”).",
+    residentSinceYearPlaceholder: "hal. 2009",
+    residentSinceYearSelect: "Pumili ng taon",
+    errResidentSinceYear:
+      "Mangyaring piliin ang taon na nagsimula kang tumira sa barangay na ito.",
 
     // Step 3 — purpose
     purposeHeading: "Para saan gagamitin ang dokumentong ito?",

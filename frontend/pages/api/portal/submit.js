@@ -362,6 +362,15 @@ export default async function handler(req, res) {
         purok: formData.purok?.toUpperCase(),
         // Explicitly store the submitted address — separate from resident's address on file
         currentAddress: formData.currentAddress?.toUpperCase() || "",
+        // First Time Job Seeker — year on certificate ("resident of …, since YYYY")
+        ...(canonicalType === "first_time_job_seeker" &&
+        formData.residentSinceYear
+          ? {
+              since_year: String(formData.residentSinceYear).trim(),
+              sinceYear: String(formData.residentSinceYear).trim(),
+              resident_since_year: String(formData.residentSinceYear).trim(),
+            }
+          : {}),
         // Others
         ...formData.details,
       },
