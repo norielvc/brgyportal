@@ -87,6 +87,7 @@ import {
   formatSexFull,
   formatCivilStatusFull,
   stripProvinceOf,
+  formatCertificateResidentialAddress,
 } from "@/lib/addressHelper";
 import { pendingCaseRows } from "@/lib/caseRecordHistory";
 import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
@@ -95,6 +96,7 @@ import {
   BARANGAY_CLEARANCE_MAIN_PURPOSES,
   BARANGAY_CLEARANCE_UTILITY_SUB,
 } from "@/lib/barangayClearancePurposes";
+import { mergeResidentDemographicsOntoCertificate } from "@/lib/certificateRequestDemographics";
 // API Configuration
 const API_URL = "/api";
 
@@ -8385,6 +8387,14 @@ function ClearancePreviewForRequests({
   jobSeekerVariant = null,
   specificPurpose = null,
 }) {
+  const requestRow = mergeResidentDemographicsOntoCertificate(request);
+  const certGeo = officials.headerInfo || {};
+  const certificateAddress = formatCertificateResidentialAddress(
+    stripProvinceOf(
+      resolveRequestResidentialAddress(requestRow, { forCertificate: true }),
+    ),
+    certGeo,
+  );
   const logos = officials.logos || {};
   const headerStyle = officials.headerStyle || {};
   const countryStyle = officials.countryStyle || {};
@@ -8406,13 +8416,13 @@ function ClearancePreviewForRequests({
 
   // Map request data to formData format
   const formData = {
-    fullName: request.applicant_name || request.full_name || "",
-    age: request.age || "",
-    sex: formatSexFull(request.sex || ""),
-    civilStatus: formatCivilStatusFull(request.civil_status || ""),
-    address: stripProvinceOf(resolveRequestResidentialAddress(request)),
-    dateOfBirth: request.date_of_birth || "",
-    placeOfBirth: request.place_of_birth || "",
+    fullName: requestRow.applicant_name || requestRow.full_name || "",
+    age: requestRow.age || "",
+    sex: formatSexFull(requestRow.sex || ""),
+    civilStatus: formatCivilStatusFull(requestRow.civil_status || ""),
+    address: certificateAddress,
+    dateOfBirth: requestRow.date_of_birth || "",
+    placeOfBirth: requestRow.place_of_birth || "",
     dateOfDeath:
       request.date_of_death || request.details?.date_of_death || request.residents?.date_of_death || "",
     causeOfDeath:

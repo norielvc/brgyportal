@@ -47,6 +47,7 @@ import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
 import {
   generateFullAddress,
+  appendSubdivisionSubdInAddressText,
   cleanBarangayName,
   cleanMunicipalityName,
   cleanProvinceName,
@@ -1267,7 +1268,11 @@ export default function Residents() {
                 <div className="space-y-1 pt-1.5 border-t border-gray-100">
                   <div className="flex items-start gap-1">
                     <MapPin className="w-3 h-3 text-gray-400 mt-px shrink-0" />
-                    <p className="text-[10px] text-gray-600 line-clamp-2 leading-snug">{resident.residential_address}</p>
+                    <p className="text-[10px] text-gray-600 line-clamp-2 leading-snug">
+                      {appendSubdivisionSubdInAddressText(
+                        resident.residential_address,
+                      )}
+                    </p>
                   </div>
                   {resident.contact_number && (
                     <div className="flex items-center gap-1">

@@ -21,12 +21,75 @@ function formatCivilStatusFull(val) {
     return c;
 }
 
-function cleanResidentialAddress(address) {
-    if (!address || address === '-') return '-';
-    return String(address)
+function cleanBarangayName(val) {
+    if (!val) return '';
+    return String(val).trim().replace(/^(barangay|brgy\.?|bgy\.?)\s+/i, '').trim();
+}
+
+function cleanMunicipalityName(val) {
+    if (!val) return '';
+    return String(val).trim().replace(/^(municipality\s+of|municipality|bayan\s+ng)\s+/i, '').trim();
+}
+
+function cleanProvinceName(val) {
+    if (!val) return '';
+    return String(val).trim().replace(/^(province\s+of|province|lalawigan\s+ng)\s+/i, '').trim();
+}
+
+function escapeRegExp(text) {
+    return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Commas after barangay and municipality only (certificate standard). */
+function formatCertificateResidentialAddress(address, geo = {}) {
+    const raw = String(address || '')
         .replace(/,\s*PROVINCE\s+OF\s+/gi, ', ')
         .replace(/\bPROVINCE\s+OF\s+/gi, '')
+        .replace(/,\s*MUNICIPALITY\s+OF\s+/gi, ', ')
+        .replace(/\bMUNICIPALITY\s+OF\s+/gi, '')
+        .replace(/,\s*BARANGAY\s+/gi, ', ')
+        .replace(/\bBARANGAY\s+/gi, '')
         .trim();
+    if (!raw) return '';
+
+    const b = cleanBarangayName(geo.barangay || geo.barangayName || '').toUpperCase();
+    const m = cleanMunicipalityName(geo.municipality || '').toUpperCase();
+    const p = cleanProvinceName(geo.province || 'Bulacan').toUpperCase();
+
+    if (!b || !m || !p) {
+        return raw.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    let local = raw;
+    const patterns = [
+        new RegExp(`[,\\s]+${escapeRegExp(b)}[,\\s]+${escapeRegExp(m)}[,\\s]+${escapeRegExp(p)}\\s*$`, 'i'),
+        new RegExp(`\\s+${escapeRegExp(b)}\\s+${escapeRegExp(m)}\\s+${escapeRegExp(p)}\\s*$`, 'i'),
+    ];
+    for (const pat of patterns) {
+        const stripped = local.replace(pat, '').trim().replace(/,\s*$/, '');
+        if (stripped !== local) {
+            local = stripped;
+            break;
+        }
+    }
+
+    local = local.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    local = appendSubdivisionSubdInAddressText(local);
+    if (!local) return `${b}, ${m}, ${p}`;
+    return appendSubdivisionSubdInAddressText(`${local} ${b}, ${m}, ${p}`);
+}
+
+function appendSubdivisionSubdInAddressText(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/\bHAZEL HEIGHTS(?!\s+SUBD\.?\b)/gi, 'HAZEL HEIGHTS SUBD.')
+        .replace(/\bCREEKSTONE(?!\s+SUBD\.?\b)/gi, 'CREEKSTONE SUBD.');
+}
+
+function cleanResidentialAddress(address, geo) {
+    if (!address || address === '-') return '-';
+    const formatted = formatCertificateResidentialAddress(address, geo || {});
+    return formatted || String(address).trim();
 }
 
 function formatJobSeekerDates(dateString) {
@@ -590,7 +653,7 @@ class CertificateGenerationService {
                                 <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                                 <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
                                 <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
-                                <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
+                                <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address, config.headerInfo)}</span>
                                 <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                                 <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                             </div>
@@ -706,7 +769,7 @@ class CertificateGenerationService {
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                     <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
                     <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address, config.headerInfo)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                 </div>
@@ -797,7 +860,7 @@ class CertificateGenerationService {
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                     <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
                     <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address, config.headerInfo)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                 </div>
@@ -846,7 +909,7 @@ class CertificateGenerationService {
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                     <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
                     <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address)}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address, config.headerInfo)}</span>
                     <span class="detail-label">Date of Birth</span><span>:</span><span class="detail-value">${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase() : '-'}</span>
                     <span class="detail-label">Place of Birth</span><span>:</span><span class="detail-value">${request.place_of_birth || '-'}</span>
                 </div>
@@ -913,7 +976,7 @@ class CertificateGenerationService {
                     <div class="info-row">
                         <span class="info-label">Residential Address</span>
                         <span class="info-colon">:</span>
-                        <span class="info-value">${cleanResidentialAddress(request.address)}</span>
+                        <span class="info-value">${cleanResidentialAddress(request.address, config.headerInfo)}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Age</span>
@@ -1885,7 +1948,7 @@ class CertificateGenerationService {
                 <p style="margin: 20px 0;">This is to certify that below person is under the guardianship of <strong>${(details.guardianName || '').toUpperCase()}</strong>, both bona fide residents of this barangay:</p>
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(request.full_name || '').toUpperCase()}</span>
-                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address).toUpperCase()}</span>
+                    <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address, config.headerInfo).toUpperCase()}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                     <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
                     <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
@@ -1917,7 +1980,7 @@ class CertificateGenerationService {
                     <span class="detail-label">Name (2)</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(details.partnerFullName || '').toUpperCase()}</span>
                     <span class="detail-label">Partner Age/Sex/DOB</span><span>:</span><span class="detail-value">${details.partnerAge || '-'} / ${formatSexFull(details.partnerSex)} / ${details.partnerDateOfBirth ? new Date(details.partnerDateOfBirth).toLocaleDateString() : '-'}</span>
                     <span class="detail-label">No. of Children</span><span>:</span><span class="detail-value">${details.noOfChildren || '0'}</span>
-                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address).toUpperCase()}</span>
+                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address, config.headerInfo).toUpperCase()}</span>
                 </div>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> at ${config.headerInfo.barangayName} for legal purposes.</p>
                 <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
@@ -1937,7 +2000,7 @@ class CertificateGenerationService {
         const bodyHtml = `
             <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
-                <p style="margin: 20px 0;">This is to certify that <strong>${(request.full_name || '').toUpperCase()}</strong>, a resident of ${cleanResidentialAddress(request.address)}, passed away on <strong>${details.dateOfDeath ? new Date(details.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</strong> due to <strong>${(details.causeOfDeath || 'NATURAL CAUSES').toUpperCase()}</strong>.</p>
+                <p style="margin: 20px 0;">This is to certify that <strong>${(request.full_name || '').toUpperCase()}</strong>, a resident of ${cleanResidentialAddress(request.address, config.headerInfo)}, passed away on <strong>${details.dateOfDeath ? new Date(details.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</strong> due to <strong>${(details.causeOfDeath || 'NATURAL CAUSES').toUpperCase()}</strong>.</p>
                 <p style="margin: 20px 0;">This also certifies that the death was <strong>${details.covidRelated ? 'COVID-19' : 'NON-COVID'}</strong> related.</p>
                 <p style="margin: 40px 0;">Issued this <strong>${currentDate}</strong> for burial/legal purposes.</p>
                 <div class="signature-section" style="margin-top: 55px; margin-bottom: -25px;">
@@ -1961,7 +2024,7 @@ class CertificateGenerationService {
                 <div class="details-grid">
                     <span class="detail-label">Name</span><span>:</span><span class="detail-value">${(request.full_name || '').toUpperCase()}</span>
                     <span class="detail-label">Age/Sex</span><span>:</span><span class="detail-value">${request.age || '-'} / ${formatSexFull(request.sex)}</span>
-                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address).toUpperCase()}</span>
+                    <span class="detail-label">Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address, config.headerInfo).toUpperCase()}</span>
                     <span class="detail-label">Date of Exam</span><span>:</span><span class="detail-value">${details.dateOfExamination || '-'}</span>
                     <span class="detail-label">Usaping Brgy</span><span>:</span><span class="detail-value">${details.usapingBarangay || '-'}</span>
                     <span class="detail-label">Date of Hearing</span><span>:</span><span class="detail-value">${details.dateOfHearing || '-'}</span>
@@ -1989,7 +2052,7 @@ class CertificateGenerationService {
 
         const applicantName = (request.full_name || request.applicant_name || '').toUpperCase();
         const applicantAge = request.age || details.age || '-';
-        const applicantAddress = cleanResidentialAddress(request.address);
+        const applicantAddress = cleanResidentialAddress(request.address, config.headerInfo);
 
         const residentYears = request.years_of_residency || details.years_of_residency || details.yearsOfResidency || '';
         const currentYear = new Date().getFullYear();
@@ -2186,7 +2249,7 @@ class CertificateGenerationService {
 
         const applicantName = (request.full_name || request.applicant_name || '').toUpperCase();
         const applicantAge = request.age || details.age || '-';
-        const applicantAddress = cleanResidentialAddress(request.address);
+        const applicantAddress = cleanResidentialAddress(request.address, config.headerInfo);
 
         const residentYears = request.years_of_residency || details.years_of_residency || details.yearsOfResidency || '';
         const currentYear = new Date().getFullYear();

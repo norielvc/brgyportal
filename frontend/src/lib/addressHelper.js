@@ -67,7 +67,31 @@ export function getAutoAddressFields(tenantSettings) {
  * @param {Object} addressData - { house_number, purok, barangay, municipality, province }
  * @returns {string} Full formatted address
  */
-export function generateFullAddress(addressData) {
+function escapeRegExp(text) {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Hazel Heights & Creekstone use "SUBD." on certificates and resident addresses. */
+export function formatSubdivisionForAddress(name) {
+  if (!name) return "";
+  const base = String(name)
+    .trim()
+    .toUpperCase()
+    .replace(/\s+SUBD\.?\s*$/i, "");
+  if (base === "HAZEL HEIGHTS") return "HAZEL HEIGHTS SUBD.";
+  if (base === "CREEKSTONE") return "CREEKSTONE SUBD.";
+  return String(name).trim().toUpperCase();
+}
+
+export function appendSubdivisionSubdInAddressText(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/\bHAZEL HEIGHTS(?!\s+SUBD\.?\b)/gi, "HAZEL HEIGHTS SUBD.")
+    .replace(/\bCREEKSTONE(?!\s+SUBD\.?\b)/gi, "CREEKSTONE SUBD.");
+}
+
+export function generateFullAddress(addressData, options = {}) {
+  const { forCertificate = false } = options;
   const {
     house_number,
     purok,
@@ -98,7 +122,7 @@ export function generateFullAddress(addressData) {
   const effectivePurok = subInfo?.parentPurok || purok;
 
   if (effectiveSubdivision) {
-    parts.push(effectiveSubdivision);
+    parts.push(formatSubdivisionForAddress(effectiveSubdivision));
   }
 
   if (effectivePurok?.trim()) {
@@ -120,7 +144,57 @@ export function generateFullAddress(addressData) {
     if (cleanP) parts.push(cleanP.toUpperCase());
   }
 
-  return parts.join(', ');
+  if (forCertificate && parts.length >= 3) {
+    const geo = parts.slice(-3);
+    const local = parts.slice(0, -3).join(" ");
+    const geoLine = geo.join(", ");
+    return local ? `${local} ${geoLine}` : geoLine;
+  }
+
+  return parts.join(", ");
+}
+
+/**
+ * Certificate layout: street/subdivision/purok as spaces; commas only after
+ * barangay and municipality (e.g. "... PUROK 2 IBA O' ESTE, CALUMPIT, BULACAN").
+ */
+export function formatCertificateResidentialAddress(address, geo = {}) {
+  const raw = stripProvinceOf(
+    normalizeNorthvilleInText(String(address || "").trim()),
+  );
+  if (!raw) return "";
+
+  const b = cleanBarangayName(geo.barangay || geo.barangayName || "").toUpperCase();
+  const m = cleanMunicipalityName(geo.municipality || "").toUpperCase();
+  const p = cleanProvinceName(geo.province || "Bulacan").toUpperCase();
+
+  if (!b || !m || !p) {
+    return raw.replace(/,/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  let local = raw;
+  const tailPatterns = [
+    new RegExp(
+      `[,\\s]+${escapeRegExp(b)}[,\\s]+${escapeRegExp(m)}[,\\s]+${escapeRegExp(p)}\\s*$`,
+      "i",
+    ),
+    new RegExp(
+      `\\s+${escapeRegExp(b)}\\s+${escapeRegExp(m)}\\s+${escapeRegExp(p)}\\s*$`,
+      "i",
+    ),
+  ];
+  for (const pat of tailPatterns) {
+    const stripped = local.replace(pat, "").trim().replace(/,\s*$/, "");
+    if (stripped !== local) {
+      local = stripped;
+      break;
+    }
+  }
+
+  local = local.replace(/,/g, " ").replace(/\s+/g, " ").trim();
+  local = appendSubdivisionSubdInAddressText(local);
+  if (!local) return `${b}, ${m}, ${p}`;
+  return appendSubdivisionSubdInAddressText(`${local} ${b}, ${m}, ${p}`);
 }
 
 /**
@@ -176,8 +250,9 @@ export function formatCivilStatusFull(val) {
   return c;
 }
 
-export function resolveRequestResidentialAddress(request) {
+export function resolveRequestResidentialAddress(request, options = {}) {
   if (!request) return "";
+  const { forCertificate = false } = options;
 
   let result = "";
   if (request.certificate_type === "barangay_cohabitation") {
@@ -188,7 +263,9 @@ export function resolveRequestResidentialAddress(request) {
     ).trim();
   } else {
     const r = request.residents;
-    const fromStructured = r ? generateFullAddress(r) : "";
+    const fromStructured = r
+      ? generateFullAddress(r, { forCertificate })
+      : "";
     const stored = (
       request.address ||
       request.details?.currentAddress ||
@@ -303,8 +380,8 @@ export function validateAddress(addressData) {
  * Subdivisions & Sitios configuration with assigned parent purok and numbering format
  */
 export const SUBDIVISIONS_CONFIG = {
-  'HAZEL HEIGHTS': { subdivision: 'HAZEL HEIGHTS', parentPurok: 'Purok 1', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 1 - HAZEL HEIGHTS' },
-  'CREEKSTONE': { subdivision: 'CREEKSTONE', parentPurok: 'Purok 1', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 1 - CREEKSTONE' },
+  'HAZEL HEIGHTS': { subdivision: 'HAZEL HEIGHTS', parentPurok: 'Purok 1', hasPhaseBlockLot: false, hasPhase: false, label: 'PUROK 1 - HAZEL HEIGHTS SUBD.' },
+  'CREEKSTONE': { subdivision: 'CREEKSTONE', parentPurok: 'Purok 1', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 1 - CREEKSTONE SUBD.' },
   'NORTH VILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 2 - NORTHVILLE 9' },
   'NORTHVILLE 9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 2 - NORTHVILLE 9' },
   'NV9': { subdivision: 'NORTHVILLE 9', parentPurok: 'Purok 2', hasPhaseBlockLot: true, hasPhase: false, label: 'PUROK 2 - NORTHVILLE 9' },
@@ -407,8 +484,8 @@ export function formatResidentPurokForPortal(resident) {
 
 export const PUROK_OPTIONS = [
   { value: 'Purok 1', label: 'PUROK 1' },
-  { value: 'HAZEL HEIGHTS', label: 'PUROK 1 - HAZEL HEIGHTS' },
-  { value: 'CREEKSTONE', label: 'PUROK 1 - CREEKSTONE' },
+  { value: 'HAZEL HEIGHTS', label: 'PUROK 1 - HAZEL HEIGHTS SUBD.' },
+  { value: 'CREEKSTONE', label: 'PUROK 1 - CREEKSTONE SUBD.' },
   { value: 'Purok 2', label: 'PUROK 2' },
   { value: 'NORTHVILLE 9', label: 'PUROK 2 - NORTHVILLE 9' },
   { value: 'SITIO BANAWE', label: 'PUROK 2 - SITIO BANAWE' },

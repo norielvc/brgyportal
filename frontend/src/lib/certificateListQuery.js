@@ -1,4 +1,5 @@
 import { supabase } from "../../lib/supabase";
+import { mergeResidentDemographicsOntoCertificate } from "./certificateRequestDemographics";
 
 /** List view: no `details` JSON blob; slim resident join. */
 export const CERTIFICATE_LIST_SELECT = `
@@ -410,7 +411,9 @@ export async function fetchCertificateById(tenantId, id, { view = "full" } = {})
     skipSideEffects: true,
   });
 
-  return attachPendingWorkflowAssignment(enriched);
+  return mergeResidentDemographicsOntoCertificate(
+    attachPendingWorkflowAssignment(enriched),
+  );
 }
 
 export async function fetchCertificatesForTenant(
