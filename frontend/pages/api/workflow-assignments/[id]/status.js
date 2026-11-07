@@ -1,64 +1,17 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
 import {
+  clearCaptainSignatureDetails,
+  mergeCaptainSignatureDetails,
+} from "../../../../src/lib/captainSignatureDetails";
+import {
+  certificateStatusForStep,
   normalizeCertificateStatus,
+  normalizeStepStatusKey,
   resolveBusinessPermitApproveTarget,
   resolveBusinessPermitCaptainStep,
   workflowStatusesMatch,
 } from "../../../../src/lib/workflowStatus";
-
-function shouldPersistCaptainSignature({
-  certStatus,
-  stepName,
-  officialRole,
-  signatureData,
-}) {
-  if (!signatureData) return false;
-  if (certStatus === "captain_approval") return true;
-  const step = (stepName || "").toLowerCase();
-  const role = (officialRole || "").toLowerCase();
-  return (
-    step.includes("captain") ||
-    step.includes("chairman") ||
-    step.includes("punong") ||
-    role.includes("captain") ||
-    role.includes("chairman") ||
-    role.includes("punong")
-  );
-}
-
-function mergeCaptainSignatureDetails(
-  existingDetails,
-  signatureData,
-  certStatus,
-  stepName,
-  officialRole,
-) {
-  if (
-    !shouldPersistCaptainSignature({
-      certStatus,
-      stepName,
-      officialRole,
-      signatureData,
-    })
-  ) {
-    return null;
-  }
-  let details = existingDetails;
-  if (typeof details === "string") {
-    try {
-      details = JSON.parse(details);
-    } catch {
-      details = {};
-    }
-  }
-  if (!details || typeof details !== "object") details = {};
-  return {
-    ...details,
-    captain_signature: signatureData,
-    captain_signed_at: new Date().toISOString(),
-  };
-}
 
 function mergeFinanceVerificationDetails(
   existingDetails,
@@ -89,23 +42,6 @@ function mergeFinanceVerificationDetails(
   }
   if (!signatureData && !employeeCode) return null;
   return patch;
-}
-
-function clearCaptainSignatureDetails(existingDetails) {
-  let details = existingDetails;
-  if (typeof details === "string") {
-    try {
-      details = JSON.parse(details);
-    } catch {
-      details = {};
-    }
-  }
-  if (!details || typeof details !== "object") details = {};
-  const next = { ...details };
-  delete next.captain_signature;
-  delete next.captainSignature;
-  delete next.captain_signed_at;
-  return next;
 }
 
 export default async function handler(req, res) {
@@ -151,6 +87,53 @@ export default async function handler(req, res) {
     return res.status(404).json({ success: false, message: "Certificate not found" });
 
   console.log(`[WORKFLOW-ASSIGNMENT] Certificate found: ${cert.reference_number}, Current status: ${cert.status}, Type: ${certType}`);
+
+  const { data: currentWfConfigEarly } = await supabase
+    .from("workflow_configurations")
+    .select("workflow_config")
+    .eq("certificate_type", certType)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  const currentStepsListEarly =
+    currentWfConfigEarly?.workflow_config?.steps || [];
+  const activeStepEarly = currentStepsListEarly.find(
+    (s) => s.id.toString() === assignment.step_id.toString(),
+  );
+
+  const mutatingActions = [
+    "approve",
+    "reject",
+    "return",
+    "send_back_to_start",
+    "physical_inspection",
+  ];
+  if (mutatingActions.includes(action) && assignment.status !== "pending") {
+    return res.status(409).json({
+      success: false,
+      code: "ASSIGNMENT_ALREADY_PROCESSED",
+      message: "This workflow task was already completed.",
+    });
+  }
+
+  if (action === "approve" && activeStepEarly) {
+    const expectedStatus = certificateStatusForStep(
+      activeStepEarly,
+      certType || cert.certificate_type,
+    );
+    const currentKey = normalizeStepStatusKey(cert.status);
+    const expectedKey = normalizeStepStatusKey(expectedStatus);
+    const statusAligned =
+      workflowStatusesMatch(expectedStatus, cert.status) ||
+      (expectedKey === "witness_verification" && currentKey === "processing");
+    if (expectedStatus && cert.status && !statusAligned) {
+      return res.status(409).json({
+        success: false,
+        code: "WORKFLOW_STEP_MISMATCH",
+        message: `Request is at "${cert.status}" and cannot be approved for "${assignment.step_name}".`,
+      });
+    }
+  }
 
   const closedAssignmentStatus =
     action === "approve"

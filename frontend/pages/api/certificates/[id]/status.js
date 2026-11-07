@@ -1,75 +1,9 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
+import {
+  clearCaptainSignatureDetails,
+  mergeCaptainSignatureDetails,
+} from "../../../../src/lib/captainSignatureDetails";
 import { supabase } from "../../../../lib/supabase";
-
-function shouldPersistCaptainSignature({
-  certStatus,
-  stepName,
-  officialRole,
-  signatureData,
-}) {
-  if (!signatureData) return false;
-  if (certStatus === "captain_approval") return true;
-  const step = (stepName || "").toLowerCase();
-  const role = (officialRole || "").toLowerCase();
-  return (
-    step.includes("captain") ||
-    step.includes("chairman") ||
-    step.includes("punong") ||
-    role.includes("captain") ||
-    role.includes("chairman") ||
-    role.includes("punong")
-  );
-}
-
-function mergeCaptainSignatureDetails(
-  existingDetails,
-  signatureData,
-  certStatus,
-  stepName,
-  officialRole,
-) {
-  if (
-    !shouldPersistCaptainSignature({
-      certStatus,
-      stepName,
-      officialRole,
-      signatureData,
-    })
-  ) {
-    return null;
-  }
-  let details = existingDetails;
-  if (typeof details === "string") {
-    try {
-      details = JSON.parse(details);
-    } catch {
-      details = {};
-    }
-  }
-  if (!details || typeof details !== "object") details = {};
-  return {
-    ...details,
-    captain_signature: signatureData,
-    captain_signed_at: new Date().toISOString(),
-  };
-}
-
-function clearCaptainSignatureDetails(existingDetails) {
-  let details = existingDetails;
-  if (typeof details === "string") {
-    try {
-      details = JSON.parse(details);
-    } catch {
-      details = {};
-    }
-  }
-  if (!details || typeof details !== "object") details = {};
-  const next = { ...details };
-  delete next.captain_signature;
-  delete next.captainSignature;
-  delete next.captain_signed_at;
-  return next;
-}
 
 const statusFlow = {
   staff_review: "secretary_approval",  // After staff review, goes to secretary

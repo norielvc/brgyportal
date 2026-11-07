@@ -102,6 +102,7 @@ import {
   BARANGAY_CLEARANCE_UTILITY_SUB,
 } from "@/lib/barangayClearancePurposes";
 import { mergeResidentDemographicsOntoCertificate } from "@/lib/certificateRequestDemographics";
+import { isCaptainWorkflowHistoryEntry } from "@/lib/captainSignatureDetails";
 // API Configuration
 const API_URL = "/api";
 
@@ -1592,7 +1593,14 @@ export default function RequestsPage() {
           }, 500);
         }
       } else {
-        alert(data.message || "Action failed");
+        const conflictMsg =
+          data.code === "ASSIGNMENT_ALREADY_PROCESSED"
+            ? "This approval was already submitted. Refresh the page to see the latest status."
+            : data.code === "WORKFLOW_STEP_MISMATCH"
+              ? data.message ||
+                "This request is no longer at your workflow step. Refresh and try again."
+              : data.message || "Action failed";
+        alert(conflictMsg);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -7234,7 +7242,8 @@ function pickCaptainSignatureFromHistory(history, lastReturnTime = 0) {
     .filter((h) => {
       if (!h.signature_data) return false;
       if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-      const sName = (h.step_name || "").toUpperCase();
+      if (!isCaptainWorkflowHistoryEntry(h)) return false;
+      const uRole = (h.users?.role || "").toUpperCase();
       const hRole = (
         h.official_role ||
         h.officialRole ||
@@ -7242,27 +7251,21 @@ function pickCaptainSignatureFromHistory(history, lastReturnTime = 0) {
         h.privilegeRole ||
         ""
       ).toUpperCase();
-      const uRole = (h.users?.role || "").toUpperCase();
-      if (
-        sName.includes("SECRETARY") ||
-        hRole.includes("SECRETARY") ||
-        uRole.includes("SECRETARY")
-      ) {
-        return false;
-      }
-      if ((h.previous_status || "").toLowerCase() === "captain_approval") {
+      if (CAPTAIN_SIGNATURE_ROLES.some((r) => hRole.includes(r) || uRole.includes(r))) {
         return true;
       }
+      const sName = (h.step_name || "").toUpperCase();
       if (
         sName.includes("CAPTAIN") ||
         sName.includes("CHAIRMAN") ||
-        sName.includes("PUNONG")
+        sName.includes("PUNONG") ||
+        hRole.includes("CAPTAIN") ||
+        hRole.includes("CHAIRMAN") ||
+        hRole.includes("PUNONG")
       ) {
         return true;
       }
-      return CAPTAIN_SIGNATURE_ROLES.some(
-        (r) => hRole.includes(r) || uRole.includes(r),
-      );
+      return (h.previous_status || "").toLowerCase() === "captain_approval";
     })
     .sort(
       (a, b) =>
@@ -7532,8 +7535,10 @@ function CertificatePreviewModal({
       const captainEntry = [...historyRows]
         .filter(
           (h) =>
-            h.signature_data === sig ||
-            (h.previous_status || "").toLowerCase() === "captain_approval",
+            isCaptainWorkflowHistoryEntry(h) &&
+            h.signature_data &&
+            (h.signature_data === sig ||
+              (h.previous_status || "").toLowerCase() === "captain_approval"),
         )
         .sort(
           (a, b) =>
@@ -8707,16 +8712,22 @@ function ClearancePreviewForRequests({
     additionalDetails.captain_signature ||
     additionalDetails.captainSignature ||
     null;
-  const storedCaptainSignature =
-    storedCaptainSignatureRaw &&
-    (!lastReturnTime || storedSignedAtMs > lastReturnTime)
-      ? storedCaptainSignatureRaw
-      : null;
 
   const directCaptainSignature = pickCaptainSignatureFromHistory(
     history,
     lastReturnTime,
   );
+
+  const storedCaptainSignature = (() => {
+    if (!storedCaptainSignatureRaw) return null;
+    if (lastReturnTime && storedSignedAtMs <= lastReturnTime) return null;
+    if (directCaptainSignature) {
+      return storedCaptainSignatureRaw === directCaptainSignature
+        ? storedCaptainSignatureRaw
+        : null;
+    }
+    return null;
+  })();
 
   const effectiveSignature =
     directCaptainSignature ||
