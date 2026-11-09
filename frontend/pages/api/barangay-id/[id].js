@@ -2,7 +2,10 @@ import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
 import {
   applyEcCardNameFieldsToUpdates,
+  buildFullResidentPatchFromEcCard,
   buildResidentPatchFromEcCard,
+  extractPurokFromAddress,
+  resolveResidentIdForEcCard,
   shouldSyncEcCardEditsToResident,
 } from "../../../src/lib/ecCardResidentSync";
 export default async function handler(req, res) {
@@ -113,6 +116,9 @@ export default async function handler(req, res) {
           updates.purok = req.body.purok
             ? String(req.body.purok).trim().toUpperCase()
             : null;
+        } else if (updates.address) {
+          const inferred = extractPurokFromAddress(updates.address);
+          if (inferred) updates.purok = inferred;
         }
         if (req.body.contact_number !== undefined) {
           updates.contact_number = req.body.contact_number || null;
@@ -140,31 +146,79 @@ export default async function handler(req, res) {
 
       let residentSynced = false;
       let residentSyncError = null;
-      const residentId =
-        data?.resident_id || existingCard?.resident_id || null;
+      let residentSyncSkippedReason = null;
+      let residentAfterSync = null;
+      const mergedCard = { ...existingCard, ...data };
 
-      if (
-        residentId &&
+      const isDemographicEdit =
         shouldSyncEcCardEditsToResident(action) &&
-        Object.keys(updates).length > 1
-      ) {
-        const mergedCard = { ...existingCard, ...data };
-        const residentPatch = buildResidentPatchFromEcCard(mergedCard, updates);
-        if (residentPatch) {
-          const { error: residentErr } = await supabase
-            .from("residents")
-            .update(residentPatch)
-            .eq("id", residentId)
-            .eq("tenant_id", tenantId);
+        Object.keys(updates).length > 1 &&
+        !["renew", "revoke", "activate", "toggle_print"].includes(action);
 
-          if (residentErr) {
-            console.error(
-              "EC card → resident sync failed:",
-              residentErr.message,
-            );
-            residentSyncError = residentErr.message;
+      if (isDemographicEdit) {
+        const residentId = await resolveResidentIdForEcCard(
+          supabase,
+          tenantId,
+          mergedCard,
+        );
+
+        if (!residentId) {
+          residentSyncSkippedReason = "no_linked_resident";
+        } else {
+          if (!data.resident_id && residentId) {
+            await supabase
+              .from("barangay_ids")
+              .update({ resident_id: residentId })
+              .eq("id", id)
+              .eq("tenant_id", tenantId);
+            data.resident_id = residentId;
+          }
+
+          const { data: censusRow } = await supabase
+            .from("residents")
+            .select("census_extras")
+            .eq("id", residentId)
+            .eq("tenant_id", tenantId)
+            .maybeSingle();
+
+          const useFullDemographicSync =
+            !action || action === "update" || action === "edit";
+          const residentPatch = useFullDemographicSync
+            ? buildFullResidentPatchFromEcCard(
+                mergedCard,
+                censusRow?.census_extras,
+              )
+            : buildResidentPatchFromEcCard(mergedCard, updates);
+
+          if (!residentPatch) {
+            residentSyncSkippedReason = "nothing_to_sync";
           } else {
-            residentSynced = true;
+            const {
+              data: updatedResident,
+              error: residentErr,
+            } = await supabase
+              .from("residents")
+              .update(residentPatch)
+              .eq("id", residentId)
+              .eq("tenant_id", tenantId)
+              .select(
+                "id, first_name, last_name, middle_name, suffix, gender, civil_status, date_of_birth, age, purok, residential_address, ec_card_number",
+              )
+              .maybeSingle();
+
+            if (residentErr) {
+              console.error(
+                "EC card → resident sync failed:",
+                residentErr.message,
+              );
+              residentSyncError = residentErr.message;
+            } else if (!updatedResident) {
+              residentSyncError =
+                "Census record not updated (resident id or tenant mismatch).";
+            } else {
+              residentSynced = true;
+              residentAfterSync = updatedResident;
+            }
           }
         }
       }
@@ -175,6 +229,8 @@ export default async function handler(req, res) {
         data,
         residentSynced,
         residentSyncError,
+        residentSyncSkippedReason,
+        residentAfterSync,
       });
     } catch (error) {
       console.error("PUT /api/barangay-id/[id] error:", error);

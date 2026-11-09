@@ -30,7 +30,10 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
-import { censusExportFileName } from "@/lib/censusMasterExport";
+import {
+  censusExportFileName,
+  getCensusMasterProfileRows,
+} from "@/lib/censusMasterExport";
 import {
   formatCensusResidentNumberDisplay,
   normalizeCensusResidentNumber,
@@ -211,32 +214,85 @@ function deriveCensusAddressFromForm(formData) {
   };
 }
 
+function formatCensusExtraFieldLabel(key) {
+  const k = String(key || "").trim();
+  if (!k) return "Field";
+  const colMatch = k.match(/^_col_(\d+)$/i);
+  if (colMatch) return `Sheet column ${colMatch[1]}`;
+  return k
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function getCensusExtraColumns(resident) {
   const extras = resident?.census_extras;
   if (!extras || typeof extras !== "object") return [];
   const cols = extras.columns && typeof extras.columns === "object" ? extras.columns : {};
   const unnamed = extras.unnamed_columns || {};
-  const rows = Object.entries(cols).map(([key, val]) => ({
-    key,
-    value: val === null || val === undefined ? "" : String(val),
-  }));
-  Object.entries(unnamed).forEach(([key, val]) => {
-    if (val !== null && val !== undefined && String(val).trim() !== "") {
-      rows.push({ key, value: String(val) });
-    }
+  const seen = new Set();
+  const rows = [];
+
+  const push = (key, val) => {
+    if (val === null || val === undefined || String(val).trim() === "") return;
+    const norm = String(key).trim();
+    if (!norm || seen.has(norm)) return;
+    seen.add(norm);
+    rows.push({ key: norm, value: String(val).trim() });
+  };
+
+  Object.entries(cols).forEach(([key, val]) => push(key, val));
+  Object.entries(unnamed).forEach(([key, val]) => push(key, val));
+
+  rows.sort((a, b) => {
+    const aUnnamed = /^_col_/i.test(a.key);
+    const bUnnamed = /^_col_/i.test(b.key);
+    if (aUnnamed !== bUnnamed) return aUnnamed ? 1 : -1;
+    return a.key.localeCompare(b.key, undefined, { sensitivity: "base" });
   });
+
   return rows;
+}
+
+const CIVIL_STATUS_FORM_OPTIONS = [
+  "SINGLE",
+  "MARRIED",
+  "WIDOWED",
+  "LEGALLY SEPARATED",
+  "SEPARATED",
+  "ANNULLED",
+];
+
+function civilStatusFromResidentRecord(resident) {
+  if (!resident) return "";
+  const direct = String(resident.civil_status || "").trim();
+  if (direct) return direct;
+  const cols = resident.census_extras?.columns;
+  if (cols && typeof cols === "object") {
+    const fromSheet =
+      cols["CIVIL STATUS"] ?? cols["Civil Status"] ?? cols.civil_status;
+    if (fromSheet != null && String(fromSheet).trim()) {
+      return String(fromSheet).trim();
+    }
+  }
+  return "";
 }
 
 function normalizeCivilStatusForForm(status) {
   const c = String(status || "")
     .trim()
     .toUpperCase();
-  if (c === "M" || c.startsWith("MARRIED")) return "MARRIED";
-  if (c === "S" || c.startsWith("SINGLE")) return "SINGLE";
+  if (!c) return "SINGLE";
+  if (c.includes("LEGAL") && c.includes("SEPARAT")) return "LEGALLY SEPARATED";
+  if (c === "M" || c === "MARRIED" || c.startsWith("MARRIED")) return "MARRIED";
   if (c === "W" || c.startsWith("WIDOW")) return "WIDOWED";
-  if (c.startsWith("SEPARAT")) return "SEPARATED";
-  return c || "SINGLE";
+  if (c === "S" || c === "SINGLE") return "SINGLE";
+  if (c.startsWith("SINGLE")) return "SINGLE";
+  if (c.startsWith("SEPARAT") || c === "LS") return "LEGALLY SEPARATED";
+  if (c.startsWith("ANNUL")) return "ANNULLED";
+  if (CIVIL_STATUS_FORM_OPTIONS.includes(c)) return c;
+  return c;
 }
 
 function formatDateForInput(val) {
@@ -359,7 +415,9 @@ function residentToFormState(resident, tenantAddressDefaults) {
     second_name: resident.second_name || "",
     age: resident.age ?? "",
     gender: (resident.gender || "MALE").toUpperCase(),
-    civil_status: normalizeCivilStatusForForm(resident.civil_status),
+    civil_status: normalizeCivilStatusForForm(
+      civilStatusFromResidentRecord(resident),
+    ),
     date_of_birth: formatDateForInput(resident.date_of_birth),
     place_of_birth: resident.place_of_birth || "",
     residential_address: resident.residential_address || "",
@@ -463,6 +521,7 @@ export default function Residents() {
 
   // Modal state
   const [selectedResident, setSelectedResident] = useState(null);
+  const [residentEcLink, setResidentEcLink] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formData, setFormData] = useState({ ...EMPTY_RESIDENT_FORM });
@@ -780,23 +839,56 @@ export default function Residents() {
         ? `${API_URL}/residents/${selectedResident.id}`
         : `${API_URL}/residents`;
 
+      const tenantId = currentUser?.tenant_id || "ibaoeste";
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getAuthToken()}`,
+          "x-tenant-id": tenantId,
         },
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
       if (data.success) {
-        toast.success(
-          selectedResident ? "Resident updated!" : "Resident added!",
-        );
+        if (selectedResident && data.ecCardsSynced > 0) {
+          toast.success(
+            `Resident updated — ${data.ecCardsSynced} EC card record(s) synced.`,
+            { duration: 5000 },
+          );
+        } else if (selectedResident && data.ecCardSyncError) {
+          toast.success("Resident updated.");
+          toast.error(`EC card sync failed: ${data.ecCardSyncError}`, {
+            duration: 7000,
+          });
+        } else if (
+          selectedResident &&
+          data.ecLink &&
+          !data.ecLink.linked
+        ) {
+          toast.success("Resident updated.");
+          toast.error(
+            "No EC card is linked to this resident. Set the EC card number on the resident to match ID Management (e.g. H00778M-F03753-10), then save again.",
+            { duration: 9000 },
+          );
+        } else if (selectedResident && data.ecLink?.issues?.length) {
+          toast.success("Resident updated — EC card(s) synced.");
+          if (data.ecLink.issues.some((i) => i.includes("mismatch"))) {
+            toast(
+              "EC link repaired (resident_id / EC number). Reopen the EC card to confirm.",
+              { duration: 7000 },
+            );
+          }
+        } else {
+          toast.success(
+            selectedResident ? "Resident updated!" : "Resident added!",
+          );
+        }
         if (data.resident && selectedResident) {
           setSelectedResident(data.resident);
         }
+        if (data.ecLink) setResidentEcLink(data.ecLink);
         setFormBaseline(snapshotFormState(formData));
         closeResidentForm();
         fetchResidents();
@@ -926,6 +1018,7 @@ export default function Residents() {
       const data = await response.json();
       if (response.ok && data.success && data.resident) {
         setSelectedResident(data.resident);
+        setResidentEcLink(data.ecLink || null);
       }
     } catch (err) {
       console.warn("Could not load full resident record:", err);
@@ -1317,12 +1410,6 @@ export default function Residents() {
             ),
           );
 
-          const householdLinkLabel = selectedResident.household_head_id
-            ? "Linked as family member"
-            : selectedResident.is_household_head
-              ? "Household head"
-              : "Not linked";
-
           return (
           <div className="space-y-2 text-[13px]">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-md border border-gray-200 bg-gray-50/80 px-2 py-1.5">
@@ -1368,6 +1455,23 @@ export default function Residents() {
                   {selectedResident.ec_card_number && (
                     <span className="text-[8px] font-semibold text-gray-800 bg-white border border-gray-200 px-1 py-px rounded font-mono">
                       {selectedResident.ec_card_number}
+                    </span>
+                  )}
+                  {residentEcLink && (
+                    <span
+                      className={`text-[8px] font-semibold uppercase px-1 py-px rounded border ${
+                        residentEcLink.linked
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                          : "border-amber-300 bg-amber-50 text-amber-900"
+                      }`}
+                      title={
+                        residentEcLink.linked
+                          ? `${residentEcLink.cardCount} EC card(s) linked`
+                          : residentEcLink.issues?.join(", ") ||
+                            "No EC card row found"
+                      }
+                    >
+                      {residentEcLink.linked ? "EC linked" : "EC not linked"}
                     </span>
                   )}
                   <span
@@ -1441,80 +1545,17 @@ export default function Residents() {
             <ProfileSection compact icon={FileText} title="Census 2026 — Master List">
               <CensusFlagBadges resident={selectedResident} />
 
-              <CensusSubheading compact>Registration & address</CensusSubheading>
+              <CensusSubheading compact>Full details — all import columns</CensusSubheading>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
-                <CensusProfileField
-                  compact
-                  label="Resident number"
-                  value={formatCensusResidentNumberDisplay(
-                    selectedResident.census_resident_number,
-                  )}
-                />
-                <CensusProfileField compact label="EC card number" value={selectedResident.ec_card_number} />
-                <CensusProfileField compact label="Purok (Excel)" value={selectedResident.census_extras?.purok_as_in_sheet} />
-                <CensusProfileField compact label="Subdivision (Excel)" value={selectedResident.census_extras?.subdivision_as_in_sheet} />
-                <CensusProfileField compact label="Kind of residency" value={selectedResident.residency_type} />
-                <CensusProfileField compact label="Household link" value={householdLinkLabel} />
-            </div>
-
-              <CensusSubheading compact>Household & family</CensusSubheading>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
-                <CensusProfileField compact label="Household head name" value={selectedResident.household_head_name} />
-                <CensusProfileField compact label="Family number" value={selectedResident.family_number} />
-                <CensusProfileField compact label="Relation to head" value={selectedResident.relation_to_household_head} />
+                {getCensusMasterProfileRows(selectedResident).map((row) => (
+                  <CensusProfileField
+                    key={row.key}
+                    compact
+                    label={row.label}
+                    value={row.value || "—"}
+                  />
+                ))}
               </div>
-
-              <CensusSubheading compact>Employment & other</CensusSubheading>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
-                <CensusProfileField compact label="Occupation / student" value={selectedResident.occupation} />
-                <CensusProfileField compact label="Monthly salary (HH head)" value={selectedResident.monthly_salary} />
-                <CensusProfileField compact label="Religion" value={selectedResident.religion} />
-                <CensusProfileField compact label="Volunteer" value={selectedResident.volunteer} />
-                <CensusProfileField compact label="Census notes" value={selectedResident.census_notes} />
-              </div>
-
-              {getCensusExtraColumns(selectedResident).length > 0 && (
-                <details className="mt-2 rounded border border-gray-200 bg-white group">
-                  <summary className="cursor-pointer px-2 py-1.5 text-[9px] font-semibold text-gray-700 uppercase tracking-wide list-none flex items-center justify-between gap-2 hover:bg-gray-50 rounded-md">
-                    <span className="flex items-center gap-1.5">
-                      <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
-                      All Excel columns (import snapshot)
-                    </span>
-                    <span className="text-[9px] font-normal text-gray-400 normal-case">
-                      {getCensusExtraColumns(selectedResident).length} fields
-                    </span>
-                  </summary>
-                  <div className="border-t border-gray-100 max-h-40 overflow-y-auto">
-                    <table className="w-full text-left text-[10px]">
-                      <thead className="bg-gray-50 sticky top-0">
-                        <tr>
-                          <th className="px-2 py-1 font-semibold text-gray-500 uppercase w-[40%]">
-                            Column
-                          </th>
-                          <th className="px-2 py-1 font-semibold text-gray-500 uppercase">
-                            Value
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {getCensusExtraColumns(selectedResident).map((row) => (
-                          <tr
-                            key={row.key}
-                            className="border-t border-gray-100 even:bg-gray-50/40"
-                          >
-                            <td className="px-2 py-1 font-medium text-gray-600 align-top">
-                              {row.key}
-                            </td>
-                            <td className="px-2 py-1 text-gray-900 break-words">
-                              {row.value || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </details>
-              )}
             </ProfileSection>
 
             <div className="pt-1.5 flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-1.5 border-t border-gray-100">
@@ -1827,10 +1868,17 @@ export default function Residents() {
                       })
                     }
                   >
-                    <option value="SINGLE">SINGLE</option>
-                    <option value="MARRIED">MARRIED</option>
-                    <option value="WIDOWED">WIDOWED</option>
-                    <option value="SEPARATED">SEPARATED</option>
+                    {CIVIL_STATUS_FORM_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                    {formData.civil_status &&
+                      !CIVIL_STATUS_FORM_OPTIONS.includes(formData.civil_status) && (
+                        <option value={formData.civil_status}>
+                          {formData.civil_status} (saved)
+                        </option>
+                      )}
                   </select>
                 </div>
                 <div className="col-span-2">

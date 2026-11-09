@@ -4,7 +4,7 @@ import {
   applyMultiTokenSearch,
   BARANGAY_ID_SEARCH_FIELDS,
 } from "../../../src/lib/multiTokenNameSearch";
-import { buildResidentPatchFromEcCard } from "../../../src/lib/ecCardResidentSync";
+import { buildFullResidentPatchFromEcCard } from "../../../src/lib/ecCardResidentSync";
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
   if (!userRes) return;
@@ -358,7 +358,16 @@ export default async function handler(req, res) {
 
       if (insertError) throw insertError;
 
-      const residentPatch = buildResidentPatchFromEcCard(newID);
+      const { data: censusRow } = await supabase
+        .from("residents")
+        .select("census_extras")
+        .eq("id", resident.id)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      const residentPatch = buildFullResidentPatchFromEcCard(
+        newID,
+        censusRow?.census_extras,
+      );
       if (resident.id && residentPatch) {
         await supabase
           .from("residents")

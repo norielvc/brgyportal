@@ -43,26 +43,60 @@ export default function ViewBarangayIDModal({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState({});
+  const [liveCard, setLiveCard] = useState(card);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const applyCardToForm = (record) => {
+    if (!record) return;
+    setEditData({
+      full_name: record.full_name || "",
+      id_number: record.id_number || "",
+      gender: record.gender || "",
+      birth_date: record.birth_date || record.date_of_birth || "",
+      civil_status: record.civil_status || "",
+      address: record.address || "",
+    });
+    setIsEditing(false);
+  };
 
   useEffect(() => {
-    if (card) {
-      setEditData({
-        full_name: card.full_name || "",
-        id_number: card.id_number || "",
-        gender: card.gender || "",
-        birth_date: card.birth_date || card.date_of_birth || "",
-        civil_status: card.civil_status || "",
-        address: card.address || "",
-      });
-      setIsEditing(false);
-    }
+    setLiveCard(card);
+    applyCardToForm(card);
   }, [card]);
+
+  useEffect(() => {
+    if (!isOpen || !card?.id) return;
+
+    let cancelled = false;
+    const refresh = async () => {
+      setIsRefreshing(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/barangay-id/${card.id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const json = await res.json();
+        if (cancelled || !json.success || !json.data) return;
+        setLiveCard(json.data);
+        if (!isEditing) applyCardToForm(json.data);
+      } catch {
+        /* keep list snapshot */
+      } finally {
+        if (!cancelled) setIsRefreshing(false);
+      }
+    };
+
+    refresh();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, card?.id]);
 
   const handleSaveEdit = async () => {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/barangay-id/${card.id}`, {
+      const res = await fetch(`/api/barangay-id/${liveCard.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -78,14 +112,25 @@ export default function ViewBarangayIDModal({
       const json = await res.json();
       if (res.ok && json.success) {
         if (json.residentSynced) {
-          toast.success("EC card and Resident Database record updated.");
+          toast.success(
+            "EC card saved — Resident Database updated (name, sex, civil status, DOB, purok/address, EC number). Refresh the resident profile to see changes.",
+            { duration: 7000 },
+          );
         } else if (json.residentSyncError) {
-          toast.success("EC card updated, but census sync failed.");
-          console.warn("Resident sync:", json.residentSyncError);
+          toast.error(
+            `EC card saved, but census sync failed: ${json.residentSyncError}`,
+          );
+        } else if (json.residentSyncSkippedReason === "no_linked_resident") {
+          toast.success("EC card updated.");
+          toast.error(
+            "No matching census resident — link this card to a resident from Issue ID.",
+            { duration: 6000 },
+          );
         } else {
           toast.success("ID details updated successfully!");
         }
         setIsEditing(false);
+        setLiveCard(json.data);
         if (typeof onUpdate === "function") {
           onUpdate(json.data);
         }
@@ -117,11 +162,11 @@ export default function ViewBarangayIDModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  if (!isOpen || !card) return null;
+  if (!isOpen || !liveCard) return null;
 
   const handleCopyID = () => {
-    if (card?.id_number) {
-      navigator.clipboard.writeText(card.id_number);
+    if (liveCard?.id_number) {
+      navigator.clipboard.writeText(liveCard.id_number);
       setCopied(true);
       toast.success("Barangay ID Number copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
@@ -129,21 +174,21 @@ export default function ViewBarangayIDModal({
   };
 
   const isExpired =
-    card.status === "expired" ||
-    (card.expiry_date && new Date(card.expiry_date) < new Date());
+    liveCard.status === "expired" ||
+    (liveCard.expiry_date && new Date(liveCard.expiry_date) < new Date());
 
   const resolvedBirthDate =
-    card.birth_date ||
-    card.date_of_birth ||
-    card.birthday ||
-    card.dob ||
-    card.resident?.date_of_birth ||
-    card.resident?.birth_date ||
-    card.resident?.birthday ||
-    card.resident?.dob ||
+    liveCard.birth_date ||
+    liveCard.date_of_birth ||
+    liveCard.birthday ||
+    liveCard.dob ||
+    liveCard.resident?.date_of_birth ||
+    liveCard.resident?.birth_date ||
+    liveCard.resident?.birthday ||
+    liveCard.resident?.dob ||
     null;
 
-  let resolvedAge = card.age || card.resident?.age || null;
+  let resolvedAge = liveCard.age || liveCard.resident?.age || null;
   if (!resolvedAge && resolvedBirthDate) {
     const b = new Date(resolvedBirthDate);
     if (!isNaN(b.getTime())) {
@@ -211,7 +256,7 @@ export default function ViewBarangayIDModal({
               className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-white hover:bg-blue-50 text-[#03254c] border border-blue-200 rounded-xl font-mono font-black text-xs sm:text-sm shadow-xs transition-all cursor-pointer group"
               title="Click to copy ID Number"
             >
-              <span>{card.id_number}</span>
+              <span>{liveCard.id_number}</span>
               {copied ? (
                 <Check className="w-3.5 h-3.5 text-emerald-600" />
               ) : (
@@ -220,13 +265,16 @@ export default function ViewBarangayIDModal({
             </button>
 
             <span className="text-xs font-bold text-gray-500 hidden sm:inline">
-              {card.gender || "RESIDENT"} • DOB: {resolvedBirthDate || "N/A"}{resolvedAge ? ` (${resolvedAge} yrs old)` : ""}
+              {liveCard.gender || "RESIDENT"} • DOB: {resolvedBirthDate || "N/A"}{resolvedAge ? ` (${resolvedAge} yrs old)` : ""}
+              {isRefreshing ? (
+                <RefreshCw className="inline w-3 h-3 ml-1 animate-spin text-blue-500" />
+              ) : null}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Status Pill */}
-            {card.status === "active" && !isExpired && (
+            {liveCard.status === "active" && !isExpired && (
               <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
                 <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600" />
                 ACTIVE
@@ -238,7 +286,7 @@ export default function ViewBarangayIDModal({
                 EXPIRED
               </span>
             )}
-            {card.status === "revoked" && (
+            {liveCard.status === "revoked" && (
               <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black bg-rose-100 text-rose-800 border border-rose-200">
                 <Ban className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-600" />
                 REVOKED
@@ -329,8 +377,8 @@ export default function ViewBarangayIDModal({
               <div className="p-3 sm:p-8 bg-slate-100/90 rounded-2xl sm:rounded-3xl border border-slate-200/90 flex items-center justify-center min-h-[240px] sm:min-h-[300px] shadow-inner overflow-hidden">
                 <BarangayIDCard
                   idData={{
-                    ...card,
-                    birth_date: resolvedBirthDate || card.birth_date,
+                    ...liveCard,
+                    birth_date: resolvedBirthDate || liveCard.birth_date,
                   }}
                   tenantConfig={tenantConfig}
                   side={cardSide}
@@ -376,7 +424,7 @@ export default function ViewBarangayIDModal({
                     <input type="text" value={editData.full_name} onChange={e => setEditData({...editData, full_name: e.target.value})} className="w-full px-2 py-1.5 border border-blue-200 rounded-lg font-black text-sm uppercase bg-white focus:ring-2 focus:ring-blue-500 outline-none text-gray-900" />
                   ) : (
                     <span className="font-black text-gray-900 text-sm uppercase">
-                      {card.full_name}
+                      {liveCard.full_name}
                     </span>
                   )}
                 </div>
@@ -389,7 +437,7 @@ export default function ViewBarangayIDModal({
                     <input type="text" value={editData.id_number} onChange={e => setEditData({...editData, id_number: e.target.value.toUpperCase()})} className="w-full px-2 py-1.5 border border-blue-200 rounded-lg font-mono font-bold text-sm uppercase bg-white focus:ring-2 focus:ring-blue-500 outline-none text-[#03254c]" />
                   ) : (
                     <span className="font-mono font-bold text-[#03254c]">
-                      {card.id_number}
+                      {liveCard.id_number}
                     </span>
                   )}
                 </div>
@@ -405,7 +453,7 @@ export default function ViewBarangayIDModal({
                     </select>
                   ) : (
                     <span className="font-bold text-gray-800">
-                      {card.gender || "MALE"}
+                      {liveCard.gender || "MALE"}
                     </span>
                   )}
                 </div>
@@ -445,7 +493,7 @@ export default function ViewBarangayIDModal({
                     </select>
                   ) : (
                     <span className="font-bold text-gray-800">
-                      {card.civil_status || "SINGLE"}
+                      {liveCard.civil_status || "SINGLE"}
                     </span>
                   )}
                 </div>
@@ -459,7 +507,7 @@ export default function ViewBarangayIDModal({
                   ) : (
                     <span className="font-bold text-gray-800 flex items-center gap-1.5 mt-0.5">
                       <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                      {card.address || "BARANGAY IBA O' ESTE, CALUMPIT, BULACAN"}
+                      {liveCard.address || "BARANGAY IBA O' ESTE, CALUMPIT, BULACAN"}
                     </span>
                   )}
                 </div>
@@ -482,7 +530,7 @@ export default function ViewBarangayIDModal({
                   </span>
                   <span className="font-bold text-gray-800 flex items-center gap-1 mt-0.5">
                     <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                    {card.issue_date}
+                    {liveCard.issue_date}
                   </span>
                 </div>
 
@@ -492,7 +540,7 @@ export default function ViewBarangayIDModal({
                   </span>
                   <span className="font-bold text-emerald-700 flex items-center gap-1 mt-0.5">
                     <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                    {card.expiry_date}
+                    {liveCard.expiry_date}
                   </span>
                 </div>
 
@@ -510,7 +558,7 @@ export default function ViewBarangayIDModal({
                     Administrative Remarks
                   </span>
                   <span className="font-medium text-gray-600 italic">
-                    {card.remarks || "Official Barangay EC Card generated via Master Census Registry."}
+                    {liveCard.remarks || "Official Barangay EC Card generated via Master Census Registry."}
                   </span>
                 </div>
 
@@ -520,7 +568,7 @@ export default function ViewBarangayIDModal({
                   </span>
                   <span className="font-mono font-bold text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded flex items-center gap-1 w-fit mt-0.5">
                     <QrCode className="w-3.5 h-3.5 text-blue-600" />
-                    {card.id_number}
+                    {liveCard.id_number}
                   </span>
                 </div>
               </div>
@@ -531,12 +579,12 @@ export default function ViewBarangayIDModal({
         {/* Modal Footer Actions */}
         <div className="shrink-0 border-t border-gray-200 bg-white px-4 sm:px-6 py-4">
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-end gap-2">
-            {card.status === "active" && onRevoke ? (
+            {liveCard.status === "active" && onRevoke ? (
               <button
                 type="button"
                 onClick={() => {
                   handleClose();
-                  onRevoke(card);
+                  onRevoke(liveCard);
                 }}
                 className="flex-1 sm:flex-none px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer border border-rose-200/80"
               >
@@ -549,7 +597,7 @@ export default function ViewBarangayIDModal({
               type="button"
               onClick={() => {
                 handleClose();
-                if (onPrint) onPrint(card);
+                if (onPrint) onPrint(liveCard);
               }}
               className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-[#03254c] via-[#043b78] to-blue-700 hover:from-[#021b37] hover:to-blue-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center justify-center gap-2 cursor-pointer active:scale-95"
             >

@@ -1,8 +1,21 @@
 import { supabase } from "../../../lib/supabase";
+import { authenticateToken } from "../../../src/lib/api-auth";
+import {
+  getResidentEcLinkStatus,
+  syncEcCardsFromResident,
+} from "../../../src/lib/ecCardResidentSync";
 import {
   normalizeCensusResidentNumber,
   withNormalizedCensusResidentNumber,
 } from "../../../src/lib/censusResidentNumber";
+
+async function resolveTenantId(req, res) {
+  let tenantId = req.headers["x-tenant-id"];
+  if (tenantId) return tenantId;
+  const userRes = await authenticateToken(req, res);
+  if (!userRes) return null;
+  return userRes.tenant_id || null;
+}
 
 const sanitizeResidentData = (data) => {
   const sanitized = { ...data };
@@ -20,7 +33,7 @@ const sanitizeResidentData = (data) => {
 };
 
 export default async function handler(req, res) {
-  const tenantId = req.headers["x-tenant-id"];
+  const tenantId = await resolveTenantId(req, res);
   if (!tenantId) {
     return res
       .status(403)
@@ -49,9 +62,34 @@ export default async function handler(req, res) {
         .single();
 
       if (error) throw error;
+
+      const resident = withNormalizedCensusResidentNumber(data);
+      let ecCardsSynced = 0;
+      let ecCardSyncError = null;
+      let ecCardIds = [];
+
+      try {
+        const sync = await syncEcCardsFromResident(supabase, tenantId, resident);
+        ecCardsSynced = sync.synced;
+        ecCardIds = sync.cardIds || [];
+        if (sync.errors?.length) {
+          ecCardSyncError = sync.errors.join("; ");
+          console.error("Resident → EC card sync partial failure:", sync.errors);
+        }
+      } catch (syncErr) {
+        ecCardSyncError = syncErr.message || String(syncErr);
+        console.error("Resident → EC card sync failed:", syncErr);
+      }
+
+      const ecLink = await getResidentEcLinkStatus(supabase, tenantId, resident);
+
       return res.status(200).json({
         success: true,
-        resident: withNormalizedCensusResidentNumber(data),
+        resident,
+        ecCardsSynced,
+        ecCardSyncError,
+        ecCardIds,
+        ecLink,
       });
     } catch (error) {
       console.error("Error updating resident:", error);
@@ -89,9 +127,13 @@ export default async function handler(req, res) {
           .json({ success: false, message: "Resident not found" });
       }
 
+      const resident = withNormalizedCensusResidentNumber(data);
+      const ecLink = await getResidentEcLinkStatus(supabase, tenantId, resident);
+
       return res.status(200).json({
         success: true,
-        resident: withNormalizedCensusResidentNumber(data),
+        resident,
+        ecLink,
       });
     } catch (error) {
       console.error("Error fetching resident:", error);

@@ -67,6 +67,49 @@ function boolCell(resident, header, field) {
   return "";
 }
 
+/** Master list column order for profile (includes empty cells as “—” in the UI). */
+export function getCensusMasterProfileRows(resident) {
+  if (!resident) return [];
+
+  const un = resident.census_extras?.unnamed_columns || {};
+  const values = residentToCensusMasterRow(resident);
+  const rows = [];
+
+  CENSUS_MASTER_HEADERS.forEach((header, i) => {
+    // Column 28: combined display name from import — redundant with profile header.
+    if (i === 28) return;
+
+    const raw = values[i];
+    const value =
+      raw === null || raw === undefined || raw === ""
+        ? ""
+        : String(raw).trim();
+
+    let label;
+    if (header && String(header).trim()) {
+      label = String(header).trim();
+    } else if (i === 29) {
+      label = "Col 29 EC";
+    } else if (i === 30) {
+      label = "Col 30 EC";
+    } else {
+      label = `Sheet column ${i}`;
+    }
+
+    rows.push({ key: `master-${i}`, label, value });
+
+    if (i === 30) {
+      const col31 =
+        un.col_31_ec === null || un.col_31_ec === undefined
+          ? ""
+          : String(un.col_31_ec).trim();
+      rows.push({ key: "col_31_ec", label: "Col 31 EC", value: col31 });
+    }
+  });
+
+  return rows;
+}
+
 export function residentToCensusMasterRow(resident) {
   const un = resident.census_extras?.unnamed_columns || {};
   const birth = snapshot(resident, "BIRTHDATE") || resident.date_of_birth || "";
