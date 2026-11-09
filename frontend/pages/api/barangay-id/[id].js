@@ -8,6 +8,8 @@ import {
   resolveResidentIdForEcCard,
   shouldSyncEcCardEditsToResident,
 } from "../../../src/lib/ecCardResidentSync";
+import { EC_CARD_NO_EXPIRY_DATE } from "../../../src/lib/ecCard";
+
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
   if (!userRes) return;
@@ -74,12 +76,9 @@ export default async function handler(req, res) {
       };
 
       if (action === "renew") {
-        const years = parseInt(validity_years || 1, 10);
-        const newExpiry = new Date();
-        newExpiry.setFullYear(newExpiry.getFullYear() + years);
-        updates.expiry_date = newExpiry.toISOString().split("T")[0];
+        updates.expiry_date = EC_CARD_NO_EXPIRY_DATE;
         updates.status = "active";
-        updates.remarks = `Renewed on ${new Date().toLocaleDateString()} for ${years} year(s)`;
+        updates.remarks = `Reactivated on ${new Date().toLocaleDateString()} (no fixed expiry)`;
       } else if (action === "revoke") {
         updates.status = "revoked";
         updates.remarks = remarks || "Revoked by Barangay Administrator";

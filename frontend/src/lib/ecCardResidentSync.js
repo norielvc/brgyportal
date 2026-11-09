@@ -1,4 +1,11 @@
 import { joinNameParts, parseEcDisplayName } from "./personName";
+import {
+  generateFullAddress,
+  stripHouseNoLabelFromAddress,
+  cleanBarangayName,
+  cleanMunicipalityName,
+  cleanProvinceName,
+} from "./addressHelper";
 
 const UPPER = (v) =>
   v === undefined || v === null || v === ""
@@ -600,4 +607,145 @@ export async function resolveResidentIdForEcCard(supabase, tenantId, card) {
   }
 
   return null;
+}
+
+function censusExtrasSnapshot(resident, key) {
+  const cols = resident?.census_extras?.columns || {};
+  if (cols[key] !== undefined && cols[key] !== null && String(cols[key]).trim() !== "") {
+    return String(cols[key]).trim();
+  }
+  const un = resident?.census_extras?.unnamed_columns || {};
+  for (const [k, v] of Object.entries(un)) {
+    if (
+      new RegExp(`^${String(key).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i").test(
+        k,
+      ) &&
+      v != null &&
+      String(v).trim() !== ""
+    ) {
+      return String(v).trim();
+    }
+  }
+  return "";
+}
+
+/** Gender from census sheet snapshot when present, else residents.gender (F/M → FEMALE/MALE). */
+export function genderFromResidentRecord(resident) {
+  const fromSheet = censusExtrasSnapshot(resident, "GENDER");
+  const raw = fromSheet || resident?.gender || "";
+  const u = String(raw).trim().toUpperCase();
+  if (u === "F" || u === "FEMALE" || u.startsWith("FEM")) return "FEMALE";
+  if (u === "M" || u === "MALE" || u.startsWith("MAL")) return "MALE";
+  return u || "MALE";
+}
+
+export function civilStatusRawFromResidentRecord(resident) {
+  const fromSheet = censusExtrasSnapshot(resident, "CIVIL STATUS");
+  const direct = String(resident?.civil_status || "").trim();
+  return fromSheet || direct;
+}
+
+function normalizeCivilStatusForEcForm(status) {
+  const c = String(status || "").trim().toUpperCase();
+  if (!c) return "SINGLE";
+  if (c.includes("LEGAL") && c.includes("SEPARAT")) return "LEGALLY SEPARATED";
+  if (c === "M" || c.startsWith("MARRIED")) return "MARRIED";
+  if (c.startsWith("WIDOW")) return "WIDOWED";
+  if (c === "S" || c.startsWith("SINGLE")) return "SINGLE";
+  if (c.startsWith("SEPARAT")) return "LEGALLY SEPARATED";
+  if (c.startsWith("ANNUL")) return "ANNULLED";
+  return c;
+}
+
+function formatBirthDateForEcForm(resident) {
+  const raw =
+    resident?.date_of_birth ||
+    censusExtrasSnapshot(resident, "BIRTHDATE") ||
+    resident?.birth_date ||
+    resident?.birthday ||
+    "";
+  if (!raw) return "";
+  const s = String(raw).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  if (
+    !Number.isNaN(d.getTime()) &&
+    d.getFullYear() >= 1900 &&
+    d.getFullYear() <= 2100
+  ) {
+    return d.toISOString().split("T")[0];
+  }
+  return "";
+}
+
+/**
+ * Populate EC issuance form from full master census resident (includes census_extras).
+ */
+export function buildEcCardFormFromResident(resident, options = {}) {
+  const { defaultNextEcNo = "", generatePreviewNumber } = options;
+  if (!resident) return null;
+
+  const firstName = resident.first_name || censusExtrasSnapshot(resident, "FIRST NAME") || "";
+  const middleName = resident.middle_name || censusExtrasSnapshot(resident, "MIDDLE NAME") || "";
+  const lastName = resident.last_name || censusExtrasSnapshot(resident, "LAST NAME") || "";
+  const suffix = resident.suffix || censusExtrasSnapshot(resident, "EXT") || "";
+
+  const fullName =
+    String(resident.full_name || "").trim() ||
+    joinNameParts({
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
+      suffix,
+    }) ||
+    `${lastName}, ${firstName}`.trim();
+
+  const purok =
+    resident.census_extras?.purok_as_in_sheet ||
+    censusExtrasSnapshot(resident, "PUROK") ||
+    resident.purok ||
+    "PUROK 1";
+
+  const houseNumber =
+    resident.house_number ||
+    censusExtrasSnapshot(resident, "HOUSE NUMBER / BLOCK LOT") ||
+    "";
+
+  const builtAddress = generateFullAddress({
+    house_number: houseNumber,
+    purok,
+    subdivision: resident.subdivision || censusExtrasSnapshot(resident, "SUBDIVISION"),
+    barangay: cleanBarangayName(resident.barangay) || resident.barangay,
+    municipality: cleanMunicipalityName(resident.municipality) || resident.municipality,
+    province: cleanProvinceName(resident.province) || resident.province,
+  });
+
+  const fullAddress = stripHouseNoLabelFromAddress(
+    String(resident.residential_address || "").trim() || builtAddress,
+  );
+
+  const ecNo =
+    String(resident.ec_card_number || "").trim() ||
+    (typeof generatePreviewNumber === "function"
+      ? generatePreviewNumber(resident)
+      : "") ||
+    defaultNextEcNo;
+
+  return {
+    ec_card_no: ecNo,
+    full_name: fullName,
+    first_name: firstName,
+    middle_name: middleName,
+    last_name: lastName,
+    suffix,
+    purok: String(purok).trim().toUpperCase(),
+    address: fullAddress,
+    gender: genderFromResidentRecord(resident),
+    birth_date: formatBirthDateForEcForm(resident),
+    civil_status: normalizeCivilStatusForEcForm(
+      civilStatusRawFromResidentRecord(resident),
+    ),
+    contact_number: resident.contact_number || resident.phone_number || "",
+    remarks: "Official EC Card issued",
+  };
 }

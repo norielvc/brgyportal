@@ -4,7 +4,11 @@ import {
   applyMultiTokenSearch,
   BARANGAY_ID_SEARCH_FIELDS,
 } from "../../../src/lib/multiTokenNameSearch";
-import { buildFullResidentPatchFromEcCard } from "../../../src/lib/ecCardResidentSync";
+import {
+  buildFullResidentPatchFromEcCard,
+  normalizeEcCardNumber,
+} from "../../../src/lib/ecCardResidentSync";
+import { EC_CARD_NO_EXPIRY_DATE } from "../../../src/lib/ecCard";
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
   if (!userRes) return;
@@ -185,7 +189,6 @@ export default async function handler(req, res) {
         photo_url,
         cardholder_signature_url,
         captain_signature_url,
-        validity_years = 1,
         issue_date,
         remarks,
       } = req.body;
@@ -216,18 +219,26 @@ export default async function handler(req, res) {
       let idNumber = customIdNumber ? String(customIdNumber).trim().toUpperCase() : null;
 
       if (idNumber) {
-        // Check if custom EC Card No already exists
+        idNumber = normalizeEcCardNumber(idNumber);
         const { data: duplicate } = await supabase
           .from("barangay_ids")
-          .select("id")
+          .select("id, id_number, full_name, resident_id")
           .eq("tenant_id", tenantId)
           .eq("id_number", idNumber)
           .maybeSingle();
 
-        if (duplicate) {
+        if (duplicate && String(duplicate.resident_id) !== String(resident_id)) {
           return res.status(400).json({
             success: false,
-            message: `EC Card No. "${idNumber}" is already in use by another card. Please provide a unique EC Card No.`,
+            code: "EC_CARD_NUMBER_DUPLICATE",
+            message: `EC Card No. "${duplicate.id_number}" is already issued to ${duplicate.full_name || "another resident"}. Choose a different number.`,
+          });
+        }
+        if (duplicate && String(duplicate.resident_id) === String(resident_id)) {
+          return res.status(400).json({
+            success: false,
+            code: "EC_CARD_ALREADY_ISSUED",
+            message: `This resident already has EC Card No. "${duplicate.id_number}". View or renew the existing card instead.`,
           });
         }
       } else {
@@ -260,12 +271,7 @@ export default async function handler(req, res) {
           message: "Invalid issue date.",
         });
       }
-      const validityYears = Math.max(
-        1,
-        parseInt(String(validity_years ?? 1), 10) || 1,
-      );
-      const expDate = new Date(startIssueDate);
-      expDate.setFullYear(expDate.getFullYear() + validityYears);
+      const expDateIso = EC_CARD_NO_EXPIRY_DATE;
 
       const firstName = customFirstName !== undefined && customFirstName !== "" ? customFirstName : resident.first_name;
       const middleName = customMiddleName !== undefined ? customMiddleName : resident.middle_name;
@@ -344,7 +350,7 @@ export default async function handler(req, res) {
         qr_code_data: qrPayload,
         status: "active",
         issue_date: startIssueDate.toISOString().split("T")[0],
-        expiry_date: expDate.toISOString().split("T")[0],
+        expiry_date: expDateIso,
         issued_by: userRes.id || null,
         issued_by_name: `${userRes.first_name || ""} ${userRes.last_name || ""}`.trim() || userRes.email,
         remarks: remarks || "Officially verified resident ID",

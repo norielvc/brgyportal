@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   X,
   Search,
+  AlertTriangle,
   CreditCard,
   CheckCircle2,
   Sparkles,
@@ -18,6 +19,12 @@ import {
 import toast from "react-hot-toast";
 import BarangayIDCard from "../UI/BarangayIDCard";
 import useScrollLock from "@/lib/useScrollLock";
+import { getAuthToken, getUserData } from "@/lib/auth";
+import {
+  buildEcCardFormFromResident,
+  genderFromResidentRecord,
+} from "@/lib/ecCardResidentSync";
+import { EC_CARD_NO_EXPIRY_DATE } from "@/lib/ecCard";
 
 export default function IssueIDModal({
   isOpen,
@@ -53,6 +60,12 @@ export default function IssueIDModal({
 
   const [previewSide, setPreviewSide] = useState("front"); // 'front' | 'back' | 'both'
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingResident, setIsLoadingResident] = useState(false);
+  const [ecCardNoCheck, setEcCardNoCheck] = useState({
+    checking: false,
+    available: true,
+    message: null,
+  });
 
   // Fetch next EC number on open
   useEffect(() => {
@@ -111,6 +124,51 @@ export default function IssueIDModal({
     return () => clearTimeout(timer);
   }, [searchQuery, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || !selectedResident) {
+      setEcCardNoCheck({ checking: false, available: true, message: null });
+      return;
+    }
+    const serial = String(formData.ec_card_no || "").trim();
+    if (serial.length < 5) {
+      setEcCardNoCheck({ checking: false, available: true, message: null });
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setEcCardNoCheck((prev) => ({ ...prev, checking: true }));
+      try {
+        const token = getAuthToken();
+        const user = getUserData();
+        const headers = { Authorization: `Bearer ${token}` };
+        if (user?.tenant_id) headers["x-tenant-id"] = user.tenant_id;
+        const params = new URLSearchParams({
+          number: serial,
+          exclude_resident_id: selectedResident.id,
+        });
+        const res = await fetch(`/api/barangay-id/check?${params}`, { headers });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          setEcCardNoCheck({
+            checking: false,
+            available: true,
+            message: null,
+          });
+          return;
+        }
+        setEcCardNoCheck({
+          checking: false,
+          available: Boolean(json.available),
+          message: json.message || null,
+        });
+      } catch {
+        setEcCardNoCheck({ checking: false, available: true, message: null });
+      }
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [formData.ec_card_no, selectedResident, isOpen]);
+
   // Generate dynamic preview ID number for resident
   const generatePreviewNumber = (res) => {
     if (!res) return defaultNextEcNo || "H00001-F00001";
@@ -124,60 +182,40 @@ export default function IssueIDModal({
     return `H${String(num).padStart(5, "0")}-F00001`;
   };
 
-  const handleSelectResident = (res) => {
-    setSelectedResident(res);
-
-    const resolvedBirthDate =
-      res.date_of_birth ||
-      res.birth_date ||
-      res.birthday ||
-      res.dob ||
-      "";
-
-    let formattedBirthDate = "";
-    if (resolvedBirthDate) {
-      try {
-        const d = new Date(resolvedBirthDate);
-        if (!isNaN(d.getTime()) && d.getFullYear() >= 1900 && d.getFullYear() <= 2026) {
-          formattedBirthDate = d.toISOString().split("T")[0];
-        }
-      } catch {
-        formattedBirthDate = "";
-      }
-    }
-
-    const fullName = [res.first_name, res.middle_name, res.last_name, res.suffix]
-      .filter(Boolean)
-      .join(" ");
-
-    const fullAddress = [
-      res.house_number,
-      res.purok,
-      res.barangay,
-      res.municipality,
-      res.province,
-    ]
-      .filter(Boolean)
-      .join(", ") || (res.address || "BARANGAY IBA O' ESTE, CALUMPIT, BULACAN");
-
-    const ecNo = res.id_number || defaultNextEcNo || generatePreviewNumber(res);
-
-    setFormData({
-      ec_card_no: ecNo,
-      full_name: fullName || `${res.last_name || ""}, ${res.first_name || ""}`,
-      first_name: res.first_name || "",
-      middle_name: res.middle_name || "",
-      last_name: res.last_name || "",
-      suffix: res.suffix || "",
-      purok: res.purok || "PUROK 1",
-      address: fullAddress,
-      gender: res.gender || "MALE",
-      birth_date: formattedBirthDate,
-      civil_status: res.civil_status || "SINGLE",
-      contact_number: res.contact_number || res.phone_number || "",
-      validity_years: 1,
-      remarks: "Official EC Card issued",
+  const applyResidentToEcForm = (resident) => {
+    const nextForm = buildEcCardFormFromResident(resident, {
+      defaultNextEcNo,
+      generatePreviewNumber,
     });
+    if (nextForm) setFormData(nextForm);
+  };
+
+  const handleSelectResident = async (res) => {
+    if (!res?.id) return;
+    setSelectedResident(res);
+    setIsLoadingResident(true);
+    try {
+      const token = getAuthToken();
+      const user = getUserData();
+      const headers = { Authorization: `Bearer ${token}` };
+      if (user?.tenant_id) headers["x-tenant-id"] = user.tenant_id;
+      const response = await fetch(`/api/residents/${res.id}`, { headers });
+      if (response.ok) {
+        const json = await response.json();
+        const full = json.resident || res;
+        setSelectedResident(full);
+        applyResidentToEcForm(full);
+      } else {
+        applyResidentToEcForm(res);
+        toast.error("Could not load full census record; showing search summary only.");
+      }
+    } catch (err) {
+      console.error("Load resident for EC card:", err);
+      applyResidentToEcForm(res);
+      toast.error("Could not load full census record; showing search summary only.");
+    } finally {
+      setIsLoadingResident(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -188,6 +226,11 @@ export default function IssueIDModal({
 
     if (!formData.ec_card_no?.trim()) {
       toast.error("Please provide a valid EC Card Number.");
+      return;
+    }
+
+    if (!ecCardNoCheck.available && ecCardNoCheck.message) {
+      toast.error(ecCardNoCheck.message);
       return;
     }
 
@@ -208,7 +251,6 @@ export default function IssueIDModal({
         birth_date: formData.birth_date || null,
         civil_status: formData.civil_status,
         contact_number: formData.contact_number?.trim(),
-        validity_years: formData.validity_years,
         remarks: formData.remarks?.trim(),
       };
 
@@ -223,7 +265,15 @@ export default function IssueIDModal({
 
       const json = await res.json();
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Failed to issue Barangay ID");
+        const msg = json.message || "Failed to issue Barangay ID";
+        if (json.code === "EC_CARD_NUMBER_DUPLICATE" || json.code === "EC_CARD_ALREADY_ISSUED") {
+          setEcCardNoCheck({
+            checking: false,
+            available: false,
+            message: msg,
+          });
+        }
+        throw new Error(msg);
       }
 
       toast.success(json.message || "Official EC Card successfully issued! 🎉");
@@ -293,11 +343,7 @@ export default function IssueIDModal({
     gender: formData.gender || selectedResident?.gender || "MALE",
     civil_status: formData.civil_status || selectedResident?.civil_status || "SINGLE",
     contact_number: formData.contact_number,
-    expiry_date: new Date(
-      Date.now() + (formData.validity_years || 1) * 365 * 24 * 60 * 60 * 1000
-    )
-      .toISOString()
-      .split("T")[0],
+    expiry_date: EC_CARD_NO_EXPIRY_DATE,
   };
 
   return (
@@ -412,7 +458,8 @@ export default function IssueIDModal({
                           </p>
                           <p className="text-xs text-gray-500 font-semibold flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                            {res.purok || "Purok N/A"} • {res.gender || "MALE"} •{" "}
+                            {res.purok || "Purok N/A"} •{" "}
+                            {genderFromResidentRecord(res)} •{" "}
                             {res.civil_status || "SINGLE"}
                           </p>
                         </div>
@@ -469,7 +516,7 @@ export default function IssueIDModal({
                       </h4>
                     </div>
                     <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                      Live Preview Sync
+                      {isLoadingResident ? "Loading census…" : "Live Preview Sync"}
                     </span>
                   </div>
 
@@ -491,12 +538,34 @@ export default function IssueIDModal({
                           })
                         }
                         placeholder="e.g. H00001-F00001"
-                        className="w-full px-3.5 py-2.5 bg-blue-50/50 border border-blue-200 rounded-xl font-mono font-black text-sm text-[#03254c] focus:outline-none focus:ring-2 focus:ring-[#03254c] uppercase transition-all shadow-inner"
+                        className={`w-full px-3.5 py-2.5 rounded-xl font-mono font-black text-sm text-[#03254c] focus:outline-none focus:ring-2 uppercase transition-all shadow-inner ${
+                          !ecCardNoCheck.available
+                            ? "bg-rose-50 border-2 border-rose-400 focus:ring-rose-500"
+                            : "bg-blue-50/50 border border-blue-200 focus:ring-[#03254c]"
+                        }`}
                       />
                     </div>
-                    <p className="text-[10px] text-gray-400 font-semibold mt-1">
-                      Official card identifier encoded into the anti-tamper QR code.
-                    </p>
+                    {ecCardNoCheck.checking && (
+                      <p className="text-[10px] text-gray-500 font-semibold mt-1">
+                        Checking if this EC Card No. is available…
+                      </p>
+                    )}
+                    {!ecCardNoCheck.checking && !ecCardNoCheck.available && ecCardNoCheck.message && (
+                      <div
+                        className="mt-2 flex items-start gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-rose-800"
+                        role="alert"
+                      >
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <p className="text-[11px] font-bold leading-snug">
+                          {ecCardNoCheck.message}
+                        </p>
+                      </div>
+                    )}
+                    {!ecCardNoCheck.checking && ecCardNoCheck.available && (
+                      <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                        Official card identifier encoded into the anti-tamper QR code.
+                      </p>
+                    )}
                   </div>
 
                   {/* 2. Full Name */}
@@ -633,32 +702,15 @@ export default function IssueIDModal({
                     </div>
                   </div>
 
-                  {/* 6. Validity Period */}
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-600 uppercase mb-1">
-                      Card Validity Period
-                    </label>
-                    <select
-                      value={formData.validity_years}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          validity_years: parseInt(e.target.value, 10),
-                        }))
-                      }
-                      className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#03254c] cursor-pointer"
-                    >
-                      <option value={1}>1 Year Validity (Standard)</option>
-                      <option value={2}>2 Years Validity</option>
-                      <option value={3}>3 Years Validity</option>
-                    </select>
-                  </div>
-
                   {/* Submit Action */}
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={isSubmitting}
+                    disabled={
+                      isSubmitting ||
+                      ecCardNoCheck.checking ||
+                      (!ecCardNoCheck.available && Boolean(ecCardNoCheck.message))
+                    }
                     className="w-full mt-3 px-6 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-[0.99]"
                   >
                     <CheckCircle2 className="w-4 h-4" />

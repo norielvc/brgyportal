@@ -25,6 +25,7 @@ import {
 import toast from "react-hot-toast";
 import BarangayIDCard from "../UI/BarangayIDCard";
 import useScrollLock from "@/lib/useScrollLock";
+import { EC_CARD_NO_EXPIRY_DATE } from "@/lib/ecCard";
 
 export default function ViewBarangayIDModal({
   isOpen,
@@ -175,7 +176,9 @@ export default function ViewBarangayIDModal({
 
   const isExpired =
     liveCard.status === "expired" ||
-    (liveCard.expiry_date && new Date(liveCard.expiry_date) < new Date());
+    (liveCard.expiry_date &&
+      liveCard.expiry_date !== EC_CARD_NO_EXPIRY_DATE &&
+      new Date(liveCard.expiry_date) < new Date());
 
   const resolvedBirthDate =
     liveCard.birth_date ||
@@ -540,7 +543,11 @@ export default function ViewBarangayIDModal({
                   </span>
                   <span className="font-bold text-emerald-700 flex items-center gap-1 mt-0.5">
                     <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                    {liveCard.expiry_date}
+                    {!liveCard.expiry_date ||
+                    String(liveCard.expiry_date).slice(0, 10) ===
+                      EC_CARD_NO_EXPIRY_DATE
+                      ? "No expiration"
+                      : liveCard.expiry_date}
                   </span>
                 </div>
 

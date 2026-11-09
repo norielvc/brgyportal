@@ -1,0 +1,19 @@
+---
+description: Ask which GitHub account before any git push
+alwaysApply: true
+---
+
+# GitHub account before push
+
+Before **any** `git push` (or when the user says "push"):
+
+1. Run `gh auth status` and note logged-in accounts and which is active.
+2. **Must** use the **AskQuestion** tool to ask which GitHub account to use for this push. Options should include at least:
+   - `norielvc` (Recommended for `norielvc/brgyportal` and related repos)
+   - `lims-ptsi`
+   - Any other accounts shown by `gh auth status`
+3. Do **not** run `git push` until the user selects an account.
+4. Run `gh auth switch --user <selected-account>` then `git push`.
+5. If push fails with 403, tell the user the active account lacks access and offer to switch or fix credentials—do not retry push without another account choice.
+
+This repo's `origin` is `https://github.com/norielvc/brgyportal.git` — default recommendation is **norielvc** unless the user chooses otherwise.
