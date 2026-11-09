@@ -3,6 +3,11 @@ import jwt from "jsonwebtoken";
 import { getJwtSecret } from "../../../lib/jwtSecret";
 import { RESIDENT_SEARCH_SELECT } from "../../../src/lib/residentListQuery";
 import { withNormalizedCensusResidentNumber } from "../../../src/lib/censusResidentNumber";
+import {
+  applyMultiTokenSearch,
+  parseSearchTokens,
+  RESIDENT_NAME_SEARCH_FIELDS,
+} from "../../../src/lib/multiTokenNameSearch";
 
 /**
  * RESIDENT SEARCH API (Next.js)
@@ -41,7 +46,7 @@ export default async function handler(req, res) {
   const limit = parseInt(req.query.limit, 10) || 20;
   const offset = (page - 1) * limit;
 
-  const tokens = searchParam.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const tokens = parseSearchTokens(searchParam);
 
   try {
     let query = supabase
@@ -50,10 +55,11 @@ export default async function handler(req, res) {
       .eq("tenant_id", tenantId);
 
     if (tokens.length > 0) {
-      const tokenConditions = tokens.map((token) =>
-        `or(full_name.ilike.%${token}%,first_name.ilike.%${token}%,last_name.ilike.%${token}%,middle_name.ilike.%${token}%,purok.ilike.%${token}%)`
+      query = applyMultiTokenSearch(
+        query,
+        searchParam,
+        RESIDENT_NAME_SEARCH_FIELDS,
       );
-      query = query.or(`and(${tokenConditions.join(",")})`);
     }
 
     // Advanced filters

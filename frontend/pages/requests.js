@@ -103,6 +103,13 @@ import {
 } from "@/lib/barangayClearancePurposes";
 import { mergeResidentDemographicsOntoCertificate } from "@/lib/certificateRequestDemographics";
 import { isCaptainWorkflowHistoryEntry } from "@/lib/captainSignatureDetails";
+import {
+  isCohabitationCertificate,
+  isGuardianshipCertificate,
+  isMedicoLegalCertificate,
+  isNaturalDeathCertificate,
+  isSamePersonCertificate,
+} from "@/lib/certificateDocumentType";
 // API Configuration
 const API_URL = "/api";
 
@@ -2629,27 +2636,9 @@ function RequestDetailsModal({
     return `Submit & Forward — ${inspectionNextWorkflowStep.name}`;
   })();
   const canAct = canUserTakeAction(request);
-  const isGuardianship =
-    String(request.certificate_type || "")
-      .toLowerCase()
-      .includes("guardian") ||
-    String(request.reference_number || "")
-      .toUpperCase()
-      .startsWith("GD");
-  const isMedicoLegal =
-    String(request.certificate_type || "")
-      .toLowerCase()
-      .includes("medico") ||
-    String(request.reference_number || "")
-      .toUpperCase()
-      .startsWith("ML");
-  const isDeath =
-    String(request.certificate_type || "")
-      .toLowerCase()
-      .includes("death") ||
-    String(request.purpose || "")
-      .toLowerCase()
-      .includes("death");
+  const isGuardianship = isGuardianshipCertificate(request);
+  const isMedicoLegal = isMedicoLegalCertificate(request);
+  const isDeath = isNaturalDeathCertificate(request);
 
   // Parse details if string
   let additionalDetails = {};
@@ -8479,48 +8468,11 @@ function ClearancePreviewForRequests({
       : request.purpose || "",
   };
 
-  const isNaturalDeath =
-    String(request.certificate_type || "")
-      .toLowerCase()
-      .includes("death") ||
-    String(request.purpose || "")
-      .toLowerCase()
-      .includes("death") ||
-    String(request.reference_number || "")
-      .toUpperCase()
-      .startsWith("ND");
-
-  const isGuardianship =
-    String(request.certificate_type || "")
-      .toLowerCase()
-      .includes("guardian") ||
-    String(request.reference_number || "")
-      .toUpperCase()
-      .startsWith("GD");
-
-  const isCohabitation =
-    String(request.certificate_type || "")
-      .toLowerCase()
-      .includes("cohabitation") ||
-    String(request.reference_number || "")
-      .toUpperCase()
-      .startsWith("CH");
-
-  const isMedicoLegal =
-    String(request.certificate_type || "")
-      .toLowerCase()
-      .includes("medico") ||
-    String(request.reference_number || "")
-      .toUpperCase()
-      .startsWith("CDL");
-
-  const isSamePerson =
-    String(request.certificate_type || "")
-      .toLowerCase()
-      .includes("same_person") ||
-    String(request.certificate_type || "")
-      .toLowerCase()
-      .includes("same person");
+  const isNaturalDeath = isNaturalDeathCertificate(request);
+  const isGuardianship = isGuardianshipCertificate(request);
+  const isCohabitation = isCohabitationCertificate(request);
+  const isMedicoLegal = isMedicoLegalCertificate(request);
+  const isSamePerson = isSamePersonCertificate(request);
 
   const isBusinessPermit =
     String(request.certificate_type || "").toLowerCase() === "business_permit";

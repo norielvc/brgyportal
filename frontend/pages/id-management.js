@@ -489,7 +489,7 @@ export default function IDManagement() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search name, EC number, street..."
+                placeholder="Search by name (first last), EC number, or purok…"
                 className="w-full pl-8 pr-8 py-1.5 bg-gray-50/80 border border-gray-200 rounded-md text-xs font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#03254c] focus:bg-white transition-all"
               />
               {search && (

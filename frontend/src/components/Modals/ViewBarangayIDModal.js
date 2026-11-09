@@ -77,7 +77,14 @@ export default function ViewBarangayIDModal({
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        toast.success("ID details updated successfully!");
+        if (json.residentSynced) {
+          toast.success("EC card and Resident Database record updated.");
+        } else if (json.residentSyncError) {
+          toast.success("EC card updated, but census sync failed.");
+          console.warn("Resident sync:", json.residentSyncError);
+        } else {
+          toast.success("ID details updated successfully!");
+        }
         setIsEditing(false);
         if (typeof onUpdate === "function") {
           onUpdate(json.data);

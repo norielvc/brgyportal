@@ -1,5 +1,9 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
+import {
+  applyMultiTokenSearch,
+  BARANGAY_ID_SEARCH_FIELDS,
+} from "../../../src/lib/multiTokenNameSearch";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -34,9 +38,12 @@ export default async function handler(req, res) {
         }
       }
 
-      if (search && search.trim()) {
-        const term = search.trim();
-        query = query.or(`full_name.ilike.%${term}%,id_number.ilike.%${term}%,purok.ilike.%${term}%`);
+      if (search && String(search).trim()) {
+        query = applyMultiTokenSearch(
+          query,
+          search,
+          BARANGAY_ID_SEARCH_FIELDS,
+        );
       }
 
       if (printed_status) {

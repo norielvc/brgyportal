@@ -1,5 +1,10 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
+import {
+  applyEcCardNameFieldsToUpdates,
+  buildResidentPatchFromEcCard,
+  shouldSyncEcCardEditsToResident,
+} from "../../../src/lib/ecCardResidentSync";
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
   if (!userRes) return;
@@ -49,6 +54,18 @@ export default async function handler(req, res) {
         remarks,
       } = req.body;
 
+      const { data: existingCard, error: existingErr } = await supabase
+        .from("barangay_ids")
+        .select("*, resident:residents(id)")
+        .eq("id", id)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+
+      if (existingErr) throw existingErr;
+      if (!existingCard) {
+        return res.status(404).json({ success: false, message: "Barangay ID not found" });
+      }
+
       const updates = {
         updated_at: new Date().toISOString(),
       };
@@ -69,13 +86,38 @@ export default async function handler(req, res) {
         updates.is_printed = req.body.is_printed;
         updates.printed_at = req.body.is_printed ? new Date().toISOString() : null;
       } else {
-        if (req.body.full_name !== undefined) updates.full_name = req.body.full_name;
-        if (req.body.id_number !== undefined) updates.id_number = req.body.id_number;
-        if (req.body.gender !== undefined) updates.gender = req.body.gender;
-        if (req.body.birth_date !== undefined) updates.birth_date = req.body.birth_date;
-        if (req.body.civil_status !== undefined) updates.civil_status = req.body.civil_status;
-        if (req.body.address !== undefined) updates.address = req.body.address;
-        
+        Object.assign(
+          updates,
+          applyEcCardNameFieldsToUpdates(updates, req.body),
+        );
+        if (req.body.id_number !== undefined) {
+          updates.id_number = String(req.body.id_number).trim().toUpperCase();
+        }
+        if (req.body.gender !== undefined) {
+          updates.gender = String(req.body.gender).trim().toUpperCase();
+        }
+        if (req.body.birth_date !== undefined) {
+          updates.birth_date = req.body.birth_date || null;
+        }
+        if (req.body.civil_status !== undefined) {
+          updates.civil_status = String(req.body.civil_status)
+            .trim()
+            .toUpperCase();
+        }
+        if (req.body.address !== undefined) {
+          updates.address = req.body.address
+            ? String(req.body.address).trim().toUpperCase()
+            : null;
+        }
+        if (req.body.purok !== undefined) {
+          updates.purok = req.body.purok
+            ? String(req.body.purok).trim().toUpperCase()
+            : null;
+        }
+        if (req.body.contact_number !== undefined) {
+          updates.contact_number = req.body.contact_number || null;
+        }
+
         if (status) updates.status = status;
         if (blood_type) updates.blood_type = blood_type;
         if (emergency_contact_name) updates.emergency_contact_name = emergency_contact_name;
@@ -96,10 +138,43 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
+      let residentSynced = false;
+      let residentSyncError = null;
+      const residentId =
+        data?.resident_id || existingCard?.resident_id || null;
+
+      if (
+        residentId &&
+        shouldSyncEcCardEditsToResident(action) &&
+        Object.keys(updates).length > 1
+      ) {
+        const mergedCard = { ...existingCard, ...data };
+        const residentPatch = buildResidentPatchFromEcCard(mergedCard, updates);
+        if (residentPatch) {
+          const { error: residentErr } = await supabase
+            .from("residents")
+            .update(residentPatch)
+            .eq("id", residentId)
+            .eq("tenant_id", tenantId);
+
+          if (residentErr) {
+            console.error(
+              "EC card → resident sync failed:",
+              residentErr.message,
+            );
+            residentSyncError = residentErr.message;
+          } else {
+            residentSynced = true;
+          }
+        }
+      }
+
       return res.status(200).json({
         success: true,
         message: action === "renew" ? "Barangay ID successfully renewed!" : "Barangay ID updated!",
         data,
+        residentSynced,
+        residentSyncError,
       });
     } catch (error) {
       console.error("PUT /api/barangay-id/[id] error:", error);

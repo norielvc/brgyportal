@@ -1,5 +1,10 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
+import {
+  applyMultiTokenSearch,
+  BARANGAY_ID_SEARCH_FIELDS,
+} from "../../../src/lib/multiTokenNameSearch";
+import { buildResidentPatchFromEcCard } from "../../../src/lib/ecCardResidentSync";
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
   if (!userRes) return;
@@ -32,9 +37,12 @@ export default async function handler(req, res) {
         }
       }
 
-      if (search && search.trim()) {
-        const term = search.trim();
-        query = query.or(`full_name.ilike.%${term}%,id_number.ilike.%${term}%,purok.ilike.%${term}%`);
+      if (search && String(search).trim()) {
+        query = applyMultiTokenSearch(
+          query,
+          search,
+          BARANGAY_ID_SEARCH_FIELDS,
+        );
       }
 
       if (printed_status) {
@@ -349,6 +357,15 @@ export default async function handler(req, res) {
         .single();
 
       if (insertError) throw insertError;
+
+      const residentPatch = buildResidentPatchFromEcCard(newID);
+      if (resident.id && residentPatch) {
+        await supabase
+          .from("residents")
+          .update(residentPatch)
+          .eq("id", resident.id)
+          .eq("tenant_id", tenantId);
+      }
 
       return res.status(201).json({
         success: true,

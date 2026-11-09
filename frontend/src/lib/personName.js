@@ -12,6 +12,41 @@ const SUFFIXES = new Set([
 /**
  * Split a display full name into first / middle / last / suffix (best effort).
  */
+/** EC card / census display names often use "LAST, FIRST MIDDLE". */
+export function parseEcDisplayName(fullName) {
+  const raw = String(fullName || "").trim();
+  if (!raw) {
+    return { first_name: "", middle_name: "", last_name: "", suffix: "" };
+  }
+
+  if (raw.includes(",")) {
+    const commaIdx = raw.indexOf(",");
+    const last_name = raw.slice(0, commaIdx).trim();
+    let remainder = raw.slice(commaIdx + 1).trim().replace(/\s+/g, " ");
+    if (!remainder) {
+      return { first_name: "", middle_name: "", last_name, suffix: "" };
+    }
+
+    const parts = remainder.split(" ");
+    let suffix = "";
+    const lastToken = parts[parts.length - 1]?.toUpperCase();
+    if (parts.length > 1 && lastToken && SUFFIXES.has(lastToken)) {
+      suffix = parts.pop();
+    }
+    if (parts.length === 1) {
+      return { first_name: parts[0], middle_name: "", last_name, suffix };
+    }
+    return {
+      first_name: parts[0],
+      middle_name: parts.slice(1).join(" "),
+      last_name,
+      suffix,
+    };
+  }
+
+  return splitFullNameIntoParts(raw);
+}
+
 export function splitFullNameIntoParts(fullName) {
   const raw = String(fullName || "").trim().replace(/\s+/g, " ");
   if (!raw) {
