@@ -8365,9 +8365,6 @@ function CertificatePreviewModal({
   );
 }
 
-const CERT_BODY_FONT_PX = "14px";
-const CERT_TO_WHOM_CLASS = "font-bold text-[15px]";
-
 // Certificate Preview Component - Exact copy from BarangayClearanceModal
 function ClearancePreviewForRequests({
   request,
@@ -8486,6 +8483,16 @@ function ClearancePreviewForRequests({
     String(request.certificate_type || "").toLowerCase() === "first_time_job_seeker";
   const isJobSeekerDocA = isJobSeeker && jobSeekerVariant === "JOB SEEKER A";
   const isJobSeekerDocB = isJobSeeker && jobSeekerVariant === "JOB SEEKER B";
+
+  const useCompactCertFonts = !isJobSeekerDocB && !isBusinessPermit;
+  const certBodyFontPx = useCompactCertFonts ? "12px" : "14px";
+  const certToWhomClass = useCompactCertFonts
+    ? "font-bold text-[13px]"
+    : "font-bold text-[15px]";
+  const certHeaderLinePx = useCompactCertFonts ? "12px" : "13px";
+  const certBarangayNamePx = useCompactCertFonts ? "16px" : "18px";
+  const certOfficeLinePx = useCompactCertFonts ? "14px" : "16px";
+  const certDefaultTitlePx = useCompactCertFonts ? 20 : 24;
 
   const pageSpec = getCertificatePageSpec({
     certificateType: request.certificate_type,
@@ -9073,7 +9080,7 @@ function ClearancePreviewForRequests({
               className={getFontClass(countryStyle.fontFamily)}
               style={{
                 color: countryStyle.color,
-                fontSize: "13px",
+                fontSize: certHeaderLinePx,
                 fontWeight: countryStyle.fontWeight,
                 lineHeight: "1.2",
               }}
@@ -9084,7 +9091,7 @@ function ClearancePreviewForRequests({
               className={getFontClass(provinceStyle.fontFamily)}
               style={{
                 color: provinceStyle.color,
-                fontSize: "13px",
+                fontSize: certHeaderLinePx,
                 fontWeight: provinceStyle.fontWeight,
                 lineHeight: "1.2",
               }}
@@ -9095,7 +9102,7 @@ function ClearancePreviewForRequests({
               className={getFontClass(municipalityStyle.fontFamily)}
               style={{
                 color: municipalityStyle.color,
-                fontSize: "13px",
+                fontSize: certHeaderLinePx,
                 fontWeight: municipalityStyle.fontWeight,
                 lineHeight: "1.2",
               }}
@@ -9106,7 +9113,7 @@ function ClearancePreviewForRequests({
               className="mt-1 uppercase"
               style={{
                 color: barangayNameStyle.color || "#1e40af",
-                fontSize: "18px",
+                fontSize: certBarangayNamePx,
                 fontWeight: "bold",
                 lineHeight: "1.2",
               }}
@@ -9115,7 +9122,7 @@ function ClearancePreviewForRequests({
             </p>
             <p
               className="mt-2 text-red-700 font-bold uppercase tracking-wider"
-              style={{ fontSize: "14px" }}
+              style={{ fontSize: certOfficeLinePx }}
             >
               OFFICE OF THE BARANGAY CHAIRMAN
             </p>
@@ -9245,10 +9252,18 @@ function ClearancePreviewForRequests({
             >
               {!isBusinessPermit && !isJobSeekerDocA && !isJobSeekerDocB && (
                 <h2
-                  className={`text-center font-bold ${isLetterPage ? "mb-4" : "mb-10"} w-full pb-1 px-4 uppercase leading-normal ${isSamePerson ? "block whitespace-nowrap" : "inline-block"}`}
+                  className={`text-center font-bold ${isLetterPage ? "mb-3" : "mb-7"} w-full pb-1 px-4 uppercase leading-snug ${isSamePerson ? "block whitespace-nowrap" : "inline-block"}`}
                   style={{
                     color: isMedicoLegal ? "#000000" : "#004d40",
-                    fontSize: isSamePerson ? "20px" : isLetterPage ? "22px" : "24px",
+                    fontSize: isSamePerson
+                      ? useCompactCertFonts
+                        ? "17px"
+                        : "20px"
+                      : isLetterPage
+                        ? useCompactCertFonts
+                          ? "19px"
+                          : "22px"
+                        : `${bodyStyle.titleSize || certDefaultTitlePx}px`,
                   }}
                 >
                   {isNaturalDeath
@@ -9283,7 +9298,7 @@ function ClearancePreviewForRequests({
                     <span>BARANGAY BUSINESS CLEARANCE</span>
                   </h2>
 
-                  <div className={`mb-6 font-bold text-gray-900 uppercase ${CERT_TO_WHOM_CLASS}`}>
+                  <div className={`mb-6 font-bold text-gray-900 uppercase ${certToWhomClass}`}>
                     TO WHOM IT MAY CONCERN:
                   </div>
 
@@ -9907,7 +9922,7 @@ function ClearancePreviewForRequests({
                 >
                   <div>
                     <div className="mb-7 text-[14px]">
-                      <p className={`mb-4 ${CERT_TO_WHOM_CLASS}`}>
+                      <p className={`mb-4 ${certToWhomClass}`}>
                         TO WHOM IT MAY CONCERN:
                       </p>
                       <p className="text-center font-bold text-[14px] tracking-wide">
@@ -10062,11 +10077,15 @@ function ClearancePreviewForRequests({
                 </div>
               ) : (
                 <div
-                  className="w-full space-y-6 text-justify"
-                  style={{ fontSize: CERT_BODY_FONT_PX }}
+                  className="w-full space-y-5 text-justify leading-snug"
+                  style={{
+                    fontSize: bodyStyle.textSize
+                      ? `${bodyStyle.textSize}px`
+                      : certBodyFontPx,
+                  }}
                 >
                   <div className="flex justify-between items-center mb-3">
-                    <p className={CERT_TO_WHOM_CLASS}>TO WHOM IT MAY CONCERN:</p>
+                    <p className={certToWhomClass}>TO WHOM IT MAY CONCERN:</p>
                   </div>{" "}
                   {/* Date removed for Indigency as per new layout */}
                   <>

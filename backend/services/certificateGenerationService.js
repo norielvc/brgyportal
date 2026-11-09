@@ -48,6 +48,28 @@ function escapeHtmlForCert(val) {
         .replace(/"/g, '&quot;');
 }
 
+function useCompactCertTypography(request, templateType = '') {
+    const certType = String(request?.certificate_type || '').toLowerCase();
+    if (certType === 'business_permit') return false;
+    const tt = String(templateType || '').toUpperCase();
+    if (
+        certType === 'first_time_job_seeker' &&
+        (tt === 'JOB SEEKER B' || tt === 'OATH' || tt === 'JOB_SEEKER_B')
+    ) {
+        return false;
+    }
+    return true;
+}
+
+function certBodyTextSizePx(bodyStyle, request, templateType = '') {
+    if (bodyStyle?.textSize) return bodyStyle.textSize;
+    return useCompactCertTypography(request, templateType) ? 12 : 14;
+}
+
+function certNameEmSize(request, templateType = '') {
+    return useCompactCertTypography(request, templateType) ? '1.05em' : '1.2em';
+}
+
 const MINOR_GUARDIAN_CERTIFICATE_TYPES = [
     'barangay_clearance',
     'certificate_of_indigency',
@@ -746,7 +768,7 @@ class CertificateGenerationService {
                 const pages = purposes.map((singlePurpose, idx) => {
                     const isLast = idx === purposes.length - 1;
                     const pageBody = `
-                        <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+                        <div style="font-size: ${certBodyTextSizePx(bodyStyle, request)}px; line-height: 1.6;">
                             <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
                             
                             <p style="margin: 20px 0;">
@@ -754,7 +776,7 @@ class CertificateGenerationService {
                             </p>
 
                             <div class="details-grid">
-                                <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
+                                <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: ${certNameEmSize(request)};">${request.full_name}</span>
                                 <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                                 <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
                                 <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
@@ -808,8 +830,8 @@ class CertificateGenerationService {
                                 margin: 0; 
                                 padding: 20px; 
                                 background: white;
-                                font-size: 14px;
-                                line-height: 1.6;
+                                font-size: 12px;
+                                line-height: 1.5;
                             }
                             .certificate-container { 
                                 max-width: 800px; 
@@ -820,9 +842,9 @@ class CertificateGenerationService {
                                 page-break-inside: avoid;
                             }
                             .title { 
-                                font-size: 24px; 
+                                font-size: 20px; 
                                 font-weight: bold; 
-                                margin: 20px 0; 
+                                margin: 16px 0; 
                                 text-align: center;
                                 text-transform: uppercase;
                             }
@@ -862,7 +884,7 @@ class CertificateGenerationService {
         );
 
         let bodyHtml = `
-            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+            <div style="font-size: ${certBodyTextSizePx(bodyStyle, request)}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
                 
                 <p style="margin: 20px 0;">
@@ -870,7 +892,7 @@ class CertificateGenerationService {
                 </p>
 
                 <div class="details-grid">
-                    <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
+                    <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: ${certNameEmSize(request)};">${request.full_name}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                     <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
                     <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
@@ -953,7 +975,7 @@ class CertificateGenerationService {
         const bodyStyle = styles.bodyStyle || {};
 
         const bodyHtml = `
-            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+            <div style="font-size: ${certBodyTextSizePx(bodyStyle, request)}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
                 
                 <p style="margin: 20px 0;">
@@ -961,7 +983,7 @@ class CertificateGenerationService {
                 </p>
 
                 <div class="details-grid">
-                    <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
+                    <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: ${certNameEmSize(request)};">${request.full_name}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                     <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
                     <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
@@ -1002,7 +1024,7 @@ class CertificateGenerationService {
         const bodyStyle = styles.bodyStyle || {};
 
         const bodyHtml = `
-            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+            <div style="font-size: ${certBodyTextSizePx(bodyStyle, request)}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
                 
                 <p style="margin: 20px 0;">
@@ -1010,7 +1032,7 @@ class CertificateGenerationService {
                 </p>
 
                 <div class="details-grid">
-                    <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${request.full_name}</span>
+                    <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: ${certNameEmSize(request)};">${request.full_name}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                     <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
                     <span class="detail-label">Civil Status</span><span>:</span><span class="detail-value">${formatCivilStatusFull(request.civil_status)}</span>
@@ -1060,7 +1082,7 @@ class CertificateGenerationService {
         }
 
         const bodyHtml = `
-            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+            <div style="font-size: ${certBodyTextSizePx(bodyStyle, request)}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
                 
                 <p style="margin: 20px 0;">
@@ -1223,6 +1245,9 @@ class CertificateGenerationService {
         const containerExtraStyle = options.containerPaddingTop
             ? `padding-top: ${options.containerPaddingTop};`
             : "";
+        const compact = useCompactCertTypography(request, options.templateType);
+        const docBodyPx = compact ? 12 : 14;
+        const docTitlePx = compact ? 20 : 24;
         return `
         <!DOCTYPE html>
         <html lang="en">
@@ -1236,8 +1261,8 @@ class CertificateGenerationService {
                     margin: 0; 
                     padding: 20px; 
                     background: white;
-                    font-size: 14px;
-                    line-height: 1.6;
+                    font-size: ${docBodyPx}px;
+                    line-height: 1.5;
                 }
                 .certificate-container { 
                     max-width: 800px; 
@@ -1248,9 +1273,9 @@ class CertificateGenerationService {
                     ${containerExtraStyle}
                 }
                 .title { 
-                    font-size: 24px; 
+                    font-size: ${docTitlePx}px; 
                     font-weight: bold; 
-                    margin: 20px 0; 
+                    margin: 16px 0; 
                     text-align: center;
                     text-transform: uppercase;
                 }
@@ -2048,11 +2073,11 @@ class CertificateGenerationService {
         const details = typeof request.details === 'string' ? JSON.parse(request.details) : (request.details || {});
 
         const bodyHtml = `
-            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+            <div style="font-size: ${certBodyTextSizePx(bodyStyle, request)}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
                 <p style="margin: 20px 0;">This is to certify that below person is under the guardianship of <strong>${(details.guardianName || '').toUpperCase()}</strong>, both bona fide residents of this barangay:</p>
                 <div class="details-grid">
-                    <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(request.full_name || '').toUpperCase()}</span>
+                    <span class="detail-label">Name</span><span>:</span><span class="detail-value" style="font-size: ${certNameEmSize(request)};">${(request.full_name || '').toUpperCase()}</span>
                     <span class="detail-label">Residential Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address, config.headerInfo).toUpperCase()}</span>
                     <span class="detail-label">Age</span><span>:</span><span class="detail-value">${request.age || '-'}</span>
                     <span class="detail-label">Sex</span><span>:</span><span class="detail-value">${formatSexFull(request.sex)}</span>
@@ -2076,13 +2101,13 @@ class CertificateGenerationService {
         const details = typeof request.details === 'string' ? JSON.parse(request.details) : (request.details || {});
 
         const bodyHtml = `
-            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+            <div style="font-size: ${certBodyTextSizePx(bodyStyle, request)}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
                 <p style="margin: 20px 0;">This is to certify that the persons named below are living together as husband and wife without the benefit of marriage for <strong>${details.livingTogetherYears || '0'} year(s) and ${details.livingTogetherMonths || '0'} month(s)</strong>:</p>
                 <div class="details-grid">
-                    <span class="detail-label">Name (1)</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(request.full_name || '').toUpperCase()}</span>
+                    <span class="detail-label">Name (1)</span><span>:</span><span class="detail-value" style="font-size: ${certNameEmSize(request)};">${(request.full_name || '').toUpperCase()}</span>
                     <span class="detail-label">Age/Sex/DOB</span><span>:</span><span class="detail-value">${request.age || '-'} / ${formatSexFull(request.sex)} / ${request.date_of_birth ? new Date(request.date_of_birth).toLocaleDateString() : '-'}</span>
-                    <span class="detail-label">Name (2)</span><span>:</span><span class="detail-value" style="font-size: 1.2em;">${(details.partnerFullName || '').toUpperCase()}</span>
+                    <span class="detail-label">Name (2)</span><span>:</span><span class="detail-value" style="font-size: ${certNameEmSize(request)};">${(details.partnerFullName || '').toUpperCase()}</span>
                     <span class="detail-label">Partner Age/Sex/DOB</span><span>:</span><span class="detail-value">${details.partnerAge || '-'} / ${formatSexFull(details.partnerSex)} / ${details.partnerDateOfBirth ? new Date(details.partnerDateOfBirth).toLocaleDateString() : '-'}</span>
                     <span class="detail-label">No. of Children</span><span>:</span><span class="detail-value">${details.noOfChildren || '0'}</span>
                     <span class="detail-label">Address</span><span>:</span><span class="detail-value">${cleanResidentialAddress(request.address, config.headerInfo).toUpperCase()}</span>
@@ -2103,7 +2128,7 @@ class CertificateGenerationService {
         const details = typeof request.details === 'string' ? JSON.parse(request.details) : (request.details || {});
 
         const bodyHtml = `
-            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+            <div style="font-size: ${certBodyTextSizePx(bodyStyle, request)}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
                 <p style="margin: 20px 0;">This is to certify that <strong>${(request.full_name || '').toUpperCase()}</strong>, a resident of ${cleanResidentialAddress(request.address, config.headerInfo)}, passed away on <strong>${details.dateOfDeath ? new Date(details.dateOfDeath).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</strong> due to <strong>${(details.causeOfDeath || 'NATURAL CAUSES').toUpperCase()}</strong>.</p>
                 <p style="margin: 20px 0;">This also certifies that the death was <strong>${details.covidRelated ? 'COVID-19' : 'NON-COVID'}</strong> related.</p>
@@ -2123,7 +2148,7 @@ class CertificateGenerationService {
         const details = typeof request.details === 'string' ? JSON.parse(request.details) : (request.details || {});
 
         const bodyHtml = `
-            <div style="font-size: ${bodyStyle.textSize || 14}px; line-height: 1.6;">
+            <div style="font-size: ${certBodyTextSizePx(bodyStyle, request)}px; line-height: 1.6;">
                 <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
                 <p style="margin: 20px 0;">This is a REQUEST FOR MEDICO LEGAL for the following person:</p>
                 <div class="details-grid">
