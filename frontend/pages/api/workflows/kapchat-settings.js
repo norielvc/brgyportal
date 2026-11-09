@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     if (!["admin", "superadmin", "super_admin", "captain"].includes(role)) {
       return res.status(403).json({
         success: false,
-        message: "Only admin or barangay captain can update KapChat settings",
+        message: "Only admin or barangay chairman can update KapChat settings",
       });
     }
 

@@ -3,7 +3,9 @@ import { supabase } from "../../../lib/supabase";
 import {
   certificateStatusForStep,
   isBusinessPermitPreparationStep,
+  isCaptainApprovalStep,
   isReleasingTeamStep,
+  normalizeWorkflowStepsForSave,
   resolveBusinessPermitCaptainStep,
   resolveWorkflowStepIndex,
 } from "../../../src/lib/workflowStatus";
@@ -68,8 +70,11 @@ export default async function handler(req, res) {
     const config = workflowConfigs?.find(
       (c) => c.certificate_type === certType,
     );
-    const steps = config?.workflow_config?.steps;
-    if (!steps) continue;
+    const steps = normalizeWorkflowStepsForSave(
+      config?.workflow_config?.steps,
+      certType,
+    );
+    if (!steps?.length) continue;
 
     await supabase
       .from("workflow_assignments")
@@ -114,7 +119,11 @@ export default async function handler(req, res) {
           currentStep =
             certType === "business_permit"
               ? resolveBusinessPermitCaptainStep(steps, requestForRouting)
-              : steps.find((st) => st.status === "captain_approval");
+              : steps.find(
+                  (st) =>
+                    st.status === "captain_approval" ||
+                    isCaptainApprovalStep(st),
+                );
         } else if (s === "oic_review" && certType === "business_permit") {
           currentStep =
             steps.find(isBusinessPermitPreparationStep) ||

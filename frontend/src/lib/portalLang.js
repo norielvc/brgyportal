@@ -257,7 +257,7 @@ const STRINGS = {
     statusSubmitted: "Submitted",
     statusUnderReview: "Under Review",
     statusSecretaryApproval: "Secretary Approval",
-    statusCaptainApproval: "Chairman Approval",
+    statusCaptainApproval: "Barangay Chairman Approval",
     statusReleasingTeam: "Releasing Team",
     statusReadyForPickup: "Ready for Pickup",
     statusReleased: "Released / Claimed",

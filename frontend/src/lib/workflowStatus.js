@@ -71,6 +71,75 @@ export function normalizeCertificateStatus(status, options = {}) {
   return raw;
 }
 
+/** Canonical workflow label for punong barangay / chairman step assignees. */
+export const WORKFLOW_CHAIRMAN_OFFICIAL_ROLE = "Barangay Chairman";
+
+export function isChairmanOfficialRole(role) {
+  const r = String(role || "").trim().toLowerCase();
+  if (!r) return false;
+  return (
+    r.includes("chairman") ||
+    r.includes("captain") ||
+    r.includes("punong") ||
+    r.includes("brgy. chairman") ||
+    r.includes("barangay chairman")
+  );
+}
+
+export function normalizeWorkflowOfficialRole(role) {
+  const r = String(role || "").trim();
+  if (!r) return "";
+  if (isChairmanOfficialRole(r)) return WORKFLOW_CHAIRMAN_OFFICIAL_ROLE;
+  return r;
+}
+
+/**
+ * Keep chairman steps on certificate status `captain_approval` (DB key) while
+ * allowing display names like "Barangay Chairman Approval".
+ */
+export function normalizeWorkflowStepForSave(step, certificateType) {
+  if (!step || typeof step !== "object") return step;
+  const next = { ...step };
+
+  if (next.officialRole) {
+    next.officialRole = normalizeWorkflowOfficialRole(next.officialRole);
+  }
+
+  const chairmanStep = isCaptainApprovalStep(next);
+  if (chairmanStep) {
+    next.status = "captain_approval";
+    if (!next.officialRole) {
+      next.officialRole = WORKFLOW_CHAIRMAN_OFFICIAL_ROLE;
+    }
+  } else if (next.status) {
+    const normalized = normalizeCertificateStatus(next.status, {
+      stepName: next.name,
+      certificateType,
+    });
+    if (normalized) next.status = normalized;
+  }
+
+  return next;
+}
+
+export function normalizeWorkflowStepsForSave(steps, certificateType) {
+  return (steps || []).map((s) =>
+    normalizeWorkflowStepForSave(s, certificateType),
+  );
+}
+
+/** Normalize every certificate workflow map (API load, localStorage, workflow map cache). */
+export function normalizeWorkflowsRecord(workflows) {
+  if (!workflows || typeof workflows !== "object") return workflows;
+  const out = { ...workflows };
+  for (const certType of Object.keys(out)) {
+    if (Array.isArray(out[certType])) {
+      out[certType] = normalizeWorkflowStepsForSave(out[certType], certType);
+    }
+  }
+  return out;
+}
+
 /** Certificate DB status implied by a workflow step (e.g. Staff Clerk → oic_review). */
 export function certificateStatusForStep(step, certificateType) {
   return normalizeCertificateStatus(step?.status, {
@@ -176,6 +245,7 @@ export function resolveBusinessPermitApproveTarget(
 export function isCaptainApprovalStep(step) {
   if (!step) return false;
   if (workflowStatusesMatch(step.status, "captain_approval")) return true;
+  if (isChairmanOfficialRole(step.officialRole)) return true;
   const name = String(step.name || "").toLowerCase();
   return (
     name.includes("captain") ||

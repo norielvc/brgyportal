@@ -259,7 +259,7 @@ export default function AddEmployeeModal({ onClose, onSubmit, isLoading: externa
                       >
                         <option value="super_admin">Super Admin</option>
                         <option value="admin">Admin</option>
-                        <option value="captain">Brgy. Chairman</option>
+                        <option value="captain">Barangay Chairman</option>
                         <option value="secretary">Brgy. Secretary</option>
                         <option value="staff">Brgy. Staff</option>
                       </select>

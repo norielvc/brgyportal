@@ -1,4 +1,8 @@
 import { supabase } from "../../lib/supabase";
+import {
+  normalizeWorkflowStepsForSave,
+  WORKFLOW_CHAIRMAN_OFFICIAL_ROLE,
+} from "./workflowStatus";
 
 const defaultWorkflows = {
   barangay_clearance: [
@@ -18,10 +22,11 @@ const defaultWorkflows = {
     },
     {
       id: 3,
-      name: "Chairman Approval",
+      name: "Barangay Chairman Approval",
       status: "captain_approval",
       requiresApproval: true,
       assignedUsers: [],
+      officialRole: WORKFLOW_CHAIRMAN_OFFICIAL_ROLE,
     },
     {
       id: 4,
@@ -67,7 +72,10 @@ export function buildWorkflowMapFromConfigRows(rows) {
   }
   for (const config of rows || []) {
     if (config.workflow_config?.steps) {
-      workflows[config.certificate_type] = config.workflow_config.steps;
+      workflows[config.certificate_type] = normalizeWorkflowStepsForSave(
+        config.workflow_config.steps,
+        config.certificate_type,
+      );
     }
   }
   return workflows;

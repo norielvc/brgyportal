@@ -1,5 +1,6 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
+import { normalizeWorkflowStepsForSave } from "../../../src/lib/workflowStatus";
 
 const defaultWorkflows = {
   barangay_clearance: [
@@ -19,10 +20,11 @@ const defaultWorkflows = {
     },
     {
       id: 3,
-      name: "Chairman Approval",
+      name: "Barangay Chairman Approval",
       status: "captain_approval",
       requiresApproval: true,
       assignedUsers: [],
+      officialRole: "Barangay Chairman",
     },
     {
       id: 4,
@@ -55,18 +57,59 @@ certTypes.forEach((t) => {
     }));
 });
 
-const getWorkflowsFromDB = async (tenantId) => {
+async function reconcileStoredWorkflowSteps(rows) {
+  if (!rows?.length) return;
+  const updates = [];
+  for (const config of rows) {
+    const steps = config.workflow_config?.steps;
+    if (!steps?.length) continue;
+    const normalized = normalizeWorkflowStepsForSave(
+      steps,
+      config.certificate_type,
+    );
+    if (JSON.stringify(normalized) === JSON.stringify(steps)) continue;
+    updates.push(
+      supabase
+        .from("workflow_configurations")
+        .update({
+          workflow_config: { ...config.workflow_config, steps: normalized },
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", config.id),
+    );
+  }
+  if (updates.length) {
+    await Promise.all(updates);
+  }
+}
+
+const getWorkflowsFromDB = async (tenantId, { reconcile = false } = {}) => {
   const { data, error } = await supabase
     .from("workflow_configurations")
     .select("*")
     .eq("tenant_id", tenantId);
+  if (reconcile && !error && data?.length) {
+    await reconcileStoredWorkflowSteps(data);
+  }
   const workflows = { ...defaultWorkflows };
   if (!error && data) {
     data.forEach((config) => {
-      if (config.workflow_config?.steps)
-        workflows[config.certificate_type] = config.workflow_config.steps;
+      if (config.workflow_config?.steps) {
+        workflows[config.certificate_type] = normalizeWorkflowStepsForSave(
+          config.workflow_config.steps,
+          config.certificate_type,
+        );
+      }
     });
   }
+  Object.keys(workflows).forEach((certType) => {
+    if (Array.isArray(workflows[certType])) {
+      workflows[certType] = normalizeWorkflowStepsForSave(
+        workflows[certType],
+        certType,
+      );
+    }
+  });
   return workflows;
 };
 
@@ -81,7 +124,10 @@ export default async function handler(req, res) {
       .json({ success: false, message: "Tenant context required" });
 
   if (req.method === "GET") {
-    const workflows = await getWorkflowsFromDB(tenantId);
+    const canReconcile = ["admin", "superadmin", "captain"].includes(user.role);
+    const workflows = await getWorkflowsFromDB(tenantId, {
+      reconcile: canReconcile,
+    });
     return res.status(200).json({ success: true, data: workflows });
   }
 
@@ -97,15 +143,22 @@ export default async function handler(req, res) {
         .json({ success: false, message: "Invalid workflows data" });
 
     const validTypes = certTypes;
-    const promises = Object.keys(workflows)
+    const normalizedWorkflows = {};
+    Object.keys(workflows)
       .filter((t) => validTypes.includes(t))
-      .map((certType) =>
+      .forEach((certType) => {
+        normalizedWorkflows[certType] = normalizeWorkflowStepsForSave(
+          workflows[certType],
+          certType,
+        );
+      });
+    const promises = Object.keys(normalizedWorkflows).map((certType) =>
         supabase.from("workflow_configurations").upsert(
           [
             {
               certificate_type: certType,
               tenant_id: tenantId,
-              workflow_config: { steps: workflows[certType] },
+              workflow_config: { steps: normalizedWorkflows[certType] },
               is_active: true,
               updated_at: new Date().toISOString(),
             },

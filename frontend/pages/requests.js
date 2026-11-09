@@ -323,7 +323,7 @@ const STATUS_OPTIONS = [
   { value: "physical_inspection", label: "Physical Inspection" },
   { value: "Treasury", label: "Treasury" },
   { value: "secretary_approval", label: "Secretary Approval" },
-  { value: "captain_approval", label: "Chairman Approval" },
+  { value: "captain_approval", label: "Barangay Chairman Approval" },
   { value: "oic_review", label: "Releasing Team" },
   { value: "ready", label: "Ready for Pickup" },
   { value: "approved", label: "Approved" },
@@ -389,7 +389,10 @@ const STEP_OPTIONS = [
   { value: "Physical Inspection Team", label: "Physical Inspection Team" },
   { value: "Treasury Team", label: "Treasury Team" },
   { value: "Secretary Approval", label: "Secretary Approval" },
-  { value: "Chairman Approval", label: "Chairman Approval" },
+  {
+    value: "Barangay Chairman Approval",
+    label: "Barangay Chairman Approval",
+  },
 ];
 
 const MultiSelectDropdown = ({

@@ -27,6 +27,12 @@ import {
 } from "lucide-react";
 import { isAuthenticated, getUserData, getAuthToken } from "@/lib/auth";
 import useScrollLock from "@/lib/useScrollLock";
+import {
+  isChairmanOfficialRole,
+  normalizeWorkflowsRecord,
+  normalizeWorkflowStepsForSave,
+  WORKFLOW_CHAIRMAN_OFFICIAL_ROLE,
+} from "@/lib/workflowStatus";
 // API Configuration
 const API_URL = "/api";
 const MASTER_WORKFLOW_ID = "master_certificate_flow";
@@ -128,7 +134,7 @@ const defaultSteps = [
     assignedUsers: [],
     requiresApproval: true,
     sendEmail: true,
-    officialRole: "Brgy. Chairman",
+    officialRole: "Barangay Chairman",
   },
   {
     id: 999,
@@ -374,7 +380,7 @@ export default function WorkflowsPage() {
       });
       const data = await response.json();
       if (data.success && data.data && Object.keys(data.data).length > 0) {
-        const data_workflows = data.data;
+        const data_workflows = normalizeWorkflowsRecord(data.data);
         if (data_workflows[MASTER_WORKFLOW_ID]) {
           const initial = { ...data_workflows };
           if (!initial["first_time_job_seeker"]) {
@@ -385,6 +391,10 @@ export default function WorkflowsPage() {
               defaultSteps;
           }
           setWorkflows(initial);
+          localStorage.setItem(
+            "certificateWorkflows",
+            JSON.stringify(initial),
+          );
         } else {
           // Migration/Initialization
           const initial = { ...data_workflows };
@@ -404,6 +414,10 @@ export default function WorkflowsPage() {
               defaultSteps;
           }
           setWorkflows(initial);
+          localStorage.setItem(
+            "certificateWorkflows",
+            JSON.stringify(initial),
+          );
         }
         console.log("Workflows loaded from database");
         return;
@@ -417,7 +431,7 @@ export default function WorkflowsPage() {
     // Fallback to localStorage
     const saved = localStorage.getItem("certificateWorkflows");
     if (saved) {
-      const parsed = JSON.parse(saved);
+      const parsed = normalizeWorkflowsRecord(JSON.parse(saved));
       // If saved workflows are still per-certificate (old format), migrate to master format
       if (parsed[MASTER_WORKFLOW_ID]) {
         setWorkflows(parsed);
@@ -491,11 +505,13 @@ export default function WorkflowsPage() {
       });
     }
 
+    const stepsToPersist = normalizeWorkflowStepsForSave(orderedSteps, certId);
+
     // Prepare the final state
     const unifiedWorkflows = {
       ...workflows,
       ...updated,
-      [certId]: orderedSteps,
+      [certId]: stepsToPersist,
     };
 
     // Sync master steps ALWAYS to unified certificates
@@ -503,7 +519,9 @@ export default function WorkflowsPage() {
       certificateTypes
         .filter((c) => c.isUnified)
         .forEach((cert) => {
-          unifiedWorkflows[cert.id] = JSON.parse(JSON.stringify(orderedSteps));
+          unifiedWorkflows[cert.id] = JSON.parse(
+            JSON.stringify(stepsToPersist),
+          );
         });
     }
 
@@ -1730,6 +1748,11 @@ function EditStepForm({ step, onSave, onCancel }) {
           className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
       </div>
+      <p className="text-[11px] text-gray-500 -mt-1">
+        Barangay Chairman steps are saved with status key{" "}
+        <span className="font-mono text-gray-700">captain_approval</span> so
+        certificate queues and approvals keep working.
+      </p>
       <input
         type="text"
         value={form.description}
@@ -1777,7 +1800,7 @@ function EditStepForm({ step, onSave, onCancel }) {
           </label>
           <div className="grid grid-cols-2 gap-2">
             {[
-              "Brgy. Chairman",
+              WORKFLOW_CHAIRMAN_OFFICIAL_ROLE,
               "Brgy. Secretary",
               "Brgy. Kagawad",
               "Brgy. Treasurer",
@@ -1793,8 +1816,20 @@ function EditStepForm({ step, onSave, onCancel }) {
                 <input
                   type="radio"
                   name="officialRole"
-                  checked={form.officialRole === role}
-                  onChange={() => setForm({ ...form, officialRole: role })}
+                  checked={
+                    form.officialRole === role ||
+                    (role === WORKFLOW_CHAIRMAN_OFFICIAL_ROLE &&
+                      isChairmanOfficialRole(form.officialRole))
+                  }
+                  onChange={() =>
+                    setForm({
+                      ...form,
+                      officialRole:
+                        role === WORKFLOW_CHAIRMAN_OFFICIAL_ROLE
+                          ? WORKFLOW_CHAIRMAN_OFFICIAL_ROLE
+                          : role,
+                    })
+                  }
                   className="w-4 h-4 text-blue-600 rounded-full focus:ring-blue-500"
                 />
                 <span className="text-gray-700">{role}</span>
@@ -1954,7 +1989,7 @@ function AddStepModal({ newStep, setNewStep, onAdd, onClose }) {
               </label>
               <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1 border border-gray-200 rounded-lg">
                 {[
-                  "Brgy. Chairman",
+                  WORKFLOW_CHAIRMAN_OFFICIAL_ROLE,
                   "Brgy. Secretary",
                   "Brgy. Kagawad",
                   "Brgy. Treasurer",
@@ -1970,9 +2005,19 @@ function AddStepModal({ newStep, setNewStep, onAdd, onClose }) {
                     <input
                       type="radio"
                       name="newStepOfficialRole"
-                      checked={newStep.officialRole === role}
+                      checked={
+                        newStep.officialRole === role ||
+                        (role === WORKFLOW_CHAIRMAN_OFFICIAL_ROLE &&
+                          isChairmanOfficialRole(newStep.officialRole))
+                      }
                       onChange={() =>
-                        setNewStep({ ...newStep, officialRole: role })
+                        setNewStep({
+                          ...newStep,
+                          officialRole:
+                            role === WORKFLOW_CHAIRMAN_OFFICIAL_ROLE
+                              ? WORKFLOW_CHAIRMAN_OFFICIAL_ROLE
+                              : role,
+                        })
                       }
                       className="w-4 h-4 text-blue-600 rounded-full focus:ring-blue-500"
                     />
