@@ -62,6 +62,7 @@ import {
   hasPhaseField,
   normalizeNorthvilleSubdivision,
   normalizeNorthvilleInText,
+  stripHouseNoLabelFromAddress,
 } from "@/lib/addressHelper";
 import PendingCaseRecordsEditor from "@/components/Forms/PendingCaseRecordsEditor";
 import {
@@ -1389,6 +1390,7 @@ export default function Residents() {
       >
         {selectedResident && (() => {
           const displayAddress = stripProvinceOf(
+            stripHouseNoLabelFromAddress(
             normalizeNorthvilleInText(
               selectedResident.residential_address ||
                 generateFullAddress({
@@ -1407,6 +1409,7 @@ export default function Residents() {
                   ),
                 }) ||
                 "—",
+            ),
             ),
           );
 

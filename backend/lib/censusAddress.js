@@ -74,14 +74,9 @@ function generateFullAddress(addressData) {
   } = addressData;
 
   const parts = [];
-  const isPhaseBlockLot = /\b(PHASE|BLOCK|LOT)\b/i.test(house_number || "");
 
   if (house_number?.trim()) {
-    if (isPhaseBlockLot) {
-      parts.push(house_number.trim().toUpperCase());
-    } else {
-      parts.push(`HOUSE NO. ${house_number.trim()}`);
-    }
+    parts.push(house_number.trim().toUpperCase());
   }
 
   const subInfo = getSubdivisionInfo(purok || subdivision);

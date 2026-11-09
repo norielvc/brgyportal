@@ -103,7 +103,7 @@ export default async function handler(req, res) {
           .toUpperCase();
         if (!r.residential_address && (r.house_number || r.purok || r.barangay || r.municipality || r.province)) {
           const parts = [
-            r.house_number ? `HOUSE NO. ${r.house_number.trim()}` : null,
+            r.house_number ? String(r.house_number).trim().toUpperCase() : null,
             r.purok ? r.purok.trim().toUpperCase() : null,
             r.barangay ? r.barangay.trim().toUpperCase() : null,
             r.municipality ? r.municipality.trim().toUpperCase() : null,

@@ -83,9 +83,15 @@ export function formatSubdivisionForAddress(name) {
   return String(name).trim().toUpperCase();
 }
 
+/** Remove legacy "HOUSE NO. " prefix from stored full-address strings. */
+export function stripHouseNoLabelFromAddress(address) {
+  if (!address) return "";
+  return String(address).replace(/^HOUSE\s+NO\.?\s*/i, "");
+}
+
 export function appendSubdivisionSubdInAddressText(text) {
   if (!text) return "";
-  return String(text)
+  return stripHouseNoLabelFromAddress(String(text))
     .replace(/\bHAZEL HEIGHTS(?!\s+SUBD\.?\b)/gi, "HAZEL HEIGHTS SUBD.")
     .replace(/\bCREEKSTONE(?!\s+SUBD\.?\b)/gi, "CREEKSTONE SUBD.");
 }
@@ -103,14 +109,8 @@ export function generateFullAddress(addressData, options = {}) {
 
   const parts = [];
 
-  const isPhaseBlockLot = /\b(PHASE|BLOCK|LOT)\b/i.test(house_number || '');
-
   if (house_number?.trim()) {
-    if (isPhaseBlockLot) {
-      parts.push(house_number.trim().toUpperCase());
-    } else {
-      parts.push(`HOUSE NO. ${house_number.trim()}`);
-    }
+    parts.push(house_number.trim().toUpperCase());
   }
 
   // Determine subdivision and parent purok if purok is a subdivision key
@@ -160,7 +160,9 @@ export function generateFullAddress(addressData, options = {}) {
  */
 export function formatCertificateResidentialAddress(address, geo = {}) {
   const raw = stripProvinceOf(
-    normalizeNorthvilleInText(String(address || "").trim()),
+    stripHouseNoLabelFromAddress(
+      normalizeNorthvilleInText(String(address || "").trim()),
+    ),
   );
   if (!raw) return "";
 
@@ -275,7 +277,10 @@ export function resolveRequestResidentialAddress(request, options = {}) {
     if (fromStructured) {
       const storedUpper = stored.toUpperCase();
       const builtUpper = fromStructured.toUpperCase();
-      const builtHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(builtUpper);
+      const builtHasHouse =
+        Boolean(r?.house_number?.trim()) ||
+        /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(builtUpper) ||
+        /^[\w][\w\-\/]*\s*,/i.test(builtUpper);
       const storedHasHouse = /\b(HOUSE\s*NO|PHASE|BLOCK|LOT)\b/i.test(storedUpper);
       if (!stored || (builtHasHouse && !storedHasHouse)) {
         result = fromStructured;
@@ -294,7 +299,7 @@ export function resolveRequestResidentialAddress(request, options = {}) {
     }
   }
 
-  return stripProvinceOf(result);
+  return stripProvinceOf(stripHouseNoLabelFromAddress(result));
 }
 
 /**
@@ -327,6 +332,14 @@ export function parseAddress(addressString) {
   if (houseMatch) {
     result.house_number = houseMatch[1].trim();
     parts.shift(); // Remove first element
+  } else if (
+    parts[0] &&
+    parts[1] &&
+    /^PUROK\b/i.test(parts[1]) &&
+    !/^PUROK\b/i.test(parts[0])
+  ) {
+    result.house_number = parts[0];
+    parts.shift();
   }
 
   // Try to extract purok

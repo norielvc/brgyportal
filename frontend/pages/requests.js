@@ -104,6 +104,10 @@ import {
 import { mergeResidentDemographicsOntoCertificate } from "@/lib/certificateRequestDemographics";
 import { isCaptainWorkflowHistoryEntry } from "@/lib/captainSignatureDetails";
 import {
+  isSecretaryApprovalHistoryEntry,
+  isWitnessVerificationHistoryEntry,
+} from "@/lib/workflowSignatureHistory";
+import {
   isCohabitationCertificate,
   isGuardianshipCertificate,
   isMedicoLegalCertificate,
@@ -8636,28 +8640,18 @@ function ClearancePreviewForRequests({
   
   const effectiveCaptain = captainApproval || fallbackCaptain;
 
-  const secretaryApproval = !history ? null : [...history]
-    .filter(h => {
-      const hasAction = h.action === 'approve' || h.action === 'forward';
-      if (!hasAction || !h.signature_data) return false;
-      if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-      
-      // Check Step Name or official role
-      const sName = (h.step_name || '').toUpperCase();
-      const hRole = (h.officialRole || h.official_role || '').toUpperCase();
-      if (sName.includes('SECRETARY') || hRole.includes('SECRETARY')) return true;
-      
-      // Check user role
-      const uRole = (h.users?.role || '').toUpperCase();
-      if (uRole.includes('SECRETARY')) return true;
-      
-      // Check Status
-      const prevStatus = (h.previous_status || '').toLowerCase();
-      if (prevStatus === 'secretary_approval' || prevStatus === 'processing') return true;
-      
-      return false;
-    })
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
+  const secretaryApproval = !history
+    ? null
+    : [...history]
+        .filter((h) => {
+          const hasAction = h.action === "approve" || h.action === "forward";
+          if (!hasAction || !h.signature_data) return false;
+          if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+          return isSecretaryApprovalHistoryEntry(h, request.certificate_type);
+        })
+        .sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )[0] || null;
 
   const currentUserFullName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : '';
   const isCurrentUserCaptain = currentUserFullName && officials?.chairman &&
@@ -8775,46 +8769,14 @@ function ClearancePreviewForRequests({
   const financeSignatureData =
     financeApproval?.signature_data || storedFinanceSignature || null;
     
-  const isWitnessVerificationEntry = (h) => {
-    if (!h) return false;
-    const prev = String(h.previous_status || "").toLowerCase();
-    const step = String(h.step_name || "").toLowerCase();
-    const role = String(h.official_role || h.officialRole || "").toLowerCase();
-
-    // 1. Explicitly EXCLUDE any Secretary, Captain/Chairman, Staff Review, or Treasury steps
-    if (
-      step.includes("secretary") ||
-      role.includes("secretary") ||
-      prev.includes("secretary") ||
-      step.includes("captain") ||
-      role.includes("captain") ||
-      step.includes("chairman") ||
-      role.includes("chairman") ||
-      step.includes("punong") ||
-      role.includes("punong") ||
-      step.includes("treasury") ||
-      step.includes("review") ||
-      step.includes("inspection")
-    ) {
-      return false;
-    }
-
-    // 2. Must be an actual witness approval step
-    return (
-      step.includes("witness") ||
-      role.includes("witness") ||
-      prev.includes("witness") ||
-      (step.includes("councilor") && !step.includes("secretary"))
-    );
-  };
-
   const witnessApproval = !history
     ? null
     : [...history]
         .filter((h) => {
           if (!(h.action === "approve" || h.action === "forward")) return false;
+          if (!h.signature_data) return false;
           if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-          return isWitnessVerificationEntry(h);
+          return isWitnessVerificationHistoryEntry(h, request.certificate_type);
         })
         .sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -10635,7 +10597,9 @@ function ClearancePreviewForRequests({
                                 {captainName}
                               </p>
                             </div>
-                            {secretaryApproval?.signature_data && (
+                            {secretaryApproval?.signature_data &&
+                              secretaryApproval.signature_data !==
+                                effectiveWitnessSignature && (
                               <div className="h-12 w-28 pointer-events-none mb-1 -ml-3 flex items-center gap-1">
                                 <img
                                   src={secretaryApproval.signature_data}

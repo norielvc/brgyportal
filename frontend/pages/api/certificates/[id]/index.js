@@ -37,7 +37,7 @@ export default async function handler(req, res) {
       const r = data.residents;
       if (r.house_number || r.purok || r.barangay || r.municipality || r.province) {
         const parts = [
-          r.house_number ? `HOUSE NO. ${String(r.house_number).trim()}` : null,
+          r.house_number ? String(r.house_number).trim().toUpperCase() : null,
           r.purok ? String(r.purok).trim().toUpperCase() : null,
           r.barangay ? String(r.barangay).trim().toUpperCase() : null,
           r.municipality ? String(r.municipality).trim().toUpperCase() : null,

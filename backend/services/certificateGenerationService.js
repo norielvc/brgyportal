@@ -70,6 +70,70 @@ function certNameEmSize(request, templateType = '') {
     return useCompactCertTypography(request, templateType) ? '1.05em' : '1.2em';
 }
 
+function isWitnessVerificationHistoryEntry(h, certificateType = '') {
+    if (!h) return false;
+    const prev = String(h.previous_status || '').toLowerCase();
+    const step = String(h.step_name || '').toLowerCase();
+    const role = String(h.official_role || '').toLowerCase();
+    const newSt = String(h.new_status || '').toLowerCase();
+    const cert = String(certificateType || '').toLowerCase();
+
+    if (
+        step.includes('secretary') ||
+        role.includes('secretary') ||
+        step.includes('captain') ||
+        role.includes('captain') ||
+        step.includes('chairman') ||
+        role.includes('chairman') ||
+        step.includes('punong') ||
+        role.includes('punong') ||
+        step.includes('treasury') ||
+        step.includes('review') ||
+        step.includes('inspection')
+    ) {
+        return false;
+    }
+
+    if (
+        cert === 'first_time_job_seeker' &&
+        prev === 'processing' &&
+        (newSt === 'captain_approval' || newSt.includes('captain'))
+    ) {
+        return true;
+    }
+
+    return (
+        step.includes('witness') ||
+        role.includes('witness') ||
+        prev.includes('witness') ||
+        (step.includes('councilor') && !step.includes('secretary')) ||
+        (role.includes('councilor') && !role.includes('secretary'))
+    );
+}
+
+function isSecretaryApprovalHistoryEntry(h, certificateType = '') {
+    if (!h) return false;
+    if (isWitnessVerificationHistoryEntry(h, certificateType)) return false;
+
+    const step = String(h.step_name || '').toLowerCase();
+    const role = String(h.official_role || '').toLowerCase();
+    const prev = String(h.previous_status || '').toLowerCase();
+    const newSt = String(h.new_status || '').toLowerCase();
+
+    if (step.includes('secretary') || role.includes('secretary')) return true;
+
+    if (prev === 'secretary_approval') {
+        return !newSt.includes('witness');
+    }
+
+    if (prev === 'processing') {
+        if (newSt === 'captain_approval' || newSt.includes('captain')) return false;
+        return step.includes('secretary') || role.includes('secretary');
+    }
+
+    return false;
+}
+
 const MINOR_GUARDIAN_CERTIFICATE_TYPES = [
     'barangay_clearance',
     'certificate_of_indigency',
@@ -450,10 +514,7 @@ class CertificateGenerationService {
                 (h.action === 'approve' || h.action === 'forward') &&
                 h.signature_data &&
                 new Date(h.created_at).getTime() > lastReturnTime &&
-                (
-                  (h.step_name?.toLowerCase().includes('secretary')) ||
-                  (h.official_role?.toLowerCase().includes('secretary'))
-                )
+                isSecretaryApprovalHistoryEntry(h, request.certificate_type)
             );
             const secretarySignature = secretarySigRecord?.signature_data;
             const secretaryName = secretarySigRecord?.users 
@@ -466,35 +527,7 @@ class CertificateGenerationService {
                 if (action !== 'approve' && action !== 'forward') return false;
                 if (!h.signature_data) return false;
                 if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-
-                const step = (h.step_name || '').toLowerCase();
-                const role = (h.official_role || '').toLowerCase();
-                const prev = (h.previous_status || '').toLowerCase();
-
-                // Explicitly exclude secretary, captain, chairman, staff review, treasury, inspection
-                if (
-                    step.includes('secretary') ||
-                    role.includes('secretary') ||
-                    prev.includes('secretary') ||
-                    step.includes('captain') ||
-                    role.includes('captain') ||
-                    step.includes('chairman') ||
-                    role.includes('chairman') ||
-                    step.includes('punong') ||
-                    role.includes('punong') ||
-                    step.includes('review') ||
-                    step.includes('treasury') ||
-                    step.includes('inspection')
-                ) {
-                    return false;
-                }
-
-                return (
-                    step.includes('witness') ||
-                    role.includes('witness') ||
-                    prev.includes('witness') ||
-                    (step.includes('councilor') && !step.includes('secretary'))
-                );
+                return isWitnessVerificationHistoryEntry(h, request.certificate_type);
             });
             const witnessSignature = witnessSigRecord?.signature_data;
             const witnessMiddleInitial = witnessSigRecord?.users?.middle_name
