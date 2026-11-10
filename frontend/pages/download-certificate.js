@@ -219,11 +219,7 @@ export default function DownloadCertificatePage() {
 }
 
 DownloadCertificatePage.getLayout = (page) => (
-  <Layout
-    title="Download Certificate"
-    subtitle="Secure online delivery"
-    mainClassName="p-3"
-  >
+  <Layout requireAuth={false} title="Download Certificate">
     {page}
   </Layout>
 );
