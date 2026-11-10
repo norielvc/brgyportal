@@ -1,7 +1,7 @@
 import { supabase } from "../../lib/supabase";
 import { mergeResidentDemographicsOntoCertificate } from "./certificateRequestDemographics";
 
-/** List view: no `details` JSON blob; slim resident join. */
+/** List view: no `details` JSON blob; slim joins (detail fields load on open). */
 export const CERTIFICATE_LIST_SELECT = `
   id,
   tenant_id,
@@ -28,24 +28,10 @@ export const CERTIFICATE_LIST_SELECT = `
   ),
   residents:resident_id (
     id,
-    first_name,
-    middle_name,
-    last_name,
-    suffix,
     full_name,
     email,
     contact_number,
-    gender,
-    age,
-    civil_status,
-    date_of_birth,
-    place_of_birth,
-    residential_address,
-    house_number,
-    purok,
-    barangay,
-    municipality,
-    province
+    residential_address
   )
 `;
 
@@ -137,6 +123,30 @@ export const CERTIFICATE_PDF_SELECT = `
   )
 `;
 
+const WORKFLOW_CONFIG_CACHE_TTL_MS = 90_000;
+let workflowConfigCache = { tenantId: null, at: 0, rows: null };
+
+async function loadWorkflowConfigurations(tenantId) {
+  const now = Date.now();
+  if (
+    workflowConfigCache.tenantId === tenantId &&
+    workflowConfigCache.rows &&
+    now - workflowConfigCache.at < WORKFLOW_CONFIG_CACHE_TTL_MS
+  ) {
+    return workflowConfigCache.rows;
+  }
+  const { data: wfConfigs } = await supabase
+    .from("workflow_configurations")
+    .select("certificate_type, workflow_config")
+    .eq("tenant_id", tenantId);
+  workflowConfigCache = {
+    tenantId,
+    at: now,
+    rows: wfConfigs || [],
+  };
+  return workflowConfigCache.rows;
+}
+
 export function attachPendingWorkflowAssignment(cert) {
   const assignments = cert.workflow_assignments || [];
   const pendingAssignment = assignments
@@ -185,11 +195,7 @@ export async function enrichCertificateList(certificates, tenantId, options = {}
     options;
   const list = (certificates || []).map(attachPendingWorkflowAssignment);
 
-  const { data: wfConfigs } = await supabase
-    .from("workflow_configurations")
-    .select("certificate_type, workflow_config")
-    .eq("tenant_id", tenantId);
-
+  const wfConfigs = await loadWorkflowConfigurations(tenantId);
   const releasingStepByType = buildReleasingStepByType(wfConfigs);
 
   if (!skipSideEffects) {
@@ -445,6 +451,7 @@ export async function fetchCertificatesForTenant(
   return enrichCertificateList(data || [], tenantId, {
     includeCohabitationPartners: isFull,
     markListView: !isFull,
-    skipSideEffects: !isFull,
+    // Side effects (status fixes, releasing assignments) only on pickup queue — not /requests history.
+    skipSideEffects: isFull || !isPickup,
   });
 }

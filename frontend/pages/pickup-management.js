@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import dynamic from 'next/dynamic';
 import { toast } from 'react-hot-toast';
 import Layout from '@/components/Layout/Layout';
+import {
+  ftjsQueryToPreviewTab,
+  businessPermitQueryToPreviewTab,
+} from '@/lib/certificateApi';
 import {
   FileCheck, Search, Eye, Calendar, User, Phone, MapPin,
   Shield, Clock, CheckCircle, AlertTriangle, QrCode,
@@ -12,6 +17,19 @@ import useScrollLock from '@/lib/useScrollLock';
 
 // API Configuration
 const API_URL = '/api';
+
+const CertificatePreviewModal = dynamic(
+  () =>
+    import('./requests').then((mod) => mod.CertificatePreviewModal),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40">
+        <div className="w-9 h-9 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      </div>
+    ),
+  },
+);
 
 export default function PickupManagementPage() {
   const router = useRouter();
@@ -31,6 +49,9 @@ export default function PickupManagementPage() {
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [sendCertificate, setSendCertificate] = useState(null);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [previewCertificate, setPreviewCertificate] = useState(null);
+  const [previewFtjsTab, setPreviewFtjsTab] = useState(null);
+  const [previewBpTab, setPreviewBpTab] = useState(null);
 
   const handleManualRelease = async (certificateId, pickedUpBy) => {
     if (!pickedUpBy?.trim()) {
@@ -229,23 +250,17 @@ export default function PickupManagementPage() {
     setIsSendModalOpen(true);
   };
 
-  const openCertificatePdfInNewTab = (certificate, { ftjs, bp } = {}) => {
+  const openCertificatePreview = (certificate, { ftjs, bp } = {}) => {
     if (!certificate?.id) return;
-    try {
-      const serialized = JSON.stringify(certificate);
-      sessionStorage.setItem(`brgydesk_pdf_cert_${certificate.id}`, serialized);
-      localStorage.setItem(`brgydesk_pdf_cert_${certificate.id}`, serialized);
-    } catch {
-      /* ignore storage quota errors */
-    }
-    const params = new URLSearchParams({
-      id: String(certificate.id),
-      pdf: "1",
-      directPdf: "1",
-    });
-    if (ftjs) params.set("ftjs", ftjs);
-    if (bp) params.set("bp", bp);
-    window.open(`/requests?${params.toString()}`, "_blank");
+    setPreviewCertificate(certificate);
+    setPreviewFtjsTab(ftjs ? ftjsQueryToPreviewTab(ftjs) : null);
+    setPreviewBpTab(bp ? businessPermitQueryToPreviewTab(bp) : null);
+  };
+
+  const closeCertificatePreview = () => {
+    setPreviewCertificate(null);
+    setPreviewFtjsTab(null);
+    setPreviewBpTab(null);
   };
 
   const isFirstTimeJobSeeker = (certificate) =>
@@ -265,7 +280,7 @@ export default function PickupManagementPage() {
       <>
         <button
           type="button"
-          onClick={() => openCertificatePdfInNewTab(certificate, { bp: "permit" })}
+          onClick={() => openCertificatePreview(certificate, { bp: "permit" })}
           className={btnClass}
           title="Business Clearance Certificate PDF"
         >
@@ -275,7 +290,7 @@ export default function PickupManagementPage() {
         <button
           type="button"
           onClick={() =>
-            openCertificatePdfInNewTab(certificate, { bp: "inspection" })
+            openCertificatePreview(certificate, { bp: "inspection" })
           }
           className={btnClass}
           title="Physical Inspection & Preparation Form PDF"
@@ -296,7 +311,7 @@ export default function PickupManagementPage() {
       <>
         <button
           type="button"
-          onClick={() => openCertificatePdfInNewTab(certificate, { ftjs: "clearance" })}
+          onClick={() => openCertificatePreview(certificate, { ftjs: "clearance" })}
           className={btnClass}
           title="Barangay Clearance PDF"
         >
@@ -305,7 +320,7 @@ export default function PickupManagementPage() {
         </button>
         <button
           type="button"
-          onClick={() => openCertificatePdfInNewTab(certificate, { ftjs: "a" })}
+          onClick={() => openCertificatePreview(certificate, { ftjs: "a" })}
           className={btnClass}
           title="Job Seeker A — Barangay Certification PDF"
         >
@@ -314,7 +329,7 @@ export default function PickupManagementPage() {
         </button>
         <button
           type="button"
-          onClick={() => openCertificatePdfInNewTab(certificate, { ftjs: "b" })}
+          onClick={() => openCertificatePreview(certificate, { ftjs: "b" })}
           className={btnClass}
           title="Job Seeker B — Oath of Undertaking PDF"
         >
@@ -345,9 +360,9 @@ export default function PickupManagementPage() {
     return (
       <button
         type="button"
-        onClick={() => openCertificatePdfInNewTab(certificate)}
+        onClick={() => openCertificatePreview(certificate)}
         className={btnClass}
-        title="Open certificate PDF in new tab"
+        title="Preview certificate"
       >
         <FileText className="w-3.5 h-3.5" />
         PDF
@@ -410,9 +425,11 @@ export default function PickupManagementPage() {
       } else {
         toast.error(
           data.message ||
-            (data.code === 'EMAIL_NOT_CONFIGURED'
-              ? 'Email is not configured on the server (SMTP_USER / SMTP_PASS).'
-              : 'Failed to send certificate'),
+            (data.code === 'DELIVERY_NOT_PUBLISHED'
+              ? 'Publish the PDF from certificate preview first (Publish & send link).'
+              : data.code === 'EMAIL_NOT_CONFIGURED'
+                ? 'Email is not configured on the server (SMTP_USER / SMTP_PASS).'
+                : 'Failed to send certificate'),
           { duration: 6000 },
         );
       }
@@ -863,6 +880,33 @@ export default function PickupManagementPage() {
       )}
 
       {/* Pickup Confirmation Modal */}
+      {previewCertificate && (
+        <CertificatePreviewModal
+          request={previewCertificate}
+          onClose={closeCertificatePreview}
+          onBack={closeCertificatePreview}
+          getTypeLabel={getTypeLabel}
+          currentUser={currentUser}
+          userSignature={null}
+          initialJobSeekerPreviewTab={previewFtjsTab}
+          initialBusinessPreviewTab={previewBpTab}
+          presentation="sideslide-compact"
+          enableDeliveryPublish={
+            getPickupMethod(previewCertificate) === "online" &&
+            Boolean(
+              previewCertificate.email ||
+                previewCertificate.residents?.email,
+            )
+          }
+          onDeliveryPublished={(result) => {
+            toast.success(
+              result?.message || "Published PDF and sent download link.",
+            );
+            closeCertificatePreview();
+          }}
+        />
+      )}
+
       {isConfirmModalOpen && confirmingCertificate && (
         <ConfirmPickupModal
           certificate={confirmingCertificate}
@@ -1159,6 +1203,8 @@ function SendCertificateModal({ certificate, onClose, onConfirm, sending }) {
   const name = certificate.applicant_name || certificate.full_name || certificate.residents?.full_name || 'Applicant';
   const type = certificate.certificate_type?.replace(/_/g, ' ').toUpperCase() || 'CERTIFICATE';
   const ref = certificate.reference_number || certificate.id;
+  const isOnline =
+    String(certificate?.pickup_method || "pickup").toLowerCase() === "online";
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4">
@@ -1206,7 +1252,9 @@ function SendCertificateModal({ certificate, onClose, onConfirm, sending }) {
           <div className="flex items-start gap-2 px-1">
             <Info className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">
-              Sends a &quot;certificate ready&quot; notification (portal link — not a PDF attachment). If nothing arrives in Inbox, check Spam/Promotions and search for &quot;Certificate Ready&quot;.
+              {isOnline
+                ? 'Resends the secure PDF download link (publish from preview first if this is the first time). Check Spam/Promotions if nothing arrives.'
+                : 'Sends a "certificate ready" pickup notification (not a PDF attachment). Check Spam/Promotions and search for "Certificate Ready".'}
             </p>
           </div>
 

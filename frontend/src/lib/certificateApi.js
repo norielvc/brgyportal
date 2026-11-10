@@ -1,10 +1,13 @@
 /** Build URL for GET /api/certificates/:id (list rows use loadFullRequestIfNeeded without view=pdf). */
-export function certificateDetailUrl(apiBase, id, { view } = {}) {
+export function certificateDetailUrl(apiBase, id, { view, includeHistory } = {}) {
   if (!apiBase || !id) return "";
   const base = `${apiBase.replace(/\/$/, "")}/certificates/${encodeURIComponent(id)}`;
-  if (view === "pdf") return `${base}?view=pdf`;
-  if (view === "full") return `${base}?view=full`;
-  return base;
+  const params = new URLSearchParams();
+  if (view === "pdf") params.set("view", "pdf");
+  else if (view === "full") params.set("view", "full");
+  if (includeHistory) params.set("includeHistory", "1");
+  const q = params.toString();
+  return q ? `${base}?${q}` : base;
 }
 
 export function workflowHistoryUrl(apiBase, requestId, { view } = {}) {
@@ -62,12 +65,12 @@ export function previewTabToBusinessPermitQuery(tab) {
   return tab === "inspection" ? "inspection" : "permit";
 }
 
+/** Opens certificate HTML preview (same as Requests → Preview); Download/Print still build PDF on demand. */
 export function buildDirectCertificatePdfUrl(certificateId, { ftjs, bp } = {}) {
   if (!certificateId) return "/requests";
   const params = new URLSearchParams({
     id: String(certificateId),
     pdf: "1",
-    directPdf: "1",
   });
   if (ftjs) params.set("ftjs", previewTabToFtjsQuery(ftjsQueryToPreviewTab(ftjs)));
   if (bp) {

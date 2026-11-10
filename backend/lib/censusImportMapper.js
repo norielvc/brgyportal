@@ -96,12 +96,11 @@ function residentUuid(tenantId, censusNumber) {
   ].join("-");
 }
 
+/** EC from census import: named header + col AF only — not hidden AD/AE (col 29/30). */
 function pickEcNumber(rowByHeader, colExtras) {
   const fromHeader = trimStr(rowByHeader["EC CARD NUMBER"]);
-  const c30 = trimStr(colExtras.col_30_ec);
-  const c29 = trimStr(colExtras.col_29_ec);
-  const c31 = trimStr(colExtras.col_31_ec);
-  const candidates = [c30, c29, fromHeader, c31].filter(Boolean);
+  const c31 = trimStr(colExtras?.col_31_ec);
+  const candidates = [fromHeader, c31].filter(Boolean);
   for (const c of candidates) {
     if (/^H\d+M?-F\d+$/i.test(c)) return c.toUpperCase();
   }
@@ -155,11 +154,7 @@ function buildRowRecord(headers, row, tenantId, ecFileByResidentNumber, importMe
     ...DEFAULT_ADDRESS,
   });
 
-  let ecCard = pickEcNumber(rowByHeader, {
-    col_29_ec: col29,
-    col_30_ec: col30,
-    col_31_ec: col31,
-  });
+  let ecCard = pickEcNumber(rowByHeader, { col_31_ec: col31 });
   if (!ecCard && ecFileByResidentNumber && ecFileByResidentNumber.has(censusNumber)) {
     ecCard = ecFileByResidentNumber.get(censusNumber);
   }
@@ -284,13 +279,13 @@ function buildBarangayIdRow(resident, ecCard) {
 
 function resolveEcForStoredResident(resident) {
   const un = resident?.census_extras?.unnamed_columns || {};
+  const cols = resident?.census_extras?.columns || {};
   return pickEcNumber(
-    { "EC CARD NUMBER": resident?.ec_card_number },
     {
-      col_29_ec: un.col_29_ec,
-      col_30_ec: un.col_30_ec,
-      col_31_ec: un.col_31_ec,
+      "EC CARD NUMBER":
+        cols["EC CARD NUMBER"] || resident?.ec_card_number || "",
     },
+    { col_31_ec: un.col_31_ec },
   );
 }
 
@@ -299,5 +294,6 @@ module.exports = {
   householdGroupKey,
   buildBarangayIdRow,
   parseBirthdate,
+  pickEcNumber,
   resolveEcForStoredResident,
 };

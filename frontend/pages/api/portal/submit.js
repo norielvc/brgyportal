@@ -25,6 +25,27 @@ const getProtectionConfig = async (supabase) => {
 // In-memory rate limiter (resets on server restart)
 const ipSubmissions = new Map();
 
+function publicSubmitErrorMessage(failure) {
+  const msg = String(failure?.message || "").trim();
+  const code = failure?.code || "";
+  if (/abort|timeout|fetch failed|ECONNREFUSED|ENOTFOUND|network/i.test(msg)) {
+    return "Could not reach the server database. Please try again in a few minutes.";
+  }
+  if (
+    code === "42501" ||
+    /row-level security|permission denied|invalid api key|JWT/i.test(msg)
+  ) {
+    return "Your request could not be saved due to a server configuration issue. Please contact the barangay office.";
+  }
+  if (/duplicate key|unique constraint/i.test(msg)) {
+    return "A similar request may already exist. Use Track Status or contact the barangay office.";
+  }
+  if (msg && msg.length <= 180) {
+    return `Could not save your request: ${msg}`;
+  }
+  return "Could not save your request right now. Please try again or visit the barangay hall.";
+}
+
 function checkRateLimit(ip, config) {
   if (!config.rateLimitEnabled) return { blocked: false };
 
@@ -124,6 +145,7 @@ export default async function handler(req, res) {
   /**
    * STAGE 2: Attempt Live Supabase Insert
    */
+  let supabaseFailure = null;
   try {
     // 0. SUBSCRIPTION ENFORCEMENT
     const { data: sub } = await supabase
@@ -507,11 +529,15 @@ export default async function handler(req, res) {
         source: "cloud_supabase",
         data,
       });
-    } else {
-      console.error("Supabase insert error:", error.message);
-      throw new Error(error.message);
     }
+
+    supabaseFailure = error;
+    console.error("Supabase insert error:", error.message, error.code, error.details);
+    throw error;
   } catch (cloudError) {
+    if (!supabaseFailure && cloudError) {
+      supabaseFailure = cloudError;
+    }
     console.error("⚠️ Submission cloud error (full):", {
       message: cloudError?.message,
       code: cloudError?.code,
@@ -521,40 +547,47 @@ export default async function handler(req, res) {
   }
 
   /**
-   * STAGE 3: Local Resilience Fallback (Buffered)
+   * STAGE 3: Local Resilience Fallback (dev only — not on Vercel)
    */
-  try {
-    const dataPath = path.join(
-      process.cwd(),
-      "src/data/mock/pending_requests.json",
-    );
-    const jsonData = await fs.readFile(dataPath, "utf8");
-    const pending = JSON.parse(jsonData);
+  const allowLocalBuffer = !process.env.VERCEL;
+  if (allowLocalBuffer) {
+    try {
+      const dataPath = path.join(
+        process.cwd(),
+        "src/data/mock/pending_requests.json",
+      );
+      const jsonData = await fs.readFile(dataPath, "utf8");
+      const pending = JSON.parse(jsonData);
 
-    const offlineRequest = {
-      ...formData,
-      id: `TEMP-${refNumber}`,
-      referenceNumber: refNumber,
-      brgydeskNo,
-      certificate_type: type,
-      tenant_id: tenantId,
-      submitted_at: new Date().toISOString(),
-      status: "OFFLINE_PENDING",
-    };
+      const offlineRequest = {
+        ...formData,
+        id: `TEMP-${refNumber}`,
+        referenceNumber: refNumber,
+        brgydeskNo,
+        certificate_type: type,
+        tenant_id: tenantId,
+        submitted_at: new Date().toISOString(),
+        status: "OFFLINE_PENDING",
+      };
 
-    pending.push(offlineRequest);
-    await fs.writeFile(dataPath, JSON.stringify(pending, null, 2));
+      pending.push(offlineRequest);
+      await fs.writeFile(dataPath, JSON.stringify(pending, null, 2));
 
-    return res.status(200).json({
-      success: true,
-      referenceNumber: refNumber,
-      brgydeskNo,
-      source: "local_resilience_buffer",
-      message: "Saved to local buffer. System will sync once online.",
-    });
-  } catch (fsError) {
-    return res
-      .status(500)
-      .json({ success: false, message: "Submission system offline." });
+      return res.status(200).json({
+        success: true,
+        referenceNumber: refNumber,
+        brgydeskNo,
+        source: "local_resilience_buffer",
+        message: "Saved to local buffer. System will sync once online.",
+      });
+    } catch (fsError) {
+      console.error("Local submit buffer failed:", fsError.message);
+    }
   }
+
+  return res.status(503).json({
+    success: false,
+    code: "SUBMIT_FAILED",
+    message: publicSubmitErrorMessage(supabaseFailure),
+  });
 }

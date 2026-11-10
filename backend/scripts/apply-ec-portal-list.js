@@ -59,8 +59,6 @@ function collectEcsFromResident(r) {
   };
   add(r.ec_card_number);
   const un = r.census_extras?.unnamed_columns || {};
-  add(un.col_29_ec);
-  add(un.col_30_ec);
   add(un.col_31_ec);
   const cols = r.census_extras?.columns || {};
   add(cols["EC CARD NUMBER"]);
@@ -291,6 +289,20 @@ async function main() {
     if (error) throw new Error(`insert: ${error.message}`);
     console.log(`  inserted ${Math.min(i + BATCH, upsertRows.length)} / ${upsertRows.length}`);
   }
+
+  let residentEcSynced = 0;
+  for (const row of upsertRows) {
+    const ec = norm(row.id_number);
+    if (!row.resident_id || !ec) continue;
+    const { error: ecErr } = await supabase
+      .from("residents")
+      .update({ ec_card_number: ec })
+      .eq("id", row.resident_id)
+      .eq("tenant_id", TENANT);
+    if (ecErr) throw new Error(`resident ec sync: ${ecErr.message}`);
+    residentEcSynced++;
+  }
+  console.log(`Residents ec_card_number synced: ${residentEcSynced}`);
 
   const { count: total } = await supabase
     .from("barangay_ids")

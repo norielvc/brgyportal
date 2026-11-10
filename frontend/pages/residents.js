@@ -46,6 +46,7 @@ import BirthPlaceSelect, {
   formatBirthPlaceForStorage,
 } from "@/components/UI/BirthPlaceSelect";
 import IssueIDModal from "@/components/Modals/IssueIDModal";
+import ActionConfirmModal from "@/components/Modals/ActionConfirmModal";
 import { getUserData } from "@/lib/auth";
 import { debounce } from "@/lib/utils";
 import {
@@ -492,6 +493,7 @@ export default function Residents() {
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingOne, setIsExportingOne] = useState(false);
+  const [censusExportConfirmOpen, setCensusExportConfirmOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -1058,22 +1060,13 @@ export default function Residents() {
     }
   };
 
-  const handleExportCensus = async () => {
-    const estimated =
-      typeof totalItems === "number" && totalItems > 0
-        ? totalItems
-        : null;
-    const estimateLabel = estimated
-      ? `about ${estimated.toLocaleString()} residents`
-      : "the full resident database";
+  const censusExportEstimateLabel =
+    typeof totalItems === "number" && totalItems > 0
+      ? totalItems.toLocaleString()
+      : null;
 
-    const confirmed = window.confirm(
-      `Export the census master list (${estimateLabel})?\n\n` +
-        "This downloads a large amount of data from Supabase and counts toward your monthly egress quota. " +
-        "You can export one resident at a time from their profile instead.\n\nContinue?",
-    );
-    if (!confirmed) return;
-
+  const runExportCensus = async () => {
+    setCensusExportConfirmOpen(false);
     setIsExporting(true);
     const toastId = toast.loading("Preparing census master list...");
     try {
@@ -1161,7 +1154,7 @@ export default function Residents() {
           </div>
           <button
             type="button"
-            onClick={handleExportCensus}
+            onClick={() => setCensusExportConfirmOpen(true)}
             disabled={isExporting}
             className="flex-1 sm:flex-initial justify-center px-2.5 py-1.5 bg-white text-[#03254c] border border-[#03254c] rounded-md text-[11px] font-semibold hover:bg-blue-50 transition-colors flex items-center gap-1.5 disabled:opacity-60"
           >
@@ -2534,6 +2527,35 @@ export default function Residents() {
             </button>
           </div>
       </Modal>
+
+      <ActionConfirmModal
+        isOpen={censusExportConfirmOpen}
+        onClose={() => setCensusExportConfirmOpen(false)}
+        onConfirm={runExportCensus}
+        variant="warning"
+        title="Export census master list"
+        footnote={
+          censusExportEstimateLabel
+            ? `${censusExportEstimateLabel} residents`
+            : "Full database"
+        }
+        description={
+          <>
+            <p>
+              This downloads the full MASTER LIST layout (all census columns) as
+              an Excel file.
+            </p>
+            <p className="text-xs text-gray-500">
+              Large exports use Supabase bandwidth and count toward your monthly
+              egress quota. To use less data, open a resident profile and use{" "}
+              <strong>Export</strong> for one person at a time.
+            </p>
+          </>
+        }
+        confirmLabel="Download Excel"
+        cancelLabel="Not now"
+        isLoading={isExporting}
+      />
 
       {/* Delete Confirmation */}
       <Modal

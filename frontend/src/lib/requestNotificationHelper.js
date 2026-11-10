@@ -1,8 +1,7 @@
 /**
  * Request notification helpers:
- * - New certificate request: resident email only (RECEIVED).
- * - Captain step: email to Barangay Captain/Chairman only (APPROVED_STEP).
- * - Other staff steps receive in-app notifications only.
+ * - New request: resident RECEIVED + Review Request team SUBMITTED (if step sendEmail).
+ * - Chairman step: APPROVED_STEP when status becomes captain_approval.
  */
 
 import {
@@ -37,9 +36,32 @@ async function createInAppNotification(supabase, payload) {
   return !error;
 }
 
+function isReleasingOrTerminalStep(step) {
+  if (!step) return true;
+  const status = String(step.status || "").toLowerCase();
+  const name = String(step.name || "").toLowerCase();
+  return (
+    status === "oic_review" ||
+    status === "ready" ||
+    status === "released" ||
+    name.includes("releasing")
+  );
+}
+
+/** First review step in tenant workflow (staff_review or earliest requiresApproval). */
+function findInitialReviewStep(steps) {
+  if (!steps?.length) return null;
+  const staffReview = steps.find(
+    (s) => String(s.status || "").toLowerCase() === "staff_review",
+  );
+  if (staffReview) return staffReview;
+  return steps.find(
+    (s) => s.requiresApproval && !isReleasingOrTerminalStep(s),
+  );
+}
+
 /**
- * Barangay Captain step approval email notification disabled per configuration.
- * Returns immediately so no emails are sent when requests reach captain approval.
+ * Email assignees on the Barangay Chairman step (captain_approval) when a request is endorsed.
  */
 export async function notifyBarangayCaptainStep({
   supabase,
@@ -51,14 +73,102 @@ export async function notifyBarangayCaptainStep({
   comments = "",
   captainUserIds = [],
 }) {
-  // Captain step approval email notification disabled per configuration
-  return { emailsSent: 0, skipped: true, reason: "captain_step_email_disabled" };
+  const enabled = await isEmailNotificationsEnabled(supabase);
+  if (!enabled) {
+    return { emailsSent: 0, skipped: true, reason: "notifications_disabled" };
+  }
+
+  try {
+    const { data: wfRow } = await supabase
+      .from("workflow_configurations")
+      .select("workflow_config")
+      .eq("tenant_id", tenantId)
+      .eq("certificate_type", certificateType)
+      .maybeSingle();
+    const steps = wfRow?.workflow_config?.steps || [];
+    const chairmanStep = steps.find((s) => {
+      const st = String(s.status || "").toLowerCase();
+      const name = String(s.name || "").toLowerCase();
+      const role = String(s.officialRole || "").toLowerCase();
+      return (
+        st === "captain_approval" ||
+        name.includes("chairman") ||
+        name.includes("captain") ||
+        role.includes("chairman")
+      );
+    });
+    if (chairmanStep && chairmanStep.sendEmail === false) {
+      return { emailsSent: 0, skipped: true, reason: "step_send_email_off" };
+    }
+  } catch (wfErr) {
+    console.warn("[notify] chairman step workflow check:", wfErr.message);
+  }
+
+  let recipients = await fetchUsersByIds(supabase, captainUserIds, tenantId);
+  if (!recipients.length) {
+    recipients = await fetchBarangayCaptainUsers(
+      supabase,
+      tenantId,
+      certificateType,
+      captainUserIds,
+    );
+  }
+
+  const { sendProcessNotification } = await import("./mailer");
+  const seenEmails = new Set();
+  let emailsSent = 0;
+
+  for (const user of recipients) {
+    const email = String(user.email || "").trim();
+    if (!email) continue;
+    const key = email.toLowerCase();
+    if (seenEmails.has(key)) continue;
+    seenEmails.add(key);
+
+    const recipientName =
+      [user.first_name, user.last_name].filter(Boolean).join(" ").trim() ||
+      "Barangay Chairman";
+
+    const result = await sendProcessNotification({
+      recipientEmail: email,
+      recipientName,
+      eventType: "APPROVED_STEP",
+      certificateType,
+      referenceNumber,
+      applicantName: applicantName || "Applicant",
+      comments: comments || "",
+      requestId,
+      tenantId,
+    });
+
+    if (result.success) emailsSent += 1;
+    else
+      console.warn(
+        "[notify] chairman step email:",
+        email,
+        result.error || result.code,
+      );
+  }
+
+  if (!emailsSent) {
+    console.warn(
+      "[notify] chairman step: no emails sent",
+      referenceNumber,
+      "recipients:",
+      recipients.length,
+    );
+  }
+
+  return {
+    emailsSent,
+    captainsEmailed: emailsSent,
+    skipped: emailsSent === 0,
+    reason: emailsSent === 0 ? "no_recipients" : undefined,
+  };
 }
 
 /**
- * Notify applicant (RECEIVED) for a newly submitted certificate request.
- * Resident receives email confirmation only (no staff/captain email for new submissions).
- * Step 1 review staff and Barangay Captain still receive in-app notifications.
+ * Notify resident (RECEIVED) and Review Request assignees (SUBMITTED) for a new request.
  */
 export async function notifyNewCertificateRequest({
   supabase,
@@ -96,18 +206,72 @@ export async function notifyNewCertificateRequest({
     else console.warn("[notify] resident email:", result.error || result.code);
   }
 
-  // Captain users lookup for in-app notification only
+  let staffList = await fetchUsersByIds(supabase, staffUserIds, tenantId);
+  if (!staffList.length) {
+    staffList = await fetchTenantReviewStaff(supabase, tenantId);
+  }
+
+  let reviewStepSendEmail = true;
+  try {
+    const { data: wfRow } = await supabase
+      .from("workflow_configurations")
+      .select("workflow_config")
+      .eq("tenant_id", tenantId)
+      .eq("certificate_type", certificateType)
+      .maybeSingle();
+    const reviewStep = findInitialReviewStep(
+      wfRow?.workflow_config?.steps || [],
+    );
+    if (reviewStep && reviewStep.sendEmail === false) {
+      reviewStepSendEmail = false;
+    }
+  } catch (wfErr) {
+    console.warn("[notify] review step workflow check:", wfErr.message);
+  }
+
+  let staffEmailed = 0;
+  if (reviewStepSendEmail && staffList.length) {
+    const seenStaffEmail = new Set();
+    for (const staff of staffList) {
+      const email = String(staff.email || "").trim();
+      if (!email) continue;
+      const key = email.toLowerCase();
+      if (seenStaffEmail.has(key)) continue;
+      seenStaffEmail.add(key);
+
+      const recipientName =
+        [staff.first_name, staff.last_name].filter(Boolean).join(" ").trim() ||
+        "Review Team";
+
+      const result = await sendProcessNotification({
+        recipientEmail: email,
+        recipientName,
+        eventType: "SUBMITTED",
+        certificateType,
+        referenceNumber,
+        applicantName: applicantName || "Applicant",
+        comments: "",
+        requestId,
+        tenantId,
+      });
+      if (result.success) {
+        emailsSent += 1;
+        staffEmailed += 1;
+      } else {
+        console.warn(
+          "[notify] review team email:",
+          email,
+          result.error || result.code,
+        );
+      }
+    }
+  }
+
   const captainUsers = await fetchBarangayCaptainUsers(
     supabase,
     tenantId,
     certificateType,
   );
-
-  // In-app notifications for Step 1 review staff + Barangay Captain
-  let staffList = await fetchUsersByIds(supabase, staffUserIds, tenantId);
-  if (!staffList.length) {
-    staffList = await fetchTenantReviewStaff(supabase, tenantId);
-  }
 
   const seenInApp = new Set();
   for (const staff of [...staffList, ...captainUsers]) {
@@ -157,6 +321,7 @@ export async function notifyNewCertificateRequest({
 
   return {
     emailsSent,
+    staffEmailed,
     captainsEmailed: 0,
     staffNotified: seenInApp.size,
     skipped: false,

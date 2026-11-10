@@ -5,6 +5,11 @@ import {
   getEmailProvider,
   sendTransactionalEmail,
 } from "../../../../src/lib/sendTransactionalEmail";
+import {
+  buildPublicDownloadUrl,
+  findActiveDelivery,
+  sendCertificateDownloadReadyEmail,
+} from "../../../../src/lib/certificateDeliveryServer";
 
 export default async function handler(req, res) {
   const user = await authenticateToken(req, res);
@@ -68,28 +73,49 @@ export default async function handler(req, res) {
   }
 
   const ref = cert.reference_number || id;
-  const portalPath =
-    tenantId && tenantId !== "demo" ? `/${tenantId}` : "/ibaoeste";
-
-  const { subject, html, text } = buildProcessNotificationEmail({
-    recipientName: name,
-    eventType: "READY_FOR_PICKUP",
-    certificateType: cert.certificate_type,
-    referenceNumber: ref,
-    applicantName: name,
-    requestId: id,
-    portalPath,
-    tenantId,
-  });
+  const pickupMethod = String(cert.pickup_method || "pickup").toLowerCase();
 
   try {
-    const sent = await sendTransactionalEmail({
-      to: to.trim(),
-      subject,
-      html,
-      text,
-      tenantId,
-    });
+    let sent;
+
+    if (pickupMethod === "online") {
+      const delivery = await findActiveDelivery(id, tenantId);
+      if (!delivery) {
+        return res.status(409).json({
+          success: false,
+          code: "DELIVERY_NOT_PUBLISHED",
+          message:
+            "No published PDF yet. Open certificate preview, then use Publish & send download link.",
+        });
+      }
+
+      const downloadUrl = buildPublicDownloadUrl(delivery.download_token, tenantId);
+      sent = await sendCertificateDownloadReadyEmail({
+        to,
+        name,
+        cert,
+        tenantId,
+        downloadUrl,
+        expiresAt: delivery.expires_at,
+      });
+    } else {
+      const { subject, html, text } = buildProcessNotificationEmail({
+        recipientName: name,
+        eventType: "READY_FOR_PICKUP",
+        certificateType: cert.certificate_type,
+        referenceNumber: ref,
+        applicantName: name,
+        tenantId,
+      });
+
+      sent = await sendTransactionalEmail({
+        to: to.trim(),
+        subject,
+        html,
+        text,
+        tenantId,
+      });
+    }
 
     if (sent.skipped || !sent.success) {
       const code = sent.skipped
@@ -114,13 +140,18 @@ export default async function handler(req, res) {
 
     return res.json({
       success: true,
-      message: `Certificate ready email sent to ${to.trim()}`,
+      message:
+        pickupMethod === "online"
+          ? `Download link email sent to ${to.trim()}`
+          : `Certificate ready email sent to ${to.trim()}`,
       channel: sent.channel,
       to: to.trim(),
       from: sent.from,
       messageId: sent.messageId,
       hint:
-        "If it does not appear in Inbox within a few minutes, check Spam/Promotions and search for “Certificate Ready” or the sender address.",
+        pickupMethod === "online"
+          ? 'If it does not appear in Inbox within a few minutes, check Spam/Promotions and search for "Certificate Download" or the sender address.'
+          : 'If it does not appear in Inbox within a few minutes, check Spam/Promotions and search for "Certificate Ready" or the sender address.',
     });
   } catch (error) {
     console.error("Send email error:", error);

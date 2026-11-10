@@ -22,16 +22,9 @@ export default async function handler(req, res) {
       `id, step_id, step_name, assigned_user_id, status, created_at,
       certificate_requests:request_id (
         id, reference_number, certificate_type, status, full_name, purpose, address,
-        contact_number, email, created_at, updated_at, resident_id,
-        first_name, middle_name, last_name, suffix, age, sex, civil_status,
-        date_of_birth, place_of_birth,
+        contact_number, email, created_at, updated_at, resident_id, pickup_method,
         residents:resident_id (
-          id,
-          first_name, middle_name, last_name, suffix,
-          full_name, email, contact_number, gender, age, civil_status,
-          date_of_birth, place_of_birth,
-          residential_address,
-          house_number, purok, barangay, municipality, province
+          id, full_name, email, contact_number, residential_address
         )
       )`,
     )

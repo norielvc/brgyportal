@@ -1,6 +1,7 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
 import { fetchCertificateById } from "../../../../src/lib/certificateListQuery";
+import { fetchWorkflowHistoryPdfBundle } from "../../../../src/lib/workflowHistoryQuery";
 
 export default async function handler(req, res) {
   const user = await authenticateToken(req, res);
@@ -44,6 +45,20 @@ export default async function handler(req, res) {
           r.province ? String(r.province).trim().toUpperCase() : null,
         ].filter(Boolean);
         data.residents.residential_address = parts.join(", ");
+      }
+    }
+
+    const includeHistory =
+      view === "pdf" &&
+      (req.query.includeHistory === "1" || req.query.includeHistory === "true");
+
+    if (includeHistory) {
+      try {
+        const workflowHistory = await fetchWorkflowHistoryPdfBundle(tenantId, id);
+        return res.json({ success: true, data, workflowHistory });
+      } catch (histErr) {
+        console.error("[certificates/[id] GET includeHistory]", histErr?.message || histErr);
+        return res.json({ success: true, data });
       }
     }
 

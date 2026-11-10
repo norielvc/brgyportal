@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
@@ -67,8 +67,6 @@ import {
   Store,
   Check,
   FilterX,
-  ZoomIn,
-  ZoomOut,
   Maximize2,
   Trash2,
 } from "lucide-react";
@@ -511,6 +509,9 @@ export default function RequestsPage() {
   const router = useRouter();
   const [requests, setRequests] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
+  const latestMyAssignedRef = useRef([]);
+  const latestAllCertsRef = useRef([]);
+  const skipViewModeFetchRef = useRef(true);
   const [workflows, setWorkflows] = useState(() => {
     if (typeof window === "undefined") return {};
     try {
@@ -631,45 +632,51 @@ export default function RequestsPage() {
           return;
         }
 
-        // 1. Load workflows first so isUserAssignedToRequest has the data it needs to perform Smart Merge
-        try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 20000);
-          const response = await fetch(`${API_URL}/workflows`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            signal: controller.signal,
-          });
-          clearTimeout(timer);
-          const data = await response.json();
-          if (data.success && data.data && Object.keys(data.data).length > 0) {
-            loadedWorkflows = data.data;
-            setWorkflows(data.data);
-          }
-        } catch (error) {
-          console.log("Could not load workflows from API:", error);
-        }
-
-        // Fallback to localStorage if API fails
-        if (!loadedWorkflows || Object.keys(loadedWorkflows).length === 0) {
-          const savedWorkflows = localStorage.getItem("certificateWorkflows");
-          if (savedWorkflows) {
-            try {
-              loadedWorkflows = JSON.parse(savedWorkflows);
-              setWorkflows(loadedWorkflows);
-            } catch {
-              loadedWorkflows = {};
-            }
+        // Seed workflows from cache so the first list fetch can merge assignments without waiting on /workflows.
+        const savedWorkflows = localStorage.getItem("certificateWorkflows");
+        if (savedWorkflows) {
+          try {
+            loadedWorkflows = JSON.parse(savedWorkflows);
+            setWorkflows(loadedWorkflows);
+          } catch {
+            loadedWorkflows = {};
           }
         }
 
-        // 2. Fetch User Signatures
         fetchUserSignature();
 
-        // 3. Now fetch requests (passing the loaded workflows so the Smart Merge works immediately)
-        await fetchRequests(loadedWorkflows, user);
+        const workflowsPromise = (async () => {
+          try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 20000);
+            const response = await fetch(`${API_URL}/workflows`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              signal: controller.signal,
+            });
+            clearTimeout(timer);
+            const data = await response.json();
+            if (data.success && data.data && Object.keys(data.data).length > 0) {
+              return data.data;
+            }
+          } catch (error) {
+            console.log("Could not load workflows from API:", error);
+          }
+          return loadedWorkflows;
+        })();
+
+        const [, apiWorkflows] = await Promise.all([
+          fetchRequests(loadedWorkflows, user),
+          workflowsPromise,
+        ]);
+
+        if (apiWorkflows && Object.keys(apiWorkflows).length > 0) {
+          loadedWorkflows = apiWorkflows;
+          setWorkflows(apiWorkflows);
+          applySmartMerge(apiWorkflows, user);
+        }
       } finally {
         setLoading(false);
       }
@@ -703,10 +710,18 @@ export default function RequestsPage() {
     }
   };
 
-  // Re-fetch requests when view mode changes
+  // Re-fetch when switching tabs (initial load is handled in initializeData)
   useEffect(() => {
-    if (currentUser && workflows) {
-      fetchRequests(workflows, currentUser);
+    if (skipViewModeFetchRef.current) {
+      skipViewModeFetchRef.current = false;
+      return;
+    }
+    if (currentUser) {
+      if (latestAllCertsRef.current.length > 0) {
+        applySmartMerge(workflows, currentUser);
+      } else {
+        fetchRequests(workflows, currentUser);
+      }
     }
   }, [viewMode]);
 
@@ -770,6 +785,49 @@ export default function RequestsPage() {
     return full;
   };
 
+  const applySmartMerge = (
+    activeWorkflows = workflows,
+    activeUser = currentUser,
+    activeViewMode = viewMode,
+  ) => {
+    const myAssigned = latestMyAssignedRef.current || [];
+    const allCertificates = latestAllCertsRef.current || [];
+    const combined = [...myAssigned];
+
+    allCertificates.forEach((cert) => {
+      const alreadyIn = combined.some((c) => c.id === cert.id);
+      if (
+        !alreadyIn &&
+        isUserAssignedToRequest(cert, activeWorkflows, activeUser)
+      ) {
+        combined.push(cert);
+      }
+    });
+
+    combined.sort((a, b) => {
+      const timeA = new Date(a.updated_at || a.created_at).getTime();
+      const timeB = new Date(b.updated_at || b.created_at).getTime();
+      if (isNaN(timeA)) return 1;
+      if (isNaN(timeB)) return -1;
+      return timeB - timeA;
+    });
+
+    setAssignedCount(combined.length);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("certificate-requests-count", {
+          detail: { count: combined.length },
+        }),
+      );
+    }
+
+    if (activeViewMode === "assigned") {
+      setRequests(combined);
+    } else {
+      setRequests(allCertificates);
+    }
+  };
+
   const fetchRequests = async (
     activeWorkflows = workflows,
     activeUser = currentUser,
@@ -781,71 +839,52 @@ export default function RequestsPage() {
         return;
       }
 
-      // Always fetch BOTH or at least counts to keep badges accurate
-      // 1. Fetch My Assignments
-      const assignedRes = await fetchWithTimeout(
+      const authHeaders = { Authorization: `Bearer ${token}` };
+
+      const assignedPromise = fetchWithTimeout(
         `${API_URL}/workflow-assignments/my-assignments`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      const assignedData = await assignedRes.json();
+        { headers: authHeaders },
+      ).then((r) => r.json());
+
+      const allPromise = fetchWithTimeout(`${API_URL}/certificates?view=list`, {
+        headers: authHeaders,
+      }).then((r) => r.json());
+
+      if (viewMode === "assigned") {
+        const assignedData = await assignedPromise;
+        const myAssigned = assignedData.success
+          ? assignedData.data || assignedData.certificates || []
+          : [];
+        latestMyAssignedRef.current = myAssigned;
+        latestAllCertsRef.current = [];
+        setRequests(myAssigned);
+        setAssignedCount(myAssigned.length);
+        setLoading(false);
+
+        const allData = await allPromise;
+        const allCertificates = allData.success ? allData.certificates || [] : [];
+        latestAllCertsRef.current = allCertificates;
+        setAllRequests(allCertificates);
+        setTotalCount(allCertificates.length);
+        applySmartMerge(activeWorkflows, activeUser, viewMode);
+        return;
+      }
+
+      const [assignedData, allData] = await Promise.all([
+        assignedPromise,
+        allPromise,
+      ]);
+
       const myAssigned = assignedData.success
         ? assignedData.data || assignedData.certificates || []
         : [];
-
-      // 2. Fetch All Requests
-      const allRes = await fetchWithTimeout(
-        `${API_URL}/certificates?view=list`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      const allData = await allRes.json();
       const allCertificates = allData.success ? allData.certificates || [] : [];
+
+      latestMyAssignedRef.current = myAssigned;
+      latestAllCertsRef.current = allCertificates;
       setAllRequests(allCertificates);
       setTotalCount(allCertificates.length);
-
-      // 3. Smart Merge: Always calculate total assignments to keep the badge universally accurate
-      const combined = [...myAssigned];
-
-      // Find items in 'allCertificates' that user is assigned to but aren't in 'myAssigned' already
-      allCertificates.forEach((cert) => {
-        const alreadyIn = combined.some((c) => c.id === cert.id);
-        if (
-          !alreadyIn &&
-          isUserAssignedToRequest(cert, activeWorkflows, activeUser)
-        ) {
-          combined.push(cert);
-        }
-      });
-
-      // Sort combined list by newest activity first so fallbacks appear at the top too!
-      combined.sort((a, b) => {
-        const timeA = new Date(a.updated_at || a.created_at).getTime();
-        const timeB = new Date(b.updated_at || b.created_at).getTime();
-        if (isNaN(timeA)) return 1;
-        if (isNaN(timeB)) return -1;
-        return timeB - timeA;
-      });
-
-      // ALWAYS set the accurate assigned count
-      setAssignedCount(combined.length);
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("certificate-requests-count", {
-            detail: { count: combined.length },
-          }),
-        );
-      }
-
-      // 4. Set the active requests list based on viewMode
-      if (viewMode === "assigned") {
-        setRequests(combined);
-      } else {
-        // Certificate Request History: show all certificates for the tenant
-        setRequests(allCertificates);
-      }
+      applySmartMerge(activeWorkflows, activeUser, viewMode);
     } catch (error) {
       console.error("Error fetching requests:", error);
     } finally {
@@ -864,7 +903,6 @@ export default function RequestsPage() {
   };
 
   const [openPdfFromQuery, setOpenPdfFromQuery] = useState(false);
-  const [directPdfFromQuery, setDirectPdfFromQuery] = useState(false);
   const [jobSeekerPdfFromQuery, setJobSeekerPdfFromQuery] = useState(null);
   const [businessPermitPdfFromQuery, setBusinessPermitPdfFromQuery] =
     useState(null);
@@ -875,8 +913,9 @@ export default function RequestsPage() {
     const certId = router.query.id;
     if (!certId || selectedRequest) return;
 
-    if (router.query.pdf === "1") setOpenPdfFromQuery(true);
-    if (router.query.directPdf === "1") setDirectPdfFromQuery(true);
+    if (router.query.pdf === "1" || router.query.directPdf === "1") {
+      setOpenPdfFromQuery(true);
+    }
     if (router.query.ftjs) {
       setJobSeekerPdfFromQuery(ftjsQueryToPreviewTab(router.query.ftjs));
     }
@@ -927,6 +966,7 @@ export default function RequestsPage() {
     fetch(
       certificateDetailUrl(API_URL, certId, {
         view: pdfDeepLink ? "pdf" : undefined,
+        includeHistory: pdfDeepLink,
       }),
       {
       headers: {
@@ -1881,10 +1921,11 @@ export default function RequestsPage() {
 
   return (
     <div className="space-y-2.5 max-w-[1600px] mx-auto text-[13px]">
-      {router.query.directPdf === "1" && !selectedRequest && (
+      {(router.query.pdf === "1" || router.query.directPdf === "1") &&
+        !selectedRequest && (
         <div className="fixed inset-0 z-[100000] bg-neutral-900 flex flex-col items-center justify-center text-white">
           <div className="w-10 h-10 border-3 border-white/25 border-t-blue-400 rounded-full animate-spin mb-3" />
-          <p className="text-sm font-bold tracking-wide">Loading Certificate PDF...</p>
+          <p className="text-sm font-bold tracking-wide">Loading certificate preview…</p>
         </div>
       )}
       {/* Pending Action Banner on Mobile & Desktop */}
@@ -2479,7 +2520,6 @@ export default function RequestsPage() {
           currentUser={currentUser}
           userSignature={userSignature}
           openPdf={openPdfFromQuery}
-          directPdf={directPdfFromQuery}
           initialJobSeekerPreviewTab={jobSeekerPdfFromQuery}
           initialBusinessPreviewTab={businessPermitPdfFromQuery}
           detailLoading={requestDetailLoading}
@@ -2614,7 +2654,6 @@ function RequestDetailsModal({
   currentUser,
   userSignature,
   openPdf = false,
-  directPdf = false,
   initialJobSeekerPreviewTab = null,
   initialBusinessPreviewTab = null,
   detailLoading = false,
@@ -3402,9 +3441,9 @@ function RequestDetailsModal({
         currentUser={currentUser}
         userSignature={userSignature}
         orRefreshKey={orSectionRefreshKey}
-        directPdf={directPdf}
         initialJobSeekerPreviewTab={initialJobSeekerPreviewTab}
         initialBusinessPreviewTab={initialBusinessPreviewTab}
+        presentation="modal"
       />
     );
   }
@@ -7020,7 +7059,17 @@ function getCertificatePageSpec({
 async function buildCertificatePdfFromElement(
   certificateEl,
   pageSpec = CERT_PAGE_SIZES.a4,
+  {
+    captureScale = 2,
+    imageMime = "image/png",
+    imageQuality = 1.0,
+  } = {},
 ) {
+  const pdfImageFormat = imageMime === "image/jpeg" ? "JPEG" : "PNG";
+  const toImageData = (canvas) =>
+    imageMime === "image/jpeg"
+      ? canvas.toDataURL("image/jpeg", imageQuality)
+      : canvas.toDataURL("image/png", imageQuality);
   const spec = pageSpec?.widthMm ? pageSpec : CERT_PAGE_SIZES.a4;
   const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
     import("html2canvas"),
@@ -7142,7 +7191,7 @@ async function buildCertificatePdfFromElement(
       const pageEl = containers[i];
       await waitForDocumentImages(pageEl);
       const canvas = await html2canvas(pageEl, {
-        scale: 2,
+        scale: captureScale,
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
@@ -7152,17 +7201,17 @@ async function buildCertificatePdfFromElement(
         onclone: (_el, clonedDoc) => normalizeCloneForCanvasCapture(clonedDoc),
       });
 
-      const imgData = canvas.toDataURL("image/png", 1.0);
+      const imgData = toImageData(canvas);
       const imgWidthMm = pdfW;
       const imgHeightMm = (canvas.height * pdfW) / canvas.width;
 
       if (imgHeightMm <= pdfH) {
-        pdf.addImage(imgData, "PNG", 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
+        pdf.addImage(imgData, pdfImageFormat, 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
       } else {
         const scale = pdfH / imgHeightMm;
         const scaledWidth = imgWidthMm * scale;
         const xOffset = (pdfW - scaledWidth) / 2;
-        pdf.addImage(imgData, "PNG", xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
+        pdf.addImage(imgData, pdfImageFormat, xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
       }
     }
 
@@ -7174,7 +7223,7 @@ async function buildCertificatePdfFromElement(
   await waitForDocumentImages(captureTarget);
 
   const canvas = await html2canvas(captureTarget, {
-    scale: 2,
+    scale: captureScale,
     useCORS: true,
     allowTaint: true,
     backgroundColor: "#ffffff",
@@ -7186,17 +7235,17 @@ async function buildCertificatePdfFromElement(
 
   document.body.removeChild(iframe);
 
-  const imgData = canvas.toDataURL("image/png", 1.0);
+  const imgData = toImageData(canvas);
   const imgWidthMm = pdfW;
   const imgHeightMm = (canvas.height * pdfW) / canvas.width;
 
   if (imgHeightMm <= pdfH) {
-    pdf.addImage(imgData, "PNG", 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
+    pdf.addImage(imgData, pdfImageFormat, 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
   } else {
     const scale = pdfH / imgHeightMm;
     const scaledWidth = imgWidthMm * scale;
     const xOffset = (pdfW - scaledWidth) / 2;
-    pdf.addImage(imgData, "PNG", xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
+    pdf.addImage(imgData, pdfImageFormat, xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
   }
 
   return pdf;
@@ -7278,11 +7327,58 @@ function CertificatePreviewModal({
   currentUser,
   userSignature,
   orRefreshKey = 0,
-  directPdf = false,
   initialJobSeekerPreviewTab = null,
   initialBusinessPreviewTab = null,
+  presentation = "modal",
+  enableDeliveryPublish = false,
+  onDeliveryPublished,
 }) {
   useScrollLock(true);
+  const isSideSlide =
+    presentation === "sideslide" || presentation === "sideslide-compact";
+  const isCompactSideSlide = presentation === "sideslide-compact";
+  const SIDESLIDE_ANIM_MS = 320;
+  const [sideSlidePhase, setSideSlidePhase] = useState(
+    isSideSlide ? "entering" : "open",
+  );
+  const sideSlideClosingRef = useRef(false);
+
+  useEffect(() => {
+    if (!isSideSlide) return;
+    sideSlideClosingRef.current = false;
+    setSideSlidePhase("entering");
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setSideSlidePhase("open"));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [isSideSlide, request.id]);
+
+  const dismissPreview = useCallback(() => {
+    if (!isSideSlide) {
+      onClose();
+      return;
+    }
+    if (sideSlideClosingRef.current) return;
+    sideSlideClosingRef.current = true;
+    setSideSlidePhase("closing");
+    window.setTimeout(() => {
+      sideSlideClosingRef.current = false;
+      onClose();
+    }, SIDESLIDE_ANIM_MS);
+  }, [isSideSlide, onClose]);
+
+  const handlePreviewBack = useCallback(() => {
+    if (isSideSlide) dismissPreview();
+    else onBack();
+  }, [isSideSlide, dismissPreview, onBack]);
+
+  const sideSlideOpen = sideSlidePhase === "open";
+  const sideSlideEasing = "cubic-bezier(0.32, 0.72, 0, 1)";
   const certificateRef = useRef(null);
   const businessPermitCertRef = useRef(null);
   const containerRef = useRef(null);
@@ -7300,7 +7396,7 @@ function CertificatePreviewModal({
     ) {
       return initialBusinessPreviewTab;
     }
-    if (isBusinessPermitRequest && (directPdf || isCompletedOrReady)) {
+    if (isBusinessPermitRequest && isCompletedOrReady) {
       return "permit";
     }
     return "inspection";
@@ -7331,12 +7427,11 @@ function CertificatePreviewModal({
     return defaultOfficials;
   });
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPublishingDelivery, setIsPublishingDelivery] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [history, setHistory] = useState([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [requestLoaded, setRequestLoaded] = useState(false);
-  const [directPdfBlobUrl, setDirectPdfBlobUrl] = useState(null);
-  const directPdfStartedRef = useRef(false);
   useEffect(() => {
     if (initialJobSeekerPreviewTab) {
       setJobSeekerPreviewTab(initialJobSeekerPreviewTab);
@@ -7350,11 +7445,6 @@ function CertificatePreviewModal({
       setBusinessPreviewTab(initialBusinessPreviewTab);
     }
   }, [initialBusinessPreviewTab, request.id]);
-  useEffect(() => {
-    if (!directPdf) return;
-    directPdfStartedRef.current = false;
-    setDirectPdfBlobUrl(null);
-  }, [directPdf, request.id, jobSeekerPreviewTab, businessPreviewTab]);
   const [workflowAssignments, setWorkflowAssignments] = useState([]);
   const [tenantUsers, setTenantUsers] = useState([]);
   const [financeTeamUsers, setFinanceTeamUsers] = useState([]);
@@ -7369,8 +7459,7 @@ function CertificatePreviewModal({
     const list = splitPurposesList(p);
     return list.length > 0 ? list : (p ? [p] : []);
   }, [isJobSeekerRequest, previewRequest?.purpose, request?.purpose]);
-  // Responsive Zoom & Mobile Fit Controls
-  const [zoom, setZoom] = useState("auto"); // "auto" | number (e.g. 0.5, 0.75, 1, 1.25)
+  // Responsive auto-fit to preview pane width
   const [containerWidth, setContainerWidth] = useState(0);
   const [docHeight, setDocHeight] = useState(1056);
 
@@ -7434,28 +7523,19 @@ function CertificatePreviewModal({
 
   // Compute scale factor
   const isMobileView = containerWidth > 0 && containerWidth < 840;
-  const padding = isMobileView ? 16 : 32;
+  const padding = isMobileView ? 12 : isSideSlide ? 20 : 32;
   const availableWidth = containerWidth > 0 ? Math.max(280, containerWidth - padding) : PREVIEW_WIDTH_PX;
   const fitScale = Math.min(1, Math.max(0.35, availableWidth / PREVIEW_WIDTH_PX));
-  const currentScale = zoom === "auto" ? fitScale : zoom;
-
-  const handleZoomIn = () => {
-    const steps = [0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 1.0, 1.15, 1.3, 1.5];
-    const next = steps.find((s) => s > currentScale + 0.04) || 1.5;
-    setZoom(parseFloat(next.toFixed(2)));
-  };
-
-  const handleZoomOut = () => {
-    const steps = [1.5, 1.3, 1.15, 1.0, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35];
-    const prev = steps.find((s) => s < currentScale - 0.04) || 0.35;
-    setZoom(parseFloat(prev.toFixed(2)));
-  };
+  const currentScale = fitScale;
 
   const fetchPreviewRequest = async () => {
     try {
       const token = getAuthToken();
       const response = await fetch(
-        certificateDetailUrl(API_URL, request.id, { view: "pdf" }),
+        certificateDetailUrl(API_URL, request.id, {
+          view: "pdf",
+          includeHistory: true,
+        }),
         {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -7467,6 +7547,15 @@ function CertificatePreviewModal({
       const data = await response.json();
       if (data.success && data.data) {
         setPreviewRequest({ ...request, ...data.data });
+      }
+      if (data.workflowHistory) {
+        const rows = data.workflowHistory.history || [];
+        setHistory(rows);
+        setWorkflowAssignments(data.workflowHistory.assignments || []);
+        await healCaptainSignatureOnRequest(rows);
+        setHistoryLoaded(true);
+      } else {
+        await fetchHistory();
       }
     } catch (error) {
       console.error("Error refreshing certificate for preview:", error);
@@ -7717,7 +7806,6 @@ function CertificatePreviewModal({
       setHistoryLoaded(false);
       await fetchPreviewRequest();
       if (cancelled) return;
-      await fetchHistory();
     })();
     fetchInspectionData();
     fetchORData();
@@ -7736,57 +7824,6 @@ function CertificatePreviewModal({
       cancelled = true;
     };
   }, [request.id, orRefreshKey]);
-
-  // Automatically generate and open PDF in the current tab when directPdf=1
-  useEffect(() => {
-    if (
-      !directPdf ||
-      directPdfStartedRef.current ||
-      !officials ||
-      !historyLoaded ||
-      !requestLoaded
-    ) {
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      if (!activeCertificateRef.current || directPdfStartedRef.current) return;
-      directPdfStartedRef.current = true;
-      try {
-        await waitForDocumentImages(activeCertificateRef.current, 2000);
-        const pdf = await buildCertificatePdfFromElement(
-          activeCertificateRef.current,
-          previewPageSpec,
-        );
-        const blob = pdf.output("blob");
-        const downloadName = `${previewRequest?.reference_number || request.reference_number || "Certificate"}.pdf`;
-        const file =
-          typeof File !== "undefined"
-            ? new File([blob], downloadName, { type: "application/pdf" })
-            : blob;
-        const url = URL.createObjectURL(file);
-        setDirectPdfBlobUrl(url);
-        if (typeof document !== "undefined") {
-          document.title = downloadName;
-        }
-      } catch (error) {
-        console.error("Error auto-generating direct PDF:", error);
-        directPdfStartedRef.current = false;
-      }
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [
-    directPdf,
-    officials,
-    previewPageSpec,
-    request.reference_number,
-    previewRequest?.reference_number,
-    historyLoaded,
-    requestLoaded,
-    jobSeekerPreviewTab,
-    businessPreviewTab,
-  ]);
 
   const handlePrintPDF = async () => {
     if (!activeCertificateRef.current || isDownloading || isPrinting) return;
@@ -7851,35 +7888,135 @@ function CertificatePreviewModal({
     }
   };
 
+  const handlePublishAndSendDelivery = async () => {
+    if (
+      !enableDeliveryPublish ||
+      !activeCertificateRef.current ||
+      isPublishingDelivery ||
+      isDownloading ||
+      isPrinting
+    ) {
+      return;
+    }
+
+    setIsPublishingDelivery(true);
+    try {
+      const pdf = await buildCertificatePdfFromElement(
+        activeCertificateRef.current,
+        previewPageSpec,
+      );
+      let downloadName = `${request.reference_number}.pdf`;
+      if (isJobSeekerRequest && jobSeekerPreviewTab !== "FIRST TIME JOB SEEKER") {
+        downloadName = `${jobSeekerPreviewTab} - ${request.reference_number}.pdf`;
+      }
+      const blob = pdf.output("blob");
+      const arrayBuffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      const pdfBase64 = btoa(binary);
+
+      const token = getAuthToken();
+      let tenantId = null;
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          tenantId = JSON.parse(storedUser)?.tenant_id || null;
+        }
+      } catch {
+        /* ignore */
+      }
+
+      const response = await fetch(
+        `/api/certificates/${request.id}/publish-delivery`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            ...(tenantId ? { "x-tenant-id": String(tenantId).toLowerCase() } : {}),
+          },
+          body: JSON.stringify({
+            pdfBase64,
+            fileName: downloadName,
+            sendEmail: true,
+          }),
+        },
+      );
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        toast.error(data.message || "Could not publish certificate for download.");
+        return;
+      }
+
+      if (typeof onDeliveryPublished === "function") {
+        onDeliveryPublished(data);
+      } else {
+        toast.success(data.message || "Published and emailed download link.");
+      }
+    } catch (error) {
+      console.error("Publish delivery error:", error);
+      toast.error("Could not publish certificate. Try Download PDF, then try again.");
+    } finally {
+      setIsPublishingDelivery(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-gray-900/80" onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}>
-      {directPdf && (
-        <div className="fixed inset-0 z-[100000] bg-neutral-900 flex flex-col items-center justify-center">
-          {directPdfBlobUrl ? (
-            <iframe
-              src={directPdfBlobUrl}
-              title={`${request.reference_number || "Certificate"}.pdf`}
-              className="w-screen h-screen border-0 bg-neutral-800"
-            />
-          ) : (
-            <div className="flex flex-col items-center gap-3 text-white">
-              <div className="w-10 h-10 border-3 border-white/25 border-t-blue-400 rounded-full animate-spin" />
-              <p className="text-sm font-bold tracking-wide">
-                Generating PDF ({request.reference_number || "Certificate"})...
-              </p>
-              <p className="text-xs text-slate-400">
-                Preparing official document with signatures and verification QR
-              </p>
-            </div>
-          )}
-        </div>
+    <div
+      className={
+        isSideSlide
+          ? "fixed inset-0 z-[60]"
+          : "fixed inset-0 z-50 flex items-center justify-center p-2 bg-gray-900/80"
+      }
+      onTouchMove={(e) => e.target === e.currentTarget && e.preventDefault()}
+    >
+      {isSideSlide && (
+        <button
+          type="button"
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px] cursor-default"
+          style={{
+            opacity: sideSlideOpen ? 1 : 0,
+            transition: `opacity ${SIDESLIDE_ANIM_MS}ms ${sideSlideEasing}`,
+          }}
+          onClick={dismissPreview}
+          aria-label="Close preview"
+        />
       )}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[96vh] h-[96dvh] sm:h-[96vh]">
+      <div
+        className={
+          isSideSlide
+            ? isCompactSideSlide
+              ? "fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(96vw,42rem)] md:w-[min(84vw,50rem)] lg:w-[min(72vw,56rem)] xl:w-[min(66vw,60rem)] max-w-[100vw]"
+              : "fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(90vw,36rem)] md:w-[min(70vw,40rem)] lg:w-[min(52vw,42rem)] max-w-[100vw]"
+            : "relative w-full max-w-5xl"
+        }
+        style={
+          isSideSlide
+            ? {
+                transform: sideSlideOpen ? "translate3d(0,0,0)" : "translate3d(100%,0,0)",
+                transition: `transform ${SIDESLIDE_ANIM_MS}ms ${sideSlideEasing}`,
+                willChange: "transform",
+              }
+            : undefined
+        }
+      >
+        <div
+          className={
+            isSideSlide
+              ? "relative bg-white rounded-l-xl sm:rounded-l-2xl shadow-[-8px_0_28px_rgba(0,0,0,0.12)] flex flex-col overflow-hidden h-full w-full border-l border-slate-200/90"
+              : "relative bg-white rounded-2xl shadow-2xl w-full flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[96vh] h-[96dvh] sm:h-[96vh]"
+          }
+        >
         {/* Header */}
         <div className="bg-slate-900 border-b border-slate-800 px-3.5 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between shrink-0 z-10">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <button
-              onClick={onBack}
+              onClick={handlePreviewBack}
               className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg shrink-0 transition-colors"
               title="Back"
             >
@@ -7926,7 +8063,7 @@ function CertificatePreviewModal({
             {/* Download button — saves PDF directly */}
             <button
               onClick={handleDownloadPDF}
-              disabled={isDownloading || isPrinting}
+              disabled={isDownloading || isPrinting || isPublishingDelivery}
               className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
             >
               {isDownloading ? (
@@ -7937,8 +8074,29 @@ function CertificatePreviewModal({
               <span className="hidden sm:inline">Download PDF</span>
               <span className="sm:hidden">PDF</span>
             </button>
+            {enableDeliveryPublish ? (
+              <button
+                type="button"
+                onClick={handlePublishAndSendDelivery}
+                disabled={
+                  isPublishingDelivery || isDownloading || isPrinting
+                }
+                className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
+                title="Save PDF to storage and email a secure download link"
+              >
+                {isPublishingDelivery ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Mail className="w-3.5 h-3.5" />
+                )}
+                <span className="hidden lg:inline">
+                  {isPublishingDelivery ? "Publishing…" : "Publish & send link"}
+                </span>
+                <span className="lg:hidden">Send link</span>
+              </button>
+            ) : null}
             <button
-              onClick={onClose}
+              onClick={isSideSlide ? dismissPreview : onClose}
               className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg transition-colors ml-0.5"
               aria-label="Close"
             >
@@ -8154,7 +8312,7 @@ function CertificatePreviewModal({
           </div>
         )}
 
-        {/* Certificate Preview with Auto-Fit & Zoom */}
+        {/* Certificate Preview — auto-fit width */}
         <div 
           ref={containerRef}
           className={`flex-1 overflow-auto bg-slate-900/5 flex flex-col items-center relative ${
@@ -8163,48 +8321,6 @@ function CertificatePreviewModal({
               : "p-2 sm:p-4"
           }`}
         >
-          {/* Zoom & Fit Control Toolbar */}
-          <div className="sticky top-0 z-30 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-1.5 bg-slate-900/90 hover:bg-slate-900 backdrop-blur-md text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-lg border border-slate-700/60 text-[11px] sm:text-xs transition-all">
-            <button
-              onClick={handleZoomOut}
-              disabled={currentScale <= 0.35}
-              className="p-1 hover:bg-white/20 rounded-full transition-colors disabled:opacity-30"
-              title="Zoom Out"
-              aria-label="Zoom Out"
-            >
-              <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-            <span className="font-mono font-bold px-1 min-w-[38px] text-center text-[10px] sm:text-xs text-blue-300">
-              {Math.round(currentScale * 100)}%
-            </span>
-            <button
-              onClick={handleZoomIn}
-              disabled={currentScale >= 1.5}
-              className="p-1 hover:bg-white/20 rounded-full transition-colors disabled:opacity-30"
-              title="Zoom In"
-              aria-label="Zoom In"
-            >
-              <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-            <div className="w-px h-3.5 bg-slate-700 mx-0.5" />
-            <button
-              onClick={() => setZoom("auto")}
-              className={`px-2 py-0.5 rounded-full font-semibold text-[10px] sm:text-[11px] transition-colors ${
-                zoom === "auto" ? "bg-blue-600 text-white shadow-sm" : "hover:bg-white/10 text-slate-300"
-              }`}
-            >
-              Fit
-            </button>
-            <button
-              onClick={() => setZoom(1)}
-              className={`px-2 py-0.5 rounded-full font-semibold text-[10px] sm:text-[11px] transition-colors ${
-                zoom === 1 ? "bg-blue-600 text-white shadow-sm" : "hover:bg-white/10 text-slate-300"
-              }`}
-            >
-              100%
-            </button>
-          </div>
-
           {!officials ? (
             <div className="flex items-center justify-center h-64">
               <div className="flex flex-col items-center gap-3">
@@ -8367,10 +8483,13 @@ function CertificatePreviewModal({
             </div>
           )}
         </div>
+        </div>
       </div>
     </div>
   );
 }
+
+export { CertificatePreviewModal, buildCertificatePdfFromElement };
 
 // Certificate Preview Component - Exact copy from BarangayClearanceModal
 function ClearancePreviewForRequests({
@@ -9936,6 +10055,36 @@ function ClearancePreviewForRequests({
                                 {captainName || officials.chairman}
                               </p>
                             </div>
+                            {secretaryApproval?.signature_data &&
+                              secretaryApproval.signature_data !==
+                                effectiveWitnessSignature && (
+                              <div className="h-12 w-28 pointer-events-none mb-1 -ml-3 flex items-center gap-1">
+                                <img
+                                  src={secretaryApproval.signature_data}
+                                  className="h-full w-full object-contain mix-blend-multiply"
+                                  alt="Secretary signature"
+                                />
+                                <div className="text-[5px] text-gray-400 whitespace-nowrap leading-tight flex flex-col self-end mb-2 opacity-70 font-medium border-l border-gray-300 pl-1">
+                                  <span className="font-bold text-gray-500">
+                                    {secretaryName}
+                                  </span>
+                                  <span>
+                                    {new Date(
+                                      secretaryApproval.created_at,
+                                    ).toLocaleDateString("en-US")}
+                                  </span>
+                                  <span>
+                                    {new Date(
+                                      secretaryApproval.created_at,
+                                    ).toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div className="relative flex items-center z-10 w-full mb-2 -mt-1.5">
                             <p className="text-[14px] font-bold shrink-0 leading-tight uppercase text-gray-900">
@@ -9946,20 +10095,24 @@ function ClearancePreviewForRequests({
                       </div>
 
                       {/* WITNESSED BY: */}
-                      <div className="text-left">
-                        <p className="font-bold text-[14px] mb-16">WITNESSED BY:</p>
-                        <div className="relative inline-block text-left">
-                          {effectiveWitnessSignature && (
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-64 h-32 pointer-events-none">
+                      <div className="text-left w-full">
+                        <p className="font-bold text-[14px] mb-4">WITNESSED BY:</p>
+                        <div className="inline-flex flex-col items-start gap-0">
+                          <div className="inline-flex flex-col items-center">
+                            {effectiveWitnessSignature && (
                               <img
                                 src={effectiveWitnessSignature}
                                 alt="Witness Signature"
-                                className="w-full h-full object-contain mix-blend-multiply scale-110"
+                                className="w-56 h-28 object-contain mix-blend-multiply pointer-events-none mb-0.5"
                               />
-                            </div>
-                          )}
-                          <p className="font-bold uppercase text-[14px] leading-snug">{witnessSignerName || councilorWitnessName}</p>
-                          <p className="font-bold uppercase text-[14px] leading-snug text-gray-900">BARANGAY COUNCILOR</p>
+                            )}
+                            <p className="font-bold uppercase text-[14px] leading-snug whitespace-nowrap">
+                              {witnessSignerName || councilorWitnessName}
+                            </p>
+                          </div>
+                          <p className="font-bold uppercase text-[14px] leading-snug text-gray-900">
+                            BARANGAY COUNCILOR
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -10025,11 +10178,11 @@ function ClearancePreviewForRequests({
                         <p className="text-[13px] font-semibold mb-20">Witnessed by:</p>
                         <div className="relative inline-block text-left">
                           {effectiveWitnessSignature && (
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-64 h-32 pointer-events-none">
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-1 w-56 h-28 pointer-events-none">
                               <img
                                 src={effectiveWitnessSignature}
                                 alt="Witness Signature"
-                                className="w-full h-full object-contain mix-blend-multiply scale-110"
+                                className="w-full h-full object-contain mix-blend-multiply"
                               />
                             </div>
                           )}

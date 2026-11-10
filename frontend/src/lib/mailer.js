@@ -126,6 +126,21 @@ function getTemplates(fromName, portalDomain) {
       ctaLabel: "Open Barangay Portal",
       ctaPath: "",
     },
+    CERTIFICATE_DOWNLOAD_READY: {
+      subjectPrefix: "Your Certificate Download Link",
+      badgeText: "SECURE DOWNLOAD",
+      statusLabel: "Approved — Online Delivery / Aprubado — Online",
+      accentColor: "#1e40af",
+      badgeBg: "#dbeafe",
+      badgeColor: "#1e3a8a",
+      titleEN: "Your Certificate PDF Is Ready to Download",
+      titleTL: "Handa na ang Iyong Sertipiko para I-download",
+      messageEN: `Your requested certificate has been approved. Use the secure button below to download your official PDF. This link is private and will expire after the validity period shown in this email. The Barangay office keeps a copy on file for records.`,
+      messageTL:
+        "Ang iyong hiniling na sertipiko ay aprubado na. Gamitin ang secure na button sa ibaba para i-download ang opisyal na PDF. Pribado ang link na ito at may petsa ng pag-expire. Nasa tanggapan ang kopya para sa talaan.",
+      ctaLabel: "Download Certificate (Secure Link)",
+      ctaPath: "",
+    },
   };
 }
 
@@ -322,6 +337,8 @@ export function buildProcessNotificationEmail({
   applicantName,
   comments = "",
   tenantId = "ibaoeste",
+  ctaUrlOverride = "",
+  downloadExpiresAt = "",
 }) {
   const profile = getTenantEmailProfile(tenantId);
   const templates = getTemplates(profile.fromName, profile.portalDomain);
@@ -331,9 +348,60 @@ export function buildProcessNotificationEmail({
   const refLabel = referenceNumber ? ` [${referenceNumber}]` : "";
   const subject = `${template.subjectPrefix}: ${certificateName}${refLabel} — ${profile.fromName}`;
 
-  const ctaUrl = template.ctaPath
-    ? `${profile.portalUrl}${template.ctaPath}`
-    : profile.portalUrl;
+  const staffDashboardTypes = new Set([
+    "SUBMITTED",
+    "APPROVED_STEP",
+    "RESUBMITTED",
+  ]);
+  const staffOrigin = String(
+    process.env.NEXT_PUBLIC_STAFF_LOGIN_URL ||
+      process.env.FRONTEND_URL ||
+      "https://brgydesk.com/login",
+  )
+    .trim()
+    .replace(/\/login\/?$/i, "");
+  let ctaUrl = template.ctaPath
+    ? staffDashboardTypes.has(eventType)
+      ? `${staffOrigin}${template.ctaPath}`
+      : `${profile.portalUrl}${template.ctaPath}`
+    : staffDashboardTypes.has(eventType)
+      ? `${staffOrigin}/requests`
+      : profile.portalUrl;
+
+  if (ctaUrlOverride) {
+    ctaUrl = ctaUrlOverride;
+  }
+
+  const expiresLabel = downloadExpiresAt
+    ? (() => {
+        try {
+          return new Date(downloadExpiresAt).toLocaleString("en-PH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        } catch {
+          return String(downloadExpiresAt);
+        }
+      })()
+    : "";
+
+  const detailsRows = [
+    { label: "Reference Number", value: referenceNumber || "—", isCode: true },
+    { label: "Applicant Name", value: applicantName || "—" },
+    { label: "Document Type", value: certificateName },
+    { label: "Current Status", value: template.statusLabel },
+    { label: "Official Portal", value: profile.portalDomain },
+  ];
+
+  if (expiresLabel) {
+    detailsRows.push({
+      label: "Download Link Valid Until",
+      value: expiresLabel,
+    });
+  }
 
   const html = renderFormalEmailLayout({
     profile,
@@ -346,13 +414,7 @@ export function buildProcessNotificationEmail({
     recipientName: recipientName || "Valued Resident",
     messageEN: template.messageEN,
     messageTL: template.messageTL,
-    detailsRows: [
-      { label: "Reference Number", value: referenceNumber || "—", isCode: true },
-      { label: "Applicant Name", value: applicantName || "—" },
-      { label: "Document Type", value: certificateName },
-      { label: "Current Status", value: template.statusLabel },
-      { label: "Official Portal", value: profile.portalDomain },
-    ],
+    detailsRows,
     remarksLabel: "Official Remarks / Tala mula sa Barangay",
     remarksText: comments || "",
     ctaLabel: template.ctaLabel,

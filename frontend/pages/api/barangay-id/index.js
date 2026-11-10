@@ -375,11 +375,27 @@ export default async function handler(req, res) {
         censusRow?.census_extras,
       );
       if (resident.id && residentPatch) {
-        await supabase
+        const { error: residentSyncError } = await supabase
           .from("residents")
           .update(residentPatch)
           .eq("id", resident.id)
           .eq("tenant_id", tenantId);
+        if (residentSyncError) {
+          console.error(
+            "EC issue: card created but resident census sync failed:",
+            residentSyncError.message,
+          );
+          await supabase
+            .from("barangay_ids")
+            .delete()
+            .eq("id", newID.id)
+            .eq("tenant_id", tenantId);
+          return res.status(500).json({
+            success: false,
+            message:
+              "EC card was not saved: resident profile could not be updated. Try again.",
+          });
+        }
       }
 
       return res.status(201).json({

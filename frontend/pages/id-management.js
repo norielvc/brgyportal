@@ -24,6 +24,7 @@ import IssueIDModal from "@/components/Modals/IssueIDModal";
 import PrintIDModal from "@/components/Modals/PrintIDModal";
 import ViewBarangayIDModal from "@/components/Modals/ViewBarangayIDModal";
 import DeleteConfirmModal from "@/components/Modals/DeleteConfirmModal";
+import ActionConfirmModal from "@/components/Modals/ActionConfirmModal";
 import QRScannerModal from "@/components/Modals/QRScannerModal";
 import Pagination from "@/components/UI/Pagination";
 
@@ -65,6 +66,10 @@ export default function IDManagement() {
   const [idToDelete, setIdToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [cardToRevoke, setCardToRevoke] = useState(null);
+  const [isRevoking, setIsRevoking] = useState(false);
+  const [printToggleTarget, setPrintToggleTarget] = useState(null);
+  const [isTogglingPrint, setIsTogglingPrint] = useState(false);
 
   // Fetch IDs
   const fetchIDs = async () => {
@@ -195,41 +200,48 @@ export default function IDManagement() {
     }
   };
 
-  // Handle Revoke
-  const handleRevoke = async (card) => {
-    const reason = prompt(
-      `Reason for revoking Barangay ID of ${card.full_name}:`,
-      "Card lost / Resident relocated"
-    );
-    if (!reason) return;
+  const handleRevoke = (card) => {
+    setCardToRevoke(card);
+  };
+
+  const executeRevoke = async (reason) => {
+    if (!cardToRevoke) return;
+    const trimmed = String(reason || "").trim();
+    if (!trimmed) return;
+    setIsRevoking(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/barangay-id/${card.id}`, {
+      const res = await fetch(`/api/barangay-id/${cardToRevoke.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ action: "revoke", remarks: reason }),
+        body: JSON.stringify({ action: "revoke", remarks: trimmed }),
       });
       const json = await res.json();
       if (res.ok && json.success) {
         toast.success("Barangay ID revoked.");
+        setCardToRevoke(null);
         fetchIDs();
       } else {
         toast.error(json.message || "Failed to revoke ID");
       }
-    } catch (err) {
+    } catch {
       toast.error("Revocation failed");
+    } finally {
+      setIsRevoking(false);
     }
   };
 
-  // Toggle Printed Status
-  const handleTogglePrintStatus = async (card) => {
-    const newStatus = !card.is_printed;
-    if (!confirm(`Manually mark this ID as ${newStatus ? "PRINTED" : "NOT PRINTED"}?`)) {
-      return;
-    }
+  const handleTogglePrintStatus = (card) => {
+    setPrintToggleTarget({ card, newStatus: !card.is_printed });
+  };
+
+  const executeTogglePrint = async () => {
+    if (!printToggleTarget?.card) return;
+    const { card, newStatus } = printToggleTarget;
+    setIsTogglingPrint(true);
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/barangay-id/${card.id}`, {
@@ -243,12 +255,15 @@ export default function IDManagement() {
       const json = await res.json();
       if (res.ok && json.success) {
         toast.success(`ID marked as ${newStatus ? "Printed" : "Not Printed"}`);
+        setPrintToggleTarget(null);
         fetchIDs();
       } else {
         toast.error(json.message || "Failed to update print status");
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to update print status");
+    } finally {
+      setIsTogglingPrint(false);
     }
   };
 
@@ -993,6 +1008,62 @@ export default function IDManagement() {
           isLoading={isDeleting}
         />
       )}
+
+      <ActionConfirmModal
+        isOpen={Boolean(cardToRevoke)}
+        onClose={() => !isRevoking && setCardToRevoke(null)}
+        onConfirm={executeRevoke}
+        variant="danger"
+        title="Revoke EC card"
+        footnote={cardToRevoke?.id_number || "No card number"}
+        description={
+          <p>
+            Revoke the Barangay ID for{" "}
+            <strong className="text-gray-900">
+              {cardToRevoke?.full_name || "this resident"}
+            </strong>
+            ? The card will show as voided and should not be used for official
+            transactions.
+          </p>
+        }
+        confirmLabel="Revoke card"
+        cancelLabel="Keep active"
+        isLoading={isRevoking}
+        input={{
+          label: "Administrative remarks",
+          defaultValue: "Card lost / Resident relocated",
+          placeholder: "Reason for revocation…",
+          required: true,
+          multiline: true,
+          rows: 3,
+        }}
+      />
+
+      <ActionConfirmModal
+        isOpen={Boolean(printToggleTarget)}
+        onClose={() => !isTogglingPrint && setPrintToggleTarget(null)}
+        onConfirm={executeTogglePrint}
+        variant="neutral"
+        title="Update print status"
+        description={
+          printToggleTarget ? (
+            <p>
+              Mark EC card{" "}
+              <strong className="font-mono text-[#03254c]">
+                {printToggleTarget.card?.id_number || "—"}
+              </strong>{" "}
+              for <strong>{printToggleTarget.card?.full_name}</strong> as{" "}
+              <strong>
+                {printToggleTarget.newStatus ? "PRINTED" : "NOT PRINTED"}
+              </strong>
+              ?
+            </p>
+          ) : null
+        }
+        confirmLabel={printToggleTarget?.newStatus ? "Mark printed" : "Mark not printed"}
+        cancelLabel="Cancel"
+        isLoading={isTogglingPrint}
+      />
     </Layout>
   );
 }
