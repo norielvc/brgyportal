@@ -36,7 +36,6 @@ export default function DynamicTenantPortal({ initialTenantId, shareMeta }) {
 }
 
 export async function getStaticPaths() {
-  // Generate tenant pages on-demand
   return {
     paths: [],
     fallback: "blocking",

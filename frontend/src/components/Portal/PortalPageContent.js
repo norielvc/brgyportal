@@ -75,6 +75,8 @@ import CohabitationCertificateModal from "@/components/Forms/CohabitationCertifi
 import MedicoLegalModal from "@/components/Forms/MedicoLegalModal";
 import SamePersonCertificateModal from "@/components/Forms/SamePersonCertificateModal";
 import ResidentMobileActionBar from "@/components/Portal/ResidentMobileActionBar";
+import PortalMaintenanceOverlay from "@/components/Portal/PortalMaintenanceOverlay";
+import { isPortalMaintenanceOverlay } from "@/lib/portalMaintenance";
 import InstallAppModal from "@/components/UI/InstallAppModal";
 import usePwa from "@/lib/usePwa";
 import useDisablePinchZoom from "@/lib/useDisablePinchZoom";
@@ -1461,11 +1463,16 @@ export default function PortalPageContent({ initialTenantId }) {
     ? "bottom-[calc(4.875rem+env(safe-area-inset-bottom,0px)+0.5rem)]"
     : "bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))]";
 
+  const maintenanceOverlay = isPortalMaintenanceOverlay(tenantId);
+
   return (
     <div
       className={`min-h-screen bg-gray-50 md:pb-0 ${mobileBottomBarClearance}`}
       style={{ fontFamily: "'Source Sans 3', 'Segoe UI', sans-serif" }}
     >
+      {maintenanceOverlay ? (
+        <PortalMaintenanceOverlay barangayName={tenantConfig.shortName} />
+      ) : null}
       <Head>
         <title>{tenantConfig.shortName} — {p.pageTitleSuffix}</title>
         <meta name="keywords" content="barangay, portal, certificate, clearance, permit, online services, Philippines, local government" />

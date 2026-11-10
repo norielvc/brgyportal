@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { getPortalStrings } from "@/lib/portalLang";
 import { publicTenantPath, tenantFromHostname } from "@/lib/tenantHost";
+import PortalMaintenanceOverlay from "@/components/Portal/PortalMaintenanceOverlay";
+import { isPortalMaintenanceOverlay } from "@/lib/portalMaintenance";
 import useEsumbongPageInteractionLock from "@/lib/useEsumbongPageInteractionLock";
 
 const ESumbongForm = dynamic(() => import("@/components/Forms/ESumbongForm"), {
@@ -77,8 +79,13 @@ export default function TenantESumbongPage({ initialTenantId }) {
     );
   }
 
+  const showMaint = isPortalMaintenanceOverlay(tenant);
+
   return (
     <>
+      {showMaint ? (
+        <PortalMaintenanceOverlay barangayName={String(tenant).toUpperCase()} />
+      ) : null}
       <Head>
         <title>
           {p.esumbong} | {tenant || "Barangay"}
