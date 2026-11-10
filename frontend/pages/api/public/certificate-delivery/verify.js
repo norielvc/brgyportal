@@ -1,4 +1,7 @@
-import { resolveDeliveryByToken } from "../../../../src/lib/certificateDeliveryServer";
+import {
+  resolveDeliveryByToken,
+  resolveDeliveryReference,
+} from "../../../../src/lib/certificateDeliveryServer";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -27,17 +30,17 @@ export default async function handler(req, res) {
     }
 
     const cert = delivery.certificate_requests || {};
-    const applicant =
-      cert.applicant_name ||
-      cert.full_name ||
-      delivery.file_name ||
-      "Certificate";
+    const applicant = cert.full_name || delivery.file_name || "Certificate";
+    const referenceNumber =
+      delivery.reference_number ||
+      resolveDeliveryReference(delivery, cert) ||
+      null;
 
     return res.json({
       success: true,
       valid: true,
       data: {
-        reference_number: cert.reference_number || null,
+        reference_number: referenceNumber,
         certificate_type: cert.certificate_type || null,
         applicant_name: applicant,
         expires_at: delivery.expires_at,

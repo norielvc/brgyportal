@@ -66,6 +66,23 @@ export function generateDeliveryToken() {
   return crypto.randomBytes(32).toString("base64url");
 }
 
+export function referenceFromDeliveryFileName(fileName) {
+  const base = String(fileName || "")
+    .trim()
+    .replace(/\.pdf$/i, "");
+  if (!base) return null;
+  const match = base.match(/(BC|BP|CO|CR|MD|FT|ED)-\d{4}-\d+/i);
+  return match ? match[0].toUpperCase() : base;
+}
+
+export function resolveDeliveryReference(delivery, cert) {
+  return (
+    cert?.reference_number ||
+    referenceFromDeliveryFileName(delivery?.file_name) ||
+    null
+  );
+}
+
 export function buildPublicDownloadUrl(token, tenantId) {
   const profile = getTenantEmailProfile(tenantId);
   const base = String(profile.portalUrl || "").replace(/\/$/, "");
@@ -208,18 +225,82 @@ export async function resolveDeliveryByToken(rawToken) {
   if (error) throw error;
   if (!delivery) return null;
 
-  const { data: cert } = await supabase
+  const { data: cert, error: certError } = await supabase
     .from("certificate_requests")
     .select(
-      "reference_number, certificate_type, applicant_name, full_name, status, tenant_id",
+      "reference_number, certificate_type, full_name, status, tenant_id",
     )
     .eq("id", delivery.certificate_request_id)
+    .eq("tenant_id", delivery.tenant_id)
     .maybeSingle();
+
+  if (certError) {
+    console.warn("[certificate-delivery] cert lookup failed", certError.message);
+  }
 
   return {
     ...delivery,
     certificate_requests: cert || null,
+    reference_number: resolveDeliveryReference(delivery, cert),
   };
+}
+
+export async function releaseCertificateAfterOnlineDelivery({
+  tenantId,
+  certificateRequestId,
+  performedByUserId,
+  recipientEmail,
+  cert,
+}) {
+  const now = new Date().toISOString();
+  const { data: currentCert, error: readError } = await supabase
+    .from("certificate_requests")
+    .select("status, certificate_type, full_name, reference_number")
+    .eq("id", certificateRequestId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  if (readError) throw readError;
+  if (!currentCert) return { released: false, skipped: true, reason: "not_found" };
+  if (String(currentCert.status || "").toLowerCase() === "released") {
+    return { released: false, skipped: true, reason: "already_released" };
+  }
+
+  const updatePayload = { status: "released", updated_at: now };
+  updatePayload.date_released = now;
+
+  const { error: updateError } = await supabase
+    .from("certificate_requests")
+    .update(updatePayload)
+    .eq("id", certificateRequestId)
+    .eq("tenant_id", tenantId);
+
+  if (updateError) throw updateError;
+
+  await supabase
+    .from("workflow_assignments")
+    .update({ status: "approved", updated_at: now })
+    .eq("request_id", certificateRequestId)
+    .eq("tenant_id", tenantId)
+    .eq("status", "pending");
+
+  const emailLabel = String(recipientEmail || "").trim() || "requestor email";
+  await supabase.from("workflow_history").insert([
+    {
+      tenant_id: tenantId,
+      request_id: certificateRequestId,
+      request_type:
+        cert?.certificate_type || currentCert.certificate_type || "certificate",
+      step_name: "Online delivery",
+      action: "pickup",
+      performed_by: performedByUserId || null,
+      comments: `Auto-released after secure download link was emailed to ${emailLabel}.`,
+      previous_status: currentCert.status,
+      new_status: "released",
+    },
+  ]);
+
+  return { released: true };
 }
 
 export async function incrementDownloadCount(deliveryId) {

@@ -100,6 +100,10 @@ import {
   BARANGAY_CLEARANCE_UTILITY_SUB,
 } from "@/lib/barangayClearancePurposes";
 import { mergeResidentDemographicsOntoCertificate } from "@/lib/certificateRequestDemographics";
+import {
+  notifyPublishDeliveryFailure,
+  notifyPublishDeliverySuccess,
+} from "@/lib/publishDeliveryFeedback";
 import { isCaptainWorkflowHistoryEntry } from "@/lib/captainSignatureDetails";
 import {
   isSecretaryApprovalHistoryEntry,
@@ -7947,20 +7951,48 @@ function CertificatePreviewModal({
         },
       );
 
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        toast.error(data.message || "Could not publish certificate for download.");
+      let data = {};
+      try {
+        data = await response.json();
+      } catch {
+        notifyPublishDeliveryFailure(
+          {
+            message:
+              "Server error while publishing. Try Download PDF, then publish again.",
+          },
+          response.status,
+        );
         return;
       }
 
+      if (!response.ok || !data.success) {
+        notifyPublishDeliveryFailure(data, response.status);
+        return;
+      }
+
+      if (!data.emailSent && data.published) {
+        notifyPublishDeliveryFailure({
+          ...data,
+          code: data.code || "EMAIL_SEND_FAILED",
+          message:
+            data.message ||
+            "Certificate was published but the download email was not confirmed.",
+        });
+        return;
+      }
+
+      notifyPublishDeliverySuccess(data);
+
       if (typeof onDeliveryPublished === "function") {
         onDeliveryPublished(data);
-      } else {
-        toast.success(data.message || "Published and emailed download link.");
       }
     } catch (error) {
       console.error("Publish delivery error:", error);
-      toast.error("Could not publish certificate. Try Download PDF, then try again.");
+      notifyPublishDeliveryFailure({
+        message:
+          error?.message ||
+          "Could not publish certificate. Try Download PDF, then try again.",
+      });
     } finally {
       setIsPublishingDelivery(false);
     }

@@ -4,6 +4,7 @@ import {
   DEFAULT_DELIVERY_EXPIRY_DAYS,
   mapDeliverySetupError,
   publishCertificateDelivery,
+  releaseCertificateAfterOnlineDelivery,
   sendCertificateDownloadReadyEmail,
 } from "../../../../src/lib/certificateDeliveryServer";
 
@@ -122,9 +123,11 @@ export default async function handler(req, res) {
       if (!to?.trim()) {
         return res.status(400).json({
           success: false,
+          published: true,
+          emailSent: false,
           code: "NO_EMAIL",
           message:
-            "PDF was published but no requestor email is on file. Add an email or resend after updating the record.",
+            "PDF was published but no requestor email is on file. Add an email on the request, then publish again.",
           deliveryId: delivery.id,
           expiresAt,
           downloadUrl,
@@ -147,10 +150,14 @@ export default async function handler(req, res) {
         const status = emailResult.skipped ? 503 : 502;
         return res.status(status).json({
           success: false,
+          published: true,
+          emailSent: false,
           code,
           message:
             emailResult.error ||
             "Published PDF but failed to send download email.",
+          errorDetail: emailResult.error || null,
+          recipientEmail: to.trim(),
           deliveryId: delivery.id,
           expiresAt,
           downloadUrl,
@@ -158,15 +165,42 @@ export default async function handler(req, res) {
       }
     }
 
+    const recipientEmail = (cert.email || cert.residents?.email || "").trim();
+    const pickupMethod = String(cert.pickup_method || "pickup").toLowerCase();
+    let released = false;
+
+    if (
+      sendEmail &&
+      emailResult?.success &&
+      pickupMethod === "online" &&
+      String(cert.status || "").toLowerCase() !== "released"
+    ) {
+      const release = await releaseCertificateAfterOnlineDelivery({
+        tenantId,
+        certificateRequestId: id,
+        performedByUserId: user._id || user.id || user.user_id,
+        recipientEmail,
+        cert,
+      });
+      released = Boolean(release?.released);
+    }
+
+    const baseMessage = sendEmail
+      ? `Certificate published. Download link emailed to ${recipientEmail}.`
+      : "Published certificate PDF for online delivery.";
+
     return res.json({
       success: true,
-      message: sendEmail
-        ? `Published certificate PDF and sent download link to ${(cert.email || cert.residents?.email || "").trim()}`
-        : "Published certificate PDF for online delivery.",
+      published: true,
+      message: released
+        ? `${baseMessage} Request marked as released.`
+        : baseMessage,
+      recipientEmail: sendEmail ? recipientEmail : null,
       deliveryId: delivery.id,
       expiresAt,
       downloadUrl,
       emailSent: Boolean(sendEmail && emailResult?.success),
+      released,
     });
   } catch (error) {
     console.error("[publish-delivery]", error);

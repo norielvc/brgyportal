@@ -10,7 +10,7 @@ import {
 import {
   FileCheck, Search, Eye, Calendar, User, Phone, MapPin,
   Shield, Clock, CheckCircle, AlertTriangle, QrCode,
-  ExternalLink, RefreshCw, Package, History, XCircle, X, ChevronDown, ShieldCheck, Heart, FileText, Skull, Activity, Info, Mail
+  ExternalLink, RefreshCw, Package, History, XCircle, X, ChevronDown, ShieldCheck, Heart, FileText, Skull, Activity, Mail
 } from 'lucide-react';
 import { getAuthToken, getUserData } from '@/lib/auth';
 import useScrollLock from '@/lib/useScrollLock';
@@ -46,9 +46,6 @@ export default function PickupManagementPage() {
   const [confirmingPickup, setConfirmingPickup] = useState(false);
   const [pickupName, setPickupName] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
-  const [sendCertificate, setSendCertificate] = useState(null);
-  const [sendingEmail, setSendingEmail] = useState(false);
   const [previewCertificate, setPreviewCertificate] = useState(null);
   const [previewFtjsTab, setPreviewFtjsTab] = useState(null);
   const [previewBpTab, setPreviewBpTab] = useState(null);
@@ -212,6 +209,8 @@ export default function PickupManagementPage() {
       ? "online"
       : "pickup";
 
+  const isInPersonPickup = (cert) => getPickupMethod(cert) !== "online";
+
   const PickupModeBadge = ({ method }) => {
     const isOnline = method === "online";
     return (
@@ -243,11 +242,6 @@ export default function PickupManagementPage() {
     setConfirmingCertificate(certificate);
     setPickupName(certificate.full_name || certificate.applicant_name || '');
     setIsConfirmModalOpen(true);
-  };
-
-  const openSendCertificate = (certificate) => {
-    setSendCertificate(certificate);
-    setIsSendModalOpen(true);
   };
 
   const openCertificatePreview = (certificate, { ftjs, bp } = {}) => {
@@ -368,77 +362,6 @@ export default function PickupManagementPage() {
         PDF
       </button>
     );
-  };
-
-  const handleSendCertificate = async (certificate) => {
-    const email = certificate.email || certificate.residents?.email;
-    if (!email?.trim()) {
-      toast.error('No email address found for this requestor.');
-      return;
-    }
-
-    setSendingEmail(true);
-    try {
-      const token = getAuthToken();
-      let tenantId = null;
-      try {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          tenantId = JSON.parse(storedUser)?.tenant_id || null;
-        }
-      } catch {
-        /* ignore */
-      }
-
-      const response = await fetch(`${API_URL}/certificates/${certificate.id}/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          ...(tenantId ? { 'x-tenant-id': String(tenantId).toLowerCase() } : {}),
-        }
-      });
-
-      let data = {};
-      try {
-        data = await response.json();
-      } catch {
-        data = {
-          success: false,
-          message: `Server error (${response.status}). Check email configuration.`,
-        };
-      }
-
-      if (response.ok && data.success) {
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("email-sent"));
-        }
-        const fromHint = data.from ? ` from ${data.from}` : '';
-        toast.success(data.message || `Email sent${fromHint}. Check Spam/Promotions if you do not see it.`, {
-          duration: 8000,
-        });
-        if (data.hint) {
-          toast(data.hint, { icon: '📬', duration: 10000 });
-        }
-        setIsSendModalOpen(false);
-        setSendCertificate(null);
-      } else {
-        toast.error(
-          data.message ||
-            (data.code === 'DELIVERY_NOT_PUBLISHED'
-              ? 'Publish the PDF from certificate preview first (Publish & send link).'
-              : data.code === 'EMAIL_NOT_CONFIGURED'
-                ? 'Email is not configured on the server (SMTP_USER / SMTP_PASS).'
-                : 'Failed to send certificate'),
-          { duration: 6000 },
-        );
-      }
-    } catch (error) {
-      console.error('Send certificate error:', error);
-      toast.error('Failed to send certificate. Please try again.');
-    } finally {
-      setSendingEmail(false);
-    }
   };
 
   const isReadyForPickup = (cert) =>
@@ -690,17 +613,7 @@ export default function PickupManagementPage() {
                     <CertificatePdfButton certificate={certificate} />
 
                     {isReadyForPickup(certificate) &&
-                      (certificate.email || certificate.residents?.email) && (
-                        <button
-                          onClick={() => openSendCertificate(certificate)}
-                          className="px-2 py-1 bg-[#03254c] hover:opacity-90 text-white rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors"
-                        >
-                          <Mail className="w-3.5 h-3.5" />
-                          Email
-                        </button>
-                      )}
-
-                    {isReadyForPickup(certificate) && (
+                      isInPersonPickup(certificate) && (
                       <button
                         onClick={() => openPickupVerification(certificate)}
                         className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[10px] font-bold flex items-center gap-1 transition-colors"
@@ -815,19 +728,7 @@ export default function PickupManagementPage() {
                           <CertificatePdfButton certificate={certificate} compact />
 
                           {isReadyForPickup(certificate) &&
-                            (certificate.email ||
-                              certificate.residents?.email) && (
-                              <button
-                                onClick={() => openSendCertificate(certificate)}
-                                className="px-2 py-1 bg-[#03254c] text-white rounded-md font-semibold hover:opacity-90 flex items-center gap-1 text-[10px] transition-all"
-                                title="Send Certificate to Email"
-                              >
-                                <Mail className="w-3.5 h-3.5" />
-                                Email
-                              </button>
-                            )}
-
-                          {isReadyForPickup(certificate) && (
+                            isInPersonPickup(certificate) && (
                             <button
                               onClick={() =>
                                 openPickupVerification(certificate)
@@ -869,16 +770,6 @@ export default function PickupManagementPage() {
         />
       )}
 
-      {/* Send Certificate Modal */}
-      {isSendModalOpen && sendCertificate && (
-        <SendCertificateModal
-          certificate={sendCertificate}
-          onClose={() => { setIsSendModalOpen(false); setSendCertificate(null); }}
-          onConfirm={handleSendCertificate}
-          sending={sendingEmail}
-        />
-      )}
-
       {/* Pickup Confirmation Modal */}
       {previewCertificate && (
         <CertificatePreviewModal
@@ -898,11 +789,9 @@ export default function PickupManagementPage() {
                 previewCertificate.residents?.email,
             )
           }
-          onDeliveryPublished={(result) => {
-            toast.success(
-              result?.message || "Published PDF and sent download link.",
-            );
+          onDeliveryPublished={() => {
             closeCertificatePreview();
+            handleRefresh();
           }}
         />
       )}
@@ -1041,7 +930,9 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
             </div>
 
             {/* Pickup Instructions */}
-            {['ready', 'ready_for_pickup'].includes(certificate.status) && (
+            {['ready', 'ready_for_pickup'].includes(certificate.status) &&
+              String(certificate.pickup_method || "pickup").toLowerCase() !==
+                "online" && (
               <div className="bg-amber-50/75 rounded-2xl p-4 sm:p-5 border border-amber-200 shadow-sm relative overflow-hidden">
                 <div className="relative z-10 flex items-start gap-3 sm:gap-4">
                   <div className="bg-amber-100 p-2.5 rounded-xl shrink-0">
@@ -1070,7 +961,9 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
             >
               Close
             </button>
-            {['ready', 'ready_for_pickup'].includes(certificate.status) && (
+            {['ready', 'ready_for_pickup'].includes(certificate.status) &&
+              String(certificate.pickup_method || "pickup").toLowerCase() !==
+                "online" && (
               <button
                 onClick={openPickupVerification}
                 className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md hover:bg-emerald-700 active:scale-95"
@@ -1192,100 +1085,6 @@ function ConfirmPickupModal({ certificate, onClose, onConfirm, pickupName, setPi
             </button>
           </div>
         </div>
-    </div>
-  );
-}
-
-// Send Certificate Modal Component
-function SendCertificateModal({ certificate, onClose, onConfirm, sending }) {
-  useScrollLock(true);
-  const email = certificate.email || certificate.residents?.email;
-  const name = certificate.applicant_name || certificate.full_name || certificate.residents?.full_name || 'Applicant';
-  const type = certificate.certificate_type?.replace(/_/g, ' ').toUpperCase() || 'CERTIFICATE';
-  const ref = certificate.reference_number || certificate.id;
-  const isOnline =
-    String(certificate?.pickup_method || "pickup").toLowerCase() === "online";
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4">
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} onTouchMove={(e) => e.preventDefault()} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[96dvh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-xl">
-              <Mail className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-white uppercase tracking-tight leading-none">Send Certificate</h3>
-              <p className="text-blue-100/80 font-semibold text-[10px] uppercase tracking-wide">Email Preview</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white transition-all p-1.5 hover:bg-white/10 rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-5 space-y-4">
-          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-[9px] text-blue-600 uppercase font-black tracking-widest mb-1">Ref No.</p>
-                <p className="text-lg font-sans font-black text-blue-900 tracking-tight truncate">{ref}</p>
-              </div>
-              <span className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-wide shrink-0">
-                {type.split(' ')[0]}
-              </span>
-            </div>
-
-            <div className="pt-3 border-t border-blue-200 space-y-2">
-              <div>
-                <p className="text-[9px] text-blue-600 uppercase font-black tracking-widest mb-1">Applicant</p>
-                <p className="text-base font-black text-blue-900 uppercase tracking-tight leading-tight">{name}</p>
-              </div>
-              <div>
-                <p className="text-[9px] text-blue-600 uppercase font-black tracking-widest mb-1">Recipient Email</p>
-                <p className="text-sm font-black text-blue-900 break-all">{email}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-2 px-1">
-            <Info className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">
-              {isOnline
-                ? 'Resends the secure PDF download link (publish from preview first if this is the first time). Check Spam/Promotions if nothing arrives.'
-                : 'Sends a "certificate ready" pickup notification (not a PDF attachment). Check Spam/Promotions and search for "Certificate Ready".'}
-            </p>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-3 bg-white border-2 border-gray-200 text-gray-600 rounded-xl text-xs font-black uppercase tracking-wide hover:bg-gray-50 active:scale-95 transition-all"
-              disabled={sending}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onConfirm(certificate)}
-              disabled={sending || !email?.trim()}
-              className="flex-[2] px-4 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-wide hover:bg-blue-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all"
-            >
-              {sending ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="w-4 h-4" />
-                  Send Certificate
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
