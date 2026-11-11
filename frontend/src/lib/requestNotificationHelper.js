@@ -2,6 +2,7 @@
  * Request notification helpers:
  * - New request: resident RECEIVED + Review Request team SUBMITTED (if step sendEmail).
  * - Chairman step: APPROVED_STEP when status becomes captain_approval.
+ * - Witness step: WITNESS_ASSIGNMENT when status becomes witness_verification.
  */
 
 import {
@@ -162,6 +163,119 @@ export async function notifyBarangayCaptainStep({
   return {
     emailsSent,
     captainsEmailed: emailsSent,
+    skipped: emailsSent === 0,
+    reason: emailsSent === 0 ? "no_recipients" : undefined,
+  };
+}
+
+function findWitnessWorkflowStep(steps) {
+  if (!steps?.length) return null;
+  return (
+    steps.find((s) => {
+      const st = String(s.status || "").toLowerCase();
+      const name = String(s.name || "").toLowerCase();
+      const role = String(s.officialRole || "").toLowerCase();
+      return (
+        st === "witness_verification" ||
+        st.includes("witness") ||
+        name.includes("witness") ||
+        name.includes("witnessed") ||
+        role.includes("witness")
+      );
+    }) || null
+  );
+}
+
+/**
+ * Email users assigned to the Witness / Witnessed By step when a request is endorsed.
+ */
+export async function notifyWitnessAssignmentStep({
+  supabase,
+  tenantId,
+  requestId,
+  referenceNumber,
+  certificateType,
+  applicantName,
+  comments = "",
+  witnessUserIds = [],
+}) {
+  const enabled = await isEmailNotificationsEnabled(supabase);
+  if (!enabled) {
+    return { emailsSent: 0, skipped: true, reason: "notifications_disabled" };
+  }
+
+  try {
+    const { data: wfRow } = await supabase
+      .from("workflow_configurations")
+      .select("workflow_config")
+      .eq("tenant_id", tenantId)
+      .eq("certificate_type", certificateType)
+      .maybeSingle();
+    const steps = wfRow?.workflow_config?.steps || [];
+    const witnessStep = findWitnessWorkflowStep(steps);
+    if (witnessStep && witnessStep.sendEmail === false) {
+      return { emailsSent: 0, skipped: true, reason: "step_send_email_off" };
+    }
+  } catch (wfErr) {
+    console.warn("[notify] witness step workflow check:", wfErr.message);
+  }
+
+  let recipients = await fetchUsersByIds(supabase, witnessUserIds, tenantId);
+  if (!recipients.length && witnessUserIds.length) {
+    console.warn(
+      "[notify] witness step: assignee ids present but no user rows",
+      witnessUserIds.length,
+    );
+  }
+
+  const { sendProcessNotification } = await import("./mailer");
+  const seenEmails = new Set();
+  let emailsSent = 0;
+
+  for (const user of recipients) {
+    const email = String(user.email || "").trim();
+    if (!email) continue;
+    const key = email.toLowerCase();
+    if (seenEmails.has(key)) continue;
+    seenEmails.add(key);
+
+    const recipientName =
+      [user.first_name, user.last_name].filter(Boolean).join(" ").trim() ||
+      "Assigned Witness";
+
+    const result = await sendProcessNotification({
+      recipientEmail: email,
+      recipientName,
+      eventType: "WITNESS_ASSIGNMENT",
+      certificateType,
+      referenceNumber,
+      applicantName: applicantName || "Applicant",
+      comments: comments || "",
+      requestId,
+      tenantId,
+    });
+
+    if (result.success) emailsSent += 1;
+    else
+      console.warn(
+        "[notify] witness step email:",
+        email,
+        result.error || result.code,
+      );
+  }
+
+  if (!emailsSent) {
+    console.warn(
+      "[notify] witness step: no emails sent",
+      referenceNumber,
+      "recipients:",
+      recipients.length,
+    );
+  }
+
+  return {
+    emailsSent,
+    witnessesEmailed: emailsSent,
     skipped: emailsSent === 0,
     reason: emailsSent === 0 ? "no_recipients" : undefined,
   };

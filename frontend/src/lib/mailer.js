@@ -112,6 +112,21 @@ function getTemplates(fromName, portalDomain) {
       ctaLabel: "Review & Approve Request",
       ctaPath: "/requests",
     },
+    WITNESS_ASSIGNMENT: {
+      subjectPrefix: "Witness Assignment — Action Required",
+      badgeText: "WITNESS REQUIRED",
+      statusLabel: "Awaiting Witness Verification / Naghihintay ng Pagpapatunay",
+      accentColor: "#6d28d9",
+      badgeBg: "#ede9fe",
+      badgeColor: "#5b21b6",
+      titleEN: "Request Assigned for Oath Witnessing",
+      titleTL: "Nakatalaga sa Pagpapatunay ng Oath",
+      messageEN: `A certificate application has been endorsed to you as the assigned witness. Please confirm the Oath of Undertaking (when applicable) and complete your verification in the BrgyDesk dashboard.`,
+      messageTL:
+        "Ang sumusunod na kahilingan ay inendorso na sa inyo bilang nakatalagang witness. Pakitiyak ang Oath of Undertaking (kung kinakailangan) at kumpletuhin ang inyong beripikasyon sa BrgyDesk dashboard.",
+      ctaLabel: "Open Request in Dashboard",
+      ctaPath: "/requests",
+    },
     READY_FOR_PICKUP: {
       subjectPrefix: "Certificate Ready for Release",
       badgeText: "READY FOR RELEASE",
@@ -351,6 +366,7 @@ export function buildProcessNotificationEmail({
   const staffDashboardTypes = new Set([
     "SUBMITTED",
     "APPROVED_STEP",
+    "WITNESS_ASSIGNMENT",
     "RESUBMITTED",
   ]);
   const staffOrigin = String(

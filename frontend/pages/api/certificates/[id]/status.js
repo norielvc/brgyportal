@@ -186,6 +186,30 @@ export default async function handler(req, res) {
           captainUserIds: nextStep?.assignedUsers || [],
         });
       }
+
+      if (
+        status === "witness_verification" ||
+        String(status || "").toLowerCase().includes("witness") ||
+        (dbStatus === "processing" &&
+          data.certificate_type === "first_time_job_seeker" &&
+          nextStep &&
+          (String(nextStep.name || "").toLowerCase().includes("witness") ||
+            String(nextStep.status || "").toLowerCase().includes("witness")))
+      ) {
+        const { notifyWitnessAssignmentStep } = await import(
+          "@/lib/requestNotificationHelper"
+        );
+        await notifyWitnessAssignmentStep({
+          supabase,
+          tenantId,
+          requestId: id,
+          referenceNumber: data.reference_number,
+          certificateType: data.certificate_type,
+          applicantName: data.full_name || "Applicant",
+          comments: comments || "",
+          witnessUserIds: nextStep?.assignedUsers || [],
+        });
+      }
     } catch (wfErr) {
       console.warn("Could not create next-step assignments:", wfErr.message);
     }

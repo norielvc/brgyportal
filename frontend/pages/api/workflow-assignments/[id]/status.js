@@ -621,6 +621,32 @@ export default async function handler(req, res) {
             console.error('❌ Captain step email notification error:', capEmailErr.message);
           }
         }
+
+        if (
+          workflowStatusesMatch(newCertStatus, 'witness_verification') ||
+          String(newCertStatus || '').toLowerCase().includes('witness')
+        ) {
+          try {
+            const { notifyWitnessAssignmentStep } = await import(
+              '@/lib/requestNotificationHelper'
+            );
+            await notifyWitnessAssignmentStep({
+              supabase,
+              tenantId,
+              requestId,
+              referenceNumber: cert.reference_number,
+              certificateType: certType,
+              applicantName,
+              comments: note,
+              witnessUserIds: userIds,
+            });
+          } catch (witnessEmailErr) {
+            console.error(
+              '❌ Witness step email notification error:',
+              witnessEmailErr.message,
+            );
+          }
+        }
       }
     } else if (action === 'reject') {
       // Send rejection notification email to resident applicant if an email exists
