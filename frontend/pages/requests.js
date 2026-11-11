@@ -98,6 +98,7 @@ import {
 import {
   BARANGAY_CLEARANCE_MAIN_PURPOSES,
   BARANGAY_CLEARANCE_UTILITY_SUB,
+  FIRST_TIME_JOB_SEEKER_PURPOSES,
 } from "@/lib/barangayClearancePurposes";
 import { mergeResidentDemographicsOntoCertificate } from "@/lib/certificateRequestDemographics";
 import {
@@ -118,15 +119,6 @@ import {
 } from "@/lib/certificateDocumentType";
 // API Configuration
 const API_URL = "/api";
-
-const FIRST_TIME_JOB_SEEKER_PURPOSES = [
-  "NATIONAL BUREAU OF INVESTIGATION (NBI) REQUIREMENT",
-  "TAXPAYER IDENTIFICATION NUMBER (TIN) REQUIREMENT",
-  "SOCIAL SECURITY SYSTEM (SSS) REQUIREMENT",
-  "PAG-IBIG REQUIREMENT",
-  "PHILHEALTH REQUIREMENT",
-  "*TAXPAYER IDENTIFICATION NUMBERS (TIN) REQUIREMENT",
-];
 
 function parseRequestDetails(request) {
   try {
