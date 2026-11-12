@@ -1365,8 +1365,7 @@ class CertificateGenerationService {
             // Get physical inspection data from the new tables
             const inspectionData = await this.getPhysicalInspectionData(request.id, history, lastReturnTime);
             const leftLogoSrc = config.logos?.leftLogo || '';
-            const qrCodeSVG = this.generateQRCodeSVG(`${config.baseUrl}/verify/${request.reference_number}`);
-            console.log(`[CERT-GEN] Inspection data and QR generated`);
+            console.log(`[CERT-GEN] Physical inspection form content generated`);
 
             return `
         <!DOCTYPE html>
@@ -1483,13 +1482,6 @@ class CertificateGenerationService {
                     margin: 30px 0 5px 0; 
                     height: 1px; 
                 }
-                .qr-code { 
-                    position: absolute; 
-                    top: 20px; 
-                    right: 20px; 
-                    width: 80px; 
-                    height: 80px; 
-                }
                 @media print {
                     body { margin: 0; padding: 10px; }
                     .certificate-container { border: none; }
@@ -1498,8 +1490,6 @@ class CertificateGenerationService {
         </head>
         <body>
             <div class="certificate-container">
-                <div class="qr-code">${qrCodeSVG}</div>
-                
                 <div class="watermark">
                   ${leftLogoSrc ? `<img src="${leftLogoSrc}" style="width: 100%; height: 100%; object-fit: contain;">` : ''}
                 </div>
@@ -1593,31 +1583,24 @@ class CertificateGenerationService {
                                     <td style="border-left: none; text-align: left; padding-left: 5px;">${inspectionData.recommendations?.[comm]?.name || ''}</td>
                                     <td style="font-weight: 800;">${comm}</td>
                                     <td>${inspectionData.recommendations?.[comm]?.date || ''}</td>
-                                    <td style="border-right: none;">
-                                      ${inspectionData.recommendations?.[comm]?.signature_data ? `<img src="${inspectionData.recommendations[comm].signature_data}" style="height: 20px; width: auto; mix-blend-mode: multiply;">` : ''}
-                                    </td>
+                                    <td style="border-right: none;">&nbsp;</td>
                                   </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     </div>
 
-                    <div style="margin-top: 15px; padding-left: 5px;">
+                    <div style="margin-top: 31px; padding-left: 5px;">
                       <p style="font-weight: 800; font-size: 10px; margin-bottom: 20px;">C. APPROVAL</p>
                       <div style="margin-left: 40px; position: relative;">
                         <div style="position: absolute; left: 0; top: -50px; width: 200px; height: 100px; pointer-events: none; z-index: 20;">
                           ${captainApproval?.signature_data ? `<img src="${captainApproval.signature_data}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply;">` : ''}
                         </div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="position: relative; min-width: 180px;">
                             <p style="font-weight: 900; font-size: 13px; margin: 0; text-transform: uppercase;">${captainApproval?.officialName || config.officials.chairman}</p>
-                            ${captainApproval?.secretary_signature ? `
-                            <div style="height: 35px; width: 80px;">
-                                <img src="${captainApproval.secretary_signature}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply;">
-                            </div>
-                            ` : ''}
+                            <p style="font-weight: 800; font-size: 11px; margin: 2px 0 0;">BARANGAY CHAIRMAN</p>
+                            ${captainApproval?.users?.employee_code ? `<p style="font-size: 10px; font-weight: bold; margin: 2px 0 0; color: #000;">${captainApproval.users.employee_code}</p>` : ''}
                         </div>
-                        <p style="font-weight: 800; font-size: 11px; margin: 0;">${captainApproval?.officialRole || 'BARANGAY CHAIRMAN'}</p>
-                        ${captainApproval?.users?.employee_code ? `<p style="font-size: 11px; font-weight: bold; margin: 0; color: #000;">${captainApproval.users.employee_code}</p>` : ''}
                       </div>
                     </div>
                 </div>

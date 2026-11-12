@@ -1,5 +1,6 @@
 import { authenticateToken } from "../../../../src/lib/api-auth";
 import { supabase } from "../../../../lib/supabase";
+import { realignBusinessPermitRequest } from "../../../../src/lib/businessPermitWorkflowRealign";
 import { fetchCertificateById } from "../../../../src/lib/certificateListQuery";
 import { fetchWorkflowHistoryPdfBundle } from "../../../../src/lib/workflowHistoryQuery";
 
@@ -20,6 +21,24 @@ export default async function handler(req, res) {
       req.query.view === "pdf" || req.query.pdf === "1" ? "pdf" : "full";
     let data;
     try {
+      if (view === "full") {
+        const { data: precheck } = await supabase
+          .from("certificate_requests")
+          .select("certificate_type")
+          .eq("id", id)
+          .eq("tenant_id", tenantId)
+          .maybeSingle();
+        if (precheck?.certificate_type === "business_permit") {
+          try {
+            await realignBusinessPermitRequest(supabase, tenantId, id);
+          } catch (realignErr) {
+            console.warn(
+              "[certificates/[id]] business permit realign skipped:",
+              realignErr?.message || realignErr,
+            );
+          }
+        }
+      }
       data = await fetchCertificateById(tenantId, id, { view });
     } catch (err) {
       if (err.code === "NOT_FOUND") {

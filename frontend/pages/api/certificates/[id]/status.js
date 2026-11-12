@@ -3,6 +3,12 @@ import {
   clearCaptainSignatureDetails,
   mergeCaptainSignatureDetails,
 } from "../../../../src/lib/captainSignatureDetails";
+import {
+  normalizeWorkflowStepsForSave,
+  resolveBusinessPermitApproveTarget,
+  resolveWorkflowStepIndex,
+  normalizeCertificateStatus,
+} from "../../../../src/lib/workflowStatus";
 import { supabase } from "../../../../lib/supabase";
 
 const statusFlow = {
@@ -32,14 +38,7 @@ export default async function handler(req, res) {
 
   const { id } = req.query;
   const { comments, current_step, action, signatureData } = req.body;
-  const rawStatus = req.body?.status;
-  const status =
-    String(rawStatus || "").trim().toLowerCase() === "verifying"
-      ? "verifying"
-      : rawStatus;
-
-  if (!status)
-    return res.status(400).json({ success: false, message: "Status is required" });
+  let rawStatus = req.body?.status;
 
   // Fetch current cert to know its current status before update
   const { data: currentCert } = await supabase
@@ -48,6 +47,66 @@ export default async function handler(req, res) {
     .eq("id", id)
     .eq("tenant_id", tenantId)
     .single();
+
+  if (
+    action === "approve" &&
+    currentCert?.certificate_type === "business_permit"
+  ) {
+    const { data: wfRow } = await supabase
+      .from("workflow_configurations")
+      .select("workflow_config")
+      .eq("certificate_type", "business_permit")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    const steps = normalizeWorkflowStepsForSave(
+      wfRow?.workflow_config?.steps,
+      "business_permit",
+    );
+    const { data: pendingAssignment } = await supabase
+      .from("workflow_assignments")
+      .select("step_id, step_name")
+      .eq("request_id", id)
+      .eq("tenant_id", tenantId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { data: priorHistory } = await supabase
+      .from("workflow_history")
+      .select("action, step_name, previous_status, new_status")
+      .eq("request_id", id)
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    const target = resolveBusinessPermitApproveTarget(steps, {
+      status: currentCert.status,
+      assignmentStepId: pendingAssignment?.step_id,
+      history: priorHistory || [],
+    });
+    if (target?.status) {
+      rawStatus = target.status;
+    } else if (steps.length) {
+      const idx = resolveWorkflowStepIndex(steps, {
+        ...currentCert,
+        workflow_assignment: pendingAssignment || undefined,
+      });
+      if (idx !== -1 && steps[idx + 1]) {
+        rawStatus = normalizeCertificateStatus(steps[idx + 1].status, {
+          stepName: steps[idx + 1].name,
+          certificateType: "business_permit",
+        });
+      }
+    }
+  }
+
+  const status =
+    String(rawStatus || "").trim().toLowerCase() === "verifying"
+      ? "verifying"
+      : rawStatus;
+
+  if (!status)
+    return res.status(400).json({ success: false, message: "Status is required" });
 
   const dbStatus = (status === "witness_verification" || status === "Witness Verification") ? "processing" : status;
   const updateData = { status: dbStatus, updated_at: new Date().toISOString() };
@@ -137,22 +196,59 @@ export default async function handler(req, res) {
         .eq("tenant_id", tenantId)
         .single();
 
-      const steps = wfConfig?.workflow_config?.steps || [];
-      // Find the step that matches the NEW status (or Releasing Team when moving to ready/ready_for_pickup)
+      const steps = normalizeWorkflowStepsForSave(
+        wfConfig?.workflow_config?.steps,
+        data.certificate_type,
+      );
       const isWitness = status === "witness_verification" || String(status).toLowerCase().includes("witness") || (dbStatus === "processing" && data.certificate_type === "first_time_job_seeker");
-      const nextStep = isWitness
-        ? steps.find((s) => String(s.name || "").toLowerCase().includes("witness") || String(s.status || "").toLowerCase().includes("witness"))
-        : (["ready", "ready_for_pickup"].includes(status)
-          ? steps.find((s) =>
-              String(s.name || "").toLowerCase().includes("releasing"),
-            ) ||
-            steps.find(
-              (s) =>
-                String(s.status || "").toLowerCase() === "oic_review" &&
-                !String(s.name || "").toLowerCase().includes("preparation"),
-            ) ||
-            steps.find((s) => s.status === status)
-          : steps.find((s) => s.status === status));
+      let nextStep = null;
+
+      if (data.certificate_type === "business_permit" && action === "approve") {
+        const { data: pendingAssignment } = await supabase
+          .from("workflow_assignments")
+          .select("step_id, step_name")
+          .eq("request_id", id)
+          .eq("tenant_id", tenantId)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const { data: priorHistory } = await supabase
+          .from("workflow_history")
+          .select("action, step_name, previous_status, new_status")
+          .eq("request_id", id)
+          .eq("tenant_id", tenantId)
+          .order("created_at", { ascending: false })
+          .limit(30);
+        const target = resolveBusinessPermitApproveTarget(steps, {
+          status: currentCert?.status,
+          assignmentStepId: pendingAssignment?.step_id,
+          history: priorHistory || [],
+        });
+        nextStep = target?.next || null;
+        if (!nextStep) {
+          const fromIdx = steps.findIndex(
+            (s) => String(s.id) === String(pendingAssignment?.step_id),
+          );
+          if (fromIdx !== -1) nextStep = steps[fromIdx + 1] || null;
+        }
+      }
+
+      if (!nextStep) {
+        nextStep = isWitness
+          ? steps.find((s) => String(s.name || "").toLowerCase().includes("witness") || String(s.status || "").toLowerCase().includes("witness"))
+          : (["ready", "ready_for_pickup"].includes(status)
+            ? steps.find((s) =>
+                String(s.name || "").toLowerCase().includes("releasing"),
+              ) ||
+              steps.find(
+                (s) =>
+                  String(s.status || "").toLowerCase() === "oic_review" &&
+                  !String(s.name || "").toLowerCase().includes("preparation"),
+              ) ||
+              steps.find((s) => s.status === status)
+            : steps.find((s) => s.status === status));
+      }
 
       if (nextStep?.assignedUsers?.length) {
         for (const userId of nextStep.assignedUsers) {

@@ -1,9 +1,11 @@
 import { authenticateToken } from "../../../src/lib/api-auth";
 import { supabase } from "../../../lib/supabase";
 import {
+  alignBusinessPermitCertificateStatus,
   certificateStatusForStep,
   isBusinessPermitPreparationStep,
   isCaptainApprovalStep,
+  isPhysicalInspectionTeamStep,
   isReleasingTeamStep,
   normalizeWorkflowStepsForSave,
   resolveBusinessPermitCaptainStep,
@@ -33,6 +35,9 @@ const activeStatuses = [
   "oic_review",
   "ready",
   "ready_for_pickup",
+  "physical_inspection",
+  "verifying",
+  "Treasury",
 ];
 
 export default async function handler(req, res) {
@@ -64,6 +69,7 @@ export default async function handler(req, res) {
     .eq("tenant_id", tenantId);
 
   let totalAssignments = 0;
+  let realignedStatuses = 0;
   const errors = [];
 
   for (const certType of certTypes) {
@@ -102,8 +108,35 @@ export default async function handler(req, res) {
           .eq("request_id", request.id)
           .eq("tenant_id", tenantId)
           .order("created_at", { ascending: false })
-          .limit(20);
-        requestForRouting = { ...request, workflow_history: history || [] };
+          .limit(30);
+        requestForRouting = {
+          ...request,
+          certificate_type: certType,
+          workflow_history: history || [],
+        };
+        const alignedStatus = alignBusinessPermitCertificateStatus(
+          steps,
+          requestForRouting,
+        );
+        if (alignedStatus && alignedStatus !== request.status) {
+          const { error: statusErr } = await supabase
+            .from("certificate_requests")
+            .update({
+              status: alignedStatus,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", request.id)
+            .eq("tenant_id", tenantId);
+          if (!statusErr) {
+            realignedStatuses += 1;
+            requestForRouting.status = alignedStatus;
+            request.status = alignedStatus;
+          } else {
+            errors.push(
+              `Failed to realign status for business permit ${request.id}: ${statusErr.message}`,
+            );
+          }
+        }
         const stepIndex = resolveWorkflowStepIndex(steps, requestForRouting);
         if (stepIndex !== -1) currentStep = steps[stepIndex];
       }
@@ -115,7 +148,19 @@ export default async function handler(req, res) {
             steps.find((st) => st.requiresApproval);
         else if (s === "secretary_approval")
           currentStep = steps.find((st) => st.status === "secretary_approval");
-        else if (s === "captain_approval") {
+        else if (s === "physical_inspection") {
+          currentStep =
+            steps.find(isPhysicalInspectionTeamStep) ||
+            steps.find((st) => st.status === "physical_inspection");
+        } else if (s === "verifying") {
+          currentStep =
+            steps.find((st) => String(st.status || "").toLowerCase() === "verifying") ||
+            steps.find((st) => String(st.name || "").toLowerCase().includes("finance"));
+        } else if (s === "Treasury") {
+          currentStep =
+            steps.find((st) => String(st.status || "").toLowerCase() === "treasury") ||
+            steps.find((st) => String(st.name || "").toLowerCase().includes("treasury"));
+        } else if (s === "captain_approval") {
           currentStep =
             certType === "business_permit"
               ? resolveBusinessPermitCaptainStep(steps, requestForRouting)
@@ -163,6 +208,11 @@ export default async function handler(req, res) {
     .json({
       success: true,
       message: "Workflow assignments synced",
-      data: { totalAssignments, errors },
+      data: {
+        totalAssignments,
+        realignedStatuses,
+        updatedSteps: totalAssignments,
+        errors,
+      },
     });
 }

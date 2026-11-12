@@ -376,5 +376,72 @@ body.modal-open {
   }
 }
 
+/* Physical inspection — light vertical trim only (keep readable 11px body) */
+.inspection-legal-sheet .inspection-form-line-spacer {
+  display: block;
+  height: 20px;
+  min-height: 20px;
+  flex-shrink: 0;
+}
 
+.inspection-legal-sheet .mb-8 {
+  margin-bottom: 14px !important;
+}
+
+/* Two text lines below B. RECOMMENDING APPROVAL before C. APPROVAL */
+.inspection-legal-sheet .inspection-gap-after-b {
+  display: block;
+  height: calc(2 * 1.35 * 11px);
+  min-height: calc(2 * 1.35 * 11px);
+  flex-shrink: 0;
+}
+
+/* Five lines below C. APPROVAL heading (chairman + D. Official Receipt) */
+.inspection-legal-sheet .inspection-gap-after-c-heading {
+  display: block;
+  height: calc(5 * 1.35 * 11px);
+  min-height: calc(5 * 1.35 * 11px);
+  flex-shrink: 0;
+}
+
+.certificate-container[data-inspection="1"] .inspection-page-bottom-spacer {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.inspection-legal-sheet .inspection-gap-before-d-receipt {
+  display: block;
+  height: calc(2 * 1.35 * 11px);
+  min-height: calc(2 * 1.35 * 11px);
+  flex-shrink: 0;
+}
+
+.inspection-legal-sheet .inspection-signatory-receipt-block {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.inspection-legal-sheet .inspection-official-receipt-table {
+  margin-bottom: 0 !important;
+}
+
+.inspection-legal-sheet .inspection-receipt-heading {
+  margin-bottom: 2px !important;
+}
+
+.certificate-container[data-inspection="1"] .cert-main-content,
+.certificate-container[data-inspection="1"] .cert-doc-body {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+}
+
+.certificate-container[data-inspection="1"] .cert-footer-anchor,
+.certificate-container[data-inspection="1"] .inspection-cert-footer {
+  margin-top: auto !important;
+}
+
+.certificate-container[data-inspection="1"] .inspection-approval-receipt-section {
+  margin-top: 0 !important;
+  flex-shrink: 0;
+}
 

@@ -20,8 +20,11 @@ function mergeFinanceVerificationDetails(
   stepName,
   employeeCode,
 ) {
-  const statusOk = String(certStatus || "").toLowerCase() === "verifying";
-  const stepOk = String(stepName || "").toLowerCase().includes("finance");
+  const statusKey = String(certStatus || "").toLowerCase();
+  const stepKey = String(stepName || "").toLowerCase();
+  const statusOk =
+    statusKey === "verifying" || statusKey === "treasury";
+  const stepOk = /finance|treasury|treasurer|or prep/.test(stepKey);
   if (!statusOk && !stepOk) return null;
   let details = existingDetails;
   if (typeof details === "string") {
@@ -175,7 +178,7 @@ export default async function handler(req, res) {
     returned: "secretary_approval",
     processing: "secretary_approval",
     secretary_approval: "captain_approval",
-    physical_inspection: "verifying",
+    physical_inspection: "captain_approval",
     verifying: "captain_approval",
     captain_approval: "ready",
     Treasury: "oic_review",

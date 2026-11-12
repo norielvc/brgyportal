@@ -53,7 +53,23 @@ export default async function handler(req, res) {
         isStale = !['staff_review', 'pending', 'submitted', 'returned'].includes(certStatus);
       } else if (stepName.includes('secretary')) {
         isStale = !['processing', 'secretary_approval'].includes(certStatus);
-      } else if (stepName.includes('inspection')) {
+      } else if (
+        (stepName.includes('captain') ||
+          stepName.includes('chairman') ||
+          stepName.includes('punong')) &&
+        stepName.includes('physical')
+      ) {
+        const statusKey = String(certStatus).toLowerCase();
+        isStale = !(
+          statusKey === 'captain_approval' ||
+          statusKey.includes('captain') ||
+          statusKey.includes('chairman')
+        );
+      } else if (
+        stepName.includes('inspection') &&
+        !stepName.includes('captain') &&
+        !stepName.includes('chairman')
+      ) {
         isStale = certStatus !== 'physical_inspection';
       } else if (
         stepName.includes('finance') ||
