@@ -10,6 +10,7 @@ import {
   normalizeStepStatusKey,
   resolveBusinessPermitApproveTarget,
   resolveBusinessPermitCaptainStep,
+  workflowApproveStatusAligned,
   workflowStatusesMatch,
 } from "../../../../src/lib/workflowStatus";
 
@@ -120,16 +121,12 @@ export default async function handler(req, res) {
   }
 
   if (action === "approve" && activeStepEarly) {
-    const expectedStatus = certificateStatusForStep(
+    const statusAligned = workflowApproveStatusAligned(
+      cert.status,
       activeStepEarly,
       certType || cert.certificate_type,
     );
-    const currentKey = normalizeStepStatusKey(cert.status);
-    const expectedKey = normalizeStepStatusKey(expectedStatus);
-    const statusAligned =
-      workflowStatusesMatch(expectedStatus, cert.status) ||
-      (expectedKey === "witness_verification" && currentKey === "processing");
-    if (expectedStatus && cert.status && !statusAligned) {
+    if (cert.status && !statusAligned) {
       return res.status(409).json({
         success: false,
         code: "WORKFLOW_STEP_MISMATCH",
@@ -189,6 +186,7 @@ export default async function handler(req, res) {
 
   let newCertStatus = cert.status;
   let inspectionNextStep = null;
+  let nextWitnessAssigneeIds = [];
   if (action === "approve") {
     const isBusinessPermit = (certType || cert.certificate_type) === "business_permit";
     if (isBusinessPermit) {
@@ -426,6 +424,16 @@ export default async function handler(req, res) {
       }
     }
 
+    const endorsingToWitness =
+      workflowStatusesMatch(newCertStatus, "witness_verification") ||
+      String(newCertStatus || "").toLowerCase().includes("witness") ||
+      String(nextStep?.name || "").toLowerCase().includes("witness") ||
+      String(nextStep?.name || "").toLowerCase().includes("witnessed") ||
+      String(nextStep?.status || "").toLowerCase().includes("witness");
+    if (endorsingToWitness && assignedNextUsers.length) {
+      nextWitnessAssigneeIds = assignedNextUsers.map(String);
+    }
+
     if (nextStep && assignedNextUsers.length) {
       console.log(`[WORKFLOW-ASSIGNMENT] Creating ${assignedNextUsers.length} assignments for step: ${nextStep.name}`);
       for (const userId of assignedNextUsers) {
@@ -625,24 +633,34 @@ export default async function handler(req, res) {
           }
         }
 
-        if (
+        const certTypeKey = certType || cert.certificate_type;
+        const enteringWitnessStep =
           workflowStatusesMatch(newCertStatus, 'witness_verification') ||
-          String(newCertStatus || '').toLowerCase().includes('witness')
-        ) {
+          String(newCertStatus || '').toLowerCase().includes('witness') ||
+          (dbStatusForCert === 'processing' &&
+            certTypeKey === 'first_time_job_seeker' &&
+            nextWitnessAssigneeIds.length > 0);
+        if (enteringWitnessStep) {
+          const witnessNotifyIds = [
+            ...new Set([...userIds, ...nextWitnessAssigneeIds].filter(Boolean).map(String)),
+          ];
           try {
             const { notifyWitnessAssignmentStep } = await import(
               '@/lib/requestNotificationHelper'
             );
-            await notifyWitnessAssignmentStep({
+            const witnessResult = await notifyWitnessAssignmentStep({
               supabase,
               tenantId,
               requestId,
               referenceNumber: cert.reference_number,
-              certificateType: certType,
+              certificateType: certTypeKey,
               applicantName,
               comments: note,
-              witnessUserIds: userIds,
+              witnessUserIds: witnessNotifyIds,
             });
+            console.log(
+              `[WORKFLOW-ASSIGNMENT] Witness email: ref=${cert.reference_number} sent=${witnessResult.emailsSent} skipped=${witnessResult.skipped} reason=${witnessResult.reason || ""}`,
+            );
           } catch (witnessEmailErr) {
             console.error(
               '❌ Witness step email notification error:',

@@ -70,6 +70,10 @@ import {
   FilterX,
   Maximize2,
   Trash2,
+  Copy,
+  Briefcase,
+  ArrowRight,
+  Target,
 } from "lucide-react";
 import { getAuthToken, getUserData } from "@/lib/auth";
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
@@ -2908,6 +2912,13 @@ function RequestDetailsModal({
 }) {
   useScrollLock(true);
   const currentStep = getCurrentWorkflowStep(request);
+  const isWitnessReviewStep =
+    String(request.status || "").toLowerCase().includes("witness") ||
+    String(currentStep?.name || "").toLowerCase().includes("witness") ||
+    String(currentStep?.status || "").toLowerCase().includes("witness") ||
+    String(request.workflow_assignment?.step_name || "")
+      .toLowerCase()
+      .includes("witness");
   const workflowSteps = workflows[request.certificate_type] || [];
   const inspectionForwardStepIndex = resolveWorkflowStepIndex(
     workflowSteps,
@@ -3308,6 +3319,30 @@ function RequestDetailsModal({
   }
   const hasMismatch = mismatches.length > 0;
 
+  const mismatchPair = (label) => {
+    const record = request.residents || {};
+    const blank = (value) => {
+      const text = String(value || "").trim();
+      return text || "";
+    };
+    const pairs = {
+      "First Name": [request.first_name, record.first_name],
+      "Middle Name": [request.middle_name, record.middle_name],
+      "Last Name": [request.last_name, record.last_name],
+      Suffix: [request.suffix, record.suffix],
+      "Contact Number": [request.contact_number, record.contact_number],
+      Email: [request.email, record.email],
+      Address: [request.address, record.residential_address],
+      "Date of Birth": [request.date_of_birth, record.date_of_birth],
+      "Place of Birth": [request.place_of_birth, record.place_of_birth],
+      Gender: [request.sex, record.gender],
+      "Civil Status": [request.civil_status, record.civil_status],
+    };
+    const pair = pairs[label];
+    if (!pair) return null;
+    return { request: blank(pair[0]), resident: blank(pair[1]) };
+  };
+
   const handleSyncToResident = () => {
     setSelectedSyncFields([...mismatches]);
     setShowSyncConfirm(true);
@@ -3704,39 +3739,29 @@ function RequestDetailsModal({
       />
 
       <div
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[92dvh] sm:max-h-[85vh]"
+        className="relative bg-[#f7f9fc] rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden max-h-[90vh]"
       >
         {/* Header */}
-        <div className="bg-slate-900 border-b border-slate-800 px-4 sm:px-5 py-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-            <div className="bg-white/10 p-2 rounded-xl border border-white/10 shrink-0">
-              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+        <div className="relative bg-gradient-to-r from-[#071633] via-[#0c234f] to-[#163e86] px-4 sm:px-5 py-3.5 flex items-center justify-between shrink-0 overflow-hidden">
+          <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-48 rounded-full bg-blue-400/20 blur-2xl" />
+          <div className="flex items-center gap-3 min-w-0 relative">
+            <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-900/40 shrink-0">
+              <FileText className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xs sm:text-sm font-bold text-white tracking-tight leading-none truncate">Request Details</h2>
-                <span className="hidden xs:inline-block px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold">
-                  {request.reference_number}
-                </span>
-              </div>
-              <p className="text-slate-400 text-[10px] sm:text-[11px] font-mono font-bold truncate xs:hidden mt-0.5">{request.reference_number}</p>
-              {isFinanceReview && (
-                <p className="text-slate-300 text-[10px] sm:text-[11px] font-medium truncate mt-0.5">
-                  Business Permit ·{" "}
-                  {request.applicant_name || request.full_name || "Applicant"}
-                </p>
-              )}
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight leading-none">Request Details</h2>
+              <p className="text-blue-200/90 text-[11px] sm:text-xs font-semibold mt-1 truncate">{request.reference_number}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 relative">
             {!isEditing && canAct && !["oic_review", "ready", "ready_for_pickup"].includes(request.status) && (
               <button
                 onClick={() => void handleStartEditing()}
                 disabled={detailLoading}
-                className="px-2.5 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700 disabled:opacity-50"
+                className="px-2.5 py-1 bg-white/10 hover:bg-white/15 text-white rounded-full text-[11px] font-semibold flex items-center gap-1 transition-colors border border-white/15 disabled:opacity-50"
                 title="Edit Request"
               >
-                <Edit className="w-3.5 h-3.5 text-blue-400" />
+                <Edit className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">
                   {detailLoading ? "Loading…" : "Edit"}
                 </span>
@@ -3747,14 +3772,14 @@ function RequestDetailsModal({
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-2.5 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full text-[11px] font-semibold flex items-center gap-1 transition-colors disabled:opacity-50"
                 >
                   {isSaving ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin rounded-full" /> : <Save className="w-3.5 h-3.5" />}
                   <span>Save</span>
                 </button>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-2.5 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors border border-slate-700"
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/15 text-white rounded-full text-[11px] font-semibold transition-colors border border-white/15"
                 >
                   Cancel
                 </button>
@@ -3762,26 +3787,25 @@ function RequestDetailsModal({
             )}
             <button
               onClick={() => setShowPdfPreview(true)}
-              className="px-2.5 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
+              className="px-2.5 py-1 bg-white/10 hover:bg-white/15 text-white rounded-full text-[11px] font-semibold flex items-center gap-1 transition-colors border border-white/15"
               title={
                 isBusinessPermitPreparationStage
                   ? "Preview inspection form and business permit"
                   : "Preview Certificate PDF"
               }
             >
-              <Eye className="w-3.5 h-3.5 text-blue-400" />
+              <Eye className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">
                 {isBusinessPermitPreparationStage
                   ? "Preview documents"
                   : "Preview PDF"}
               </span>
-              <span className="sm:hidden">PDF</span>
             </button>
             {onDelete && (
               <button
                 type="button"
                 onClick={() => onDelete(request)}
-                className="px-2.5 sm:px-3 py-1.5 bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-rose-500/30"
+                className="px-2.5 py-1 bg-rose-500/25 hover:bg-rose-500 text-rose-100 hover:text-white rounded-full text-[11px] font-semibold flex items-center gap-1 transition-colors border border-rose-400/30"
                 title="Delete Request"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -3790,42 +3814,46 @@ function RequestDetailsModal({
             )}
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg transition-colors ml-0.5"
+              className="text-white/70 hover:text-white p-1.5 hover:bg-white/10 rounded-full transition-colors"
               aria-label="Close modal"
             >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 bg-slate-100/75 px-4 sm:px-5 shrink-0">
+        <div className="flex border-b border-slate-200 bg-white px-4 shrink-0">
           <button
             onClick={() => setActiveTab("details")}
-            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-colors ${
+            className={`py-2 px-2.5 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
               activeTab === "details"
                 ? "border-blue-600 text-blue-600"
                 : "border-transparent text-slate-500 hover:text-slate-700"
             }`}
           >
+            <FileText className="w-3.5 h-3.5" />
             Request Details
           </button>
           <button
             onClick={() => setActiveTab("history")}
-            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
+            className={`py-2 px-2.5 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
               activeTab === "history"
                 ? "border-blue-600 text-blue-600"
                 : "border-transparent text-slate-500 hover:text-slate-700"
             }`}
           >
+            <MessageCircle className="w-3.5 h-3.5" />
             <span>History & Comments</span>
-            {hasComments && (
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+            {Array.isArray(history) && history.length > 0 && (
+              <span className="min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold inline-flex items-center justify-center">
+                {history.length}
+              </span>
             )}
           </button>
         </div>
 
-        <div className="p-4 sm:p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 space-y-4 custom-scrollbar bg-slate-50/50 text-sm">
+        <div className="p-4 sm:p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 space-y-4 custom-scrollbar bg-[#f7f9fc] text-sm">
           {activeTab === "details" && (
             <>
               {/* Ready / Released Guidance Banner */}
@@ -3929,102 +3957,303 @@ function RequestDetailsModal({
                   </div>
                 </div>
               )}
-              {/* Request Summary Card */}
-              <div className="bg-white rounded-xl border border-slate-200/90 shadow-sm p-4 sm:p-5">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5">
-                  <div className="space-y-1.5 min-w-0">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Reference No.</p>
-                    <p className="font-mono text-xs sm:text-sm font-bold text-blue-600 truncate">{request.reference_number || "—"}</p>
-                  </div>
-                  <div className="space-y-1.5 min-w-0">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Certificate Type</p>
-                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{getTypeLabel(request.certificate_type)}</p>
-                  </div>
-                  <div className="space-y-1.5 min-w-0">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Current Step</p>
-                    <p className="text-xs sm:text-sm font-bold text-slate-800 truncate">
-                      {isBusinessPermitPreparationStage
-                        ? "Business Permit Preparation"
-                        : currentStep?.name?.toUpperCase() ||
-                          formatRequestStatus(
-                            request.status,
-                            request.certificate_type,
-                          )}
-                    </p>
-                  </div>
-                  <div className="space-y-1.5 min-w-0">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Date Submitted</p>
-                    <p className="text-xs sm:text-sm font-semibold text-slate-700 truncate">{formatDate(request.created_at)}</p>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 flex-wrap">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider border shadow-sm ${getStatusColor(request.status)}`}
-                  >
-                    {formatRequestStatus(
+              {/* Request summary */}
+              {(() => {
+                const stepLabel = isBusinessPermitPreparationStage
+                  ? "Business Permit Preparation"
+                  : String(currentStep?.name || "").replace(/:\s*$/, "") ||
+                    formatRequestStatus(
                       request.status,
                       request.certificate_type,
-                      currentStep?.name ||
-                        request.workflow_assignment?.step_name,
+                    );
+                const purposeText = Array.isArray(request.purpose)
+                  ? request.purpose.filter(Boolean).join("\n")
+                  : request.purpose || "";
+                const dob =
+                  request.date_of_birth ||
+                  (request.residents?.date_of_birth
+                    ? new Date(request.residents.date_of_birth)
+                        .toISOString()
+                        .split("T")[0]
+                    : "");
+                const deliveryLabel =
+                  request.pickup_method === "online"
+                    ? "Online Delivery"
+                    : request.pickup_method === "pickup"
+                      ? "Barangay Pickup"
+                      : "";
+                const summaryItems = [
+                  {
+                    icon: FileText,
+                    iconWrap: "bg-blue-50 text-blue-600",
+                    label: "Reference No.",
+                    value: request.reference_number || "—",
+                    copy: true,
+                  },
+                  {
+                    icon: Briefcase,
+                    iconWrap: "bg-indigo-50 text-indigo-600",
+                    label: "Certificate Type",
+                    value: getTypeLabel(request.certificate_type),
+                  },
+                  {
+                    icon: RefreshCw,
+                    iconWrap: "bg-emerald-50 text-emerald-600",
+                    label: "Current Step",
+                    value: stepLabel,
+                  },
+                  {
+                    icon: Calendar,
+                    iconWrap: "bg-sky-50 text-sky-600",
+                    label: "Date Submitted",
+                    value: formatDate(request.created_at),
+                  },
+                  ...(deliveryLabel
+                    ? [
+                        {
+                          icon: request.pickup_method === "online" ? Mail : MapPin,
+                          iconWrap:
+                            request.pickup_method === "online"
+                              ? "bg-blue-50 text-blue-600"
+                              : "bg-slate-100 text-slate-700",
+                          label: "Delivery",
+                          value: deliveryLabel,
+                        },
+                      ]
+                    : []),
+                ];
+                return (
+                  <div className={`grid grid-cols-2 ${deliveryLabel ? "xl:grid-cols-5" : "lg:grid-cols-4"} gap-x-3 gap-y-2 px-1`}>
+                    {summaryItems.map((item) => (
+                      <div key={item.label} className="flex items-start gap-2 min-w-0">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${item.iconWrap}`}>
+                          <item.icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 leading-none">
+                            {item.label}
+                          </p>
+                          <p className="text-xs font-semibold text-slate-900 leading-snug mt-1 flex items-start gap-1">
+                            <span className="break-words">{item.value}</span>
+                            {item.copy && request.reference_number && (
+                              <button
+                                type="button"
+                                className="text-slate-400 hover:text-blue-600 shrink-0 mt-0.5"
+                                title="Copy reference number"
+                                onClick={() => {
+                                  navigator.clipboard?.writeText(request.reference_number);
+                                  toast.success("Reference number copied");
+                                }}
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {!isEditing && (
+                      <div className={`col-span-2 ${deliveryLabel ? "xl:col-span-5" : "lg:col-span-4"} grid grid-cols-1 lg:grid-cols-2 gap-3 mt-1 items-stretch`}>
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 flex flex-col h-full">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                              <User className="w-3.5 h-3.5" />
+                            </div>
+                            <h3 className="text-xs font-semibold text-slate-900">Applicant Information</h3>
+                            {request.residents?.pending_case && (
+                              <span className="bg-red-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Legal Hold</span>
+                            )}
+                            {request.residents && (
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    const token = getAuthToken();
+                                    const res = await fetch(
+                                      `${API_URL}/certificates/${request.id}`,
+                                      { headers: { Authorization: `Bearer ${token}` } },
+                                    );
+                                    const data = await res.json();
+                                    if (data.success && data.data) {
+                                      setSelectedRequest((prev) => ({ ...prev, ...data.data }));
+                                    }
+                                  } catch (err) {}
+                                  setShowResidentDb(true);
+                                }}
+                                className="ml-auto p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg"
+                                title="View resident record"
+                              >
+                                <Database className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Full Name</p>
+                              <p className="text-xs font-semibold text-slate-900 uppercase mt-0.5 leading-snug">
+                                {request.applicant_name || request.full_name || "Not recorded"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Residential Address</p>
+                              <p className="text-xs font-semibold text-slate-800 mt-0.5 leading-snug">
+                                {resolveRequestResidentialAddress(request) || "Not recorded"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 pt-3 border-t border-slate-100">
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Date of Birth</p>
+                              <p className="text-xs font-semibold text-slate-800 mt-0.5">{dob || "—"}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Age / Sex</p>
+                              <p className="text-xs font-semibold text-slate-800 mt-0.5 uppercase">
+                                {displayAge || "—"} / {request.sex || "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Civil Status</p>
+                              <p className="text-xs font-semibold text-slate-800 mt-0.5 uppercase">
+                                {request.civil_status || "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Place of Birth</p>
+                              <p className="text-xs font-semibold text-slate-800 mt-0.5 uppercase leading-snug">
+                                {request.place_of_birth || "—"}
+                              </p>
+                            </div>
+                          </div>
+                          {request.certificate_type === "first_time_job_seeker" && (
+                            <p className="text-[10px] text-slate-500 mt-2">
+                              Resident since {resolveResidentSinceYearFromRequest(request) || "—"}
+                            </p>
+                          )}
+                          {hasMismatch && (
+                            <div className="mt-auto pt-3">
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-2">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[11px] font-semibold text-amber-900">Information Mismatch Detected</p>
+                                <p className="text-[10px] text-amber-800 leading-snug">
+                                  Request data differs from record for:{" "}
+                                  <span className="font-bold">{mismatches.join(", ").toUpperCase()}</span>.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleSyncToResident}
+                                disabled={isSyncing}
+                                className="shrink-0 px-2.5 py-1 rounded-full border border-amber-300 bg-white text-amber-800 text-[10px] font-semibold inline-flex items-center gap-1 hover:bg-amber-100 disabled:opacity-50"
+                              >
+                                <RefreshCw className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
+                                {isSyncing ? "Syncing…" : "Sync to Resident"}
+                              </button>
+                            </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="grid grid-rows-2 gap-3 h-full min-h-0">
+                          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 flex flex-col min-h-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <Target className="w-3.5 h-3.5" />
+                              </div>
+                              <h3 className="text-xs font-semibold text-slate-900">Purpose of Request</h3>
+                            </div>
+                            <p className="text-xs font-semibold text-slate-800 uppercase leading-snug whitespace-pre-line">
+                              {purposeText || "Not specified"}
+                            </p>
+                          </div>
+                          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 flex flex-col min-h-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <Phone className="w-3.5 h-3.5" />
+                              </div>
+                              <h3 className="text-xs font-semibold text-slate-900">Contact Information</h3>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <Mail className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Email Address</p>
+                                  <p className="text-xs font-semibold text-slate-800 break-all">{request.email || "—"}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <Phone className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Contact Number</p>
+                                  <p className="text-xs font-semibold text-slate-800">{request.contact_number || "—"}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )}
-                  </span>
-                  {request.residents?.pending_case && (
-                    <span className="bg-red-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm uppercase tracking-wider">
-                      <ShieldAlert className="w-3 h-3" />
-                      Legal Hold
-                    </span>
-                  )}
-                  {request.pickup_method === "online" && (
-                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm uppercase tracking-wider">
-                      <Mail className="w-3 h-3" />
-                      Online Delivery
-                    </span>
-                  )}
-                  {request.pickup_method === "pickup" && (
-                    <span className="bg-slate-700 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm uppercase tracking-wider">
-                      <MapPin className="w-3 h-3" />
-                      Barangay Pickup
-                    </span>
-                  )}
-                </div>
-              </div>
+                  </div>
+                );
+              })()}
 
-              {/* Data Mismatch Warning */}
-              {hasMismatch && !isEditing && (
-                <div className="bg-amber-50/80 border border-amber-100 rounded-xl p-3 mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-amber-100 p-1.5 rounded-lg text-amber-600">
+              {isEditing && hasMismatch && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                    <div className="bg-amber-100 p-1.5 rounded-lg text-amber-700 shrink-0">
                       <AlertTriangle className="w-4 h-4" />
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-xs font-semibold text-amber-800">
-                        Information Mismatch Detected
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-bold text-amber-900">
+                        Request differs from the resident record
                       </h4>
-                      <p className="text-xs text-amber-800 mt-1 font-medium italic">
-                        Request data differs from record for:{" "}
-                        <span className="font-extrabold not-italic text-amber-900">
-                          {mismatches.join(", ").toUpperCase()}
-                        </span>
-                        .
+                      <p className="text-[11px] text-amber-800 mt-0.5">
+                        Sync copies the request value onto the resident profile.
                       </p>
+                      <div className="mt-2 space-y-1.5">
+                        {mismatches.map((label) => {
+                          const pair = mismatchPair(label);
+                          if (!pair) {
+                            return (
+                              <p key={label} className="text-[11px] font-semibold text-amber-900">
+                                {label}
+                              </p>
+                            );
+                          }
+                          return (
+                            <div key={label} className="text-[11px] leading-snug">
+                              <p className="font-bold text-amber-950">{label}</p>
+                              <p className="text-amber-900">
+                                Request:{" "}
+                                <span className="font-semibold">{pair.request || "Blank"}</span>
+                                <span className="mx-1.5 text-amber-400">·</span>
+                                Resident:{" "}
+                                <span className="font-semibold">{pair.resident || "Blank"}</span>
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                     <button
                       onClick={handleSyncToResident}
                       disabled={isSyncing}
-                      className="self-center px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 tracking-widest"
+                      className="self-start shrink-0 px-3 py-1.5 bg-amber-600 text-white rounded-lg text-[11px] font-bold hover:bg-amber-700 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
                     >
                       {isSyncing ? (
                         <RefreshCw className="w-3 h-3 animate-spin" />
                       ) : (
                         <Database className="w-3 h-3" />
                       )}
-                      {isSyncing ? "SYNCING..." : "SYNC TO RESIDENT"}
+                      {isSyncing ? "Syncing…" : "Sync to resident"}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Applicant Info */}
+              {/* Applicant Info — edit mode */}
+              {isEditing && (
               <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200/90 shadow-sm">
                 <div className="flex justify-between items-center mb-4 border-l-[3px] border-blue-600 pl-3">
                   <h3 className="font-bold text-slate-900 flex items-center gap-2 text-xs uppercase tracking-wider">
@@ -4499,6 +4728,7 @@ function RequestDetailsModal({
                   </div>
                 </div>
               </div>
+              )}
 
               {request.certificate_type === "barangay_cohabitation" && (
                 <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/90 shadow-sm mt-3 sm:mt-4">
@@ -4703,63 +4933,44 @@ function RequestDetailsModal({
                 </div>
               )}
 
-              {isBusinessPermit && (
-                <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/90 shadow-sm mt-3 sm:mt-4">
-                  <div className="flex justify-between items-center mb-3 border-l-4 border-emerald-600 pl-3">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
-                      <Store className="w-4 h-4 text-emerald-600" />
-                      Business Details
-                    </h3>
+              {isBusinessPermit && !isEditing && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <Store className="w-3.5 h-3.5" />
+                    </div>
+                    <h3 className="text-xs font-semibold text-slate-900">Business Details</h3>
+                    <span className="ml-auto text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                      {additionalDetails?.clearanceType === "renewal"
+                        ? "Renewal"
+                        : "New Clearance"}
+                    </span>
                   </div>
-                  <div
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4"
-                  >
-                    {!isEditing && (
-                      <>
-                        <div className="col-span-1 sm:col-span-2">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
-                            Business Name
-                          </p>
-                          <p className="font-bold text-slate-900 uppercase text-sm sm:text-base tracking-tight truncate">
-                            {additionalDetails?.businessName || "N/A"}
-                          </p>
-                        </div>
-                        <div className="col-span-1 sm:col-span-2">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
-                            Nature of Business
-                          </p>
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
-                            {additionalDetails?.natureOfBusiness || "N/A"}
-                          </p>
-                        </div>
-                        <div className="col-span-1 sm:col-span-2 md:col-span-4">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
-                            Business Address
-                          </p>
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase leading-relaxed">
-                            {additionalDetails?.businessAddress || "N/A"}
-                          </p>
-                        </div>
-                        <div className="col-span-1 sm:col-span-2">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
-                            Contact Person
-                          </p>
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
-                            {additionalDetails?.contactPerson || "N/A"}
-                          </p>
-                        </div>
-                        <div className="col-span-1 sm:col-span-2">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
-                            Clearance Type
-                          </p>
-                          <span className="font-bold text-emerald-700 bg-emerald-50 inline-block px-2 py-0.5 rounded border border-emerald-200 text-[10px] uppercase tracking-wider mt-1">
-                            {additionalDetails?.clearanceType === "renewal"
-                              ? "RENEWAL OF CLEARANCE"
-                              : "NEW CLEARANCE"}
-                          </span>
-                        </div>
-                      </>
-                    )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Business Name</p>
+                      <p className="text-xs font-semibold text-slate-900 uppercase mt-0.5 leading-snug">
+                        {additionalDetails?.businessName || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Nature of Business</p>
+                      <p className="text-xs font-semibold text-slate-800 uppercase mt-0.5 leading-snug">
+                        {additionalDetails?.natureOfBusiness || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Business Address</p>
+                      <p className="text-xs font-semibold text-slate-800 uppercase mt-0.5 leading-snug">
+                        {additionalDetails?.businessAddress || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Contact Person</p>
+                      <p className="text-xs font-semibold text-slate-800 uppercase mt-0.5 leading-snug">
+                        {additionalDetails?.contactPerson || "—"}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -5408,72 +5619,75 @@ function RequestDetailsModal({
           )}
 
           {activeTab === "history" && (
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm min-h-[400px] flex flex-col gap-4">
-              <div className="flex justify-between items-center border-l-4 border-indigo-500 pl-3">
-                <h3 className="font-black text-gray-900 flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]">
-                  <Clock className="w-4 h-4 text-indigo-500" />
-                  Activity Log & Comments
-                </h3>
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Clock className="w-3.5 h-3.5" />
+                </div>
+                <h3 className="text-xs font-semibold text-slate-900">Activity Log & Comments</h3>
               </div>
 
-              {/* Comment Input removed - use the approval modal to add notes */}
-
               {Array.isArray(history) && history.length > 0 ? (
-                <div className="space-y-4">
-                  {history.map((entry, index) => (
-                    <div key={index} className="flex gap-4 group">
-                      <div className="flex-shrink-0">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border ${entry.action === "approve" ? "bg-green-50 text-green-600 border-green-100"
-                            : entry.action === "reject" ? "bg-red-50 text-red-600 border-red-100"
-                              : entry.action === "return" ? "bg-amber-50 text-amber-600 border-amber-100"
-                                : entry.action === "note" ? "bg-purple-50 text-purple-600 border-purple-100"
-                                  : entry.action === "submitted" ? "bg-blue-50 text-blue-600 border-blue-100"
-                                    : "bg-gray-50 text-gray-500 border-gray-100"
-                          }`}>
-                          {entry.action === "approve" ? <CheckCircle className="w-5 h-5" />
-                            : entry.action === "reject" ? <XCircle className="w-5 h-5" />
-                              : entry.action === "return" ? <RotateCcw className="w-5 h-5" />
-                                : entry.action === "note" ? <MessageCircle className="w-5 h-5" />
-                                  : <FileText className="w-5 h-5" />}
+                <div className="space-y-2">
+                  {history.map((entry, index) => {
+                    const name = entry.users
+                      ? `${entry.users.first_name || ""} ${entry.users.last_name || ""}`.trim() || entry.users.email
+                      : entry.performed_by_name || entry.performed_by_email || "System";
+                    const action = String(entry.action || "").toLowerCase();
+                    const actionClass =
+                      action === "approve"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : action === "reject"
+                          ? "bg-rose-50 text-rose-700"
+                          : action === "return"
+                            ? "bg-amber-50 text-amber-700"
+                            : action === "note"
+                              ? "bg-violet-50 text-violet-700"
+                              : "bg-blue-50 text-blue-700";
+                    const iconWrap =
+                      action === "approve"
+                        ? "bg-emerald-50 text-emerald-600"
+                        : action === "reject"
+                          ? "bg-rose-50 text-rose-600"
+                          : action === "return"
+                            ? "bg-amber-50 text-amber-600"
+                            : "bg-slate-100 text-slate-500";
+                    return (
+                      <div key={index} className="flex gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${iconWrap}`}>
+                          {action === "approve" ? <CheckCircle className="w-3.5 h-3.5" />
+                            : action === "reject" ? <XCircle className="w-3.5 h-3.5" />
+                              : action === "return" ? <RotateCcw className="w-3.5 h-3.5" />
+                                : action === "note" ? <MessageCircle className="w-3.5 h-3.5" />
+                                  : <FileText className="w-3.5 h-3.5" />}
                         </div>
-                      </div>
-                      <div className="flex-1 bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50 group-hover:bg-gray-50 transition-colors">
-                        <div className="flex justify-between items-start mb-1">
-                          <p className="font-extrabold text-gray-900 uppercase text-[12px] tracking-tight">
-                            {entry.users
-                              ? `${entry.users.first_name || ""} ${entry.users.last_name || ""}`.trim() || entry.users.email
-                              : entry.performed_by_name || entry.performed_by_email || "System"}
-                          </p>
-                          <span className="text-[10px] font-bold text-gray-400 font-sans tracking-tighter bg-white px-2 py-0.5 rounded border border-gray-100">
-                            {new Date(entry.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-[0.1em] ${entry.action === "approve" ? "bg-green-100 text-green-700"
-                              : entry.action === "reject" ? "bg-red-100 text-red-700"
-                                : entry.action === "return" ? "bg-amber-100 text-amber-700"
-                                  : entry.action === "note" ? "bg-purple-100 text-purple-700"
-                                    : entry.action === "submitted" ? "bg-blue-100 text-blue-700"
-                                      : "bg-gray-100 text-gray-700"
-                            }`}>
-                            {entry.action === "submitted" ? "SUBMITTED" : entry.action?.toUpperCase()}
-                          </span>
-                          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{entry.step_name}</span>
-                        </div>
-                        {(entry.comments || entry.comment) && (
-                          <div className="bg-white p-3 rounded-xl border border-gray-100 text-[13px] text-gray-700 italic font-medium leading-relaxed shadow-sm">
-                            "{entry.comments || entry.comment}"
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-xs font-semibold text-slate-900 uppercase truncate">{name}</p>
+                            <span className="text-[10px] font-medium text-slate-400 shrink-0">
+                              {new Date(entry.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            </span>
                           </div>
-                        )}
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase ${actionClass}`}>
+                              {action === "submitted" ? "Submitted" : entry.action || "Update"}
+                            </span>
+                            {entry.step_name && (
+                              <span className="text-[10px] font-medium text-slate-500 uppercase">{entry.step_name}</span>
+                            )}
+                          </div>
+                          {(entry.comments || entry.comment) && (
+                            <p className="mt-1.5 text-xs text-slate-700 leading-snug">
+                              {entry.comments || entry.comment}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-400 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-                  <Clock className="w-8 h-8 mb-2 opacity-20" />
-                  <p className="text-[11px] font-bold uppercase tracking-widest italic">No activity recorded yet.</p>
-                </div>
+                <p className="text-xs text-slate-400 py-6 text-center">No activity recorded yet.</p>
               )}
             </div>
           )}
@@ -6276,7 +6490,7 @@ function RequestDetailsModal({
             request.status === "Treasury" ||
             (request.status === "ready_for_pickup" &&
               isUserAssignedToRequest(request))) && (
-            <div className="border-t bg-gray-50 px-4 sm:px-5 py-3 sm:py-4 shrink-0 mt-auto">
+            <div className="border-t border-slate-200 bg-white px-4 sm:px-5 py-3 shrink-0 flex flex-col items-stretch gap-2 w-full">
               {request.residents?.pending_case && (
                 <div className="bg-red-600 p-2 rounded-lg shadow-sm border border-red-400 text-white mb-2">
                   <div className="flex items-start gap-3">
@@ -6307,14 +6521,14 @@ function RequestDetailsModal({
               )}
 
               {currentStep?.status === "staff_review" ? (
-                <div className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3 items-stretch sm:items-center sm:justify-end">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 items-stretch sm:items-center sm:justify-end">
                   {request.status === "physical_inspection" ? (
                     <button
                       onClick={() => handleSaveInspectionResults(true)}
                       disabled={isUpdatingInspection}
-                      className={`w-full sm:w-auto px-4 py-2.5 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
+                      className={`w-full sm:w-auto px-3 py-1.5 bg-blue-600 text-white rounded-full text-[11px] font-semibold flex items-center justify-center gap-1.5 ${isUpdatingInspection ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700"}`}
                     >
-                      <CheckCircle className="w-4 h-4" />
+                      <CheckCircle className="w-3.5 h-3.5" />
                       Submit Inspection Result & Forward
                     </button>
                   ) : !isBusinessPermit ? (
@@ -6322,17 +6536,17 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "reject")}
                         disabled={isEditing}
-                        className={`w-full sm:w-auto px-4 py-2.5 bg-white border border-red-200 text-red-600 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300"}`}
+                        className={`w-full sm:w-auto px-3 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-full text-[11px] font-semibold flex items-center justify-center gap-1.5 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-rose-50"}`}
                       >
-                        <XCircle className="w-4 h-4" />
+                        <XCircle className="w-3.5 h-3.5" />
                         Mark as Ineligible
                       </button>
                       <button
                         onClick={() => onAction(request, "approve")}
                         disabled={isEditing}
-                        className={`w-full sm:w-auto px-4 py-2.5 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm hover:bg-blue-700 active:scale-95 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
+                        className={`w-full sm:w-auto px-3 py-1.5 bg-blue-600 text-white rounded-full text-[11px] font-semibold flex items-center justify-center gap-1.5 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700"}`}
                       >
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-3.5 h-3.5" />
                         Verify & Forward
                       </button>
                     </>
@@ -6341,9 +6555,9 @@ function RequestDetailsModal({
                       <button
                         onClick={() => onAction(request, "reject")}
                         disabled={isEditing}
-                        className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:bg-red-50 active:scale-95 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300"}`}
+                        className={`w-full sm:w-auto px-3 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-full text-[11px] font-semibold flex items-center justify-center gap-1.5 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-rose-50"}`}
                       >
-                        <XCircle className="w-4 h-4" />
+                        <XCircle className="w-3.5 h-3.5" />
                         Reject Application
                       </button>
                       {isBusinessPermit &&
@@ -6351,9 +6565,9 @@ function RequestDetailsModal({
                           <button
                             onClick={() => setShowInspectionStartModal(true)}
                             disabled={isEditing}
-                            className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-amber-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-700"}`}
+                            className={`w-full sm:w-auto px-3 py-1.5 bg-amber-600 text-white rounded-full text-[11px] font-semibold flex items-center justify-center gap-1.5 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-700"}`}
                           >
-                            <ClipboardCheck className="w-4 h-4" />
+                            <ClipboardCheck className="w-3.5 h-3.5" />
                             Proceed to Physical Inspection
                           </button>
                         )}
@@ -6467,14 +6681,14 @@ function RequestDetailsModal({
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center sm:justify-end pt-3 mt-3 border-t border-gray-100">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 items-stretch sm:items-center sm:justify-end w-full">
                   {["ready", "ready_for_pickup"].includes(request.status) ? (
                     <button
                       onClick={() => onAction(request, "approve")}
                       disabled={isEditing}
-                      className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-emerald-700 hover:shadow-emerald-300"}`}
+                      className={`w-full sm:w-auto px-3 py-1.5 bg-emerald-600 text-white rounded-full text-[11px] font-semibold flex items-center justify-center gap-1.5 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-emerald-700"}`}
                     >
-                      <CheckCircle className="w-4 h-4" />
+                      <CheckCircle className="w-3.5 h-3.5" />
                       Confirm Official Release
                     </button>
                   ) : (
@@ -6493,17 +6707,17 @@ function RequestDetailsModal({
                                 )
                               }
                               disabled={isEditing}
-                              className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-orange-200 text-orange-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-orange-50 hover:border-orange-300"}`}
+                              className={`w-full sm:w-auto px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-full text-[11px] font-semibold flex items-center justify-center gap-1.5 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-slate-50"}`}
                             >
-                              <RotateCcw className="w-4 h-4" />
+                              <RotateCcw className="w-3.5 h-3.5" />
                               Send Back
                             </button>
                             <button
                               onClick={() => onAction(request, "reject")}
                               disabled={isEditing}
-                              className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:bg-red-50 ${isEditing ? "opacity-30 grayscale cursor-not-allowed" : "hover:bg-red-50 hover:border-red-300"}`}
+                              className={`w-full sm:w-auto px-3 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-full text-[11px] font-semibold flex items-center justify-center gap-1.5 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-rose-50"}`}
                             >
-                              <XCircle className="w-4 h-4" />
+                              <XCircle className="w-3.5 h-3.5" />
                               Reject
                             </button>
                           </>
@@ -6530,9 +6744,9 @@ function RequestDetailsModal({
                             ? "Assign an OR number first"
                             : undefined
                         }
-                        className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:bg-blue-700 ${isEditing ? "opacity-30 cursor-not-allowed" : "hover:bg-blue-700 hover:shadow-blue-300"}`}
+                        className={`w-full sm:w-auto px-3 py-1.5 bg-blue-600 text-white rounded-full text-[11px] font-semibold flex items-center justify-center gap-1.5 shadow-sm ${isEditing || (isBusinessPermitPreparationStage && !hasOfficialReceipt) ? "opacity-40 cursor-not-allowed" : "hover:bg-blue-700"}`}
                       >
-                        <CheckCircle className="w-4 h-4" />
+                        <ArrowRight className="w-3.5 h-3.5" />
                         {request.status === "Treasury"
                           ? "Mark as Paid & Generate OR"
                           : isBusinessPermitFinalCaptainStage
@@ -6543,7 +6757,7 @@ function RequestDetailsModal({
                                 ? "Forward to Barangay Chairman"
                                 : isBusinessPermitReleasingStage
                                   ? "Set as Ready"
-                                  : String(request.status || "").toLowerCase().includes("witness")
+                                  : isWitnessReviewStep
                                     ? "Witness & Forward"
                                     : "Forward to Next"}
                       </button>

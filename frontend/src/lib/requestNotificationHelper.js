@@ -10,6 +10,7 @@ import {
   fetchTenantReviewStaff,
   fetchUsersByIds,
 } from "./staffUserQueries";
+import { isWitnessWorkflowStep } from "./workflowStatus";
 
 export {
   fetchBarangayCaptainUsers,
@@ -170,20 +171,7 @@ export async function notifyBarangayCaptainStep({
 
 function findWitnessWorkflowStep(steps) {
   if (!steps?.length) return null;
-  return (
-    steps.find((s) => {
-      const st = String(s.status || "").toLowerCase();
-      const name = String(s.name || "").toLowerCase();
-      const role = String(s.officialRole || "").toLowerCase();
-      return (
-        st === "witness_verification" ||
-        st.includes("witness") ||
-        name.includes("witness") ||
-        name.includes("witnessed") ||
-        role.includes("witness")
-      );
-    }) || null
-  );
+  return steps.find((s) => isWitnessWorkflowStep(s)) || null;
 }
 
 /**
@@ -204,6 +192,8 @@ export async function notifyWitnessAssignmentStep({
     return { emailsSent: 0, skipped: true, reason: "notifications_disabled" };
   }
 
+  let witnessStep = null;
+  let workflowWitnessUserIds = [];
   try {
     const { data: wfRow } = await supabase
       .from("workflow_configurations")
@@ -212,19 +202,31 @@ export async function notifyWitnessAssignmentStep({
       .eq("certificate_type", certificateType)
       .maybeSingle();
     const steps = wfRow?.workflow_config?.steps || [];
-    const witnessStep = findWitnessWorkflowStep(steps);
-    if (witnessStep && witnessStep.sendEmail === false) {
-      return { emailsSent: 0, skipped: true, reason: "step_send_email_off" };
+    witnessStep = findWitnessWorkflowStep(steps);
+    workflowWitnessUserIds = witnessStep?.assignedUsers || [];
+    if (witnessStep?.sendEmail === false) {
+      console.warn(
+        "[notify] witness step had sendEmail disabled — still sending WITNESS_ASSIGNMENT to assignees",
+        referenceNumber,
+      );
     }
   } catch (wfErr) {
     console.warn("[notify] witness step workflow check:", wfErr.message);
   }
 
-  let recipients = await fetchUsersByIds(supabase, witnessUserIds, tenantId);
-  if (!recipients.length && witnessUserIds.length) {
+  const idsToResolve = [
+    ...new Set(
+      [...(witnessUserIds || []), ...(workflowWitnessUserIds || [])]
+        .filter(Boolean)
+        .map(String),
+    ),
+  ];
+
+  let recipients = await fetchUsersByIds(supabase, idsToResolve, tenantId);
+  if (!recipients.length && idsToResolve.length) {
     console.warn(
-      "[notify] witness step: assignee ids present but no user rows",
-      witnessUserIds.length,
+      "[notify] witness step: assignee ids present but no user rows with email",
+      idsToResolve.length,
     );
   }
 

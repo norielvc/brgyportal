@@ -93,6 +93,20 @@ export function normalizeWorkflowOfficialRole(role) {
   return r;
 }
 
+export function isWitnessWorkflowStep(step) {
+  if (!step) return false;
+  const st = String(step.status || "").toLowerCase();
+  const name = String(step.name || "").toLowerCase();
+  const role = String(step.officialRole || "").toLowerCase();
+  return (
+    st === "witness_verification" ||
+    st.includes("witness") ||
+    name.includes("witness") ||
+    name.includes("witnessed") ||
+    role.includes("witness")
+  );
+}
+
 /**
  * Keep chairman steps on certificate status `captain_approval` (DB key) while
  * allowing display names like "Barangay Chairman Approval".
@@ -117,6 +131,10 @@ export function normalizeWorkflowStepForSave(step, certificateType) {
       certificateType,
     });
     if (normalized) next.status = normalized;
+  }
+
+  if (isWitnessWorkflowStep(next) && next.requiresApproval) {
+    next.sendEmail = true;
   }
 
   return next;
@@ -156,6 +174,69 @@ export function certificateStatusMatchesStep(certStatus, step, certificateType) 
     certificateStatusForStep(step, certificateType),
   );
   return Boolean(certKey && stepKey && certKey === stepKey);
+}
+
+const INITIAL_REVIEW_CERT_STATUSES = new Set([
+  "staff_review",
+  "pending",
+  "submitted",
+  "returned",
+]);
+
+/** Certificate still in (or sent back to) the first review queue. */
+export function isInitialReviewCertificateStatus(certStatus) {
+  const key = normalizeStepStatusKey(
+    normalizeCertificateStatus(String(certStatus || ""), {}),
+  );
+  return INITIAL_REVIEW_CERT_STATUSES.has(key);
+}
+
+/** Workflow step that receives new / returned / resubmitted requests. */
+export function isInitialReviewWorkflowStep(step, certificateType) {
+  if (!step) return false;
+  const stepKey = normalizeStepStatusKey(
+    certificateStatusForStep(step, certificateType),
+  );
+  if (stepKey === "staff_review") return true;
+  const name = String(step.name || "").toLowerCase();
+  return (
+    name.includes("review request") ||
+    name.includes("staff review") ||
+    name.includes("initial review")
+  );
+}
+
+/** Approve is allowed when a returned/resubmitted cert is on the review step. */
+export function workflowApproveStatusAligned(
+  certStatus,
+  workflowStep,
+  certificateType,
+) {
+  if (!certStatus || !workflowStep) return true;
+  if (
+    workflowStatusesMatch(
+      certificateStatusForStep(workflowStep, certificateType),
+      certStatus,
+    )
+  ) {
+    return true;
+  }
+  const certKey = normalizeStepStatusKey(
+    normalizeCertificateStatus(String(certStatus || ""), { certificateType }),
+  );
+  const expectedKey = normalizeStepStatusKey(
+    certificateStatusForStep(workflowStep, certificateType),
+  );
+  if (expectedKey === "witness_verification" && certKey === "processing") {
+    return true;
+  }
+  if (
+    isInitialReviewWorkflowStep(workflowStep, certificateType) &&
+    isInitialReviewCertificateStatus(certStatus)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 export function isReleasingTeamStep(step) {
