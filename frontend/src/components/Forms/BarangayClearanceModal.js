@@ -328,8 +328,9 @@ export default function BarangayClearanceModal({
         ? new Date(resident.date_of_birth).toISOString().split("T")[0]
         : "",
       placeOfBirth: resident.place_of_birth || "",
-      contactNumber: resident.contact_number || prev.contactNumber,
-      email: resident.email || prev.email,
+      // Contact is entered by the requester on step 2 (not from census record).
+      contactNumber: "",
+      email: "",
       residentId: resident.id,
       pending_case: resident.pending_case || false,
       case_record_history: resident.case_record_history || "",

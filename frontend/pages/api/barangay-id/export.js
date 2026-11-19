@@ -24,7 +24,9 @@ export default async function handler(req, res) {
     const buildQuery = () => {
       let query = supabase
         .from("barangay_ids")
-        .select("id, id_number, full_name, first_name, last_name, middle_name, suffix, address, purok, status, is_printed, issue_date, expiry_date, created_at")
+        .select(
+          "id, id_number, full_name, first_name, last_name, middle_name, suffix, address, purok, status, is_printed, issue_date, expiry_date, created_at, resident_id, resident:residents(census_resident_number, first_name, middle_name, last_name, purok, subdivision)",
+        )
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 

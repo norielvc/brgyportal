@@ -80,8 +80,8 @@ export default function EducationalAssistanceModal({
         ? resident.civil_status.charAt(0).toUpperCase() +
           resident.civil_status.slice(1).toLowerCase()
         : "",
-      cellphoneNumber: resident.contact_number || prev.cellphoneNumber,
-      email: resident.email || prev.email,
+      cellphoneNumber: "",
+      email: "",
       residentId: resident.id,
     }));
     setIsResidentModalOpen(false);

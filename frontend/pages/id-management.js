@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
+import { formatCensusResidentNumberDisplay } from "@/lib/censusResidentNumber";
+import { splitEcExportPurokAndAddress } from "@/lib/ecCardExport";
 import BarangayIDCard from "@/components/UI/BarangayIDCard";
 import IssueIDModal from "@/components/Modals/IssueIDModal";
 import PrintIDModal from "@/components/Modals/PrintIDModal";
@@ -164,22 +166,37 @@ export default function IDManagement() {
       }
 
       const exportRows = json.data.map((c) => {
-        // FIRST_MI - first name + middle initial
-        let firstMi = "";
-        if (c.first_name) {
-          const middleInitial = c.middle_name ? `${c.middle_name.trim().charAt(0)}.` : "";
-          firstMi = `${c.first_name.trim()} ${middleInitial}`.trim();
-        } else if (c.full_name) {
-          firstMi = c.full_name;
-        }
+        const resident = c.resident || null;
+        const firstName = (
+          c.first_name ||
+          resident?.first_name ||
+          ""
+        ).trim();
+        const middleName = (
+          c.middle_name ||
+          resident?.middle_name ||
+          ""
+        ).trim();
+        const lastName = (c.last_name || resident?.last_name || "").trim();
+        const residentNumber =
+          formatCensusResidentNumberDisplay(
+            resident?.census_resident_number,
+          ) || "";
+        const { purok, address } = splitEcExportPurokAndAddress({
+          purok: c.purok || resident?.purok,
+          subdivision: resident?.subdivision,
+          address: c.address || "",
+        });
 
         return {
-          "FIRST_MI": firstMi,
-          "LAST_NAME": c.last_name || "",
-          "ADDRESS": c.address || "",
+          "FIRST NAME": firstName,
+          "MIDDLE NAME": middleName,
+          "LAST_NAME": lastName,
+          PUROK: purok,
+          ADDRESS: address,
           "EC CARD_NUMBER": c.id_number || "",
-          "EC CARD_NUMBER_QR_CODE": c.id_number || "", // Same as ID number for QR generation
-          "PRINTED": c.is_printed ? "PRINTED" : "NOT PRINTED",
+          "RESIDENT NUMBER": residentNumber,
+          PRINTED: c.is_printed ? "PRINTED" : "NOT PRINTED",
         };
       });
 
