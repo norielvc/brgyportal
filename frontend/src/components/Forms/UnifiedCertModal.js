@@ -12,6 +12,7 @@ import CertSearchableDropdown from './CertSearchableDropdown';
 import { getStrings } from '../../lib/certLang';
 import LanguageGate from './LanguageGate';
 import PickupMethodSelector from './PickupMethodSelector';
+import MobileNumberInput, { isValidPhMobile, phMobileDigits } from './MobileNumberInput';
 import {
   formatResidentPurokForPortal,
   generateFullAddress,
@@ -219,7 +220,11 @@ export default function UnifiedCertModal({
     setPickupError('');
     setIsSubmitting(true);
     try {
-      const submissionData = { ...formData, ...extraFormData };
+      const submissionData = {
+        ...formData,
+        ...extraFormData,
+        contactNumber: phMobileDigits(formData.contactNumber),
+      };
       console.log('UnifiedCertModal - Submitting data:', submissionData);
       console.log('UnifiedCertModal - extraFormData:', extraFormData);
       
@@ -678,12 +683,12 @@ export default function UnifiedCertModal({
                     <label htmlFor="uc-contact" className="block text-sm font-semibold text-gray-800 mb-1.5">
                       {t.mobileLabel} <span className="text-red-600">*</span>
                     </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                      <input id="uc-contact" type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange}
-                        placeholder="09XX XXX XXXX"
-                        className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 ${errors.contactNumber ? 'border-red-400 focus:ring-red-100' : 'border-gray-300 focus:ring-gray-200'}`} />
-                    </div>
+                    <MobileNumberInput
+                      id="uc-contact"
+                      value={formData.contactNumber}
+                      onChange={handleInputChange}
+                      error={errors.contactNumber}
+                    />
                     {errors.contactNumber ? (
                       <p className="text-xs text-red-600 mt-1.5">{t.errMobile}</p>
                     ) : (
@@ -897,7 +902,7 @@ export default function UnifiedCertModal({
                     if (currentStep === 1 && !formData.fullName) { setErrors({ fullName: true }); return; }
                     if (currentStep === 2) {
                       const stepErrors = {};
-                      if (!formData.contactNumber) stepErrors.contactNumber = true;
+                      if (!isValidPhMobile(formData.contactNumber)) stepErrors.contactNumber = true;
                       if (formData.pickupMethod === 'online' && !formData.email?.trim()) {
                         stepErrors.email = true;
                         setPickupError(t.pickupEmailRequired);

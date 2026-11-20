@@ -2155,7 +2155,7 @@ export default function PortalPageContent({ initialTenantId }) {
                   {/* Container with Background - Adjusted for 3 items */}
                   <div className="relative max-w-[1400px] mx-auto overflow-hidden">
                     <div
-                      className="flex transition-transform duration-500 ease-in-out"
+                      className="flex items-stretch transition-transform duration-500 ease-in-out"
                       onTouchStart={handleTouchStart}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={() => {
@@ -2190,11 +2190,11 @@ export default function PortalPageContent({ initialTenantId }) {
                         return (
                           <div
                             key={formIndex}
-                            className="w-full flex-shrink-0 flex items-center justify-center p-4 md:p-6"
+                            className="w-full self-stretch flex-shrink-0 flex p-3 md:p-4"
                             style={{ width: `${100 / forms.length}%` }}
                           >
                             <div
-                              className="group relative bg-white rounded-2xl p-6 md:p-8 transition-all duration-500 overflow-hidden w-full max-w-[380px] mx-auto border border-gray-100 premium-shadow hover:-translate-y-2 hover:shadow-2xl"
+                              className="group relative bg-white rounded-2xl p-6 md:p-7 transition-all duration-500 overflow-hidden w-full h-full flex flex-col border border-gray-100 premium-shadow hover:-translate-y-2 hover:shadow-2xl"
                               style={{
                                 boxShadow: `0 20px 40px -15px ${tenantConfig.accentColor}10`,
                               }}
@@ -2220,28 +2220,21 @@ export default function PortalPageContent({ initialTenantId }) {
                               </div>
 
                               {/* Content */}
-                              <div className="relative">
-                                <h3
-                                  className="text-lg md:text-xl font-black text-gray-900 mb-3 leading-tight transition-colors flex items-center flex-wrap"
-                                  style={{
-                                    groupHover: {
-                                      color: tenantConfig.accentColor,
-                                    },
-                                  }}
-                                >
+                              <div className="relative flex flex-col flex-1">
+                                <h3 className="text-lg md:text-xl font-black text-gray-900 mb-3 leading-tight min-h-[3.25rem] line-clamp-2">
                                   {form.title}
                                   {form.locked && (
-                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black bg-gray-100 text-gray-400 border border-gray-200 uppercase tracking-tighter">
+                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black bg-gray-100 text-gray-400 border border-gray-200 uppercase tracking-tighter align-middle">
                                       <Shield className="w-2.5 h-2.5 mr-1" /> {p.locked}
                                     </span>
                                   )}
                                 </h3>
-                                <p className={`text-gray-500 mb-8 leading-relaxed text-sm md:text-base font-medium ${form.locked ? 'opacity-40' : ''}`}>
+                                <p className={`text-gray-500 leading-relaxed text-sm font-medium flex-1 min-h-[4.75rem] line-clamp-4 ${form.locked ? 'opacity-40' : ''}`}>
                                   {form.description}
                                 </p>
 
                                 {/* Features */}
-                                <div className="flex flex-wrap gap-2 mb-8">
+                                <div className="flex flex-wrap gap-2 content-start min-h-[1.75rem] mt-6 mb-6">
                                   {form.features
                                     .slice(0, 2)
                                     .map((feature, idx) => (

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, FileText, Search, Phone, Mail, Send, CheckCircle, ChevronRight, AlertCircle, Building2, MapPin, Store } from 'lucide-react';
+import { X, FileText, Search, Mail, Send, CheckCircle, ChevronRight, AlertCircle, Building2, MapPin, Store } from 'lucide-react';
 import ResidentSearchModal from '../Modals/ResidentSearchModal';
 import { getStrings } from '../../lib/certLang';
 import LanguageGate from './LanguageGate';
 import { formatResidentPurokForPortal } from '@/lib/addressHelper';
+import MobileNumberInput, { isValidPhMobile, phMobileDigits } from './MobileNumberInput';
 import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
   certModalOverlayClass,
@@ -133,7 +134,13 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
         },
         body: JSON.stringify({
           type: 'business_permit',
-          formData: { ...formData, pickupMethod: 'pickup', fullName: formData.ownerFullName, address: formData.ownerAddress },
+          formData: {
+            ...formData,
+            pickupMethod: 'pickup',
+            fullName: formData.ownerFullName,
+            address: formData.ownerAddress,
+            contactNumber: phMobileDigits(formData.contactNumber),
+          },
         }),
       });
       const result = await response.json();
@@ -492,12 +499,12 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                         <label htmlFor="bp-contact" className="block text-sm font-semibold text-gray-800 mb-1.5">
                           {t.mobileLabel} <span className="text-red-600">*</span>
                         </label>
-                        <div className="relative">
-                          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                          <input id="bp-contact" type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange}
-                            placeholder="09XX XXX XXXX"
-                            className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 ${errors.contactNumber ? 'border-red-400 focus:ring-red-100' : 'border-gray-300 focus:ring-gray-200'}`} />
-                        </div>
+                        <MobileNumberInput
+                          id="bp-contact"
+                          value={formData.contactNumber}
+                          onChange={handleInputChange}
+                          error={errors.contactNumber}
+                        />
                         {errors.contactNumber && (
                           <p className="text-xs text-red-600 mt-1.5">{t.errMobile}</p>
                         )}
@@ -647,7 +654,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
               <button type="button" onClick={() => {
                 if (currentStep === 1) {
                   if (!formData.ownerFullName) { setErrors({ ownerFullName: true }); return; }
-                  if (!formData.contactNumber) { setErrors({ contactNumber: true }); return; }
+                  if (!isValidPhMobile(formData.contactNumber)) { setErrors({ contactNumber: true }); return; }
                 }
                 if (currentStep === 2) {
                   const e = {};

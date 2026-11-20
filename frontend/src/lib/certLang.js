@@ -52,8 +52,8 @@ const STRINGS = {
     readyNotifyReminder:
       "When your certificate is ready, we will notify you by text message (SMS) and by email—please provide accurate contact details.",
     mobileLabel: "Mobile Number",
-    mobileHelp: "Used for SMS updates about your request.",
-    errMobile: "Please enter your mobile number.",
+    mobileHelp: "11 digits, starting with 09. Example: 0917 123 4567",
+    errMobile: "Enter an 11-digit mobile number starting with 09.",
     emailLabel: "Email Address",
     optional: "(optional)",
     residentSinceYearLabel: "Year you started living in this barangay",
@@ -266,8 +266,8 @@ const STRINGS = {
     readyNotifyReminder:
       "Kapag handa na ang iyong sertipiko, aabisuhan ka namin sa SMS at sa email—pakilagay ang tamang detalye ng kontak.",
     mobileLabel: "Numero ng Cellphone",
-    mobileHelp: "Gagamitin para sa SMS tungkol sa iyong kahilingan.",
-    errMobile: "Mangyaring ilagay ang numero ng iyong cellphone.",
+    mobileHelp: "11 digit, nagsisimula sa 09. Halimbawa: 0917 123 4567",
+    errMobile: "Ilagay ang 11-digit na numero na nagsisimula sa 09.",
     emailLabel: "Email",
     optional: "(opsyonal)",
     residentSinceYearLabel: "Taong nagsimulang tumira sa barangay na ito",

@@ -43,6 +43,7 @@ import LanguageGate from "./LanguageGate";
 import CertSearchableDropdown from "./CertSearchableDropdown";
 import CertificateVerifyQR from "@/components/UI/CertificateVerifyQR";
 import PickupMethodSelector from "./PickupMethodSelector";
+import MobileNumberInput, { isValidPhMobile, phMobileDigits } from "./MobileNumberInput";
 import {
   formatResidentPurokForPortal,
   generateFullAddress,
@@ -524,6 +525,10 @@ export default function BarangayClearanceModal({
     const required = ["fullName", "contactNumber", "purpose"];
     const newErrors = {};
     required.forEach((f) => {
+      if (f === "contactNumber") {
+        if (!isValidPhMobile(formData.contactNumber)) newErrors.contactNumber = true;
+        return;
+      }
       if (!formData[f]) newErrors[f] = true;
     });
     if (
@@ -595,7 +600,10 @@ export default function BarangayClearanceModal({
         },
         body: JSON.stringify({
           type: certType,
-          formData,
+          formData: {
+            ...formData,
+            contactNumber: phMobileDigits(formData.contactNumber),
+          },
         }),
       });
 
@@ -880,16 +888,12 @@ export default function BarangayClearanceModal({
                           <label htmlFor="bc-contact" className="block text-sm font-semibold text-gray-800 mb-1.5">
                             {t.mobileLabel} <span className="text-red-600">*</span>
                           </label>
-                          <div className="relative">
-                            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                            <input
+                          <div>
+                            <MobileNumberInput
                               id="bc-contact"
-                              type="tel"
-                              name="contactNumber"
                               value={formData.contactNumber}
                               onChange={handleInputChange}
-                              placeholder="09XX XXX XXXX"
-                              className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg text-[15px] text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-offset-0 ${errors.contactNumber ? "border-red-400 focus:ring-red-100" : "border-gray-300 focus:ring-gray-200"}`}
+                              error={errors.contactNumber}
                             />
                           </div>
                           {errors.contactNumber ? (
@@ -1256,7 +1260,7 @@ export default function BarangayClearanceModal({
                         }
                         if (currentStep === 2) {
                           const stepErrors = {};
-                          if (!formData.contactNumber) {
+                          if (!isValidPhMobile(formData.contactNumber)) {
                             stepErrors.contactNumber = true;
                           }
                           if (
