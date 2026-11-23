@@ -255,7 +255,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${esc(docTitle)} — ${entryNo}</title>
+    <title>${embedded ? "" : `${esc(docTitle)} — ${entryNo}`}</title>
     <link rel="stylesheet" href="${CERTIFICATE_GOOGLE_FONTS_HREF}" />
     <style>
       *, *::before, *::after { box-sizing: border-box; }
@@ -324,10 +324,11 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         background: #fff;
         padding: ${isSummons ? "0" : "0.45in 0.75in 0.45in 0.75in"};
         box-shadow: ${embedded ? "none" : "0 8px 32px rgba(0,0,0,.12)"};
-        min-height: ${isLegal ? "14in" : "11in"};
+        min-height: 14in;
         display: flex;
         flex-direction: column;
         box-sizing: border-box;
+        text-transform: uppercase;
       }
       .page-body {
         flex: 1 0 auto;
@@ -462,17 +463,17 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         width: 48%;
       }
       .kp-case-no-line {
-        font-size: 11pt;
+        font-size: 10pt;
         white-space: nowrap;
         text-align: right;
       }
       .kp-case-num-slot {
         display: inline-block;
-        min-width: 120px;
+        min-width: 96px;
         border-bottom: 1.5px solid #000;
         text-align: center;
         font-weight: bold;
-        font-size: 10.5pt;
+        font-size: 10pt;
         line-height: 1.2;
         padding: 0 6px 3px 6px;
         box-sizing: border-box;
@@ -870,27 +871,37 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         text-align: center;
       }
 
+      .kp-print-bottom-spacer {
+        height: 0;
+      }
+
       @media print {
-        body { background: #fff; padding: 0; }
+        body { background: #fff; padding: 0; margin: 0; }
         .toolbar { display: none !important; }
         .page {
           box-shadow: none;
-          width: 8.5in;
-          max-width: 8.5in;
-          min-height: 0;
+          width: 8.5in !important;
+          max-width: 8.5in !important;
+          min-height: 14in !important;
           height: auto !important;
-          padding: 0.35in 0.65in 0.35in 0.65in !important;
-          margin: 0;
+          padding: 0 0.65in !important;
+          margin: 0 !important;
         }
         .page-body.kp-sheet-body {
-          padding-top: 0 !important;
-          padding-bottom: 24px !important;
+          padding: 0 !important;
         }
         .kp-print-layout-table > thead {
           display: table-header-group !important;
         }
+        .kp-print-layout-table > tfoot {
+          display: table-footer-group !important;
+        }
         .print-sheet-header {
           position: static !important;
+          padding-top: 0.45in !important;
+        }
+        .kp-print-bottom-spacer {
+          height: 0.45in !important;
         }
         .print-sheet-footer {
           position: static !important;
@@ -912,7 +923,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         }
       }
       @page {
-        size: legal portrait;
+        size: 8.5in 14in;
         margin: 0;
       }
     </style>
@@ -1117,6 +1128,11 @@ export function buildBlotterDocumentHtml(report, options = {}) {
             </td>
           </tr>
         </tbody>
+        <tfoot>
+          <tr>
+            <td><div class="kp-print-bottom-spacer"></div></td>
+          </tr>
+        </tfoot>
       </table>
       <div class="print-sheet-footer" style="height:0;min-height:0;margin:0;padding:0;"></div>
       ` : `
@@ -1258,6 +1274,11 @@ export function buildBlotterDocumentHtml(report, options = {}) {
             </td>
           </tr>
         </tbody>
+        <tfoot>
+          <tr>
+            <td><div class="kp-print-bottom-spacer"></div></td>
+          </tr>
+        </tfoot>
       </table>
 
       <div class="print-sheet-footer" style="height:0;min-height:0;margin:0;padding:0;"></div>
@@ -1351,7 +1372,7 @@ export function openBlotterDocument(report, { preview = false, officials } = {})
   return { ok: true };
 }
 
-const LETTER_PAGE_MM = { width: 215.9, height: 279.4 };
+const LEGAL_PAGE_MM = { width: 215.9, height: 355.6 };
 
 function blotterPdfFilename(report, variant = BLOTTER_DOC_VARIANT.BLOTTER) {
   const ref = `BL-${String(report?.id || "").substring(0, 8).toUpperCase()}`;
@@ -1415,7 +1436,7 @@ function addCanvasRegionToPdf(pdf, canvas, sx, sy, sw, sh, xMm, yMm, wMm, hMm) {
 }
 
 /**
- * Render the blotter HTML to a US Letter PDF and trigger browser download.
+ * Render the blotter HTML to a fixed US Legal (8.5in x 14in) PDF and trigger browser download.
  */
 export async function downloadBlotterDocumentPdf(report, { officials, variant } = {}) {
   if (typeof document === "undefined") {
@@ -1424,7 +1445,12 @@ export async function downloadBlotterDocumentPdf(report, { officials, variant } 
 
   const docVariant = normalizeBlotterDocVariant(variant, report);
   const isLegal = true;
-  const pdfSpec = { format: "legal", width: 215.9, height: 355.6, iframeH: 1344 };
+  const pdfSpec = {
+    format: [LEGAL_PAGE_MM.width, LEGAL_PAGE_MM.height],
+    width: LEGAL_PAGE_MM.width,
+    height: LEGAL_PAGE_MM.height,
+    iframeH: 1344,
+  };
 
   const html = buildBlotterDocumentHtml(report, {
     autoPrint: false,
@@ -1574,7 +1600,7 @@ export async function downloadBlotterDocumentPdf(report, { officials, variant } 
   const totalPages = slices.length;
 
   for (let pageIndex = 0; pageIndex < totalPages; pageIndex += 1) {
-    if (pageIndex > 0) pdf.addPage();
+    if (pageIndex > 0) pdf.addPage(pdfSpec.format, "portrait");
 
     // RETAIN HEADER ON EVERY PAGE with proper margins
     if (headerHmm > 0 && headerImg && headerImg.startsWith("data:image/png;base64,")) {

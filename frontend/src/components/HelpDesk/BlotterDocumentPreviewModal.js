@@ -7,8 +7,9 @@ import {
 } from "@/lib/blotterDocument";
 import { isBlotterVerified } from "@/lib/blotterVerify";
 
-/** US Letter width at 96 CSS px/in — matches `.page { width: 8.5in }`. */
-const LETTER_PAGE_PX = 816;
+/** US Legal dimensions at 96 CSS px/in — matches `.page { width: 8.5in; min-height: 14in }`. */
+const LEGAL_PAGE_WIDTH_PX = 816;
+const LEGAL_PAGE_HEIGHT_PX = 1344;
 
 function waitForPreviewReady(doc) {
   if (!doc) return Promise.resolve();
@@ -52,10 +53,11 @@ export default function BlotterDocumentPreviewModal({
     if (!iframe || !viewport || !page) return;
 
     const available = Math.max(viewport.clientWidth - 4, 280);
-    const scale = Math.min(1, available / LETTER_PAGE_PX);
+    const scale = Math.min(1, available / LEGAL_PAGE_WIDTH_PX);
 
-    page.style.width = `${LETTER_PAGE_PX}px`;
-    page.style.maxWidth = `${LETTER_PAGE_PX}px`;
+    page.style.width = `${LEGAL_PAGE_WIDTH_PX}px`;
+    page.style.maxWidth = `${LEGAL_PAGE_WIDTH_PX}px`;
+    page.style.minHeight = `${LEGAL_PAGE_HEIGHT_PX}px`;
     page.style.transform = scale < 1 ? `scale(${scale})` : "none";
     page.style.transformOrigin = "top center";
     page.style.marginBottom =
@@ -63,7 +65,7 @@ export default function BlotterDocumentPreviewModal({
 
     const visualHeight = Math.ceil(page.offsetHeight * scale);
     iframe.style.height = `${visualHeight}px`;
-    iframe.style.width = `${Math.ceil(LETTER_PAGE_PX * scale)}px`;
+    iframe.style.width = `${Math.ceil(LEGAL_PAGE_WIDTH_PX * scale)}px`;
     iframe.style.maxWidth = "100%";
   }, []);
 
@@ -178,7 +180,12 @@ export default function BlotterDocumentPreviewModal({
           </button>
         </div>
       ) : null}
-      <p className="text-xs text-gray-500 mb-2">{variantLabel}</p>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <p className="text-xs text-gray-500">{variantLabel}</p>
+        <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+          Legal (8.5&quot; &times; 14&quot;)
+        </span>
+      </div>
       <div
         ref={viewportRef}
         className="w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg bg-slate-100/90 border border-gray-200 max-h-[min(68vh,820px)] py-3 px-2 sm:py-4 sm:px-3"
