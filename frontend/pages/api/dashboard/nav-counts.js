@@ -33,6 +33,9 @@ const OPEN_REQUEST_STATUSES = [
 const ESUMBONG_OPEN = ["pending", "under_review"];
 const ASSISTANCE_OPEN = ["pending", "in_progress"];
 
+const NAV_COUNTS_CACHE_TTL_MS = 15_000;
+const navCountsCache = new Map();
+
 async function countKapchatUnread(tenantId) {
   const { count, error } = await supabase
     .from("kapchat_messages")
@@ -70,10 +73,15 @@ export default async function handler(req, res) {
   }
 
   const userId = String(user._id || user.id || "");
+  const cacheKey = `${tenantId}:${userId}`;
+  const cached = navCountsCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    res.setHeader("Cache-Control", "private, max-age=30");
+    return res.status(200).json({ success: true, data: cached.data });
+  }
 
   try {
     const [
-      pendingRes,
       esumbongRes,
       assistanceRes,
       kapchatUnread,
@@ -83,13 +91,7 @@ export default async function handler(req, res) {
       pendingAssignRes,
       myAssignRes,
       openCertsRes,
-      pickupCertsRes,
     ] = await Promise.all([
-      supabase
-        .from("certificate_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenantId)
-        .in("status", OPEN_REQUEST_STATUSES),
       supabase
         .from("blotter_reports")
         .select("id", { count: "exact", head: true })
@@ -129,19 +131,19 @@ export default async function handler(req, res) {
         .select("id, status, certificate_type")
         .eq("tenant_id", tenantId)
         .in("status", OPEN_REQUEST_STATUSES),
-      supabase
-        .from("certificate_requests")
-        .select("id, status, certificate_type")
-        .eq("tenant_id", tenantId)
-        .in("status", ["ready", "ready_for_pickup", "oic_review"]),
     ]);
 
-    if (pendingRes.error) {
+    if (openCertsRes.error) {
       return res.status(400).json({
         success: false,
         message: "Failed to fetch request counts",
       });
     }
+
+    const openCertificates = openCertsRes.data || [];
+    const pickupCerts = openCertificates.filter((c) =>
+      ["ready", "ready_for_pickup", "oic_review"].includes(c.status),
+    );
 
     const wfMap = buildWorkflowMapFromConfigRows(wfConfigsRes.data || []);
     const releasingStepByType = buildReleasingStepByType(
@@ -161,7 +163,6 @@ export default async function handler(req, res) {
         pendingAssignmentsByRequest[rid] = row;
       }
     }
-    const pickupCerts = pickupCertsRes.data || [];
     let releasingAssignmentsByRequestId = {};
 
     if (pickupCerts.length > 0) {
@@ -207,21 +208,28 @@ export default async function handler(req, res) {
     const kapchat = includeKapchat ? kapchatUnread : 0;
     const helpDeskTotal = esumbong + assistance + kapchat;
 
-    res.setHeader("Cache-Control", "private, max-age=120");
+    const payloadData = {
+      pendingRequests: openCertificates.length,
+      certificateRequests: staffCounts.certificateRequests,
+      pickupManagement: staffCounts.pickupManagement,
+      helpDesk: {
+        esumbong,
+        assistance,
+        kapchat,
+        total: helpDeskTotal,
+      },
+    };
+
+    navCountsCache.set(cacheKey, {
+      data: payloadData,
+      expires: Date.now() + NAV_COUNTS_CACHE_TTL_MS,
+    });
+
+    res.setHeader("Cache-Control", "private, max-age=30");
 
     return res.status(200).json({
       success: true,
-      data: {
-        pendingRequests: pendingRes.count ?? 0,
-        certificateRequests: staffCounts.certificateRequests,
-        pickupManagement: staffCounts.pickupManagement,
-        helpDesk: {
-          esumbong,
-          assistance,
-          kapchat,
-          total: helpDeskTotal,
-        },
-      },
+      data: payloadData,
     });
   } catch (err) {
     console.error("[nav-counts]", err);

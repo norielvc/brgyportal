@@ -270,7 +270,11 @@ export default function Sidebar({
   const [pickupManagementCount, setPickupManagementCount] = useState(0);
 
   useEffect(() => {
-    const fetchNavBadges = async () => {
+    let lastNavFetchAt = 0;
+    const fetchNavBadges = async (force = false) => {
+      const now = Date.now();
+      if (!force && now - lastNavFetchAt < 15000) return;
+      lastNavFetchAt = now;
       try {
         const token = getAuthToken();
         if (!token) return;
@@ -310,11 +314,10 @@ export default function Sidebar({
 
     const onVisibility = () => {
       if (typeof document !== "undefined" && !document.hidden) {
-        fetchNavBadges();
+        fetchNavBadges(false);
       }
     };
-    const onRefresh = () => fetchNavBadges();
-    const onRouteChange = () => fetchNavBadges();
+    const onRefresh = () => fetchNavBadges(true);
     const onDirectCount = (e) => {
       if (typeof e?.detail?.count === "number") {
         setCertificateRequestsCount(e.detail.count);
@@ -331,7 +334,6 @@ export default function Sidebar({
     window.addEventListener("help-desk-nav-refresh", onRefresh);
     window.addEventListener("certificate-requests-count", onDirectCount);
     window.addEventListener("pickup-management-count", onPickupDirectCount);
-    router.events?.on("routeChangeComplete", onRouteChange);
 
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
@@ -339,7 +341,6 @@ export default function Sidebar({
       window.removeEventListener("help-desk-nav-refresh", onRefresh);
       window.removeEventListener("certificate-requests-count", onDirectCount);
       window.removeEventListener("pickup-management-count", onPickupDirectCount);
-      router.events?.off("routeChangeComplete", onRouteChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh badges on route path change only
   }, [router.pathname]);
@@ -362,6 +363,14 @@ export default function Sidebar({
   useEffect(() => {
     const fetchSubscription = async () => {
       try {
+        const cachedRaw = sessionStorage.getItem("sidebarSubscriptionCache");
+        if (cachedRaw) {
+          const parsed = JSON.parse(cachedRaw);
+          if (parsed?.data && Date.now() - (parsed.at || 0) < 5 * 60 * 1000) {
+            setSubscription(parsed.data);
+            return;
+          }
+        }
         const token = localStorage.getItem("token");
         const res = await fetch("/api/subscription/usage", {
           headers: { Authorization: `Bearer ${token}` },
@@ -369,6 +378,10 @@ export default function Sidebar({
         const json = await res.json();
         if (json.success) {
           setSubscription(json.data);
+          sessionStorage.setItem(
+            "sidebarSubscriptionCache",
+            JSON.stringify({ data: json.data, at: Date.now() }),
+          );
         }
       } catch (e) {
         console.error("Failed to fetch subscription:", e);

@@ -19,13 +19,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Fetch all pickup records (certificates that have been released)
+    // Fetch pickup records (omit heavy `details` JSONB blob to save Supabase Disk IO)
     const { data: pickupRecords, error } = await supabase
       .from('certificate_requests')
-      .select('*')
+      .select(
+        'id, tenant_id, reference_number, certificate_type, status, full_name, email, contact_number, address, purpose, pickup_method, date_released, created_at, updated_at, resident_id',
+      )
       .eq('tenant_id', tenantId)
       .eq('status', 'released')
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .limit(300);
 
     if (error) {
       console.error('Error fetching pickup records:', error);

@@ -9,6 +9,47 @@ import {
   normalizeEcCardNumber,
 } from "../../../src/lib/ecCardResidentSync";
 import { EC_CARD_NO_EXPIRY_DATE } from "../../../src/lib/ecCard";
+
+const ID_STATS_CACHE_TTL_MS = 30_000;
+const idStatsCache = new Map();
+
+async function getBarangayIdStats(tenantId) {
+  const cached = idStatsCache.get(tenantId);
+  if (cached && cached.expires > Date.now()) {
+    return cached.stats;
+  }
+  const [
+    { count: totalCount },
+    { count: activeCount },
+    { count: expiredCount },
+    { count: revokedCount },
+    { count: householdCount },
+    { count: familyCount },
+    { count: printedCount },
+    { count: notPrintedCount },
+  ] = await Promise.all([
+    supabase.from("barangay_ids").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+    supabase.from("barangay_ids").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "active"),
+    supabase.from("barangay_ids").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "expired"),
+    supabase.from("barangay_ids").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "revoked"),
+    supabase.from("barangay_ids").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).not("id_number", "like", "%M-%"),
+    supabase.from("barangay_ids").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).like("id_number", "%M-%"),
+    supabase.from("barangay_ids").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_printed", true),
+    supabase.from("barangay_ids").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).or("is_printed.eq.false,is_printed.is.null"),
+  ]);
+  const stats = {
+    total: totalCount || 0,
+    active: activeCount || 0,
+    expired: expiredCount || 0,
+    revoked: revokedCount || 0,
+    householdHead: householdCount || 0,
+    familyMember: familyCount || 0,
+    printed: printedCount || 0,
+    notPrinted: notPrintedCount || 0,
+  };
+  idStatsCache.set(tenantId, { stats, expires: Date.now() + ID_STATS_CACHE_TTL_MS });
+  return stats;
+}
 export default async function handler(req, res) {
   const userRes = await authenticateToken(req, res);
   if (!userRes) return;
@@ -24,10 +65,10 @@ export default async function handler(req, res) {
       const { search = "", status = "", printed_status = "", purok = "", limit = 50, page = 1 } = req.query;
       const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
-      // Fetch all IDs for tenant
+      // Fetch IDs for tenant with slim resident join (avoids reading full resident + census_extras JSONB)
       let query = supabase
         .from("barangay_ids")
-        .select("*, resident:residents(*)", { count: "exact" })
+        .select("*, resident:residents(id, date_of_birth, age)", { count: "exact" })
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
@@ -87,26 +128,9 @@ export default async function handler(req, res) {
         throw error;
       }
 
-      // Calculate exact stats using count queries to bypass 1000 row limit
-      const [
-        { count: totalCount }, 
-        { count: activeCount }, 
-        { count: expiredCount }, 
-        { count: revokedCount },
-        { count: householdCount },
-        { count: familyCount },
-        { count: printedCount },
-        { count: notPrintedCount }
-      ] = await Promise.all([
-        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId),
-        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "active"),
-        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "expired"),
-        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "revoked"),
-        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).not("id_number", "like", "%M-%"),
-        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).like("id_number", "%M-%"),
-        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_printed", true),
-        supabase.from("barangay_ids").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).or("is_printed.eq.false,is_printed.is.null"),
-      ]);
+      // Calculate exact stats (cached 30s per tenant to avoid 8 count queries on every search keystroke)
+      const statsObj = await getBarangayIdStats(tenantId);
+      const totalCount = statsObj.total;
 
       // Enrich data with fallback to joined resident date_of_birth
       const enrichedData = (data || []).map((item) => {
@@ -143,16 +167,7 @@ export default async function handler(req, res) {
         page: parseInt(page, 10),
         limit: parseInt(limit, 10),
         totalPages: Math.ceil((count || 0) / parseInt(limit, 10)),
-        stats: {
-          total: totalCount || 0,
-          active: activeCount || 0,
-          expired: expiredCount || 0,
-          revoked: revokedCount || 0,
-          householdHead: householdCount || 0,
-          familyMember: familyCount || 0,
-          printed: printedCount || 0,
-          notPrinted: notPrintedCount || 0,
-        },
+        stats: statsObj,
         next_ec_number: `H${String((totalCount || 0) + 1).padStart(5, "0")}-F00001`,
       });
     } catch (error) {
