@@ -143,7 +143,7 @@ function buildPartiesSectionHtml(report) {
         <div class="parties">
           <div class="party-box">
             <p class="party-label">Nagsusumbong · Complainant</p>
-            <p class="party-name">${esc(report?.complainant_name || "—")}</p>
+            <p class="party-name">${esc(String(report?.complainant_name || "—").toUpperCase())}</p>
             <table class="kv-table">
               <tr><th>Cellphone</th><td>${esc(report?.contact_number || "—")}</td></tr>
               <tr><th>Email</th><td>${esc(report?.email || "—")}</td></tr>
@@ -151,7 +151,7 @@ function buildPartiesSectionHtml(report) {
           </div>
           <div class="party-box">
             <p class="party-label">Inirereklamo · Respondent</p>
-            <p class="party-name">${esc(report?.respondent_name || "—")}</p>
+            <p class="party-name">${esc(String(report?.respondent_name || "—").toUpperCase())}</p>
             <table class="kv-table">
               <tr><th>Petsa ng insidente</th><td>${esc(report?.incident_date || "—")}</td></tr>
               <tr><th>Oras</th><td>${formatIncidentTime(report?.incident_time)}</td></tr>
@@ -228,22 +228,27 @@ export function buildBlotterDocumentHtml(report, options = {}) {
     : "";
 
   const usapingNumberDisplay = report?.usaping_barangay_number ? esc(report.usaping_barangay_number) : "";
+  const complainantNameUpper = String(report?.complainant_name || "").trim().toUpperCase();
+  const respondentNameUpper = String(report?.respondent_name || "").trim().toUpperCase();
+  const detailsUpper = String(report?.details || "").trim().toUpperCase();
   const rawPurpose = report?.purpose
-    ? String(report.purpose).trim()
+    ? String(report.purpose).trim().toUpperCase()
     : (report?.incident_date ? `REKLAMO SA INSIDENTE NOONG ${report.incident_date}` : "");
   const { line1: casePurpose1, line2: casePurpose2 } = formatPurposeLines(rawPurpose);
 
-  const complainantAddress =
+  const complainantAddress = String(
     report?.complainant_address ||
     report?.complainant_resident_address ||
     report?.complainant_resident?.address ||
     report?.tirahan_nagsusumbong ||
-    "Barangay Iba O' Este, Calumpit, Bulacan";
-  const respondentAddress =
+    "Barangay Iba O' Este, Calumpit, Bulacan"
+  ).toUpperCase();
+  const respondentAddress = String(
     report?.respondent_address ||
     report?.tirahan_ipinagsusumbong ||
     report?.respondent_tirahan ||
-    "Barangay Iba O' Este, Calumpit, Bulacan";
+    "Barangay Iba O' Este, Calumpit, Bulacan"
+  ).toUpperCase();
 
   return `<!DOCTYPE html>
 <html lang="tl" class="${embedded ? "embedded-preview" : ""}">
@@ -977,7 +982,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                       </thead>
                       <tbody>
                         <tr>
-                          <td class="patawag-name-cell">${esc(report?.complainant_name || "—")}</td>
+                          <td class="patawag-name-cell">${esc(complainantNameUpper || "—")}</td>
                           <td class="patawag-addr-cell">${esc(complainantAddress)}</td>
                         </tr>
                       </tbody>
@@ -995,7 +1000,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                       </thead>
                       <tbody>
                         <tr>
-                          <td class="patawag-name-cell">${esc(report?.respondent_name || "—")}</td>
+                          <td class="patawag-name-cell">${esc(respondentNameUpper || "—")}</td>
                           <td class="patawag-addr-cell">${esc(respondentAddress)}</td>
                         </tr>
                       </tbody>
@@ -1150,7 +1155,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                   <div class="kp-parties-row-item kp-row-top">
                     <div class="kp-parties-left">
                       <div class="kp-name-field">
-                        ${esc(report?.complainant_name || "")}${report?.complainant_name ? "," : "&nbsp;"}
+                        ${esc(complainantNameUpper || "")}${complainantNameUpper ? "," : "&nbsp;"}
                       </div>
                       <div class="kp-parties-label">Nagsusumbong,</div>
                     </div>
@@ -1175,7 +1180,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                   <div class="kp-parties-row-item kp-row-bot">
                     <div class="kp-parties-left">
                       <div class="kp-name-field">
-                        ${esc(report?.respondent_name || "")}${report?.respondent_name ? "," : "&nbsp;"}
+                        ${esc(respondentNameUpper || "")}${respondentNameUpper ? "," : "&nbsp;"}
                       </div>
                       <div class="kp-parties-label">Ipinagreklamo</div>
                     </div>
@@ -1200,7 +1205,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
 
                 <!-- Ruled Narrative Lines -->
                 <div class="kp-narrative-lined">
-                  <div class="kp-narrative-text">${esc(report?.details || "Walang detalye na naitala.")}</div>
+                  <div class="kp-narrative-text">${esc(detailsUpper || "WALANG DETALYE NA NAITALA.")}</div>
                 </div>
 
                 <!-- Closing Request Statement -->
@@ -1221,7 +1226,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                 <div class="kp-parties-signatures">
                   <div class="kp-party-sig">
                     <div class="kp-sig-underline-box">
-                      ${esc(report?.complainant_name || "") || "&nbsp;"}
+                      ${esc(complainantNameUpper || "") || "&nbsp;"}
                     </div>
                     <div class="kp-sig-caption">Nagsusumbong</div>
                   </div>

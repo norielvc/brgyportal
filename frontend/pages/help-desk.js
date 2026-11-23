@@ -741,7 +741,7 @@ export default function HelpDesk() {
       setPurposeDraft("");
       return;
     }
-    setPurposeDraft(selectedItem.purpose || "");
+    setPurposeDraft(String(selectedItem.purpose || "").toUpperCase());
     if (!selectedItem.petsa_ng_paghaharap) {
       setPetsaDraft("");
       setPetsaTimeDraft("");
@@ -982,7 +982,7 @@ export default function HelpDesk() {
     setIsVerifyingBlotter(true);
     try {
       const res = await blotterAPI.verifyReport(selectedItem.id, {
-        purpose: purposeDraft.trim(),
+        purpose: purposeDraft.trim().toUpperCase(),
       });
       const report = res.report;
       setItems((prev) =>
@@ -1015,7 +1015,7 @@ export default function HelpDesk() {
     try {
       const res = await blotterAPI.updatePurpose(
         selectedItem.id,
-        purposeDraft.trim(),
+        purposeDraft.trim().toUpperCase(),
       );
       const report = res.report;
       setItems((prev) =>
@@ -1068,14 +1068,14 @@ export default function HelpDesk() {
   const handleStartEditEsumbong = (item = selectedItem) => {
     if (!item) return;
     setEsumbongEditDraft({
-      complainant_name: item.complainant_name || "",
-      respondent_name: item.respondent_name || "",
-      purpose: item.purpose || "",
+      complainant_name: String(item.complainant_name || "").toUpperCase(),
+      respondent_name: String(item.respondent_name || "").toUpperCase(),
+      purpose: String(item.purpose || "").toUpperCase(),
       contact_number: item.contact_number || "",
       email: item.email || "",
       incident_date: item.incident_date ? String(item.incident_date).slice(0, 10) : "",
       incident_time: item.incident_time ? String(item.incident_time).slice(0, 5) : "",
-      details: item.details || "",
+      details: String(item.details || "").toUpperCase(),
     });
     setIsEditingEsumbong(true);
   };
@@ -1113,10 +1113,17 @@ export default function HelpDesk() {
 
     try {
       setIsSavingEsumbong(true);
-      const res = await blotterAPI.updateReport(selectedItem.id, esumbongEditDraft);
+      const uppercasedDraft = {
+        ...esumbongEditDraft,
+        complainant_name: String(esumbongEditDraft.complainant_name || "").toUpperCase(),
+        respondent_name: String(esumbongEditDraft.respondent_name || "").toUpperCase(),
+        purpose: String(esumbongEditDraft.purpose || "").toUpperCase(),
+        details: String(esumbongEditDraft.details || "").toUpperCase(),
+      };
+      const res = await blotterAPI.updateReport(selectedItem.id, uppercasedDraft);
       if (res?.success) {
         toast.success(res.message || "Na-update ang E-Sumbong report.");
-        const updated = res.report || { ...selectedItem, ...esumbongEditDraft };
+        const updated = res.report || { ...selectedItem, ...uppercasedDraft };
         setSelectedItem(updated);
         setItems((prev) =>
           prev.map((it) => (it.id === selectedItem.id ? { ...it, ...updated } : it))
@@ -1860,7 +1867,7 @@ export default function HelpDesk() {
                                 <div className="w-6 h-6 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-[10px] shrink-0">
                                   {(item.complainant_name || "C")[0].toUpperCase()}
                                 </div>
-                                <span className="truncate max-w-[160px]">{item.complainant_name}</span>
+                                <span className="truncate max-w-[160px] uppercase">{item.complainant_name}</span>
                                 {item.intake_source === "walk_in" && (
                                   <span className="shrink-0 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide bg-amber-100 text-amber-900 border border-amber-200">
                                     Walk-in
@@ -1869,10 +1876,10 @@ export default function HelpDesk() {
                               </div>
                             </td>
                             <td className="py-1.5 px-2.5 font-bold text-slate-700 text-[11px]">
-                              <span className="truncate max-w-[140px] block">{item.respondent_name}</span>
+                              <span className="truncate max-w-[140px] block uppercase">{item.respondent_name}</span>
                             </td>
                             <td className="py-1.5 px-2.5 text-gray-600 max-w-xs text-[11px]">
-                              <p className="truncate font-medium">{item.details}</p>
+                              <p className="truncate font-medium uppercase">{item.details}</p>
                               {item.incident_date && (
                                 <p className="text-[10px] text-gray-400 font-mono mt-0.5">
                                   Incident: {item.incident_date} {item.incident_time || ""}
@@ -2073,7 +2080,7 @@ export default function HelpDesk() {
                             : (item.sender_name || "K")[0].toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-gray-900 leading-snug">
+                          <p className={`text-sm font-bold text-gray-900 leading-snug ${activeTab === "esumbong" ? "uppercase" : ""}`}>
                             {activeTab === "esumbong"
                               ? item.complainant_name
                               : activeTab === "assistance"
@@ -2096,11 +2103,11 @@ export default function HelpDesk() {
                     {/* Content snippet */}
                     <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-700 font-medium leading-relaxed">
                       {activeTab === "esumbong" && (
-                        <p className="text-[11px] font-bold text-red-600 mb-1">
+                        <p className="text-[11px] font-bold text-red-600 mb-1 uppercase">
                           VS: {item.respondent_name || "(No respondent specified)"}
                         </p>
                       )}
-                      <p className="line-clamp-2">
+                      <p className={`line-clamp-2 ${activeTab === "esumbong" ? "uppercase" : ""}`}>
                         {activeTab === "esumbong" ? item.details : item.message}
                       </p>
                     </div>
@@ -2384,10 +2391,10 @@ export default function HelpDesk() {
                             id="verify-purpose-input"
                             type="text"
                             required
-                            placeholder="Halimbawa: Paninirang puri, Alitan sa bakod, Pananakit..."
+                            placeholder="HALIMBAWA: PANINIRANG PURI, ALITAN SA BAKOD, PANANAKIT..."
                             value={purposeDraft}
-                            onChange={(e) => setPurposeDraft(e.target.value)}
-                            className="w-full px-3.5 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] shadow-xs outline-none transition-all"
+                            onChange={(e) => setPurposeDraft(e.target.value.toUpperCase())}
+                            className="w-full px-3.5 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] shadow-xs outline-none transition-all uppercase"
                           />
                         </div>
                       </div>
@@ -2512,11 +2519,11 @@ export default function HelpDesk() {
                               id="purpose-field"
                               type="text"
                               required
-                              placeholder="Halimbawa: Paninirang puri, Pananakit..."
+                              placeholder="HALIMBAWA: PANINIRANG PURI, PANANAKIT..."
                               value={purposeDraft}
-                              onChange={(e) => setPurposeDraft(e.target.value)}
+                              onChange={(e) => setPurposeDraft(e.target.value.toUpperCase())}
                               disabled={isSavingPurpose}
-                              className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-medium text-slate-900 bg-slate-50/70 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50 transition-all outline-none"
+                              className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-medium text-slate-900 bg-slate-50/70 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] disabled:opacity-50 transition-all outline-none uppercase"
                             />
                             <button
                               type="button"
@@ -2601,11 +2608,11 @@ export default function HelpDesk() {
                               onChange={(e) =>
                                 setEsumbongEditDraft((d) => ({
                                   ...d,
-                                  complainant_name: e.target.value,
+                                  complainant_name: e.target.value.toUpperCase(),
                                 }))
                               }
-                              className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
-                              placeholder="Pangalan ng nagsusumbong"
+                              className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase"
+                              placeholder="PANGALAN NG NAGSUSUMBONG"
                             />
                           </div>
                           <div>
@@ -2618,10 +2625,10 @@ export default function HelpDesk() {
                               onChange={(e) =>
                                 setEsumbongEditDraft((d) => ({
                                   ...d,
-                                  contact_number: e.target.value,
+                                  contact_number: e.target.value.toUpperCase(),
                                 }))
                               }
-                              className="w-full px-3 py-1.5 text-xs font-mono bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
+                              className="w-full px-3 py-1.5 text-xs font-mono bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase"
                               placeholder="09XXXXXXXXX"
                             />
                           </div>
@@ -2659,11 +2666,11 @@ export default function HelpDesk() {
                               onChange={(e) =>
                                 setEsumbongEditDraft((d) => ({
                                   ...d,
-                                  respondent_name: e.target.value,
+                                  respondent_name: e.target.value.toUpperCase(),
                                 }))
                               }
-                              className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none"
-                              placeholder="Pangalan ng inirereklamo"
+                              className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase"
+                              placeholder="PANGALAN NG INIREREKLAMO"
                             />
                           </div>
                           <div>
@@ -2714,15 +2721,15 @@ export default function HelpDesk() {
                           onChange={(e) =>
                             setEsumbongEditDraft((d) => ({
                               ...d,
-                              purpose: e.target.value,
+                              purpose: e.target.value.toUpperCase(),
                             }))
                           }
-                          className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none ${
+                          className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase ${
                             !esumbongEditDraft.purpose?.trim()
                               ? "border-amber-300"
                               : "border-gray-300"
                           }`}
-                          placeholder="Halimbawa: Paninirang puri, Alitan sa bakod, Pananakit..."
+                          placeholder="HALIMBAWA: PANINIRANG PURI, ALITAN SA BAKOD, PANANAKIT..."
                         />
                       </div>
 
@@ -2737,11 +2744,11 @@ export default function HelpDesk() {
                           onChange={(e) =>
                             setEsumbongEditDraft((d) => ({
                               ...d,
-                              details: e.target.value,
+                              details: e.target.value.toUpperCase(),
                             }))
                           }
-                          className="w-full p-3.5 text-xs sm:text-sm text-gray-800 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none leading-relaxed"
-                          placeholder="Isalaysay ang buong detalye ng sumbong..."
+                          className="w-full p-3.5 text-xs sm:text-sm text-gray-800 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none leading-relaxed uppercase"
+                          placeholder="ISALAYSAY ANG BUONG DETALYE NG SUMBONG..."
                         />
                       </div>
 
@@ -2786,7 +2793,7 @@ export default function HelpDesk() {
                               </span>
                             )}
                           </div>
-                          <p className="text-sm font-bold text-slate-900 leading-snug">
+                          <p className="text-sm font-bold text-slate-900 leading-snug uppercase">
                             {selectedItem.complainant_name}
                           </p>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 pt-0.5">
@@ -2819,7 +2826,7 @@ export default function HelpDesk() {
                               Inirereklamo (Respondent)
                             </span>
                           </div>
-                          <p className="text-sm font-bold text-slate-900 leading-snug">
+                          <p className="text-sm font-bold text-slate-900 leading-snug uppercase">
                             {selectedItem.respondent_name}
                           </p>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 pt-0.5">
@@ -2848,8 +2855,8 @@ export default function HelpDesk() {
                             Buong Salaysay
                           </span>
                         </div>
-                        <div className="rounded-lg bg-slate-50/70 p-4 text-xs sm:text-sm text-slate-800 leading-relaxed max-h-56 overflow-y-auto whitespace-pre-wrap [overflow-wrap:anywhere] border border-slate-100">
-                          {selectedItem.details || "Walang naitalang detalye."}
+                        <div className="rounded-lg bg-slate-50/70 p-4 text-xs sm:text-sm text-slate-800 leading-relaxed max-h-56 overflow-y-auto whitespace-pre-wrap [overflow-wrap:anywhere] border border-slate-100 uppercase">
+                          {selectedItem.details || "WALANG NAITALANG DETALYE."}
                         </div>
                       </div>
                     </>

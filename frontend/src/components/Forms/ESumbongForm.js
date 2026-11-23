@@ -115,7 +115,7 @@ export default function ESumbongForm({
     setForm((prev) => ({
       ...prev,
       complainant_resident_id: resident.id,
-      complainant_name: name,
+      complainant_name: name.toUpperCase(),
       contact_number: resident.contact_number || prev.contact_number,
       email: resident.email || prev.email,
     }));
@@ -181,6 +181,9 @@ export default function ESumbongForm({
     try {
       const payload = {
         ...form,
+        complainant_name: String(form.complainant_name || "").toUpperCase(),
+        respondent_name: String(form.respondent_name || "").toUpperCase(),
+        details: String(form.details || "").toUpperCase(),
         complainant_resident_id: form.complainant_resident_id?.trim() || null,
         intake_source: isStaffWalkIn ? "walk_in" : "portal",
       };
@@ -205,8 +208,14 @@ export default function ESumbongForm({
     }
   };
 
+  const UPPERCASE_FIELDS = new Set(["complainant_name", "respondent_name", "details"]);
+
   const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    const nextValue =
+      UPPERCASE_FIELDS.has(field) && typeof value === "string"
+        ? value.toUpperCase()
+        : value;
+    setForm((prev) => ({ ...prev, [field]: nextValue }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -274,8 +283,8 @@ export default function ESumbongForm({
                     type="text"
                     value={form.complainant_name}
                     onChange={(e) => handleChange("complainant_name", e.target.value)}
-                    placeholder="Full name of complainant"
-                    className={`${inputClass} min-h-[2.5rem] py-2 text-sm font-bold`}
+                    placeholder="FULL NAME OF COMPLAINANT"
+                    className={`${inputClass} min-h-[2.5rem] py-2 text-sm font-bold uppercase`}
                   />
                   {form.complainant_resident_id && form.complainant_name ? (
                     <div className="flex items-center gap-2 text-[10px] font-semibold text-emerald-700">
@@ -365,9 +374,9 @@ export default function ESumbongForm({
                 value={form.respondent_name}
                 onChange={(e) => handleChange("respondent_name", e.target.value)}
                 placeholder={
-                  isStaffWalkIn ? "Name of respondent" : "Ilagay ang pangalan ng inirereklamo"
+                  isStaffWalkIn ? "NAME OF RESPONDENT" : "ILAGAY ANG PANGALAN NG INIREREKLAMO"
                 }
-                className={`${inputClass} ${isStaffWalkIn ? "min-h-[2.5rem] py-2" : "min-h-[2.75rem]"} text-sm`}
+                className={`${inputClass} ${isStaffWalkIn ? "min-h-[2.5rem] py-2" : "min-h-[2.75rem]"} text-sm uppercase`}
               />
               <FieldError message={errors.respondent_name} />
             </div>
@@ -443,7 +452,7 @@ export default function ESumbongForm({
                 rows={4}
                 maxLength={DETAILS_MAX_CHARS}
                 placeholder="Facts, location, witnesses, and other relevant details."
-                className={walkInTextareaClass}
+                className={`${walkInTextareaClass} uppercase`}
                 spellCheck
                 autoComplete="off"
                 aria-describedby="esumbong-details-count"
@@ -490,7 +499,7 @@ export default function ESumbongForm({
                   rows={isPage ? 12 : 5}
                   maxLength={DETAILS_MAX_CHARS}
                   placeholder="Ilarawan ang pangyayari, lugar, petsa/oras kung alam, mga saksi, at iba pang detalye. Puwedeng maging mahaba ang mensahe."
-                  className={isPage ? textareaPageClass : textareaModalClass}
+                  className={`${isPage ? textareaPageClass : textareaModalClass} uppercase`}
                   spellCheck
                   autoComplete="off"
                   aria-describedby="esumbong-details-count"

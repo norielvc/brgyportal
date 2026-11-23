@@ -202,7 +202,7 @@ async function verifyBlotterReport({
       existing.status === "pending" ? "under_review" : existing.status,
   };
   if (purpose !== undefined && typeof purpose === "string" && purpose.trim()) {
-    patch.purpose = purpose.trim();
+    patch.purpose = purpose.trim().toUpperCase();
   }
 
   let { data, error } = await supabaseClient
@@ -372,7 +372,7 @@ export default async function handler(req, res) {
         });
       }
 
-      const detailsText = String(details).trim();
+      const detailsText = String(details).trim().toUpperCase();
       if (detailsText.length > BLOTTER_DETAILS_MAX_CHARS) {
         return res.status(400).json({
           success: false,
@@ -383,8 +383,8 @@ export default async function handler(req, res) {
       const row = {
         tenant_id: tenantId,
         complainant_resident_id: asUuidOrNull(complainant_resident_id),
-        complainant_name: String(complainant_name).trim(),
-        respondent_name: String(respondent_name).trim(),
+        complainant_name: String(complainant_name).trim().toUpperCase(),
+        respondent_name: String(respondent_name).trim().toUpperCase(),
         details: detailsText,
         incident_date: String(incident_date).trim(),
         incident_time: normalizeTime(incident_time),
@@ -479,7 +479,7 @@ export default async function handler(req, res) {
         const user = await assertEsumbongStaffAccess(req, res, tenantId);
         if (!user) return;
 
-        const purposeVal = typeof body.purpose === "string" ? body.purpose.trim() : "";
+        const purposeVal = typeof body.purpose === "string" ? body.purpose.trim().toUpperCase() : "";
         if (!purposeVal) {
           return res.status(400).json({
             success: false,
@@ -525,7 +525,7 @@ export default async function handler(req, res) {
         const user = await assertEsumbongStaffAccess(req, res, tenantId);
         if (!user) return;
 
-        const purposeVal = typeof body.purpose === "string" ? body.purpose.trim() : "";
+        const purposeVal = typeof body.purpose === "string" ? body.purpose.trim().toUpperCase() : "";
         if (!purposeVal) {
           return res.status(400).json({
             success: false,
@@ -607,21 +607,21 @@ export default async function handler(req, res) {
 
         const updateData = {};
         if (body.complainant_name !== undefined) {
-          const val = String(body.complainant_name || "").trim();
+          const val = String(body.complainant_name || "").trim().toUpperCase();
           if (!val) {
             return res.status(400).json({ success: false, message: "Kailangan ang pangalan ng nagsusumbong." });
           }
           updateData.complainant_name = val;
         }
         if (body.respondent_name !== undefined) {
-          const val = String(body.respondent_name || "").trim();
+          const val = String(body.respondent_name || "").trim().toUpperCase();
           if (!val) {
             return res.status(400).json({ success: false, message: "Kailangan ang pangalan ng inirereklamo." });
           }
           updateData.respondent_name = val;
         }
         if (body.details !== undefined) {
-          const val = String(body.details || "").trim();
+          const val = String(body.details || "").trim().toUpperCase();
           if (!val) {
             return res.status(400).json({ success: false, message: "Kailangan ang detalye ng sumbong." });
           }
@@ -655,7 +655,7 @@ export default async function handler(req, res) {
           updateData.email = val || null;
         }
         if (body.purpose !== undefined) {
-          const val = String(body.purpose || "").trim();
+          const val = String(body.purpose || "").trim().toUpperCase();
           if (!val) {
             return res.status(400).json({
               success: false,

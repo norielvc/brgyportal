@@ -31,9 +31,9 @@ router.post('/', async (req, res) => {
         const insertData = {
             tenant_id: tenantId,
             complainant_resident_id: complainant_resident_id || null,
-            complainant_name: complainant_name.trim(),
-            respondent_name: respondent_name.trim(),
-            details: details.trim(),
+            complainant_name: complainant_name.trim().toUpperCase(),
+            respondent_name: respondent_name.trim().toUpperCase(),
+            details: details.trim().toUpperCase(),
             incident_date,
             incident_time: incident_time || null,
             contact_number: contact_number.trim(),
@@ -140,9 +140,9 @@ router.put('/:id', async (req, res) => {
 
         const updateData = {};
         if (status !== undefined) updateData.status = status;
-        if (complainant_name !== undefined) updateData.complainant_name = complainant_name;
-        if (respondent_name !== undefined) updateData.respondent_name = respondent_name;
-        if (details !== undefined) updateData.details = details;
+        if (complainant_name !== undefined) updateData.complainant_name = String(complainant_name).trim().toUpperCase();
+        if (respondent_name !== undefined) updateData.respondent_name = String(respondent_name).trim().toUpperCase();
+        if (details !== undefined) updateData.details = String(details).trim().toUpperCase();
         if (incident_date !== undefined) updateData.incident_date = incident_date;
         if (incident_time !== undefined) updateData.incident_time = incident_time;
         if (contact_number !== undefined) updateData.contact_number = contact_number;
