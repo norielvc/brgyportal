@@ -9,6 +9,7 @@ import {
   getEsumbongSettings,
 } from "./esumbongAccess";
 import { isEmailNotificationsEnabled } from "./requestNotificationHelper";
+import { formatHearingScheduleDisplay } from "./blotterVerify";
 
 function reportRef(report) {
   const id = String(report?.id || "");
@@ -246,4 +247,75 @@ export async function notifyBlotterStatusChange({
   });
 
   return result;
+}
+
+/**
+ * Send email notification to the complainant when their E-Sumbong is verified
+ * and assigned a Usaping Barangay number + hearing schedule.
+ */
+export async function notifyBlotterVerified({ supabase, tenantId, report }) {
+  const enabled = await isEmailNotificationsEnabled(supabase);
+  if (!enabled) {
+    return { success: false, skipped: true, reason: "notifications_disabled" };
+  }
+
+  const email = String(report?.email || "").trim();
+  if (!isValidEmail(email)) {
+    return { success: false, skipped: true, reason: "no_email" };
+  }
+
+  const resolvedTenant = tenantId || report?.tenant_id || "ibaoeste";
+  const profile = getTenantEmailProfile(resolvedTenant);
+  const ref = reportRef(report);
+  const usapingNo = report?.usaping_barangay_number || "—";
+  const hearingSchedule = formatHearingScheduleDisplay(report);
+
+  const html = renderFormalEmailLayout({
+    profile,
+    badgeText: "E-SUMBONG • VERIFIED",
+    accentColor: "#065f46",
+    badgeBg: "#d1fae5",
+    badgeColor: "#065f46",
+    titleEN: "Your E-Sumbong Report Has Been Verified",
+    titleTL: "Na-verify na ang Iyong E-Sumbong",
+    recipientName: report?.complainant_name || "Valued Resident",
+    messageEN:
+      "Your E-Sumbong complaint has been officially verified by the Barangay Office and assigned a Usaping Barangay number. Please take note of your scheduled hearing date (Petsa ng Paghaharap) below and arrive on time at the Barangay Hall.",
+    messageTL:
+      "Opisyal nang na-verify ng Tanggapan ng Barangay ang iyong E-Sumbong at nabigyan ng Usaping Barangay Blg. Pakitandaan ang itinakdang petsa at oras ng paghaharap sa ibaba at magtungo sa Tanggapan ng Barangay sa takdang oras.",
+    detailsRows: [
+      { label: "Reference Number", value: ref, isCode: true },
+      { label: "Usaping Barangay Blg.", value: usapingNo, isCode: true },
+      { label: "Complainant", value: report?.complainant_name || "—" },
+      { label: "Respondent", value: report?.respondent_name || "—" },
+      { label: "Para sa (Purpose)", value: report?.purpose || "—" },
+      { label: "Petsa at Oras ng Paghaharap", value: hearingSchedule || "—" },
+      { label: "Status", value: "Verified / Under Review" },
+    ],
+    ctaLabel: "Visit Barangay Portal",
+    ctaUrl: profile.portalUrl,
+  });
+
+  const text = [
+    `${profile.fromName.toUpperCase()} — E-SUMBONG VERIFIED`,
+    "------------------------------------------------------------",
+    `Dear ${report?.complainant_name || "Valued Resident"},`,
+    "",
+    "Your E-Sumbong report has been verified.",
+    "Opisyal nang na-verify ang iyong E-Sumbong.",
+    "",
+    `- Reference: #${ref}`,
+    `- Usaping Barangay Blg.: ${usapingNo}`,
+    `- Respondent: ${report?.respondent_name || "—"}`,
+    `- Para sa: ${report?.purpose || "—"}`,
+    `- Petsa at Oras ng Paghaharap: ${hearingSchedule || "—"}`,
+  ].join("\n");
+
+  return sendTransactionalEmail({
+    to: email,
+    subject: `E-Sumbong Verified [${usapingNo}] — ${profile.fromName}`,
+    html,
+    text,
+    tenantId: resolvedTenant,
+  });
 }

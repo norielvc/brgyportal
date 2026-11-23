@@ -162,7 +162,9 @@ export default function HelpDesk() {
   const [isEditingEsumbong, setIsEditingEsumbong] = useState(false);
   const [esumbongEditDraft, setEsumbongEditDraft] = useState({
     complainant_name: "",
+    complainant_address: "",
     respondent_name: "",
+    respondent_address: "",
     purpose: "",
     contact_number: "",
     email: "",
@@ -992,7 +994,9 @@ export default function HelpDesk() {
       toast.success(
         res.alreadyVerified
           ? "E-Sumbong was already verified."
-          : `Verified — ${report.usaping_barangay_number}`,
+          : res.emailSent
+            ? `Verified — ${report.usaping_barangay_number} (Email sent to complainant)`
+            : `Verified — ${report.usaping_barangay_number}`,
       );
       fetchAllChannelCounts();
     } catch (error) {
@@ -1069,7 +1073,9 @@ export default function HelpDesk() {
     if (!item) return;
     setEsumbongEditDraft({
       complainant_name: String(item.complainant_name || "").toUpperCase(),
+      complainant_address: String(item.complainant_address || "").toUpperCase(),
       respondent_name: String(item.respondent_name || "").toUpperCase(),
+      respondent_address: String(item.respondent_address || "").toUpperCase(),
       purpose: String(item.purpose || "").toUpperCase(),
       contact_number: item.contact_number || "",
       email: item.email || "",
@@ -1116,7 +1122,9 @@ export default function HelpDesk() {
       const uppercasedDraft = {
         ...esumbongEditDraft,
         complainant_name: String(esumbongEditDraft.complainant_name || "").toUpperCase(),
+        complainant_address: String(esumbongEditDraft.complainant_address || "").toUpperCase(),
         respondent_name: String(esumbongEditDraft.respondent_name || "").toUpperCase(),
+        respondent_address: String(esumbongEditDraft.respondent_address || "").toUpperCase(),
         purpose: String(esumbongEditDraft.purpose || "").toUpperCase(),
         details: String(esumbongEditDraft.details || "").toUpperCase(),
       };
@@ -2617,6 +2625,23 @@ export default function HelpDesk() {
                           </div>
                           <div>
                             <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                              Tirahan (Address)
+                            </label>
+                            <input
+                              type="text"
+                              value={esumbongEditDraft.complainant_address}
+                              onChange={(e) =>
+                                setEsumbongEditDraft((d) => ({
+                                  ...d,
+                                  complainant_address: e.target.value.toUpperCase(),
+                                }))
+                              }
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase"
+                              placeholder="BARANGAY IBA O' ESTE, CALUMPIT, BULACAN"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-700 block mb-1">
                               Contact Number <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -2671,6 +2696,23 @@ export default function HelpDesk() {
                               }
                               className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase"
                               placeholder="PANGALAN NG INIREREKLAMO"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                              Tirahan (Address)
+                            </label>
+                            <input
+                              type="text"
+                              value={esumbongEditDraft.respondent_address}
+                              onChange={(e) =>
+                                setEsumbongEditDraft((d) => ({
+                                  ...d,
+                                  respondent_address: e.target.value.toUpperCase(),
+                                }))
+                              }
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase"
+                              placeholder="BARANGAY IBA O' ESTE, CALUMPIT, BULACAN"
                             />
                           </div>
                           <div>
@@ -2796,6 +2838,13 @@ export default function HelpDesk() {
                           <p className="text-sm font-bold text-slate-900 leading-snug uppercase">
                             {selectedItem.complainant_name}
                           </p>
+                          <p className="text-xs text-slate-600 flex items-start gap-1.5 uppercase">
+                            <Building className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                            <span>
+                              {selectedItem.complainant_address ||
+                                "BARANGAY IBA O' ESTE, CALUMPIT, BULACAN"}
+                            </span>
+                          </p>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 pt-0.5">
                             {selectedItem.contact_number && (
                               <a
@@ -2828,6 +2877,13 @@ export default function HelpDesk() {
                           </div>
                           <p className="text-sm font-bold text-slate-900 leading-snug uppercase">
                             {selectedItem.respondent_name}
+                          </p>
+                          <p className="text-xs text-slate-600 flex items-start gap-1.5 uppercase">
+                            <Building className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                            <span>
+                              {selectedItem.respondent_address ||
+                                "BARANGAY IBA O' ESTE, CALUMPIT, BULACAN"}
+                            </span>
                           </p>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 pt-0.5">
                             <span className="inline-flex items-center gap-1.5">

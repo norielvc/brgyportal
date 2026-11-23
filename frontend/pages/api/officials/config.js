@@ -209,9 +209,87 @@ export default async function handler(req, res) {
       const settings = settingsRow?.value || {};
       const officialsConfig = mapOfficialsToConfig(officials || []);
 
+      // Resolve Barangay Chairman's default e-signature from user_signatures
+      let captainSignature =
+        settings.captainSignature || settings.signature || null;
+      if (!captainSignature) {
+        try {
+          const { data: tenantUsers } = await supabase
+            .from("users")
+            .select("id, first_name, middle_name, last_name, role")
+            .eq("tenant_id", tenantId);
+
+          const chairmanNameUpper = String(
+            officialsConfig.chairman || settings.chairman || "",
+          )
+            .trim()
+            .toUpperCase();
+          const chairmanTokens = chairmanNameUpper
+            .split(/\s+/)
+            .map((t) => t.replace(/[^A-Z]/g, ""))
+            .filter((t) => t.length >= 2);
+
+          const captainUser =
+            (tenantUsers || []).find((u) => {
+              const role = String(u.role || "").toUpperCase();
+              return (
+                role.includes("CAPTAIN") ||
+                role.includes("CHAIRMAN") ||
+                role.includes("PUNONG")
+              );
+            }) ||
+            (tenantUsers || []).find((u) => {
+              if (chairmanTokens.length === 0) return false;
+              const full = `${u.first_name || ""} ${u.middle_name || ""} ${u.last_name || ""}`
+                .toUpperCase();
+              const first = String(u.first_name || "").trim().toUpperCase();
+              const last = String(u.last_name || "").trim().toUpperCase();
+              return (
+                (first && last && chairmanNameUpper.includes(first) && chairmanNameUpper.includes(last)) ||
+                chairmanTokens.every((t) => full.includes(t))
+              );
+            });
+
+          if (captainUser?.id) {
+            const { data: userSettings } = await supabase
+              .from("user_settings")
+              .select("default_signature_id")
+              .eq("user_id", captainUser.id)
+              .maybeSingle();
+
+            if (userSettings?.default_signature_id) {
+              const { data: defaultSig } = await supabase
+                .from("user_signatures")
+                .select("signature_data")
+                .eq("id", userSettings.default_signature_id)
+                .maybeSingle();
+              if (defaultSig?.signature_data) {
+                captainSignature = defaultSig.signature_data;
+              }
+            }
+
+            if (!captainSignature) {
+              const { data: latestSig } = await supabase
+                .from("user_signatures")
+                .select("signature_data")
+                .eq("user_id", captainUser.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (latestSig?.signature_data) {
+                captainSignature = latestSig.signature_data;
+              }
+            }
+          }
+        } catch (sigErr) {
+          console.warn("[officials/config] Could not resolve captain signature:", sigErr?.message || sigErr);
+        }
+      }
+
       const finalConfig = {
         ...officialsConfig,
         ...settings,
+        ...(captainSignature ? { captainSignature, signature: captainSignature } : {}),
         contactInfo: {
           ...officialsConfig.contactInfo,
           ...(settings.contactInfo || {}),

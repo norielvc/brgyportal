@@ -13,7 +13,9 @@ router.post('/', async (req, res) => {
         const {
             complainant_resident_id,
             complainant_name,
+            complainant_address,
             respondent_name,
+            respondent_address,
             details,
             incident_date,
             incident_time,
@@ -40,6 +42,12 @@ router.post('/', async (req, res) => {
             email: email ? email.trim() : null,
             status: 'pending'
         };
+        if (complainant_address && String(complainant_address).trim()) {
+            insertData.complainant_address = String(complainant_address).trim().toUpperCase();
+        }
+        if (respondent_address && String(respondent_address).trim()) {
+            insertData.respondent_address = String(respondent_address).trim().toUpperCase();
+        }
 
         const { data, error } = await supabase
             .from('blotter_reports')
@@ -136,12 +144,14 @@ router.put('/:id', async (req, res) => {
         }
 
         const { id } = req.params;
-        const { status, complainant_name, respondent_name, details, incident_date, incident_time, contact_number, email } = req.body;
+        const { status, complainant_name, complainant_address, respondent_name, respondent_address, details, incident_date, incident_time, contact_number, email } = req.body;
 
         const updateData = {};
         if (status !== undefined) updateData.status = status;
         if (complainant_name !== undefined) updateData.complainant_name = String(complainant_name).trim().toUpperCase();
+        if (complainant_address !== undefined) updateData.complainant_address = String(complainant_address || '').trim().toUpperCase() || null;
         if (respondent_name !== undefined) updateData.respondent_name = String(respondent_name).trim().toUpperCase();
+        if (respondent_address !== undefined) updateData.respondent_address = String(respondent_address || '').trim().toUpperCase() || null;
         if (details !== undefined) updateData.details = String(details).trim().toUpperCase();
         if (incident_date !== undefined) updateData.incident_date = incident_date;
         if (incident_time !== undefined) updateData.incident_time = incident_time;

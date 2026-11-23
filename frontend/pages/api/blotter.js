@@ -102,6 +102,14 @@ function mapSupabaseError(error) {
     };
   }
 
+  if (msg.includes("complainant_address") || msg.includes("respondent_address")) {
+    return {
+      status: 503,
+      message:
+        "Kailangan i-run ang backend/ADD_ADDRESSES_TO_BLOTTER.sql sa Supabase para ma-save ang tirahan ng nagsusumbong at inirereklamo.",
+    };
+  }
+
   if (msg.includes("purpose")) {
     return {
       status: 503,
@@ -326,7 +334,9 @@ export default async function handler(req, res) {
       const {
         complainant_resident_id,
         complainant_name,
+        complainant_address,
         respondent_name,
+        respondent_address,
         details,
         incident_date,
         incident_time,
@@ -393,6 +403,12 @@ export default async function handler(req, res) {
         intake_source,
         status: "pending",
       };
+      if (complainant_address && String(complainant_address).trim()) {
+        row.complainant_address = String(complainant_address).trim().toUpperCase();
+      }
+      if (respondent_address && String(respondent_address).trim()) {
+        row.respondent_address = String(respondent_address).trim().toUpperCase();
+      }
 
       const { data, error } = await supabase
         .from("blotter_reports")
@@ -497,6 +513,23 @@ export default async function handler(req, res) {
           });
           const { report, alreadyVerified } = result;
 
+          let emailResult = null;
+          if (!alreadyVerified && report?.email) {
+            try {
+              const { notifyBlotterVerified } = await import(
+                "../../src/lib/blotterNotificationHelper"
+              );
+              emailResult = await notifyBlotterVerified({
+                supabase,
+                tenantId: report.tenant_id || tenantId,
+                report,
+              });
+              console.log("[blotter] verify email result:", emailResult);
+            } catch (emailErr) {
+              console.error("[blotter] verify email error:", emailErr);
+            }
+          }
+
           return res.json({
             success: true,
             message: alreadyVerified
@@ -504,6 +537,7 @@ export default async function handler(req, res) {
               : "E-Sumbong verified — usaping barangay number assigned",
             report,
             alreadyVerified,
+            emailSent: Boolean(emailResult?.success),
           });
         } catch (verifyErr) {
           const mapped = mapSupabaseError(verifyErr);
@@ -613,12 +647,20 @@ export default async function handler(req, res) {
           }
           updateData.complainant_name = val;
         }
+        if (body.complainant_address !== undefined) {
+          const val = String(body.complainant_address || "").trim().toUpperCase();
+          updateData.complainant_address = val || null;
+        }
         if (body.respondent_name !== undefined) {
           const val = String(body.respondent_name || "").trim().toUpperCase();
           if (!val) {
             return res.status(400).json({ success: false, message: "Kailangan ang pangalan ng inirereklamo." });
           }
           updateData.respondent_name = val;
+        }
+        if (body.respondent_address !== undefined) {
+          const val = String(body.respondent_address || "").trim().toUpperCase();
+          updateData.respondent_address = val || null;
         }
         if (body.details !== undefined) {
           const val = String(body.details || "").trim().toUpperCase();

@@ -611,7 +611,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         display: flex;
         justify-content: flex-end;
         width: 100%;
-        margin-top: 20px;
+        margin-top: 56px;
         margin-bottom: 24px;
         page-break-inside: avoid;
         break-inside: avoid;
@@ -619,17 +619,26 @@ export function buildBlotterDocumentHtml(report, options = {}) {
       .kp-captain-signature-col {
         min-width: 240px;
         text-align: center;
+        position: relative;
       }
       .kp-captain-sig-img-wrap {
-        min-height: 38px;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -68%);
+        width: 400px;
+        height: 210px;
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         justify-content: center;
-        margin-bottom: -8px;
+        pointer-events: none;
+        z-index: 2;
       }
       .kp-captain-sig-img {
-        max-height: 48px;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
+        mix-blend-mode: multiply;
       }
       .kp-captain-fullname {
         font-size: 11.5pt;
@@ -789,12 +798,16 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         display: flex;
         justify-content: flex-end;
         width: 100%;
-        margin-top: 10px;
+        margin-top: 46px;
         margin-bottom: 12px;
       }
       .patawag-pb-block {
         min-width: 220px;
         text-align: center;
+        position: relative;
+      }
+      .patawag-pb-block .kp-captain-sig-img-wrap {
+        transform: translate(-56%, -68%);
       }
       .patawag-pb-name {
         font-size: 10.5pt;
@@ -843,7 +856,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         display: flex;
         justify-content: space-between;
         width: 100%;
-        margin-top: 14px;
+        margin-top: 48px;
         margin-bottom: 8px;
       }
       .patawag-receipt-col {
@@ -853,10 +866,11 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         font-weight: bold;
         font-size: 8.5pt;
         letter-spacing: 0.04em;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
       }
       .patawag-receipt-field {
-        margin-top: 14px;
+        padding-top: 38px;
+        margin-top: 10px;
         text-align: center;
       }
       .patawag-sig-line {
@@ -947,9 +961,6 @@ export function buildBlotterDocumentHtml(report, options = {}) {
           <tr>
             <td>
               <div class="print-sheet-header">
-                <div class="kp-form9-top-row">
-                  <span class="kp-form-tag">Form 9</span>
-                </div>
                 <div class="kp-header-container">
                   <div class="kp-logo-box">
                     <img src="${esc(leftLogoUrl)}" alt="Barangay Logo" class="kp-logo-img" />
