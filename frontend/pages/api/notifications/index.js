@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
       let query = supabase
         .from("notifications")
-        .select("*")
+        .select("id, title, message, type, category, reference_number, request_id, link, read, created_at")
         .eq("tenant_id", tenantId)
         .eq("user_id", userId)
         .order("created_at", { ascending: false })

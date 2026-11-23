@@ -2,6 +2,9 @@ import jwt from "jsonwebtoken";
 import { supabase } from "../../lib/supabase";
 import { getJwtSecret } from "../../lib/jwtSecret";
 
+const AUTH_USER_CACHE_TTL_MS = 60 * 1000;
+const AUTH_USER_CACHE = new Map();
+
 /**
  * Middleware-like helper for Next.js API routes to authenticate JWT tokens
  */
@@ -31,10 +34,18 @@ export const authenticateToken = async (req, res) => {
 
     const decoded = jwt.verify(token, jwtSecret);
 
+    // Short in-memory cache per warm server instance to avoid a `users`
+    // lookup on every API request (big Supabase Disk IO saver).
+    const cacheKey = String(decoded.userId || "");
+    const cached = AUTH_USER_CACHE.get(cacheKey);
+    if (cached && cached.expires > Date.now()) {
+      return cached.user;
+    }
+
     // Find the user in Supabase
     const { data: user, error } = await supabase
       .from("users")
-      .select("*")
+      .select("id, first_name, last_name, email, role, tenant_id, status")
       .eq("id", decoded.userId)
       .single();
 
@@ -63,6 +74,15 @@ export const authenticateToken = async (req, res) => {
       role: user.role,
       tenant_id: user.tenant_id,
     };
+
+    AUTH_USER_CACHE.set(cacheKey, {
+      user: sessionUser,
+      expires: Date.now() + AUTH_USER_CACHE_TTL_MS,
+    });
+    if (AUTH_USER_CACHE.size > 500) {
+      const firstKey = AUTH_USER_CACHE.keys().next().value;
+      AUTH_USER_CACHE.delete(firstKey);
+    }
 
     return sessionUser;
   } catch (error) {

@@ -448,6 +448,44 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "GET") {
+      if (req.query.lookup === "usaping") {
+        const user = await authenticateToken(req, res);
+        if (!user) return;
+
+        let { data, error } = await supabase
+          .from("blotter_reports")
+          .select(
+            "id, usaping_barangay_number, complainant_name, respondent_name, purpose, incident_details, incident_date, status, verified_at, created_at",
+          )
+          .eq("tenant_id", tenantId)
+          .not("usaping_barangay_number", "is", null)
+          .neq("usaping_barangay_number", "")
+          .order("created_at", { ascending: false })
+          .limit(200);
+
+        if (error && String(error.message || "").toLowerCase().includes("purpose")) {
+          const retry = await supabase
+            .from("blotter_reports")
+            .select(
+              "id, usaping_barangay_number, complainant_name, respondent_name, incident_details, incident_date, status, verified_at, created_at",
+            )
+            .eq("tenant_id", tenantId)
+            .not("usaping_barangay_number", "is", null)
+            .neq("usaping_barangay_number", "")
+            .order("created_at", { ascending: false })
+            .limit(200);
+          data = retry.data;
+          error = retry.error;
+        }
+
+        if (error) throw error;
+
+        return res.json({
+          success: true,
+          reports: data || [],
+        });
+      }
+
       const staffUser = await assertEsumbongStaffAccess(req, res, tenantId);
       if (!staffUser) return;
 

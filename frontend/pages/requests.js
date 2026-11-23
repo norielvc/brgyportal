@@ -11345,8 +11345,8 @@ function ClearancePreviewForRequests({
                                 <th className="border border-red-700 px-2 py-1 font-bold w-[72px]">
                                   SN No.
                                 </th>
-                                <th className="border border-red-700 px-2 py-1 font-bold w-[110px]">
-                                  Case No.
+                                <th className="border border-red-700 px-2 py-1 font-bold w-[150px]">
+                                  Usaping Barangay Blg.
                                 </th>
                                 <th className="border border-red-700 px-2 py-1 font-bold">
                                   Case Description
