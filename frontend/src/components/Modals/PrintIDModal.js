@@ -11,12 +11,40 @@ export default function PrintIDModal({
 }) {
   useScrollLock(isOpen);
 
+  const SIDESLIDE_MS = 280;
+  const SIDESLIDE_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+  const [rendered, setRendered] = useState(isOpen);
+  const [slideIn, setSlideIn] = useState(false);
+
   const [printLayout, setPrintLayout] = useState("both"); // 'both' | 'front' | 'back'
   const handleClose = () => {
-    if (typeof onClose === "function") {
-      onClose();
-    }
+    setSlideIn(false);
+    setTimeout(() => {
+      setRendered(false);
+      if (typeof onClose === "function") {
+        onClose();
+      }
+    }, SIDESLIDE_MS);
   };
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setRendered(true);
+      let raf1 = 0;
+      let raf2 = 0;
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setSlideIn(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    } else if (rendered) {
+      setSlideIn(false);
+      const t = setTimeout(() => setRendered(false), SIDESLIDE_MS);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
 
   // Keyboard Escape listener
   React.useEffect(() => {
@@ -30,28 +58,37 @@ export default function PrintIDModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  if (!isOpen || !idData) return null;
+  if (!(isOpen || rendered) || !idData) return null;
 
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[110] overflow-hidden">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-200 cursor-pointer"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px] cursor-pointer"
+        style={{
+          opacity: slideIn ? 1 : 0,
+          transition: `opacity ${SIDESLIDE_MS}ms ${SIDESLIDE_EASE}`,
+        }}
         onClick={handleClose}
       />
 
       <div
         role="dialog"
         aria-modal="true"
-        className="relative z-10 bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-300"
+        className="fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(96vw,64rem)] lg:w-[calc(100vw-16rem)] max-w-[100vw] bg-white rounded-none shadow-[-8px_0_28px_rgba(0,0,0,0.16)] border-l border-slate-200/90 flex flex-col overflow-hidden"
+        style={{
+          transform: slideIn ? "translate3d(0, 0, 0)" : "translate3d(100%, 0, 0)",
+          transition: `transform ${SIDESLIDE_MS}ms ${SIDESLIDE_EASE}`,
+          willChange: "transform",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-[#03254c] p-5 sm:p-6 text-white flex items-center justify-between flex-shrink-0">
+        <div className="bg-[#03254c] px-4 sm:px-6 py-3 text-white flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
               <Printer className="w-5 h-5 text-cyan-300" />

@@ -287,7 +287,12 @@ export default function IssueIDModal({
     }
   };
 
-  const handleClose = () => {
+  const SIDESLIDE_MS = 280;
+  const SIDESLIDE_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+  const [rendered, setRendered] = useState(isOpen);
+  const [slideIn, setSlideIn] = useState(false);
+
+  const finalizeClose = () => {
     setSelectedResident(null);
     setSearchQuery("");
     setResidentResults([]);
@@ -295,6 +300,33 @@ export default function IssueIDModal({
       onClose();
     }
   };
+
+  const handleClose = () => {
+    setSlideIn(false);
+    setTimeout(() => {
+      setRendered(false);
+      finalizeClose();
+    }, SIDESLIDE_MS);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setRendered(true);
+      let raf1 = 0;
+      let raf2 = 0;
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setSlideIn(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    } else if (rendered) {
+      setSlideIn(false);
+      const t = setTimeout(() => setRendered(false), SIDESLIDE_MS);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
 
   // Keyboard Escape listener
   useEffect(() => {
@@ -308,7 +340,7 @@ export default function IssueIDModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!(isOpen || rendered)) return null;
 
   // Build live preview data with dynamic fallback
   const previewIDData = {
@@ -347,33 +379,42 @@ export default function IssueIDModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
+    <div className="fixed inset-0 z-[100] overflow-hidden">
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-200 cursor-pointer"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px] cursor-pointer"
+        style={{
+          opacity: slideIn ? 1 : 0,
+          transition: `opacity ${SIDESLIDE_MS}ms ${SIDESLIDE_EASE}`,
+        }}
         onClick={handleClose}
       />
 
-      {/* Modal Dialog Content Container */}
+      {/* Side-Slide Drawer Content Container */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="issue-id-modal-title"
-        className="relative z-10 bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-300"
+        className="fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(96vw,74rem)] lg:w-[calc(100vw-16rem)] max-w-[100vw] bg-white rounded-none shadow-[-8px_0_28px_rgba(0,0,0,0.16)] border-l border-slate-200/90 flex flex-col overflow-hidden"
+        style={{
+          transform: slideIn ? "translate3d(0, 0, 0)" : "translate3d(100%, 0, 0)",
+          transition: `transform ${SIDESLIDE_MS}ms ${SIDESLIDE_EASE}`,
+          willChange: "transform",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-[#03254c] via-[#043b78] to-[#0a529e] p-4 sm:p-6 text-white flex items-center justify-between relative flex-shrink-0">
+        <div className="bg-gradient-to-r from-[#03254c] via-[#043b78] to-[#0a529e] px-4 sm:px-6 py-3 text-white flex items-center justify-between relative flex-shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-lg flex-shrink-0">
-              <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-300" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-lg flex-shrink-0">
+              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-300" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-0.5">
-                <Sparkles className="w-3 h-3 text-amber-300" />
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 text-[9px] font-black uppercase tracking-wider mb-0.5">
+                <Sparkles className="w-2.5 h-2.5 text-amber-300" />
                 Master Census Connected
               </div>
-              <h3 id="issue-id-modal-title" className="text-base sm:text-xl font-black tracking-tight text-white">
+              <h3 id="issue-id-modal-title" className="text-sm sm:text-base font-black tracking-tight text-white leading-tight">
                 Issue Official Barangay EC Card
               </h3>
             </div>
@@ -387,9 +428,9 @@ export default function IssueIDModal({
               handleClose();
             }}
             aria-label="Close modal"
-            className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-all cursor-pointer z-20 flex items-center justify-center"
+            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-all cursor-pointer z-20 flex items-center justify-center"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 

@@ -830,24 +830,71 @@ PickupManagementPage.getLayout = (page) => (
 // Certificate Details Modal Component
 function CertificateDetailsModal({ certificate, onClose, getStatusColor, getTypeLabel, formatDate, openPickupVerification, handleManualRelease }) {
   useScrollLock(true);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} onTouchMove={(e) => e.preventDefault()} />
+  const SLIDE_MS = 280;
+  const SLIDE_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+  const [slideIn, setSlideIn] = useState(false);
+  const closingRef = useState({ current: false })[0];
 
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[96dvh] sm:max-h-[95vh] overflow-hidden flex flex-col">
+  const handleSmoothClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setSlideIn(false);
+    setTimeout(() => {
+      closingRef.current = false;
+      onClose();
+    }, SLIDE_MS);
+  };
+
+  useEffect(() => {
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setSlideIn(true));
+    });
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") handleSmoothClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-hidden">
+        <div
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+          style={{
+            opacity: slideIn ? 1 : 0,
+            transition: `opacity ${SLIDE_MS}ms ${SLIDE_EASE}`,
+          }}
+          onClick={handleSmoothClose}
+          onTouchMove={(e) => e.preventDefault()}
+        />
+
+        <div
+          className="fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(96vw,64rem)] lg:w-[calc(100vw-16rem)] max-w-[100vw] bg-white rounded-none shadow-[-8px_0_28px_rgba(0,0,0,0.16)] border-l border-slate-200/90 overflow-hidden flex flex-col"
+          style={{
+            transform: slideIn ? "translate3d(0, 0, 0)" : "translate3d(100%, 0, 0)",
+            transition: `transform ${SLIDE_MS}ms ${SLIDE_EASE}`,
+            willChange: "transform",
+          }}
+        >
           {/* Header */}
-          <div className="bg-slate-900 border-b-4 border-amber-400 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between shrink-0">
+          <div className="bg-slate-900 border-b-2 border-amber-400 px-4 sm:px-6 py-2.5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="bg-white/10 p-2 rounded-xl border border-white/20">
-                <FileCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
+              <div className="bg-white/10 p-1.5 rounded-lg border border-white/20">
+                <FileCheck className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
               </div>
               <div>
-                <p className="text-[9px] sm:text-[10px] font-black text-amber-400 uppercase tracking-[0.25em] mb-0.5">Republic of the Philippines · {getTypeLabel(certificate.certificate_type)}</p>
-                <h2 className="text-base sm:text-xl font-black text-white uppercase tracking-tight leading-none">Certificate Details</h2>
+                <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.2em] mb-0.5">Republic of the Philippines · {getTypeLabel(certificate.certificate_type)}</p>
+                <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-tight leading-none">Certificate Details</h2>
               </div>
             </div>
-            <button onClick={onClose} className="text-white/70 hover:text-white p-1.5 sm:p-2 hover:bg-white/10 rounded-xl transition-all">
-              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+            <button onClick={handleSmoothClose} className="text-white/70 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all">
+              <X className="w-5 h-5" />
             </button>
           </div>
 
@@ -954,10 +1001,10 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
           </div>
 
           {/* Footer Actions */}
-          <div className="border-t border-slate-200 bg-slate-50 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 justify-end shrink-0">
+          <div className="border-t border-slate-200 bg-slate-50 px-4 sm:px-6 py-2.5 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 justify-end shrink-0">
             <button
-              onClick={onClose}
-              className="w-full sm:w-auto px-5 py-2.5 sm:py-3 bg-white border border-slate-300 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-100 active:scale-95 transition-all text-center"
+              onClick={handleSmoothClose}
+              className="w-full sm:w-auto px-5 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-slate-100 active:scale-95 transition-all text-center"
             >
               Close
             </button>
@@ -981,27 +1028,74 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
 // Confirm Pickup Modal Component
 function ConfirmPickupModal({ certificate, onClose, onConfirm, pickupName, setPickupName, confirming, getTypeLabel }) {
   useScrollLock(true);
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} onTouchMove={(e) => e.preventDefault()} />
+  const SLIDE_MS = 280;
+  const SLIDE_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+  const [slideIn, setSlideIn] = useState(false);
+  const closingRef = useState({ current: false })[0];
 
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-4 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-xl">
-                <CheckCircle className="w-5 h-5 text-white" />
+  const handleSmoothClose = () => {
+    if (confirming || closingRef.current) return;
+    closingRef.current = true;
+    setSlideIn(false);
+    setTimeout(() => {
+      closingRef.current = false;
+      onClose();
+    }, SLIDE_MS);
+  };
+
+  useEffect(() => {
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setSlideIn(true));
+    });
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") handleSmoothClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[60] overflow-hidden">
+        <div
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+          style={{
+            opacity: slideIn ? 1 : 0,
+            transition: `opacity ${SLIDE_MS}ms ${SLIDE_EASE}`,
+          }}
+          onClick={handleSmoothClose}
+          onTouchMove={(e) => e.preventDefault()}
+        />
+
+        <div
+          className="fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(96vw,34rem)] max-w-[100vw] bg-white rounded-none shadow-[-8px_0_28px_rgba(0,0,0,0.16)] border-l border-slate-200/90 flex flex-col overflow-hidden"
+          style={{
+            transform: slideIn ? "translate3d(0, 0, 0)" : "translate3d(100%, 0, 0)",
+            transition: `transform ${SLIDE_MS}ms ${SLIDE_EASE}`,
+            willChange: "transform",
+          }}
+        >
+          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-3 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="bg-white/20 p-1.5 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-white uppercase tracking-tight leading-none">Confirm Release</h3>
-                <p className="text-emerald-100/80 font-semibold text-[10px] uppercase tracking-wide">Final Status Update</p>
+                <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-tight leading-none">Confirm Release</h3>
+                <p className="text-emerald-100/80 font-semibold text-[9px] uppercase tracking-wide">Final Status Update</p>
               </div>
             </div>
-            <button onClick={onClose} className="text-white/80 hover:text-white transition-all p-1.5 hover:bg-white/10 rounded-lg">
+            <button onClick={handleSmoothClose} className="text-white/80 hover:text-white transition-all p-1.5 hover:bg-white/10 rounded-lg">
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="p-5 space-y-4">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {/* Certificate Info - Compact */}
             <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
               <div className="flex items-start justify-between gap-3 mb-3">
@@ -1058,11 +1152,11 @@ function ConfirmPickupModal({ certificate, onClose, onConfirm, pickupName, setPi
             </div>
           </div>
 
-          <div className="border-t border-slate-100 px-5 py-3.5 bg-slate-50 flex items-center justify-end gap-2.5">
+          <div className="border-t border-slate-100 px-5 py-3 bg-slate-50 flex items-center justify-end gap-2.5 shrink-0">
             <button
-              onClick={onClose}
+              onClick={handleSmoothClose}
               disabled={confirming}
-              className="px-4 py-2 text-xs font-black text-slate-600 uppercase tracking-wider hover:bg-slate-200/60 rounded-xl transition-all disabled:opacity-50"
+              className="px-4 py-2 text-xs font-black text-slate-600 uppercase tracking-wider hover:bg-slate-200/60 rounded-lg transition-all disabled:opacity-50"
             >
               Cancel
             </button>

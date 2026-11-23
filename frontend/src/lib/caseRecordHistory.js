@@ -93,8 +93,8 @@ export function serializeCaseRecordHistory(cases) {
   if (!Array.isArray(cases) || !cases.length) return "";
 
   return cases
-    .map((row) => {
-      const sn = String(row.sn || "").trim();
+    .map((row, index) => {
+      const sn = String(index + 1);
       const caseNo = String(row.caseNo || "").trim();
       const description = String(row.description || "").trim();
       const dateRecorded = String(row.dateRecorded || "").trim();
@@ -125,7 +125,7 @@ export function pendingCaseRows(history) {
     ];
   }
   return parsed.map((row, index) => ({
-    sn: row.sn || String(index + 1),
+    sn: String(index + 1),
     caseNo: row.caseNo || DASH,
     description: row.description || DASH,
     dateRecorded: row.dateRecorded || DASH,

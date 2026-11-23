@@ -39,11 +39,11 @@ export default function Modal({
 
   const sideSlideSizeClasses = {
     sm: "sm:w-[min(92vw,28rem)]",
-    md: "sm:w-[min(94vw,38rem)]",
-    lg: "sm:w-[min(94vw,46rem)] lg:w-[min(74vw,52rem)]",
-    profile: "sm:w-[min(94vw,56rem)]",
-    xl: "sm:w-[min(94vw,48rem)] lg:w-[min(78vw,58rem)]",
-    full: "sm:w-[min(96vw,68rem)]",
+    md: "sm:w-[min(94vw,42rem)]",
+    lg: "sm:w-[min(96vw,58rem)] lg:w-[min(82vw,66rem)]",
+    profile: "sm:w-[min(96vw,74rem)] lg:w-[calc(100vw-16rem)]",
+    xl: "sm:w-[min(96vw,74rem)] lg:w-[calc(100vw-16rem)]",
+    full: "sm:w-[98vw] lg:w-[calc(100vw-16rem)]",
   };
 
   const panelRef = useRef(null);

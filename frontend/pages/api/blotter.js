@@ -71,8 +71,10 @@ function mapSupabaseError(error) {
 
   if (
     code === "42P01" ||
-    msg.includes("blotter_reports") ||
-    msg.includes("Could not find the table")
+    msg.includes("Could not find the table") ||
+    (msg.includes("blotter_reports") &&
+      !msg.toLowerCase().includes("column") &&
+      (msg.includes("relation") || msg.includes("does not exist")))
   ) {
     return {
       status: 503,
@@ -452,37 +454,82 @@ export default async function handler(req, res) {
         const user = await authenticateToken(req, res);
         if (!user) return;
 
-        let { data, error } = await supabase
-          .from("blotter_reports")
-          .select(
-            "id, usaping_barangay_number, complainant_name, respondent_name, purpose, incident_details, incident_date, status, verified_at, created_at",
-          )
-          .eq("tenant_id", tenantId)
-          .not("usaping_barangay_number", "is", null)
-          .neq("usaping_barangay_number", "")
-          .order("created_at", { ascending: false })
-          .limit(200);
+        const qRaw = String(req.query.q || "").trim();
+        const statusFilter = String(req.query.status || "all").trim().toLowerCase();
+        const exactUb = String(req.query.exact_ub || "").trim().toUpperCase();
+        const cap = Math.min(
+          Math.max(parseInt(String(req.query.limit || "25"), 10) || 25, 5),
+          100,
+        );
 
-        if (error && String(error.message || "").toLowerCase().includes("purpose")) {
-          const retry = await supabase
+        const tokens = qRaw
+          .split(/\s+/)
+          .map((t) => t.replace(/[%_(),]/g, "").trim())
+          .filter(Boolean)
+          .slice(0, 5);
+
+        const buildLookupQuery = (includePurpose = true) => {
+          const cols = includePurpose
+            ? "id, usaping_barangay_number, complainant_name, respondent_name, purpose, details, incident_date, status, verified_at, created_at"
+            : "id, usaping_barangay_number, complainant_name, respondent_name, details, incident_date, status, created_at";
+
+          let q = supabase
             .from("blotter_reports")
-            .select(
-              "id, usaping_barangay_number, complainant_name, respondent_name, incident_details, incident_date, status, verified_at, created_at",
-            )
+            .select(cols, { count: "exact" })
             .eq("tenant_id", tenantId)
             .not("usaping_barangay_number", "is", null)
-            .neq("usaping_barangay_number", "")
-            .order("created_at", { ascending: false })
-            .limit(200);
+            .neq("usaping_barangay_number", "");
+
+          if (exactUb) {
+            q = q.ilike("usaping_barangay_number", exactUb);
+          } else {
+            if (statusFilter === "active") {
+              q = q.in("status", ["pending", "under_review"]);
+            } else if (
+              statusFilter &&
+              statusFilter !== "all"
+            ) {
+              q = q.eq("status", statusFilter);
+            }
+
+            for (const token of tokens) {
+              const clauses = [
+                `usaping_barangay_number.ilike.%${token}%`,
+                `complainant_name.ilike.%${token}%`,
+                `respondent_name.ilike.%${token}%`,
+              ];
+              if (includePurpose) {
+                clauses.push(`purpose.ilike.%${token}%`);
+              }
+              q = q.or(clauses.join(","));
+            }
+          }
+
+          return q.order("created_at", { ascending: false }).limit(cap);
+        };
+
+        let { data, error, count } = await buildLookupQuery(true);
+
+        if (error) {
+          const retry = await buildLookupQuery(false);
           data = retry.data;
           error = retry.error;
+          count = retry.count;
         }
 
-        if (error) throw error;
+        if (error) {
+          console.warn("[blotter lookup=usaping] query warning:", error.message);
+          return res.json({
+            success: true,
+            reports: [],
+            totalItems: 0,
+          });
+        }
 
         return res.json({
           success: true,
           reports: data || [],
+          totalItems: typeof count === "number" ? count : (data || []).length,
         });
       }
 

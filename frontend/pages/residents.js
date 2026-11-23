@@ -908,18 +908,20 @@ export default function Residents() {
   const handleDeleteResident = async () => {
     setIsSubmitting(true);
     try {
+      const tenantId = currentUser?.tenant_id || "ibaoeste";
       const response = await fetch(
         `${API_URL}/residents/${selectedResident.id}`,
         {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${getAuthToken()}`,
+            "x-tenant-id": tenantId,
           },
         },
       );
       const data = await response.json();
       if (data.success) {
-        toast.success("Resident deleted");
+        toast.success(data.message || "Resident deleted");
         setIsDeleteConfirmOpen(false);
         setIsModalOpen(false);
         fetchResidents();
@@ -1380,6 +1382,56 @@ export default function Residents() {
         title="Resident Profile"
         size="profile"
         dense
+        presentation="side-slide"
+        footer={
+          selectedResident ? (
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(true)}
+                className="px-2.5 py-1.5 text-gray-600 font-semibold text-xs uppercase tracking-wide hover:bg-gray-100 rounded-md transition-colors flex items-center justify-center gap-1"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  disabled={isExportingOne}
+                  onClick={() => handleExportOneResident(selectedResident)}
+                  className="px-3 py-1.5 bg-white text-[#03254c] border border-[#03254c] rounded-md text-xs font-semibold hover:bg-blue-50 transition-colors flex items-center gap-1.5 disabled:opacity-60"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {isExportingOne ? "Export…" : "Export"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setShowIssueIDModal(true);
+                  }}
+                  className="px-3 py-1.5 bg-[#03254c] hover:bg-[#021b37] text-white rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  Issue ID
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenEditModal}
+                  className="px-3 py-1.5 bg-gray-800 text-white rounded-md text-xs font-semibold hover:bg-gray-900 transition-colors flex items-center gap-1.5"
+                >
+                  <Edit className="w-3.5 h-3.5" /> Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-xs font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          ) : null
+        }
       >
         {selectedResident && (() => {
           const displayAddress = stripProvinceOf(
@@ -1553,52 +1605,6 @@ export default function Residents() {
                 ))}
               </div>
             </ProfileSection>
-
-            <div className="pt-1.5 flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-1.5 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => setIsDeleteConfirmOpen(true)}
-                className="px-2 py-1.5 text-gray-600 font-semibold text-[10px] uppercase tracking-wide hover:bg-gray-100 rounded-md transition-colors flex items-center justify-center gap-1"
-              >
-                <Trash2 className="w-3 h-3" /> Delete
-              </button>
-              <div className="flex flex-wrap items-center justify-end gap-1">
-                <button
-                  type="button"
-                  disabled={isExportingOne}
-                  onClick={() => handleExportOneResident(selectedResident)}
-                  className="px-2 py-1.5 bg-white text-[#03254c] border border-[#03254c] rounded-md text-[10px] font-semibold hover:bg-blue-50 transition-colors flex items-center gap-1 disabled:opacity-60"
-                >
-                  <Download className="w-3 h-3" />
-                  {isExportingOne ? "Export…" : "Export"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setShowIssueIDModal(true);
-                  }}
-                  className="px-2 py-1.5 bg-[#03254c] hover:bg-[#021b37] text-white rounded-md text-[10px] font-semibold transition-colors flex items-center gap-1"
-                >
-                  <CreditCard className="w-3 h-3" />
-                  Issue ID
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenEditModal}
-                  className="px-2 py-1.5 bg-gray-800 text-white rounded-md text-[10px] font-semibold hover:bg-gray-900 transition-colors flex items-center gap-1"
-                >
-                  <Edit className="w-3 h-3" /> Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-2 py-1.5 bg-gray-100 text-gray-700 rounded-md text-[10px] font-semibold hover:bg-gray-200 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
           </div>
           );
         })()}
@@ -1621,6 +1627,7 @@ export default function Residents() {
           selectedResident ? "Update Resident Record" : "Register New Resident"
         }
         size="xl"
+        presentation="side-slide"
         footer={
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <button
@@ -2402,6 +2409,7 @@ export default function Residents() {
               {formData.pending_case ? (
                 <PendingCaseRecordsEditor
                   variant="compact"
+                  residentName={`${formData.last_name || ""} ${formData.first_name || ""}`.trim()}
                   value={formData.case_record_history}
                   onChange={(case_record_history) =>
                     setFormData((prev) => ({ ...prev, case_record_history }))
@@ -2576,7 +2584,7 @@ export default function Residents() {
                 <strong>
                   {selectedResident?.first_name} {selectedResident?.last_name}
                 </strong>{" "}
-                from the database. This action cannot be undone.
+                from the census. Linked certificate requests are kept but unlinked from this profile. This cannot be undone.
               </p>
             </div>
           </div>

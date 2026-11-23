@@ -5793,6 +5793,8 @@ function RequestDetailsModal({
                 : "Resident Official Profile"
             }
             size="xl"
+            presentation="side-slide"
+            zIndexClass="z-[60]"
           >
             {!isEditResidentMode ? (
               <div className="space-y-5">
@@ -6285,6 +6287,7 @@ function RequestDetailsModal({
                     </div>
                     {residentFormData.pending_case ? (
                       <PendingCaseRecordsEditor
+                        residentName={residentFormData.full_name || ""}
                         value={residentFormData.case_record_history}
                         onChange={(case_record_history) =>
                           setResidentFormData({
@@ -6416,6 +6419,8 @@ function RequestDetailsModal({
             onClose={() => setShowSyncConfirm(false)}
             title="Review & Sync Resident Data"
             size="lg"
+            presentation="side-slide"
+            zIndexClass="z-[60]"
           >
             <div className="space-y-4">
               <div className="p-4 bg-amber-50 rounded-xl flex gap-3 items-start border border-amber-100">
@@ -6878,6 +6883,8 @@ function RequestDetailsModal({
             onClose={() => setShowInspectionStartModal(false)}
             title="Initiate Physical Inspection"
             maxWidth="max-w-2xl"
+            presentation="side-slide"
+            zIndexClass="z-[60]"
           >
             <div className="p-6">
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-6">
@@ -7522,6 +7529,10 @@ async function cloneCertificateWithEmbeddedImages(sourceEl) {
     Array.from(cloneImgs).map(async (img, idx) => {
       const live = liveImgs[idx];
       if (!live) return;
+      if (live.naturalWidth > 0 && live.naturalHeight > 0) {
+        img.dataset.nw = String(live.naturalWidth);
+        img.dataset.nh = String(live.naturalHeight);
+      }
       const src = live.currentSrc || live.src;
       if (!src) return;
 
@@ -7557,7 +7568,7 @@ async function cloneCertificateWithEmbeddedImages(sourceEl) {
   return clone;
 }
 
-/** html2canvas often drops mix-blend-mode signatures on white backgrounds. */
+/** html2canvas often drops mix-blend-mode signatures on white backgrounds and ignores CSS object-fit: contain. */
 function normalizeCloneForCanvasCapture(clonedDoc) {
   if (!clonedDoc) return;
   clonedDoc.querySelectorAll(".mix-blend-multiply, [style*='mix-blend-mode']").forEach((el) => {
@@ -7566,6 +7577,43 @@ function normalizeCloneForCanvasCapture(clonedDoc) {
   });
   clonedDoc.querySelectorAll(".certificate-container, html, body").forEach((el) => {
     el.style.overflow = "visible";
+  });
+  clonedDoc.querySelectorAll("img.object-contain, img[style*='object-fit']").forEach((img) => {
+    if (img.dataset.containApplied === "1") return;
+    const nw = Number(img.dataset.nw) || img.naturalWidth;
+    const nh = Number(img.dataset.nh) || img.naturalHeight;
+    if (!nw || !nh) return;
+    const rect = img.getBoundingClientRect();
+    const boxW = rect.width || img.clientWidth || img.offsetWidth;
+    const boxH = rect.height || img.clientHeight || img.offsetHeight;
+    if (!boxW || !boxH) return;
+    const scale = Math.min(boxW / nw, boxH / nh);
+    const fitW = Math.round(nw * scale * 100) / 100;
+    const fitH = Math.round(nh * scale * 100) / 100;
+    const parent = img.parentElement;
+    const isFlexCentered =
+      parent &&
+      parent.classList.contains("flex") &&
+      parent.classList.contains("items-center") &&
+      parent.classList.contains("justify-center");
+    img.dataset.containApplied = "1";
+    img.classList.remove("w-full", "h-full");
+    img.style.width = `${fitW}px`;
+    img.style.height = `${fitH}px`;
+    img.style.maxWidth = `${fitW}px`;
+    img.style.maxHeight = `${fitH}px`;
+    if (!isFlexCentered) {
+      const padX = Math.max(0, (boxW - fitW) / 2);
+      const padY = Math.max(0, (boxH - fitH) / 2);
+      if (padX > 0.5) {
+        img.style.marginLeft = `${padX}px`;
+        img.style.marginRight = `${padX}px`;
+      }
+      if (padY > 0.5) {
+        img.style.marginTop = `${padY}px`;
+        img.style.marginBottom = `${padY}px`;
+      }
+    }
   });
 }
 
@@ -7841,6 +7889,7 @@ async function buildCertificatePdfFromElement(
       }
       const pageEl = containers[i];
       await waitForDocumentImages(pageEl);
+      normalizeCloneForCanvasCapture(iframeDoc);
       const canvas = await html2canvas(pageEl, {
         scale: captureScale,
         useCORS: true,
@@ -7872,6 +7921,7 @@ async function buildCertificatePdfFromElement(
 
   const captureTarget = containers[0] || iframeDoc.body;
   await waitForDocumentImages(captureTarget);
+  normalizeCloneForCanvasCapture(iframeDoc);
 
   const canvas = await html2canvas(captureTarget, {
     scale: captureScale,
@@ -11343,7 +11393,7 @@ function ClearancePreviewForRequests({
                             <thead>
                               <tr>
                                 <th className="border border-red-700 px-2 py-1 font-bold w-[72px]">
-                                  SN No.
+                                  Item
                                 </th>
                                 <th className="border border-red-700 px-2 py-1 font-bold w-[150px]">
                                   Usaping Barangay Blg.
