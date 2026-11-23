@@ -3756,6 +3756,41 @@ function RequestDetailsModal({
     (Array.isArray(history) && history.some((h) => h.comment || h.comments)) ||
     !!request.admin_comment;
 
+  const [detailsSlideIn, setDetailsSlideIn] = useState(false);
+  const detailsCloseTimerRef = useRef(null);
+  const detailsClosingRef = useRef(false);
+  const DETAILS_SLIDE_MS = 280;
+  const DETAILS_SLIDE_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+
+  const handleSmoothClose = () => {
+    if (detailsClosingRef.current) return;
+    detailsClosingRef.current = true;
+    setDetailsSlideIn(false);
+    clearTimeout(detailsCloseTimerRef.current);
+    detailsCloseTimerRef.current = setTimeout(() => {
+      detailsClosingRef.current = false;
+      onClose();
+    }, DETAILS_SLIDE_MS);
+  };
+
+  useEffect(() => {
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setDetailsSlideIn(true));
+    });
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") handleSmoothClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(detailsCloseTimerRef.current);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
   if (showPdfPreview) {
     return (
       <CertificatePreviewModal
@@ -3768,32 +3803,43 @@ function RequestDetailsModal({
         orRefreshKey={orSectionRefreshKey}
         initialJobSeekerPreviewTab={initialJobSeekerPreviewTab}
         initialBusinessPreviewTab={initialBusinessPreviewTab}
-        presentation="modal"
+        presentation="side-slide"
       />
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-50">
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+        style={{
+          opacity: detailsSlideIn ? 1 : 0,
+          transition: `opacity ${DETAILS_SLIDE_MS}ms ${DETAILS_SLIDE_EASE}`,
+        }}
+        onClick={handleSmoothClose}
         onTouchMove={(e) => e.preventDefault()}
       />
 
       <div
-        className="relative bg-[#f7f9fc] rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden max-h-[90vh]"
+        className="fixed inset-y-0 right-0 z-10 bg-[#f7f9fc] rounded-none shadow-[-8px_0_28px_rgba(0,0,0,0.16)] border-l border-slate-200/90 w-full sm:w-[min(94vw,48rem)] lg:w-[min(78vw,58rem)] max-w-[100vw] h-full flex flex-col overflow-hidden font-sans uppercase [&_.font-mono]:font-sans"
+        style={{
+          transform: detailsSlideIn
+            ? "translate3d(0, 0, 0)"
+            : "translate3d(100%, 0, 0)",
+          transition: `transform ${DETAILS_SLIDE_MS}ms ${DETAILS_SLIDE_EASE}`,
+          willChange: "transform",
+        }}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-[#071633] via-[#0c234f] to-[#163e86] px-4 sm:px-5 py-3.5 flex items-center justify-between shrink-0 overflow-hidden">
-          <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-48 rounded-full bg-blue-400/20 blur-2xl" />
-          <div className="flex items-center gap-3 min-w-0 relative">
-            <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-900/40 shrink-0">
-              <FileText className="w-5 h-5 text-white" />
+        <div className="relative bg-gradient-to-r from-[#071633] via-[#0c234f] to-[#163e86] px-3.5 sm:px-4 py-2 flex items-center justify-between shrink-0 overflow-hidden">
+          <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-44 rounded-full bg-blue-400/20 blur-2xl" />
+          <div className="flex items-center gap-2.5 min-w-0 relative">
+            <div className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-900/40 shrink-0">
+              <FileText className="w-4 h-4 text-white" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight leading-none">Request Details</h2>
-              <p className="text-blue-200/90 text-[11px] sm:text-xs font-semibold mt-1 truncate">{request.reference_number}</p>
+              <h2 className="text-sm font-bold text-white tracking-tight leading-none">Request Details</h2>
+              <p className="text-blue-200/90 text-[10px] sm:text-[11px] font-semibold mt-0.5 truncate">{request.reference_number}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 relative">
@@ -3856,7 +3902,7 @@ function RequestDetailsModal({
               </button>
             )}
             <button
-              onClick={onClose}
+              onClick={handleSmoothClose}
               className="text-white/70 hover:text-white p-1.5 hover:bg-white/10 rounded-full transition-colors"
               aria-label="Close modal"
             >
@@ -4222,7 +4268,7 @@ function RequestDetailsModal({
                                 <Mail className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
                                 <div className="min-w-0">
                                   <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Email Address</p>
-                                  <p className="text-xs font-semibold text-slate-800 break-all">{request.email || "—"}</p>
+                                  <p className="text-xs font-semibold text-slate-800 break-all normal-case">{request.email || "—"}</p>
                                 </div>
                               </div>
                               <div className="flex items-start gap-2">
@@ -4620,10 +4666,10 @@ function RequestDetailsModal({
                           name="email"
                           value={editFormData.email || ""}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm normal-case"
                         />
                       ) : (
-                        <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans tracking-tight">
+                        <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans tracking-tight normal-case">
                           {request.email || "NOT RECORDED"}
                         </p>
                       )}
@@ -6533,7 +6579,7 @@ function RequestDetailsModal({
             request.status === "Treasury" ||
             (request.status === "ready_for_pickup" &&
               isUserAssignedToRequest(request))) && (
-            <div className="border-t border-slate-200 bg-white px-4 sm:px-5 py-3 shrink-0 flex flex-col items-stretch gap-2 w-full">
+            <div className="border-t border-slate-200 bg-white px-3.5 sm:px-4 py-2 shrink-0 flex flex-col items-stretch gap-2 w-full">
               {request.residents?.pending_case && (
                 <div className="bg-red-600 p-2 rounded-lg shadow-sm border border-red-400 text-white mb-2">
                   <div className="flex items-start gap-3">
@@ -7092,32 +7138,78 @@ function ActionModal({
   const Icon = cfg.icon;
   useScrollLock(true);
 
+  const ACTION_SLIDE_MS = 280;
+  const ACTION_SLIDE_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+  const [actionSlideIn, setActionSlideIn] = useState(false);
+  const actionClosingRef = useRef(false);
+  const actionCloseTimerRef = useRef(null);
+
+  const handleSmoothClose = () => {
+    if (processing || actionClosingRef.current) return;
+    actionClosingRef.current = true;
+    setActionSlideIn(false);
+    actionCloseTimerRef.current = setTimeout(() => {
+      actionClosingRef.current = false;
+      onClose();
+    }, ACTION_SLIDE_MS);
+  };
+
+  useEffect(() => {
+    actionClosingRef.current = false;
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setActionSlideIn(true));
+    });
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") handleSmoothClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(actionCloseTimerRef.current);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+    <div className="fixed inset-0 z-[60] overflow-hidden">
       <div
-        className="fixed inset-0 bg-gray-900/70 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+        style={{
+          opacity: actionSlideIn ? 1 : 0,
+          transition: `opacity ${ACTION_SLIDE_MS}ms ${ACTION_SLIDE_EASE}`,
+        }}
+        onClick={handleSmoothClose}
         onTouchMove={(e) => e.preventDefault()}
       />
 
-      <div className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden max-h-[96dvh] sm:max-h-[88vh] h-auto md:h-[88vh]">
+      <div
+        className="fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(96vw,54rem)] lg:w-[min(78vw,60rem)] max-w-[100vw] bg-white rounded-none shadow-[-8px_0_28px_rgba(0,0,0,0.16)] border-l border-slate-200/90 flex flex-col overflow-hidden font-sans uppercase [&_.font-mono]:font-sans"
+        style={{
+          transform: actionSlideIn ? "translate3d(0, 0, 0)" : "translate3d(100%, 0, 0)",
+          transition: `transform ${ACTION_SLIDE_MS}ms ${ACTION_SLIDE_EASE}`,
+          willChange: "transform",
+        }}
+      >
         {/* Header */}
-        <div className="px-4 sm:px-8 py-3.5 sm:py-5 border-b border-gray-100 flex items-center justify-between gap-3 bg-white shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-10 h-10 sm:w-12 sm:h-12 ${cfg.iconBg} rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
-              <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${cfg.iconColor}`} />
+        <div className="px-4 sm:px-6 py-2.5 border-b border-gray-100 flex items-center justify-between gap-3 bg-white shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`w-8 h-8 sm:w-9 sm:h-9 ${cfg.iconBg} rounded-lg flex items-center justify-center shrink-0`}>
+              <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${cfg.iconColor}`} />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base sm:text-xl font-black text-gray-900 tracking-tight leading-none mb-1 truncate">{cfg.title}</h2>
-              <p className="text-xs sm:text-sm font-medium text-gray-500 leading-none truncate">{cfg.description}</p>
+              <h2 className="text-sm sm:text-base font-bold text-gray-900 tracking-tight leading-tight truncate">{cfg.title}</h2>
+              <p className="text-[11px] font-medium text-gray-500 leading-tight truncate">{cfg.description}</p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleSmoothClose}
             className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
             aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
@@ -7228,11 +7320,11 @@ function ActionModal({
         </div>
 
         {/* Footer */}
-        <div className="px-4 sm:px-8 py-3 sm:py-4 bg-white border-t border-gray-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+        <div className="px-4 sm:px-6 py-2.5 bg-white border-t border-gray-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0">
           <button
-            onClick={onClose}
+            onClick={handleSmoothClose}
             disabled={processing}
-            className="w-full sm:w-auto px-5 py-2.5 sm:py-3 rounded-xl text-xs font-bold text-gray-500 uppercase tracking-wider hover:bg-gray-100 transition-colors text-center"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg text-xs font-bold text-gray-500 uppercase tracking-wider hover:bg-gray-100 transition-colors text-center"
           >
             Cancel
           </button>
@@ -7935,7 +8027,9 @@ function CertificatePreviewModal({
 }) {
   useScrollLock(true);
   const isSideSlide =
-    presentation === "sideslide" || presentation === "sideslide-compact";
+    presentation === "sideslide" ||
+    presentation === "sideslide-compact" ||
+    presentation === "side-slide";
   const isCompactSideSlide = presentation === "sideslide-compact";
   const SIDESLIDE_ANIM_MS = 320;
   const [sideSlidePhase, setSideSlidePhase] = useState(
@@ -8697,22 +8791,22 @@ function CertificatePreviewModal({
         <div
           className={
             isSideSlide
-              ? "relative bg-white rounded-l-xl sm:rounded-l-2xl shadow-[-8px_0_28px_rgba(0,0,0,0.12)] flex flex-col overflow-hidden h-full w-full border-l border-slate-200/90"
+              ? "relative bg-white rounded-none shadow-[-8px_0_28px_rgba(0,0,0,0.16)] flex flex-col overflow-hidden h-full w-full border-l border-slate-200/90"
               : "relative bg-white rounded-2xl shadow-2xl w-full flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[96vh] h-[96dvh] sm:h-[96vh]"
           }
         >
         {/* Header */}
-        <div className="bg-slate-900 border-b border-slate-800 px-3.5 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between shrink-0 z-10">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div className="bg-slate-900 border-b border-slate-800 px-3.5 sm:px-5 py-2 flex items-center justify-between shrink-0 z-10 font-sans uppercase [&_.font-mono]:font-sans">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
               onClick={handlePreviewBack}
               className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg shrink-0 transition-colors"
               title="Back"
             >
-              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+              <RotateCcw className="w-4 h-4" />
             </button>
-            <div className="bg-white/10 p-1.5 sm:p-2 rounded-xl border border-white/10 shrink-0">
-              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+            <div className="bg-white/10 p-1.5 rounded-lg border border-white/10 shrink-0">
+              <FileText className="w-4 h-4 text-blue-400" />
             </div>
             <div className="min-w-0">
               <h2 className="text-xs sm:text-base font-bold text-white tracking-tight leading-none truncate">
@@ -11525,6 +11619,41 @@ function ConfirmPickupModal({
   const recipientEmail = certificate.email || certificate.residents?.email || "";
   const [deliveryMode, setDeliveryMode] = useState(isOnlineDelivery ? "email" : "pickup");
 
+  const PICKUP_SLIDE_MS = 280;
+  const PICKUP_SLIDE_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+  const [pickupSlideIn, setPickupSlideIn] = useState(false);
+  const pickupClosingRef = useRef(false);
+  const pickupCloseTimerRef = useRef(null);
+
+  const handleSmoothPickupClose = () => {
+    if (confirming || pickupClosingRef.current) return;
+    pickupClosingRef.current = true;
+    setPickupSlideIn(false);
+    pickupCloseTimerRef.current = setTimeout(() => {
+      pickupClosingRef.current = false;
+      onClose();
+    }, PICKUP_SLIDE_MS);
+  };
+
+  useEffect(() => {
+    pickupClosingRef.current = false;
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setPickupSlideIn(true));
+    });
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") handleSmoothPickupClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(pickupCloseTimerRef.current);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
   const handleConfirm = () => {
     if (deliveryMode === "email") {
       onConfirm("email");
@@ -11535,28 +11664,39 @@ function ConfirmPickupModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] overflow-hidden">
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+        style={{
+          opacity: pickupSlideIn ? 1 : 0,
+          transition: `opacity ${PICKUP_SLIDE_MS}ms ${PICKUP_SLIDE_EASE}`,
+        }}
+        onClick={handleSmoothPickupClose}
         onTouchMove={(e) => e.preventDefault()}
       />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className={`px-8 py-5 flex items-center justify-between ${isOnlineDelivery ? "bg-gradient-to-r from-blue-600 to-blue-700" : "bg-gradient-to-r from-green-600 to-green-700"}`}>
-          <h3 className="text-xl font-bold text-white flex items-center gap-3">
-            {isOnlineDelivery ? <Mail className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
+      <div
+        className="fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(96vw,34rem)] max-w-[100vw] bg-white rounded-none shadow-[-8px_0_28px_rgba(0,0,0,0.16)] border-l border-slate-200/90 flex flex-col overflow-hidden font-sans uppercase [&_.font-mono]:font-sans"
+        style={{
+          transform: pickupSlideIn ? "translate3d(0, 0, 0)" : "translate3d(100%, 0, 0)",
+          transition: `transform ${PICKUP_SLIDE_MS}ms ${PICKUP_SLIDE_EASE}`,
+          willChange: "transform",
+        }}
+      >
+        <div className={`px-5 py-3 flex items-center justify-between shrink-0 ${isOnlineDelivery ? "bg-gradient-to-r from-blue-600 to-blue-700" : "bg-gradient-to-r from-green-600 to-green-700"}`}>
+          <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2.5">
+            {isOnlineDelivery ? <Mail className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
             {isOnlineDelivery ? "Send Certificate via Email" : "Confirm Certificate Pickup"}
           </h3>
           <button
-            onClick={onClose}
-            className="text-white/80 hover:text-white transition-colors"
+            onClick={handleSmoothPickupClose}
+            className="text-white/80 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
           >
-            <XCircle className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-7 space-y-5">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <div className={`rounded-2xl p-5 border ${isOnlineDelivery ? "bg-blue-50 border-blue-100" : "bg-green-50 border-green-100"}`}>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -11588,7 +11728,7 @@ function ConfirmPickupModal({
                   <p className="text-xs text-blue-600 uppercase font-black tracking-wider mb-1">
                     Email Address
                   </p>
-                  <p className="text-sm font-bold text-blue-900 font-sans">
+                  <p className="text-sm font-bold text-blue-900 font-sans normal-case">
                     {recipientEmail}
                   </p>
                 </div>
@@ -11657,7 +11797,7 @@ function ConfirmPickupModal({
                   <p className="text-xs text-blue-700 font-bold uppercase tracking-wide mb-1">
                     The certificate notification will be sent to:
                   </p>
-                  <p className="text-sm font-bold text-blue-900 font-sans">
+                  <p className="text-sm font-bold text-blue-900 font-sans normal-case">
                     {recipientEmail}
                   </p>
                 </div>
@@ -11670,38 +11810,38 @@ function ConfirmPickupModal({
               )}
             </div>
           )}
+        </div>
 
-          <div className="flex gap-3 pt-2 border-t border-gray-100">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-3.5 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-              disabled={confirming}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={confirming || (deliveryMode === "pickup" ? !pickupName.trim() : !recipientEmail)}
-              className={`flex-[2] px-4 py-3.5 text-white rounded-xl font-bold active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg transition-all ${deliveryMode === "email" ? "bg-blue-600 hover:bg-blue-700 shadow-blue-200" : "bg-green-600 hover:bg-green-700 shadow-green-200"}`}
-            >
-              {confirming ? (
-                <>
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                  Processing...
-                </>
-              ) : deliveryMode === "email" ? (
-                <>
-                  <Mail className="w-5 h-5" />
-                  Send to Email
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-5 h-5" />
-                  Confirm Pickup
-                </>
-              )}
-            </button>
-          </div>
+        <div className="px-5 py-3 border-t border-gray-100 bg-white flex gap-2.5 shrink-0">
+          <button
+            onClick={handleSmoothPickupClose}
+            className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-semibold text-xs hover:bg-gray-50 transition-colors"
+            disabled={confirming}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={confirming || (deliveryMode === "pickup" ? !pickupName.trim() : !recipientEmail)}
+            className={`flex-[2] px-4 py-2.5 text-white rounded-lg font-bold text-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm transition-all ${deliveryMode === "email" ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}
+          >
+            {confirming ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Processing...
+              </>
+            ) : deliveryMode === "email" ? (
+              <>
+                <Mail className="w-4 h-4" />
+                Send to Email
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Confirm Pickup
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
@@ -11852,6 +11992,8 @@ function ORGenerationModal({ request, onClose, onSuccess }) {
         onClose={handleCloseORPreview}
         title=""
         maxWidth="max-w-[700px]"
+        presentation="side-slide"
+        zIndexClass="z-[60]"
       >
         <div className="p-4 md:p-5">
           <div className="mb-4 flex flex-col sm:flex-row justify-between items-center bg-green-50 p-3 md:p-4 rounded-xl border border-green-200 gap-3">
@@ -11908,6 +12050,8 @@ function ORGenerationModal({ request, onClose, onSuccess }) {
       onClose={onClose}
       title="Generate Official Receipt"
       maxWidth="max-w-2xl"
+      presentation="side-slide"
+      zIndexClass="z-[60]"
     >
       <div className="p-6">
         <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-6">
