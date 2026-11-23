@@ -445,7 +445,10 @@ export async function fetchCertificatesForTenant(
   if (type && type !== "all") query = query.eq("certificate_type", type);
   if (status && status !== "all") query = query.eq("status", status);
 
-  const { data, error } = await query.order("updated_at", { ascending: false });
+  const [{ data, error }] = await Promise.all([
+    query.order("updated_at", { ascending: false }),
+    loadWorkflowConfigurations(tenantId),
+  ]);
   if (error) throw error;
 
   return enrichCertificateList(data || [], tenantId, {

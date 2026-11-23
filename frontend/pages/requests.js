@@ -3058,6 +3058,7 @@ function RequestDetailsModal({
   }, [editFormData.partner_date_of_birth]);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncedThisSession, setSyncedThisSession] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [selectedSyncFields, setSelectedSyncFields] = useState([]);
   const isBusinessPermit = request.certificate_type === "business_permit";
@@ -3219,6 +3220,18 @@ function RequestDetailsModal({
       String(val || "")
         .trim()
         .toUpperCase();
+    const phoneDigits = (val) => {
+      let digits = String(val || "").replace(/\D/g, "");
+      if (digits.startsWith("63")) digits = `0${digits.slice(2)}`;
+      if (digits.startsWith("9") && digits.length === 10) digits = `0${digits}`;
+      return digits;
+    };
+    const addressKey = (val) =>
+      normalize(val)
+        .replace(/\b(BRGY|BARANGAY)\b/g, "")
+        .replace(/[^A-Z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
     if (
       request.first_name &&
       normalize(request.first_name) !== normalize(resident.first_name || "")
@@ -3241,7 +3254,7 @@ function RequestDetailsModal({
       mismatches.push("Suffix");
     if (
       request.contact_number &&
-      normalize(request.contact_number) !== normalize(resident.contact_number || "")
+      phoneDigits(request.contact_number) !== phoneDigits(resident.contact_number || "")
     )
       mismatches.push("Contact Number");
     if (
@@ -3251,12 +3264,12 @@ function RequestDetailsModal({
       mismatches.push("Email");
     if (
       request.address &&
-      normalize(request.address) !== normalize(resident.residential_address || "")
+      addressKey(request.address) !== addressKey(resident.residential_address || "")
     )
       mismatches.push("Address");
     if (
       request.date_of_birth &&
-      request.date_of_birth !== (resident.date_of_birth || "")
+      String(request.date_of_birth).slice(0, 10) !== String(resident.date_of_birth || "").slice(0, 10)
     )
       mismatches.push("Date of Birth");
     if (
@@ -3266,12 +3279,12 @@ function RequestDetailsModal({
       mismatches.push("Place of Birth");
     if (
       request.sex &&
-      normalize(request.sex) !== normalize(resident.gender || "")
+      formatSexFull(request.sex) !== formatSexFull(resident.gender || resident.sex || "")
     )
       mismatches.push("Gender");
     if (
       request.civil_status &&
-      normalize(request.civil_status) !== normalize(resident.civil_status || "")
+      formatCivilStatusFull(request.civil_status) !== formatCivilStatusFull(resident.civil_status || "")
     )
       mismatches.push("Civil Status");
 
@@ -3318,6 +3331,20 @@ function RequestDetailsModal({
     }
   }
   const hasMismatch = mismatches.length > 0;
+  const alreadySynced =
+    syncedThisSession ||
+    (Array.isArray(history) &&
+      history.some((entry) => {
+        const action = String(entry.action || "").toLowerCase();
+        const step = String(entry.step_name || "").toLowerCase();
+        const comments = String(entry.comments || entry.comment || "").toLowerCase();
+        return (
+          action === "synced" ||
+          step.includes("database sync") ||
+          comments.includes("synchronized with verified request")
+        );
+      }));
+  const showMismatch = hasMismatch && !alreadySynced;
 
   const mismatchPair = (label) => {
     const record = request.residents || {};
@@ -3366,6 +3393,22 @@ function RequestDetailsModal({
       const result = await response.json();
       if (result.success) {
         toast.success("Resident profile successfully updated!");
+        setSyncedThisSession(true);
+        if (onHistoryRefresh) {
+          try {
+            const token = getAuthToken();
+            const historyRes = await fetch(
+              `${API_URL}/workflow-assignments/history/${request.id}`,
+              { headers: { Authorization: `Bearer ${token}` } },
+            );
+            const historyData = await historyRes.json();
+            if (historyData.success) {
+              onHistoryRefresh(historyData.history || historyData.data || []);
+            }
+          } catch (historyError) {
+            console.error("Error refreshing history after sync:", historyError);
+          }
+        }
         if (onUpdate) await onUpdate(request.id, {});
       } else {
         toast.error("Sync failed: " + result.message);
@@ -4131,7 +4174,7 @@ function RequestDetailsModal({
                               Resident since {resolveResidentSinceYearFromRequest(request) || "—"}
                             </p>
                           )}
-                          {hasMismatch && (
+                          {showMismatch && (
                             <div className="mt-auto pt-3">
                             <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-2">
                               <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -4198,7 +4241,7 @@ function RequestDetailsModal({
                 );
               })()}
 
-              {isEditing && hasMismatch && (
+              {isEditing && showMismatch && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                     <div className="bg-amber-100 p-1.5 rounded-lg text-amber-700 shrink-0">
@@ -8382,7 +8425,64 @@ function CertificatePreviewModal({
     };
   }, [request.id, orRefreshKey]);
 
+  const isChairmanApproved = useMemo(() => {
+    const st = String(previewRequest?.status || request?.status || "").toLowerCase();
+    if (["rejected", "cancelled", "returned"].includes(st)) return false;
+
+    const lastReturnMs = computeLastReturnTimeFromHistory(history);
+
+    if (isBusinessPermitRequest && businessPreviewTab === "permit") {
+      if (["ready", "ready_for_pickup", "released", "completed", "approved"].includes(st)) {
+        return true;
+      }
+      return Boolean(findBusinessPermitFinalCaptainApproval(history, lastReturnMs));
+    }
+
+    if (["ready", "ready_for_pickup", "released", "completed", "approved"].includes(st)) {
+      return true;
+    }
+
+    const hasCaptainHistoryApproval = (history || []).some((h) => {
+      if (h.action !== "approve" && h.action !== "forward") return false;
+      if (new Date(h.created_at).getTime() <= lastReturnMs) return false;
+      const step = String(h.step_name || "").toUpperCase();
+      const role = String(h.official_role || h.officialRole || h.users?.role || "").toUpperCase();
+      const prev = String(h.previous_status || "").toLowerCase();
+      if (step.includes("SECRETARY") || role.includes("SECRETARY")) return false;
+      return (
+        prev === "captain_approval" ||
+        step.includes("CAPTAIN") ||
+        step.includes("CHAIRMAN") ||
+        step.includes("PUNONG") ||
+        role.includes("CAPTAIN") ||
+        role.includes("CHAIRMAN") ||
+        role.includes("PUNONG")
+      );
+    });
+    if (hasCaptainHistoryApproval) return true;
+
+    let detailsObj = previewRequest?.details || request?.details || {};
+    if (typeof detailsObj === "string") {
+      try { detailsObj = JSON.parse(detailsObj); } catch { detailsObj = {}; }
+    }
+    const signedAtMs = detailsObj?.captain_signed_at
+      ? new Date(detailsObj.captain_signed_at).getTime()
+      : 0;
+    if (
+      (detailsObj?.captain_signature || detailsObj?.captainSignature) &&
+      (!lastReturnMs || signedAtMs > lastReturnMs)
+    ) {
+      return true;
+    }
+
+    return false;
+  }, [previewRequest, request, history, isBusinessPermitRequest, businessPreviewTab]);
+
   const handlePrintPDF = async () => {
+    if (!isChairmanApproved) {
+      toast.error("Cannot print until approved by the Barangay Chairman.");
+      return;
+    }
     if (!activeCertificateRef.current || isDownloading || isPrinting) return;
     setIsPrinting(true);
 
@@ -8415,6 +8515,10 @@ function CertificatePreviewModal({
   };
 
   const handleDownloadPDF = async () => {
+    if (!isChairmanApproved) {
+      toast.error("Cannot download until approved by the Barangay Chairman.");
+      return;
+    }
     if (!activeCertificateRef.current || isDownloading || isPrinting) return;
     setIsDownloading(true);
 
@@ -8632,33 +8736,46 @@ function CertificatePreviewModal({
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Print button — opens print window (perfect fidelity) */}
-            <button
-              onClick={handlePrintPDF}
-              disabled={isPrinting || isDownloading}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-slate-800 text-slate-200 hover:text-white rounded-lg hover:bg-slate-700 transition-all font-semibold text-xs border border-slate-700 disabled:opacity-50"
-            >
-              {isPrinting ? (
-                <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Printer className="w-3.5 h-3.5 text-blue-400" />
-              )}
-              <span className="hidden sm:inline">{isPrinting ? "Preparing…" : "Print"}</span>
-            </button>
-            {/* Download button — saves PDF directly */}
-            <button
-              onClick={handleDownloadPDF}
-              disabled={isDownloading || isPrinting || isPublishingDelivery}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
-            >
-              {isDownloading ? (
-                <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              <span className="hidden sm:inline">Download PDF</span>
-              <span className="sm:hidden">PDF</span>
-            </button>
+            {isChairmanApproved ? (
+              <>
+                {/* Print button — opens print window (perfect fidelity) */}
+                <button
+                  onClick={handlePrintPDF}
+                  disabled={isPrinting || isDownloading}
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-slate-800 text-slate-200 hover:text-white rounded-lg hover:bg-slate-700 transition-all font-semibold text-xs border border-slate-700 disabled:opacity-50"
+                >
+                  {isPrinting ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Printer className="w-3.5 h-3.5 text-blue-400" />
+                  )}
+                  <span className="hidden sm:inline">{isPrinting ? "Preparing…" : "Print"}</span>
+                </button>
+                {/* Download button — saves PDF directly */}
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={isDownloading || isPrinting || isPublishingDelivery}
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
+                >
+                  {isDownloading ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  <span className="hidden sm:inline">Download PDF</span>
+                  <span className="sm:hidden">PDF</span>
+                </button>
+              </>
+            ) : (
+              <span
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-semibold"
+                title="Print and Download PDF are available once approved by the Barangay Chairman"
+              >
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">Pending Chairman Approval</span>
+                <span className="sm:hidden">Pending Approval</span>
+              </span>
+            )}
             {enableDeliveryPublish ? (
               <button
                 type="button"

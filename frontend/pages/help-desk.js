@@ -836,6 +836,10 @@ export default function HelpDesk() {
     variant = BLOTTER_DOC_VARIANT.BLOTTER,
   ) => {
     if (!report) return;
+    if (!isBlotterVerified(report)) {
+      toast.error("Please verify this E-Sumbong first before printing.");
+      return;
+    }
     try {
       const result = await printBlotterDocument(report, {
         officials: certificateOfficials,
@@ -870,6 +874,10 @@ export default function HelpDesk() {
     variant = BLOTTER_DOC_VARIANT.BLOTTER,
   ) => {
     if (!report?.id) return;
+    if (!isBlotterVerified(report)) {
+      toast.error("Please verify this E-Sumbong first before downloading.");
+      return;
+    }
     const downloadKey = `${report.id}:${variant}`;
     setBlotterPdfDownloadingKey(downloadKey);
     try {
@@ -2005,26 +2013,30 @@ export default function HelpDesk() {
                                     <Pencil className="w-4 h-4" />
                                   </button>
                                 )}
-                                <button
-                                  type="button"
-                                  onClick={() => handleDownloadBlotterPdf(item)}
-                                  disabled={
-                                    blotterPdfDownloadingKey ===
-                                    `${item.id}:${BLOTTER_DOC_VARIANT.BLOTTER}`
-                                  }
-                                  className="p-1.5 text-gray-500 hover:text-slate-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40"
-                                  title="Download PDF"
-                                >
-                                  <Download className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handlePrintBlotterSlip(item)}
-                                  className="p-1.5 text-gray-500 hover:text-slate-900 hover:bg-gray-100 rounded-lg transition-colors"
-                                  title="Print Blotter Slip"
-                                >
-                                  <Printer className="w-4 h-4" />
-                                </button>
+                                {isBlotterVerified(item) && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDownloadBlotterPdf(item)}
+                                      disabled={
+                                        blotterPdfDownloadingKey ===
+                                        `${item.id}:${BLOTTER_DOC_VARIANT.BLOTTER}`
+                                      }
+                                      className="p-1.5 text-gray-500 hover:text-slate-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40"
+                                      title="Download PDF"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handlePrintBlotterSlip(item)}
+                                      className="p-1.5 text-gray-500 hover:text-slate-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                      title="Print Blotter Slip"
+                                    >
+                                      <Printer className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                )}
                               </>
                             )}
 
@@ -2140,7 +2152,7 @@ export default function HelpDesk() {
                       </div>
 
                       <div className="flex items-center gap-1">
-                        {activeTab === "esumbong" && (
+                        {activeTab === "esumbong" && isBlotterVerified(item) && (
                           <>
                             <button
                               type="button"
@@ -2200,6 +2212,7 @@ export default function HelpDesk() {
             }
             size={activeTab === "esumbong" ? "xl" : "md"}
             dense={activeTab !== "esumbong"}
+            presentation={activeTab === "esumbong" ? "side-slide" : "center"}
             headerActions={
               activeTab === "esumbong" ? (
                 <>
@@ -2261,26 +2274,30 @@ export default function HelpDesk() {
                     >
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDownloadBlotterPdf(selectedItem)}
-                      disabled={
-                        blotterPdfDownloadingKey ===
-                        `${selectedItem.id}:${BLOTTER_DOC_VARIANT.BLOTTER}`
-                      }
-                      className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40"
-                      title="Download PDF"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handlePrintBlotterSlip(selectedItem)}
-                      className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Print"
-                    >
-                      <Printer className="w-4 h-4" />
-                    </button>
+                    {isBlotterVerified(selectedItem) && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadBlotterPdf(selectedItem)}
+                          disabled={
+                            blotterPdfDownloadingKey ===
+                            `${selectedItem.id}:${BLOTTER_DOC_VARIANT.BLOTTER}`
+                          }
+                          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40"
+                          title="Download PDF"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePrintBlotterSlip(selectedItem)}
+                          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Print"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={() => setDeleteConfirmItem(selectedItem)}

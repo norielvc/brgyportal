@@ -130,28 +130,39 @@ export default function BlotterDocumentPreviewModal({
       title={refLabel ? `Preview — ${refLabel}` : "E-Sumbong preview"}
       size="xl"
       dense
+      presentation="side-slide"
+      zIndexClass="z-[60]"
       headerActions={
-        <>
-          <button
-            type="button"
-            onClick={onPrint}
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+        verified ? (
+          <>
+            <button
+              type="button"
+              onClick={onPrint}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
+              <Printer className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Print</span>
+            </button>
+            <button
+              type="button"
+              onClick={onDownload}
+              disabled={downloading}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-white bg-[#03254c] rounded-lg hover:bg-[#021c38] disabled:opacity-50"
+            >
+              <Download className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">
+                {downloading ? "Generating…" : "Download PDF"}
+              </span>
+            </button>
+          </>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg"
+            title="Verify this E-Sumbong first to enable printing and PDF download"
           >
-            <Printer className="w-4 h-4 shrink-0" />
-            <span className="hidden sm:inline">Print</span>
-          </button>
-          <button
-            type="button"
-            onClick={onDownload}
-            disabled={downloading}
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-white bg-[#03254c] rounded-lg hover:bg-[#021c38] disabled:opacity-50"
-          >
-            <Download className="w-4 h-4 shrink-0" />
-            <span className="hidden sm:inline">
-              {downloading ? "Generating…" : "Download PDF"}
-            </span>
-          </button>
-        </>
+            Pending Verification
+          </span>
+        )
       }
     >
       {verified && onVariantChange ? (
@@ -188,7 +199,7 @@ export default function BlotterDocumentPreviewModal({
       </div>
       <div
         ref={viewportRef}
-        className="w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg bg-slate-100/90 border border-gray-200 max-h-[min(68vh,820px)] py-3 px-2 sm:py-4 sm:px-3"
+        className="w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg bg-slate-100/90 border border-gray-200 max-h-[calc(100dvh-140px)] py-3 px-2 sm:py-4 sm:px-3"
       >
         <div className="flex justify-center min-w-0">
           <iframe

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useScrollLock from "@/lib/useScrollLock";
@@ -15,7 +15,18 @@ export default function Modal({
   dense = false,
   bodyScroll = true,
   showCloseButton = true,
+  presentation = "center",
+  zIndexClass = "z-50",
 }) {
+  const isSideSlide = presentation === "side-slide";
+  const [rendered, setRendered] = useState(isOpen);
+  const [slideIn, setSlideIn] = useState(false);
+  const closeTimerRef = useRef(null);
+  const closingRef = useRef(false);
+
+  const SIDESLIDE_MS = 280;
+  const SIDESLIDE_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+
   const sizeClasses = {
     sm: "max-w-md",
     md: "max-w-xl",
@@ -26,14 +37,69 @@ export default function Modal({
     full: "max-w-screen-2xl",
   };
 
+  const sideSlideSizeClasses = {
+    sm: "sm:w-[min(92vw,28rem)]",
+    md: "sm:w-[min(94vw,38rem)]",
+    lg: "sm:w-[min(94vw,46rem)] lg:w-[min(74vw,52rem)]",
+    profile: "sm:w-[min(94vw,56rem)]",
+    xl: "sm:w-[min(94vw,48rem)] lg:w-[min(78vw,58rem)]",
+    full: "sm:w-[min(96vw,68rem)]",
+  };
+
   const panelRef = useRef(null);
-  useScrollLock(isOpen);
-  useMobileModalViewport(panelRef, isOpen);
+  useScrollLock(isOpen || (isSideSlide && rendered));
+  useMobileModalViewport(panelRef, isOpen && !isSideSlide);
+
+  const handleRequestClose = () => {
+    if (!isSideSlide) {
+      onClose();
+      return;
+    }
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setSlideIn(false);
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      closingRef.current = false;
+      setRendered(false);
+      onClose();
+    }, SIDESLIDE_MS);
+  };
+
+  useEffect(() => {
+    if (!isSideSlide) {
+      setRendered(isOpen);
+      return;
+    }
+    clearTimeout(closeTimerRef.current);
+    if (isOpen) {
+      closingRef.current = false;
+      setRendered(true);
+      let raf1 = 0;
+      let raf2 = 0;
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setSlideIn(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    } else if (rendered) {
+      setSlideIn(false);
+      closeTimerRef.current = setTimeout(() => {
+        setRendered(false);
+      }, SIDESLIDE_MS);
+    }
+  }, [isOpen, isSideSlide]);
+
+  useEffect(() => {
+    return () => clearTimeout(closeTimerRef.current);
+  }, []);
 
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape") {
-        onClose();
+        handleRequestClose();
       }
     };
 
@@ -44,16 +110,35 @@ export default function Modal({
     return () => {
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isSideSlide]);
 
-  if (!isOpen) return null;
+  if (isSideSlide ? !(isOpen || rendered) : !isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+    <div
+      className={cn(
+        "fixed inset-0",
+        zIndexClass,
+        isSideSlide ? "" : "flex items-center justify-center p-2 sm:p-4",
+      )}
+    >
       {/* Background overlay */}
       <div
-        className="fixed inset-0 transition-opacity bg-gray-500/75"
-        onClick={onClose}
+        className={cn(
+          "fixed inset-0",
+          isSideSlide
+            ? "bg-slate-900/50 backdrop-blur-[2px]"
+            : "bg-gray-500/75 transition-opacity",
+        )}
+        style={
+          isSideSlide
+            ? {
+                opacity: slideIn ? 1 : 0,
+                transition: `opacity ${SIDESLIDE_MS}ms ${SIDESLIDE_EASE}`,
+              }
+            : undefined
+        }
+        onClick={handleRequestClose}
         onTouchMove={(e) => e.preventDefault()}
       />
 
@@ -61,9 +146,28 @@ export default function Modal({
       <div
         ref={panelRef}
         className={cn(
-          "relative z-10 w-full overflow-hidden text-left bg-white shadow-2xl rounded-2xl flex flex-col max-h-[96dvh] sm:max-h-[90vh] max-sm:max-h-[100dvh]",
-          sizeClasses[size],
+          "z-10 w-full overflow-hidden text-left bg-white flex flex-col",
+          isSideSlide
+            ? cn(
+                "fixed inset-y-0 right-0 h-full max-w-[100vw] rounded-none shadow-[-8px_0_28px_rgba(0,0,0,0.14)] border-l border-slate-200/90",
+                sideSlideSizeClasses[size] || sideSlideSizeClasses.xl,
+              )
+            : cn(
+                "relative shadow-2xl rounded-2xl max-h-[96dvh] sm:max-h-[90vh] max-sm:max-h-[100dvh]",
+                sizeClasses[size],
+              ),
         )}
+        style={
+          isSideSlide
+            ? {
+                transform: slideIn
+                  ? "translate3d(0, 0, 0)"
+                  : "translate3d(100%, 0, 0)",
+                transition: `transform ${SIDESLIDE_MS}ms ${SIDESLIDE_EASE}`,
+                willChange: "transform",
+              }
+            : undefined
+        }
       >
         {/* Header */}
         {(title || headerActions || showCloseButton) && (
@@ -92,7 +196,7 @@ export default function Modal({
               {showCloseButton && (
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleRequestClose}
                   className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#03254c] rounded-md transition-colors shrink-0"
                 >
                   <X className={dense ? "w-4 h-4" : "w-5 h-5"} />
