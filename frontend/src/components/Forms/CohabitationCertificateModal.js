@@ -32,6 +32,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
   const [partnerDob, setPartnerDob] = useState('');
   const [partnerResidentialAddress, setPartnerResidentialAddress] = useState('');
   const [yearsLiving, setYearsLiving] = useState('');
+  const [monthsLiving, setMonthsLiving] = useState('0');
   const [children, setChildren] = useState('0');
   const [isPartnerSearchOpen, setIsPartnerSearchOpen] = useState(false);
   const [houseNo, setHouseNo] = useState('');
@@ -87,7 +88,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
     setPartnerName(''); setPartnerId(null);
     setPartnerAge(''); setPartnerSex(''); setPartnerDob('');
     setPartnerResidentialAddress('');
-    setYearsLiving(''); setChildren('0');
+    setYearsLiving(''); setMonthsLiving('0'); setChildren('0');
     setHouseNo(''); setPurok('');
     setPhase(''); setBlock(''); setLot('');
     onClose();
@@ -171,7 +172,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-1.5">
               {isTl ? 'Taon ng Pagsasama' : 'Years Together'}
@@ -181,6 +182,20 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
               min="0"
               value={yearsLiving}
               onChange={e => setYearsLiving(e.target.value)}
+              placeholder="0"
+              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-semibold text-gray-900 text-center outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+              {isTl ? 'Buwan ng Pagsasama' : 'Months Together'}
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="11"
+              value={monthsLiving}
+              onChange={e => setMonthsLiving(e.target.value)}
               placeholder="0"
               className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-semibold text-gray-900 text-center outline-none transition-colors focus:ring-2 focus:ring-gray-200"
             />
@@ -416,6 +431,7 @@ export default function CohabitationCertificateModal({ isOpen, onClose, isDemo =
         partnerDateOfBirth: partnerDob,
         partnerResidentialAddress,
         yearsLiving,
+        monthsLiving,
         numberOfChildren: children,
         houseNo: effectiveHouseNo,
         purok,

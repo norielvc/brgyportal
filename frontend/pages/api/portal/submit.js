@@ -352,7 +352,7 @@ export default async function handler(req, res) {
         partner_residential_address: formData.partnerResidentialAddress?.toUpperCase() || "",
         no_of_children: parseInt(formData.numberOfChildren) || 0,
         living_together_years: parseInt(formData.yearsLiving) || 0,
-        living_together_months: 0,
+        living_together_months: parseInt(formData.monthsLiving) || 0,
       } : {}),
       // Top-level medico legal columns
       ...(canonicalType === "medico_legal" ? {
@@ -393,7 +393,7 @@ export default async function handler(req, res) {
         partnerResidentialAddress: formData.partnerResidentialAddress?.toUpperCase() || "",
         noOfChildren: formData.numberOfChildren || "0",
         livingTogetherYears: formData.yearsLiving || "0",
-        livingTogetherMonths: "0",
+        livingTogetherMonths: formData.monthsLiving || "0",
         houseNo: formData.houseNo?.toUpperCase(),
         purok: formData.purok?.toUpperCase(),
         // Explicitly store the submitted address — separate from resident's address on file
