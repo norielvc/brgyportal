@@ -4820,205 +4820,209 @@ function RequestDetailsModal({
               )}
 
               {request.certificate_type === "barangay_cohabitation" && (
-                <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/90 shadow-sm mt-3 sm:mt-4">
-                  <div className="flex justify-between items-center mb-3 border-l-4 border-rose-500 pl-3">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
-                      <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-                      Partner Information
-                    </h3>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 mt-3">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                      <Heart className="w-3.5 h-3.5 fill-rose-500" />
+                    </div>
+                    <h3 className="text-xs font-semibold text-slate-900">Partner Information</h3>
                   </div>
-                  <div
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4"
-                  >
-                    {isEditing ? (
-                      <>
-                        <div className="col-span-1 sm:col-span-2">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                            Partner Full Name
-                          </p>
-                          <input
-                            type="text"
-                            name="partner_full_name"
-                            value={editFormData.partner_full_name}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm"
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                            Date of Birth
-                          </p>
-                          <input
-                            type="date"
-                            name="partner_date_of_birth"
-                            value={
-                              editFormData.partner_date_of_birth
-                                ? new Date(editFormData.partner_date_of_birth)
-                                  .toISOString()
-                                  .split("T")[0]
-                                : ""
-                            }
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 text-xs sm:text-sm"
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                            Sex
-                          </p>
-                          <select
-                            name="partner_sex"
-                            value={editFormData.partner_sex}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm"
-                          >
-                            <option value="">SELECT...</option>
-                            <option value="MALE">MALE</option>
-                            <option value="FEMALE">FEMALE</option>
-                          </select>
-                        </div>
-                        <div className="col-span-1 sm:col-span-2">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                            Shared Address
-                          </p>
-                          <input
-                            type="text"
-                            name="address"
-                            value={editFormData.address}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm"
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                            Years Living Together
-                          </p>
-                          <input
-                            type="number"
-                            name="living_together_years"
-                            value={editFormData.living_together_years}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-gray-900 text-xs sm:text-sm"
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                            Months
-                          </p>
-                          <input
-                            type="number"
-                            name="living_together_months"
-                            value={editFormData.living_together_months}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-gray-900 text-xs sm:text-sm"
-                          />
-                        </div>
-                        <div className="col-span-1 sm:col-span-2">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                            No. of Children
-                          </p>
-                          <input
-                            type="number"
-                            name="no_of_children"
-                            value={editFormData.no_of_children}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-gray-900 text-xs sm:text-sm"
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        {/* Partner Basic Info Row */}
-                        <div className="col-span-1 sm:col-span-2">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4">
+                      <div className="col-span-1 sm:col-span-2">
+                        <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide mb-1.5">
+                          Partner Full Name
+                        </p>
+                        <input
+                          type="text"
+                          name="partner_full_name"
+                          value={editFormData.partner_full_name}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide mb-1.5">
+                          Date of Birth
+                        </p>
+                        <input
+                          type="date"
+                          name="partner_date_of_birth"
+                          value={
+                            editFormData.partner_date_of_birth
+                              ? new Date(editFormData.partner_date_of_birth)
+                                .toISOString()
+                                .split("T")[0]
+                              : ""
+                          }
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 text-xs sm:text-sm"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide mb-1.5">
+                          Sex
+                        </p>
+                        <select
+                          name="partner_sex"
+                          value={editFormData.partner_sex}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm"
+                        >
+                          <option value="">SELECT...</option>
+                          <option value="MALE">MALE</option>
+                          <option value="FEMALE">FEMALE</option>
+                        </select>
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide mb-1.5">
+                          Shared Address
+                        </p>
+                        <input
+                          type="text"
+                          name="address"
+                          value={editFormData.address}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide mb-1.5">
+                          Years Living Together
+                        </p>
+                        <input
+                          type="number"
+                          name="living_together_years"
+                          value={editFormData.living_together_years}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-gray-900 text-xs sm:text-sm"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide mb-1.5">
+                          Months
+                        </p>
+                        <input
+                          type="number"
+                          name="living_together_months"
+                          value={editFormData.living_together_months}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-gray-900 text-xs sm:text-sm"
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide mb-1.5">
+                          No. of Children
+                        </p>
+                        <input
+                          type="number"
+                          name="no_of_children"
+                          value={editFormData.no_of_children}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-gray-900 text-xs sm:text-sm"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="sm:col-span-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             Partner Name
                           </p>
-                          <p className="font-bold text-slate-900 uppercase text-sm sm:text-base tracking-tight">
-                            {request.partner_full_name || "N/A"}
+                          <p className="text-xs font-semibold text-slate-900 uppercase mt-0.5 leading-snug">
+                            {request.partner_full_name || "—"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             Date of Birth
                           </p>
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans whitespace-nowrap">
-                            {request.partner_date_of_birth || "N/A"}
+                          <p className="text-xs font-semibold text-slate-800 mt-0.5">
+                            {request.partner_date_of_birth || "—"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             Age / Sex
                           </p>
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
+                          <p className="text-xs font-semibold text-slate-800 mt-0.5 uppercase">
                             {(calculateAge(request.partner_date_of_birth) ||
                               request.partner_age ||
-                              "-") +
+                              "—") +
                               " / " +
-                              (request.partner_sex || "-")}
+                              (request.partner_sex || "—")}
                           </p>
                         </div>
-                        <div className="col-span-1 sm:col-span-2">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 pt-3 border-t border-slate-100">
+                        <div className="col-span-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             Partner Place of Birth
                           </p>
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
-                            {request.partner_place_of_birth || request.details?.partnerPlaceOfBirth || "NOT RECORDED"}
+                          <p className="text-xs font-semibold text-slate-800 mt-0.5 uppercase leading-snug">
+                            {request.partner_place_of_birth || request.details?.partnerPlaceOfBirth || "Not recorded"}
                           </p>
                         </div>
-
-                        {/* Relationship Info - Compact Row */}
                         <div>
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             Partnership Length
                           </p>
-                          <p className="font-bold text-slate-900 text-xs sm:text-sm">
+                          <p className="text-xs font-semibold text-slate-800 mt-0.5 uppercase">
                             {request.living_together_years || "0"} YRS, {request.living_together_months || "0"} MOS
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             No. of Children
                           </p>
-                          <p className="font-bold text-slate-900 text-xs sm:text-sm">
-                            {request.no_of_children || 0}
+                          <p className="text-xs font-semibold text-slate-800 mt-0.5">
+                            {request.no_of_children ?? 0}
                           </p>
                         </div>
+                      </div>
 
-                        {/* Address Verification Block — Optimized 3-column layout */}
-                        <div className="col-span-1 sm:col-span-2 md:col-span-4 bg-amber-50/75 border border-amber-200 rounded-xl p-3 sm:p-4 mt-1">
-                          <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                            <span className="text-amber-600">⚠</span> Address Verification — Staff Review Required
-                          </p>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
-                            <div className="bg-white rounded-lg p-2.5 sm:p-3 border border-amber-100">
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      {/* Address Verification Block — Clean 3-column layout */}
+                      <div className="mt-3 pt-3 border-t border-slate-100">
+                        <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-3">
+                          <div className="flex items-center gap-1.5 mb-2.5">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <p className="text-[10px] font-semibold text-amber-900 uppercase tracking-wide">
+                              Address Verification — Staff Review Required
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                            <div className="bg-white rounded-xl p-2.5 border border-slate-200/80">
+                              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
                                 Requestor Address on File
                               </p>
-                              <p className="font-semibold text-slate-800 text-xs uppercase leading-relaxed">
-                                {request.residents?.residential_address || "NOT RECORDED"}
+                              <p className="text-xs font-semibold text-slate-800 uppercase mt-0.5 leading-snug">
+                                {request.residents?.residential_address || "Not recorded"}
                               </p>
                             </div>
-                            <div className="bg-white rounded-lg p-2.5 sm:p-3 border border-amber-100">
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            <div className="bg-white rounded-xl p-2.5 border border-slate-200/80">
+                              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
                                 Partner Address on File
                               </p>
-                              <p className="font-semibold text-slate-800 text-xs uppercase leading-relaxed">
-                                {request.partner_residential_address || request.details?.partnerResidentialAddress || request.partner_residential_address_injected || "NOT RECORDED"}
+                              <p className="text-xs font-semibold text-slate-800 uppercase mt-0.5 leading-snug">
+                                {request.partner_residential_address || request.details?.partnerResidentialAddress || request.partner_residential_address_injected || "Not recorded"}
                               </p>
                             </div>
-                            <div className="bg-white rounded-lg p-2.5 sm:p-3 border-2 border-blue-300 ring-2 ring-blue-100">
-                              <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                <span className="text-blue-500">★</span> New Address Submitted
+                            <div className="bg-blue-50/40 rounded-xl p-2.5 border border-blue-200">
+                              <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-blue-600 shrink-0" />
+                                New Address Submitted
                               </p>
-                              <p className="font-bold text-blue-800 text-xs uppercase leading-relaxed">
-                                {request.details?.currentAddress || request.address || "NOT PROVIDED"}
+                              <p className="text-xs font-semibold text-blue-950 uppercase mt-0.5 leading-snug">
+                                {request.details?.currentAddress || request.address || "Not provided"}
                               </p>
                             </div>
                           </div>
                         </div>
-                      </>
-                    )}
-                  </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
