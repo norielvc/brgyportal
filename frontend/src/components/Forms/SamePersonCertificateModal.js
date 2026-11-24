@@ -25,58 +25,58 @@ export default function SamePersonCertificateModal({ isOpen, onClose, isDemo = f
   }, [isOpen]);
 
   const extraStep3 = (lang, t) => (
-    <div className="space-y-4">
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 mb-4">
-        <p className="text-xs font-black text-blue-900 uppercase tracking-widest mb-1">
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-base font-bold text-gray-900 mb-1">
           {t.samePersonHeading}
-        </p>
-        <p className="text-[10px] text-blue-700 font-semibold">
+        </h3>
+        <p className="text-sm text-gray-500 leading-relaxed">
           {t.samePersonHelp}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-            {t.samePersonFirst} <span className="text-red-500">*</span>
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+            {t.samePersonFirst} <span className="text-red-600">*</span>
           </label>
           <input 
             type="text" 
             value={aliasFirstName} 
             onChange={e => setAliasFirstName(e.target.value)}
-            placeholder={t.samePersonFirst + "..."}
-            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-black outline-none font-bold text-base uppercase" 
+            placeholder={t.samePersonFirst}
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 uppercase outline-none transition-colors focus:ring-2 focus:ring-gray-200" 
           />
         </div>
 
         <div>
-          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
             {t.samePersonMiddle}
           </label>
           <input 
             type="text" 
             value={aliasMiddleName} 
             onChange={e => setAliasMiddleName(e.target.value)}
-            placeholder={t.samePersonMiddle + "..."}
-            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-black outline-none font-bold text-base uppercase" 
+            placeholder={t.samePersonMiddle}
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 uppercase outline-none transition-colors focus:ring-2 focus:ring-gray-200" 
           />
         </div>
 
         <div>
-          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-            {t.samePersonLast} <span className="text-red-500">*</span>
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+            {t.samePersonLast} <span className="text-red-600">*</span>
           </label>
           <input 
             type="text" 
             value={aliasLastName} 
             onChange={e => setAliasLastName(e.target.value)}
-            placeholder={t.samePersonLast + "..."}
-            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-black outline-none font-bold text-base uppercase" 
+            placeholder={t.samePersonLast}
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 uppercase outline-none transition-colors focus:ring-2 focus:ring-gray-200" 
           />
         </div>
 
         <div>
-          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
             {t.samePersonSuffix}
           </label>
           <input 
@@ -84,7 +84,7 @@ export default function SamePersonCertificateModal({ isOpen, onClose, isDemo = f
             value={aliasSuffix} 
             onChange={e => setAliasSuffix(e.target.value)}
             placeholder="JR, SR, III..."
-            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-black outline-none font-bold text-base uppercase" 
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 uppercase outline-none transition-colors focus:ring-2 focus:ring-gray-200" 
           />
         </div>
       </div>

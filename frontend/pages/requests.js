@@ -9394,15 +9394,59 @@ function ClearancePreviewForRequests({
     console.error("Error parsing details", e);
   }
 
+  const computeAgeFromDob = (dob) => {
+    if (!dob) return "";
+    const birthDate = new Date(dob);
+    if (isNaN(birthDate.getTime())) return "";
+    const today = new Date();
+    let years = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      years--;
+    }
+    return years >= 0 ? String(years) : "";
+  };
+
+  const resolvedApplicantDob =
+    requestRow.date_of_birth ||
+    additionalDetails.date_of_birth ||
+    additionalDetails.dateOfBirth ||
+    request.residents?.date_of_birth ||
+    "";
+  const resolvedPartnerDob =
+    request.partner_date_of_birth ||
+    additionalDetails.partnerDateOfBirth ||
+    additionalDetails.partner_date_of_birth ||
+    "";
+  const pickDefinedValue = (...vals) => {
+    for (const v of vals) {
+      if (v !== undefined && v !== null && String(v).trim() !== "") {
+        return String(v).trim();
+      }
+    }
+    return "";
+  };
+
   // Map request data to formData format
   const formData = {
     fullName: requestRow.applicant_name || requestRow.full_name || "",
-    age: requestRow.age || "",
+    age:
+      pickDefinedValue(
+        requestRow.age,
+        additionalDetails.age,
+        request.residents?.age,
+        computeAgeFromDob(resolvedApplicantDob),
+      ) || "",
     sex: formatSexFull(requestRow.sex || ""),
     civilStatus: formatCivilStatusFull(requestRow.civil_status || ""),
     address: certificateAddress,
-    dateOfBirth: requestRow.date_of_birth || "",
-    placeOfBirth: requestRow.place_of_birth || "",
+    dateOfBirth: resolvedApplicantDob,
+    placeOfBirth:
+      requestRow.place_of_birth ||
+      additionalDetails.place_of_birth ||
+      additionalDetails.placeOfBirth ||
+      request.residents?.place_of_birth ||
+      "",
     dateOfDeath:
       request.date_of_death || additionalDetails.date_of_death || request.residents?.date_of_death || "",
     causeOfDeath:
@@ -9423,12 +9467,33 @@ function ClearancePreviewForRequests({
       additionalDetails.guardianRelationship ||
       "",
     partnerFullName: request.partner_full_name || additionalDetails.partnerFullName || additionalDetails.partner_name || "",
-    partnerAge: request.partner_age || additionalDetails.partnerAge || "",
-    partnerSex: formatSexFull(request.partner_sex || additionalDetails.partnerSex || ""),
-    partnerDateOfBirth: request.partner_date_of_birth || additionalDetails.partnerDateOfBirth || "",
-    noOfChildren: request.no_of_children || additionalDetails.noOfChildren || "",
-    livingTogetherYears: request.living_together_years || additionalDetails.livingTogetherYears || "",
-    livingTogetherMonths: request.living_together_months || additionalDetails.livingTogetherMonths || "",
+    partnerAge:
+      pickDefinedValue(
+        request.partner_age,
+        additionalDetails.partnerAge,
+        additionalDetails.partner_age,
+        computeAgeFromDob(resolvedPartnerDob),
+      ) || "",
+    partnerSex: formatSexFull(request.partner_sex || additionalDetails.partnerSex || additionalDetails.partner_sex || ""),
+    partnerDateOfBirth: resolvedPartnerDob,
+    noOfChildren:
+      pickDefinedValue(
+        request.no_of_children,
+        additionalDetails.noOfChildren,
+        additionalDetails.no_of_children,
+      ) || "0",
+    livingTogetherYears:
+      pickDefinedValue(
+        request.living_together_years,
+        additionalDetails.livingTogetherYears,
+        additionalDetails.living_together_years,
+      ) || "0",
+    livingTogetherMonths:
+      pickDefinedValue(
+        request.living_together_months,
+        additionalDetails.livingTogetherMonths,
+        additionalDetails.living_together_months,
+      ) || "0",
     dateOfExamination: request.date_of_examination || "",
     usapingBarangay: request.usaping_barangay || "",
     dateOfHearing: request.date_of_hearing || "",
@@ -10164,18 +10229,20 @@ function ClearancePreviewForRequests({
             >
               {!isBusinessPermit && !isJobSeekerDocA && !isJobSeekerDocB && (
                 <h2
-                  className={`text-center font-bold ${isLetterPage ? "mb-3" : "mb-7"} w-full pb-1 px-4 uppercase leading-snug ${isSamePerson ? "block whitespace-nowrap" : "inline-block"}`}
+                  className={`text-center font-bold ${isLetterPage ? "mb-3" : isCohabitation ? "mb-5" : "mb-7"} w-full pb-1 px-4 uppercase leading-snug ${isSamePerson ? "block whitespace-nowrap" : "inline-block"}`}
                   style={{
                     color: isMedicoLegal ? "#000000" : "#004d40",
-                    fontSize: isSamePerson
-                      ? useCompactCertFonts
-                        ? "17px"
-                        : "20px"
-                      : isLetterPage
+                    fontSize: isCohabitation
+                      ? "18px"
+                      : isSamePerson
                         ? useCompactCertFonts
-                          ? "19px"
-                          : "22px"
-                        : `${bodyStyle.titleSize || certDefaultTitlePx}px`,
+                          ? "17px"
+                          : "20px"
+                        : isLetterPage
+                          ? useCompactCertFonts
+                            ? "19px"
+                            : "22px"
+                          : `${bodyStyle.titleSize || certDefaultTitlePx}px`,
                   }}
                 >
                   {isNaturalDeath
@@ -10828,7 +10895,7 @@ function ClearancePreviewForRequests({
                             <div className="relative">
                               {effectiveSignature && (
                                 <div
-                                  className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[64%] w-[30rem] h-64 pointer-events-none flex items-center justify-center z-20"
+                                  className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[55%] w-[30rem] h-64 pointer-events-none flex items-center justify-center z-20"
                                   style={{ mixBlendMode: "multiply" }}
                                 >
                                   <img
@@ -10985,15 +11052,17 @@ function ClearancePreviewForRequests({
                 </div>
               ) : (
                 <div
-                  className="w-full space-y-5 text-justify leading-snug"
+                  className={`w-full ${isCohabitation ? "space-y-4" : "space-y-5"} text-justify leading-snug`}
                   style={{
-                    fontSize: bodyStyle.textSize
-                      ? `${bodyStyle.textSize}px`
-                      : certBodyFontPx,
+                    fontSize: isCohabitation
+                      ? "12px"
+                      : bodyStyle.textSize
+                        ? `${bodyStyle.textSize}px`
+                        : certBodyFontPx,
                   }}
                 >
                   <div className="flex justify-between items-center mb-3">
-                    <p className={certToWhomClass}>TO WHOM IT MAY CONCERN:</p>
+                    <p className={isCohabitation ? "font-bold text-[13px]" : certToWhomClass}>TO WHOM IT MAY CONCERN:</p>
                   </div>{" "}
                   {/* Date removed for Indigency as per new layout */}
                   <>
@@ -11128,22 +11197,59 @@ function ClearancePreviewForRequests({
                             ];
                           }
 
-                          let baseLabels = [
-                            ["NAME", formData.fullName?.toUpperCase()],
-                            ["AGE", formData.age],
-                            ["SEX", formatSexFull(formData.sex)],
-                          ];
+                          const formatCohabDob = (dob) =>
+                            dob
+                              ? new Date(dob)
+                                  .toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })
+                                  .toUpperCase()
+                              : "";
+                          const cohabPersonA = {
+                            name: formData.fullName?.toUpperCase(),
+                            age: formData.age,
+                            sex: formatSexFull(formData.sex),
+                            dob: formatCohabDob(formData.dateOfBirth),
+                          };
+                          const cohabPersonB = {
+                            name: formData.partnerFullName?.toUpperCase(),
+                            age: formData.partnerAge,
+                            sex: formatSexFull(formData.partnerSex),
+                            dob: formatCohabDob(formData.partnerDateOfBirth),
+                          };
+                          const shouldSwapCohabOrder =
+                            isCohabitation &&
+                            String(cohabPersonA.sex || "").toUpperCase() !== "MALE" &&
+                            String(cohabPersonB.sex || "").toUpperCase() === "MALE";
+                          const firstCohabPerson = shouldSwapCohabOrder
+                            ? cohabPersonB
+                            : cohabPersonA;
+                          const secondCohabPerson = shouldSwapCohabOrder
+                            ? cohabPersonA
+                            : cohabPersonB;
 
-                          if (!isCohabitation) {
-                            baseLabels.push([
-                              "CIVIL STATUS",
-                              formatCivilStatusFull(formData.civilStatus),
-                            ]);
-                            baseLabels.push([
-                              "RESIDENTIAL ADDRESS",
-                              stripProvinceOf(formData.address)?.toUpperCase(),
-                            ]);
-                          }
+                          let baseLabels = isCohabitation
+                            ? [
+                                ["NAME", firstCohabPerson.name],
+                                ["AGE", firstCohabPerson.age],
+                                ["SEX", firstCohabPerson.sex],
+                                ["DATE OF BIRTH", firstCohabPerson.dob],
+                              ]
+                            : [
+                                ["NAME", formData.fullName?.toUpperCase()],
+                                ["AGE", formData.age],
+                                ["SEX", formatSexFull(formData.sex)],
+                                [
+                                  "CIVIL STATUS",
+                                  formatCivilStatusFull(formData.civilStatus),
+                                ],
+                                [
+                                  "RESIDENTIAL ADDRESS",
+                                  stripProvinceOf(formData.address)?.toUpperCase(),
+                                ],
+                              ];
 
                           let extraLabels = [];
                           if (isNaturalDeath) {
@@ -11190,21 +11296,10 @@ function ClearancePreviewForRequests({
                             ];
                           } else if (isCohabitation) {
                             extraLabels = [
-                              ["NAME", formData.partnerFullName?.toUpperCase()],
-                              ["AGE", formData.partnerAge],
-                              ["SEX", formatSexFull(formData.partnerSex)],
-                              [
-                                "DATE OF BIRTH",
-                                formData.partnerDateOfBirth
-                                  ? new Date(formData.partnerDateOfBirth)
-                                    .toLocaleDateString("en-US", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })
-                                    .toUpperCase()
-                                  : "",
-                              ],
+                              ["NAME", secondCohabPerson.name],
+                              ["AGE", secondCohabPerson.age],
+                              ["SEX", secondCohabPerson.sex],
+                              ["DATE OF BIRTH", secondCohabPerson.dob],
                               ["NO. OF CHILDREN", formData.noOfChildren],
                               [
                                 "DURATION",
@@ -11267,9 +11362,9 @@ function ClearancePreviewForRequests({
 
                         return getLabels().map(([label, value], idx) => {
                           const isPartnerSeparator =
-                            isCohabitation && idx === 3;
+                            isCohabitation && idx === 4;
                           const isCohabChildrenSeparator =
-                            isCohabitation && idx === 7;
+                            isCohabitation && idx === 8;
                           const isMedicoExam =
                             isMedicoLegal && label === "DATE OF EXAMINATION";
                           const isBoldRow =
@@ -11284,7 +11379,7 @@ function ClearancePreviewForRequests({
                               style={{
                                 marginTop:
                                   isPartnerSeparator || isCohabChildrenSeparator
-                                    ? "24px"
+                                    ? "16px"
                                     : "0",
                               }}
                             >
@@ -11328,7 +11423,7 @@ function ClearancePreviewForRequests({
                       isCohabitation ||
                       isSamePerson ? (
                       <p
-                        className={`${isSamePerson ? "mb-6" : "mb-10"} text-left leading-relaxed ${isGuardianship || isCohabitation ? "uppercase" : ""}`}
+                        className={`${isSamePerson ? "mb-6" : isCohabitation ? "mb-4" : "mb-10"} text-left leading-relaxed ${isGuardianship || isCohabitation ? "uppercase" : ""}`}
                       >
                         Issued this{" "}
                         {isSamePerson ? issuedDate : issuedDate.toUpperCase()}{" "}
@@ -11434,14 +11529,16 @@ function ClearancePreviewForRequests({
                     <div
                       className="relative text-left"
                       style={{
-                        marginTop: isSamePerson
-                          ? "60px"
-                          : isGuardianship || isCohabitation || isMedicoLegal
-                            ? "80px"
-                            : request.certificate_type ===
-                              "certificate_of_indigency"
-                              ? "34px"
-                              : "40px",
+                        marginTop: isCohabitation
+                          ? "28px"
+                          : isSamePerson
+                            ? "60px"
+                            : isGuardianship || isMedicoLegal
+                              ? "80px"
+                              : request.certificate_type ===
+                                "certificate_of_indigency"
+                                ? "34px"
+                                : "40px",
                         // One line (~14px) higher than default clearance layout.
                         top:
                           isSamePerson ||
@@ -11508,7 +11605,7 @@ function ClearancePreviewForRequests({
                               {effectiveSignature && (
                                 <>
                                   <div
-                                    className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[64%] w-[30rem] h-64 pointer-events-none flex items-center justify-center z-20"
+                                    className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[55%] w-[30rem] h-64 pointer-events-none flex items-center justify-center z-20"
                                     style={{ mixBlendMode: "multiply" }}
                                   >
                                     <img
@@ -11517,7 +11614,7 @@ function ClearancePreviewForRequests({
                                       alt="Chairman signature"
                                     />
                                   </div>
-                                  <div className="absolute left-[70%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
+                                  <div className="absolute left-[78%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
                                     <span className="font-bold text-gray-500">{captainName}</span>
                                     <span>
                                       {new Date(

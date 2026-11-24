@@ -14,41 +14,41 @@ export default function MedicoLegalModal({ isOpen, onClose, isDemo = false, tena
   };
 
   const extraStep3 = (lang, t) => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
-            {t.medicoDateOfExam} <span className="text-red-500">*</span>
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+            {t.medicoDateOfExam} <span className="text-red-600">*</span>
           </label>
           <input 
             type="date" 
             value={dateOfExam} 
             onChange={e => setDateOfExam(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base" 
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200" 
           />
         </div>
         <div>
-          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
-            {t.medicoUsapingNo} <span className="text-red-500">*</span>
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+            {t.medicoUsapingNo} <span className="text-red-600">*</span>
           </label>
           <input 
             type="text" 
             value={usapingBarangay} 
             onChange={e => setUsapingBarangay(e.target.value)}
             placeholder={t.medicoUsapingPlaceholder}
-            className="w-full px-4 py-3 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase" 
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 uppercase outline-none transition-colors focus:ring-2 focus:ring-gray-200" 
           />
         </div>
       </div>
       <div>
-        <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block text-gray-600">
-          {t.medicoDateOfHearing} <span className="text-red-500">*</span>
+        <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+          {t.medicoDateOfHearing} <span className="text-red-600">*</span>
         </label>
         <input 
           type="date" 
           value={dateOfHearing} 
           onChange={e => setDateOfHearing(e.target.value)}
-          className="w-full px-4 py-3 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base" 
+          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200" 
         />
       </div>
     </div>

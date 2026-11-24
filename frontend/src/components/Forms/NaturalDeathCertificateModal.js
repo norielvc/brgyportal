@@ -7,31 +7,43 @@ export default function NaturalDeathCertificateModal({ isOpen, onClose, isDemo =
   const [requesterName, setRequesterName] = useState('');
 
   const extraStep3 = (lang, t) => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-            {t.deathDateOfDeath} <span className="text-red-500">*</span>
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+            {t.deathDateOfDeath} <span className="text-red-600">*</span>
           </label>
-          <input type="date" value={dateOfDeath} onChange={e => setDateOfDeath(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base" />
+          <input
+            type="date"
+            value={dateOfDeath}
+            onChange={e => setDateOfDeath(e.target.value)}
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+          />
         </div>
         <div>
-          <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
-            {t.deathCauseOfDeath} <span className="text-red-500">*</span>
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+            {t.deathCauseOfDeath} <span className="text-red-600">*</span>
           </label>
-          <input type="text" value={causeOfDeath} onChange={e => setCauseOfDeath(e.target.value)}
+          <input
+            type="text"
+            value={causeOfDeath}
+            onChange={e => setCauseOfDeath(e.target.value)}
             placeholder={t.deathCausePlaceholder}
-            className="w-full px-4 py-3 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-base uppercase" />
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 uppercase outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+          />
         </div>
       </div>
       <div>
-        <label className="text-xs font-black uppercase tracking-widest ml-1 mb-2 block">
+        <label className="block text-sm font-semibold text-gray-800 mb-1.5">
           {t.deathRequesterName}
         </label>
-        <input type="text" value={requesterName} onChange={e => setRequesterName(e.target.value)}
+        <input
+          type="text"
+          value={requesterName}
+          onChange={e => setRequesterName(e.target.value)}
           placeholder={t.deathRequesterPlaceholder}
-          className="w-full px-6 py-4 bg-gray-50 border-4 border-gray-50 rounded-2xl focus:border-black outline-none font-black text-xl uppercase" />
+          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[15px] font-medium text-gray-900 uppercase outline-none transition-colors focus:ring-2 focus:ring-gray-200"
+        />
       </div>
     </div>
   );
