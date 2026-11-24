@@ -197,7 +197,7 @@ export default async function handler(req, res) {
       return res.status(400).json({
         success: false,
         message:
-          "Official Receipt can be assigned during Business Permit Preparation (or legacy Treasury step).",
+          "Official Receipt can be assigned during Finance Team review, Business Permit Preparation, or legacy Treasury step.",
       });
     }
 

@@ -4,7 +4,13 @@ import path from "path";
 export function businessPermitAllowsOrAssignment(request) {
   if (!request || request.certificate_type !== "business_permit") return false;
   const status = String(request.status || "").toLowerCase();
-  return status === "oic_review" || status === "treasury";
+  return (
+    status === "verifying" ||
+    status === "finance" ||
+    status === "finance_review" ||
+    status === "oic_review" ||
+    status === "treasury"
+  );
 }
 
 export function parseBusinessDetails(request) {
