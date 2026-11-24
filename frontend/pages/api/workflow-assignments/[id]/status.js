@@ -186,6 +186,7 @@ export default async function handler(req, res) {
 
   let newCertStatus = cert.status;
   let inspectionNextStep = null;
+  let effectiveCurrentStep = activeStep || null;
   let nextWitnessAssigneeIds = [];
   if (action === "approve") {
     const isBusinessPermit = (certType || cert.certificate_type) === "business_permit";
@@ -193,11 +194,11 @@ export default async function handler(req, res) {
       const permitSteps = currentStepsList;
       const { data: priorHistory } = await supabase
         .from("workflow_history")
-        .select("action, step_name, previous_status, new_status")
+        .select("action, step_name, previous_status, new_status, created_at")
         .eq("request_id", requestId)
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
-        .limit(30);
+        .limit(40);
       const target = resolveBusinessPermitApproveTarget(permitSteps, {
         status: cert.status,
         assignmentStepId: assignment.step_id,
@@ -206,6 +207,9 @@ export default async function handler(req, res) {
       if (target?.status) {
         newCertStatus = target.status;
         inspectionNextStep = target.next || null;
+        if (target.current) {
+          effectiveCurrentStep = target.current;
+        }
       }
     } else if (currentStepIdx !== -1 && currentStepsList[currentStepIdx + 1]) {
       const nextStepCandidate = currentStepsList[currentStepIdx + 1];
@@ -261,17 +265,24 @@ export default async function handler(req, res) {
     .eq("tenant_id", tenantId);
 
   // 6. Log to workflow history
+  const loggedStepId = effectiveCurrentStep?.id
+    ? String(effectiveCurrentStep.id)
+    : assignment.step_id;
+  const loggedStepName = effectiveCurrentStep?.name || assignment.step_name;
+  const loggedOfficialRole =
+    effectiveCurrentStep?.officialRole || activeStep?.officialRole || null;
+
   await supabase.from("workflow_history").insert([{
     tenant_id: tenantId,
     request_id: requestId,
     request_type: certType,
-    step_id: assignment.step_id,
-    step_name: assignment.step_name,
+    step_id: loggedStepId,
+    step_name: loggedStepName,
     action,
     performed_by: user._id,
     comments: note,
     signature_data: signatureData || null,
-    official_role: activeStep?.officialRole || null,
+    official_role: loggedOfficialRole,
     previous_status: cert.status,
     new_status: newCertStatus,
   }]);
@@ -284,8 +295,8 @@ export default async function handler(req, res) {
       cert.details,
       signatureData,
       cert.status,
-      assignment.step_name,
-      activeStep?.officialRole,
+      loggedStepName,
+      loggedOfficialRole,
     );
     const { data: performerRow } = await supabase
       .from("users")
@@ -296,7 +307,7 @@ export default async function handler(req, res) {
       mergedCaptainDetails || cert.details,
       signatureData,
       cert.status,
-      assignment.step_name,
+      loggedStepName,
       performerRow?.employee_code || null,
     );
     detailsPatch = mergedFinanceDetails || mergedCaptainDetails;

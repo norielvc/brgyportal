@@ -303,13 +303,42 @@ export function physicalInspectionTeamApproved(history = []) {
 }
 
 export function physicalInspectionChairmanApproved(history = []) {
-  return (history || []).some((row) => {
+  const recent = workflowHistoryAfterLastReset(history);
+  return recent.some((row) => {
     if (String(row.action || "").toLowerCase() !== "approve") return false;
     return isPhysicalInspectionCaptainStep({
       name: row.step_name,
       status: "captain_approval",
     });
   });
+}
+
+export function financeTeamApproved(history = []) {
+  const recent = workflowHistoryAfterLastReset(history);
+  return recent.some((row) => {
+    if (String(row.action || "").toLowerCase() !== "approve") return false;
+    const name = String(row.step_name || "").toLowerCase();
+    const prev = normalizeStepStatusKey(row.previous_status);
+    return (
+      name.includes("finance") ||
+      name.includes("treasury") ||
+      name.includes("treasurer") ||
+      prev === "verifying" ||
+      prev === "treasury"
+    );
+  });
+}
+
+export function finalBusinessPermitChairmanApproved(history = []) {
+  const recent = workflowHistoryAfterLastReset(history);
+  return recent.some(
+    (row) =>
+      String(row.action || "").toLowerCase() === "approve" &&
+      isBusinessPermitFinalChairmanStep({
+        name: row.step_name,
+        status: "captain_approval",
+      }),
+  );
 }
 
 export function firstPhysicalInspectionCaptainStep(steps) {
@@ -324,7 +353,7 @@ export function firstPhysicalInspectionCaptainStep(steps) {
 }
 
 /**
- * Business permits that jumped to Finance (verifying) without chairman physical-inspection approval.
+ * Business permits that jumped to Finance (verifying) or Pickup (ready) without required prior approvals.
  */
 export function alignBusinessPermitCertificateStatus(steps, request = {}) {
   const statusKey = normalizeStepStatusKey(request.status);
@@ -334,44 +363,51 @@ export function alignBusinessPermitCertificateStatus(steps, request = {}) {
   if (!chairmanStep) return request.status;
 
   const history = request.workflow_history || request.workflowHistory || [];
-  const recent = workflowHistoryAfterLastReset(history);
   const inspectionDone = physicalInspectionTeamApproved(history);
-  const chairmanDone = physicalInspectionChairmanApproved(recent);
-
-  if (!inspectionDone || chairmanDone) return request.status;
-
-  const needsChairman = [
-    "verifying",
-    "physical_inspection",
-    "staff_review",
-    "pending",
-    "submitted",
-    "processing",
-    "returned",
-  ].includes(statusKey);
-
-  if (needsChairman) return "captain_approval";
-
-  const finalChairmanDone = (history || []).some(
-    (row) =>
-      String(row.action || "").toLowerCase() === "approve" &&
-      isBusinessPermitFinalChairmanStep({
-        name: row.step_name,
-        status: "captain_approval",
-      }),
+  const chairmanDone = physicalInspectionChairmanApproved(history);
+  const financeDone = financeTeamApproved(history);
+  const finalChairmanDone = finalBusinessPermitChairmanApproved(history);
+  const hasFinanceStep = steps.some(
+    (s) =>
+      normalizeStepStatusKey(s.status) === "verifying" ||
+      String(s.name || "").toLowerCase().includes("finance"),
   );
 
+  if (!inspectionDone) return request.status;
+
+  if (!chairmanDone) {
+    const needsChairman = [
+      "verifying",
+      "physical_inspection",
+      "staff_review",
+      "pending",
+      "submitted",
+      "processing",
+      "returned",
+    ].includes(statusKey);
+
+    if (needsChairman) return "captain_approval";
+
+    if (["ready", "ready_for_pickup"].includes(statusKey) && !financeDone) {
+      return finalChairmanDone && hasFinanceStep ? "verifying" : "captain_approval";
+    }
+    return request.status;
+  }
+
   if (
-    chairmanDone &&
+    hasFinanceStep &&
+    !financeDone &&
+    ["ready", "ready_for_pickup", "oic_review"].includes(statusKey)
+  ) {
+    return "verifying";
+  }
+
+  if (
+    financeDone &&
     !finalChairmanDone &&
     ["ready", "ready_for_pickup"].includes(statusKey)
   ) {
-    const hasFinanceStep = steps.some(
-      (s) =>
-        normalizeStepStatusKey(s.status) === "verifying" ||
-        String(s.name || "").toLowerCase().includes("finance"),
-    );
-    if (hasFinanceStep) return "verifying";
+    return "captain_approval";
   }
 
   return request.status;
@@ -379,8 +415,12 @@ export function alignBusinessPermitCertificateStatus(steps, request = {}) {
 
 /**
  * Business permit approve target.
- * Preparation always advances to the chairman. Ready is reached directly when
- * the final chairman step is approved (Releasing Team is handled in Pickup Management).
+ * Enforces sequential progression:
+ * 1. Review Request (staff_review) -> Inspection Team (physical_inspection)
+ * 2. Inspection Team (physical_inspection) -> Barangay Captain Approval - Physical Inspection (captain_approval)
+ * 3. Barangay Captain Approval - Physical Inspection (captain_approval) -> Finance Team (verifying)
+ * 4. Finance Team (verifying) -> Barangay Captain Approval - Business Permit (captain_approval)
+ * 5. Barangay Captain Approval - Business Permit (captain_approval) -> Releasing Team (ready)
  */
 export function resolveBusinessPermitApproveTarget(
   steps,
@@ -396,16 +436,60 @@ export function resolveBusinessPermitApproveTarget(
   const prepIdx = steps.findIndex(isBusinessPermitPreparationStep);
   const releaseIdx = steps.findIndex(isReleasingTeamStep);
 
-  const chairmanApproved = (history || []).some((row) => {
-    const name = String(row.step_name || "").toLowerCase();
-    const prev = normalizeStepStatusKey(row.previous_status);
-    return (
-      String(row.action || "").toLowerCase() === "approve" &&
-      name.includes("business permit") &&
-      (name.includes("captain") || name.includes("chairman")) &&
-      prev === "captain_approval"
-    );
-  });
+  const financeStepInWorkflow = steps.find(
+    (s) =>
+      normalizeStepStatusKey(s.status) === "verifying" ||
+      String(s.name || "").toLowerCase().includes("finance"),
+  );
+  const hasFinanceApproved = financeTeamApproved(history);
+  const chairmanApproved = finalBusinessPermitChairmanApproved(history);
+
+  // Safeguard: If the request is at captain_approval (or the assignment is a captain step)
+  // and the workflow has a Finance Team step that has NOT been approved yet,
+  // this approval MUST be treated as the 1st Captain Approval (Physical Inspection)
+  // and route to Finance Team (verifying), never skipping to Ready/Pickup.
+  if (
+    statusKey === "captain_approval" ||
+    (assignmentStep && isCaptainApprovalStep(assignmentStep))
+  ) {
+    if (financeStepInWorkflow && !hasFinanceApproved) {
+      const physicalCaptain =
+        firstPhysicalInspectionCaptainStep(steps) || assignmentStep;
+      return {
+        current: physicalCaptain,
+        next: financeStepInWorkflow,
+        status: normalizeCertificateStatus(financeStepInWorkflow.status, {
+          stepName: financeStepInWorkflow.name,
+          certificateType: "business_permit",
+        }),
+      };
+    }
+    if (!financeStepInWorkflow || hasFinanceApproved) {
+      const finalCaptain =
+        steps.find((s) => isBusinessPermitFinalChairmanStep(s)) ||
+        assignmentStep;
+      const finalCaptainIdx = finalCaptain
+        ? steps.findIndex((s) => String(s.id) === String(finalCaptain.id))
+        : assignmentIdx;
+      const afterFinal =
+        finalCaptainIdx >= 0
+          ? steps.slice(finalCaptainIdx + 1).find(isReleasingTeamStep) ||
+            steps[finalCaptainIdx + 1]
+          : steps.find(isReleasingTeamStep);
+      if (afterFinal) {
+        return {
+          current: finalCaptain || assignmentStep,
+          next: afterFinal,
+          status: isReleasingTeamStep(afterFinal)
+            ? "ready"
+            : normalizeCertificateStatus(afterFinal.status, {
+                stepName: afterFinal.name,
+                certificateType: "business_permit",
+              }),
+        };
+      }
+    }
+  }
 
   let currentIdx = assignmentIdx;
   if (currentIdx < 0 && statusKey) {
@@ -554,6 +638,37 @@ export function resolveBusinessPermitCaptainStep(steps, request = {}) {
   if (!captains.length) return null;
   if (captains.length === 1) return captains[0].step;
 
+  const history = request.workflow_history || request.workflowHistory || [];
+  const physicalCaptain = captains.find(({ step }) =>
+    isPhysicalInspectionCaptainStep(step),
+  );
+  const finalCaptain =
+    captains.find(({ step }) => isBusinessPermitFinalChairmanStep(step)) ||
+    captains[captains.length - 1];
+
+  const hasFinanceStep = (steps || []).some(
+    (s) =>
+      normalizeStepStatusKey(s.status) === "verifying" ||
+      String(s.name || "").toLowerCase().includes("finance"),
+  );
+
+  // When workflow history is available, enforce the true sequence over potentially stale assignment step_id
+  if (Array.isArray(history) && history.length > 0) {
+    const financeDone = financeTeamApproved(history);
+    const inspectionChairmanDone = physicalInspectionChairmanApproved(history);
+    const inspectionDone = physicalInspectionTeamApproved(history);
+
+    if (hasFinanceStep && !financeDone && physicalCaptain) {
+      return physicalCaptain.step;
+    }
+    if ((financeDone || inspectionChairmanDone) && finalCaptain) {
+      return finalCaptain.step;
+    }
+    if (inspectionDone && !inspectionChairmanDone && physicalCaptain) {
+      return physicalCaptain.step;
+    }
+  }
+
   const assignment = request.workflow_assignment || {};
   if (assignment.step_id != null) {
     const byId = captains.find(
@@ -575,14 +690,6 @@ export function resolveBusinessPermitCaptainStep(steps, request = {}) {
   const beforePrep = captains.filter(
     ({ index }) => prepIdx !== -1 && index < prepIdx,
   );
-
-  const history = request.workflow_history || request.workflowHistory || [];
-  const physicalCaptain = captains.find(({ step }) =>
-    isPhysicalInspectionCaptainStep(step),
-  );
-  const finalCaptain =
-    captains.find(({ step }) => isBusinessPermitFinalChairmanStep(step)) ||
-    captains[captains.length - 1];
 
   const certStatusKey = normalizeStepStatusKey(request.status);
   if (certStatusKey === "captain_approval") {
