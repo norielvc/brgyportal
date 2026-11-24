@@ -214,10 +214,10 @@ function buildCertificateEditFormState(request) {
     usaping_barangay: request?.usaping_barangay || "",
     date_of_hearing: request?.date_of_hearing || "",
     ...(String(request?.certificate_type || "").toLowerCase() ===
-    "first_time_job_seeker"
+      "first_time_job_seeker"
       ? {
-          resident_since_year: resolveResidentSinceYearFromRequest(request),
-        }
+        resident_since_year: resolveResidentSinceYearFromRequest(request),
+      }
       : {}),
   };
 }
@@ -377,9 +377,9 @@ function getRequestPickupMethod(req) {
   }
   return String(
     req?.pickup_method ||
-      details.pickup_method ||
-      details.pickupMethod ||
-      "pickup",
+    details.pickup_method ||
+    details.pickupMethod ||
+    "pickup",
   ).toLowerCase();
 }
 
@@ -534,8 +534,8 @@ const MultiSelectDropdown = ({
     <button
       onClick={() => setIsOpen(!isOpen)}
       className={`flex items-center justify-between w-full min-w-[120px] pl-2 pr-7 py-1.5 border rounded-md focus:ring-1 focus:ring-[#03254c] bg-white text-xs transition-all ${selected.length > 0
-          ? "border-blue-400 ring-1 ring-blue-50"
-          : "border-gray-300"
+        ? "border-blue-400 ring-1 ring-blue-50"
+        : "border-gray-300"
         }`}
     >
       <div className="flex items-center gap-2 truncate">
@@ -602,8 +602,8 @@ const MultiSelectDropdown = ({
                 />
                 <div
                   className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isSelected
-                      ? "bg-blue-600 border-blue-600"
-                      : "bg-white border-gray-300"
+                    ? "bg-blue-600 border-blue-600"
+                    : "bg-white border-gray-300"
                     }`}
                 >
                   {isSelected && (
@@ -881,8 +881,8 @@ export default function RequestsPage() {
           ...full,
           _detailLoaded: true,
           workflow_assignment:
-            request.workflow_assignment ||
             full.workflow_assignment ||
+            request.workflow_assignment ||
             null,
         };
       }
@@ -1097,11 +1097,11 @@ export default function RequestsPage() {
         includeHistory: pdfDeepLink,
       }),
       {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        "Content-Type": "application/json",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "Content-Type": "application/json",
+        },
       },
-    },
     )
       .then((res) => res.json())
       .then((data) => {
@@ -1469,7 +1469,7 @@ export default function RequestsPage() {
         if (emailRes.ok && emailData.success) {
           toast.success(
             emailData.message ||
-              `Certificate email sent to ${recipientEmail || "applicant"}`
+            `Certificate email sent to ${recipientEmail || "applicant"}`
           );
         } else {
           console.warn("[PICKUP-EMAIL] send-email returned:", emailData);
@@ -1702,7 +1702,7 @@ export default function RequestsPage() {
         );
       }
 
-      const response = await fetch(url, {
+      let response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -1710,6 +1710,38 @@ export default function RequestsPage() {
         },
         body: JSON.stringify(body),
       });
+
+      if (response.status === 404 && workflowAssignment?.id) {
+        try {
+          const freshRes = await fetch(
+            `${API_URL}/workflow-assignments/active-assignment/${req.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+          if (freshRes.ok) {
+            const freshData = await freshRes.json();
+            if (freshData.success && freshData.assignment?.id) {
+              response = await fetch(
+                `${API_URL}/workflow-assignments/${freshData.assignment.id}/status`,
+                {
+                  method,
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(body),
+                },
+              );
+            }
+          }
+        } catch (retryErr) {
+          console.warn("[SUBMIT-ACTION] Retry after 404 failed:", retryErr);
+        }
+      }
 
       const data = await response.json();
       console.log("[SUBMIT-ACTION] Response received:", {
@@ -1760,7 +1792,7 @@ export default function RequestsPage() {
             } else {
               successMessage =
                 confirmedStatus === "ready" ||
-                confirmedStatus === "ready_for_pickup"
+                  confirmedStatus === "ready_for_pickup"
                   ? "Request approved and forwarded to Pickup Management"
                   : "Request approved and forwarded to the next workflow step";
             }
@@ -1840,7 +1872,7 @@ export default function RequestsPage() {
             ? "This approval was already submitted. Refresh the page to see the latest status."
             : data.code === "WORKFLOW_STEP_MISMATCH"
               ? data.message ||
-                "This request is no longer at your workflow step. Refresh and try again."
+              "This request is no longer at your workflow step. Refresh and try again."
               : data.message || "Action failed";
         alert(conflictMsg);
       }
@@ -2128,11 +2160,11 @@ export default function RequestsPage() {
     <div className="space-y-2.5 max-w-[1600px] mx-auto text-[13px]">
       {(router.query.pdf === "1" || router.query.directPdf === "1") &&
         !selectedRequest && (
-        <div className="fixed inset-0 z-[100000] bg-neutral-900 flex flex-col items-center justify-center text-white">
-          <div className="w-10 h-10 border-3 border-white/25 border-t-blue-400 rounded-full animate-spin mb-3" />
-          <p className="text-sm font-bold tracking-wide">Loading certificate preview…</p>
-        </div>
-      )}
+          <div className="fixed inset-0 z-[100000] bg-neutral-900 flex flex-col items-center justify-center text-white">
+            <div className="w-10 h-10 border-3 border-white/25 border-t-blue-400 rounded-full animate-spin mb-3" />
+            <p className="text-sm font-bold tracking-wide">Loading certificate preview…</p>
+          </div>
+        )}
       {/* Pending Action Banner on Mobile & Desktop */}
       {pendingActionCount > 0 && (
         <div className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-lg text-amber-900">
@@ -2161,18 +2193,16 @@ export default function RequestsPage() {
       <div className="grid grid-cols-2 p-0.5 bg-slate-100 rounded-md border border-slate-200/80 gap-0.5">
         <button
           onClick={() => setViewMode("assigned")}
-          className={`py-1.5 px-2 rounded text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
-            viewMode === "assigned"
-              ? "bg-white text-[#03254c] shadow-sm border border-slate-200/60"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
-          }`}
+          className={`py-1.5 px-2 rounded text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${viewMode === "assigned"
+            ? "bg-white text-[#03254c] shadow-sm border border-slate-200/60"
+            : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+            }`}
         >
           <FileCheck className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">My Assignments</span>
           <span
-            className={`px-1 py-px rounded-full text-[9px] font-bold tabular-nums ${
-              viewMode === "assigned" ? "bg-blue-100 text-[#03254c]" : "bg-slate-200 text-slate-700"
-            }`}
+            className={`px-1 py-px rounded-full text-[9px] font-bold tabular-nums ${viewMode === "assigned" ? "bg-blue-100 text-[#03254c]" : "bg-slate-200 text-slate-700"
+              }`}
           >
             {assignedCount}
           </span>
@@ -2180,18 +2210,16 @@ export default function RequestsPage() {
 
         <button
           onClick={() => setViewMode("all")}
-          className={`py-1.5 px-2 rounded text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
-            viewMode === "all"
-              ? "bg-white text-[#03254c] shadow-sm border border-slate-200/60"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
-          }`}
+          className={`py-1.5 px-2 rounded text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${viewMode === "all"
+            ? "bg-white text-[#03254c] shadow-sm border border-slate-200/60"
+            : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+            }`}
         >
           <History className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">Request History</span>
           <span
-            className={`px-1 py-px rounded-full text-[9px] font-bold tabular-nums ${
-              viewMode === "all" ? "bg-blue-100 text-[#03254c]" : "bg-slate-200 text-slate-700"
-            }`}
+            className={`px-1 py-px rounded-full text-[9px] font-bold tabular-nums ${viewMode === "all" ? "bg-blue-100 text-[#03254c]" : "bg-slate-200 text-slate-700"
+              }`}
           >
             {totalCount}
           </span>
@@ -2225,11 +2253,10 @@ export default function RequestsPage() {
           {/* Filter Toggle Button (Mobile) */}
           <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className={`md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-semibold border transition-all shrink-0 ${
-              showMobileFilters || activeFilterCount > 0
-                ? "bg-[#03254c] border-[#03254c] text-white"
-                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
+            className={`md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-semibold border transition-all shrink-0 ${showMobileFilters || activeFilterCount > 0
+              ? "bg-[#03254c] border-[#03254c] text-white"
+              : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
           >
             <Filter className="w-3.5 h-3.5" />
             <span>Filters</span>
@@ -2261,8 +2288,8 @@ export default function RequestsPage() {
                 : opt.value === ""
                   ? statusFilter.length === 0 && deliveryFilter === "all"
                   : statusFilter.length === 1 &&
-                    statusFilter[0] === opt.value &&
-                    deliveryFilter === "all";
+                  statusFilter[0] === opt.value &&
+                  deliveryFilter === "all";
 
             return (
               <button
@@ -2293,11 +2320,10 @@ export default function RequestsPage() {
                     setDeliveryFilter("all");
                   }
                 }}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 border ${
-                  isSelected
-                    ? "bg-[#03254c] text-white border-[#03254c]"
-                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                }`}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 border ${isSelected
+                  ? "bg-[#03254c] text-white border-[#03254c]"
+                  : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                  }`}
               >
                 {opt.label}
               </button>
@@ -2317,9 +2343,8 @@ export default function RequestsPage() {
 
         {/* Expandable Advanced Filters Grid */}
         <div
-          className={`${
-            showMobileFilters ? "grid" : "hidden md:grid"
-          } grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1.5 border-t border-gray-100 animate-in fade-in duration-150`}
+          className={`${showMobileFilters ? "grid" : "hidden md:grid"
+            } grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1.5 border-t border-gray-100 animate-in fade-in duration-150`}
         >
           {/* Status MultiSelect */}
           <div className="w-full">
@@ -2371,11 +2396,10 @@ export default function RequestsPage() {
             <select
               value={deliveryFilter}
               onChange={(e) => setDeliveryFilter(e.target.value)}
-              className={`w-full appearance-none pl-7 pr-7 py-1.5 border rounded-md focus:ring-1 focus:ring-[#03254c]/20 text-xs font-semibold transition-colors ${
-                deliveryFilter !== "all"
-                  ? "border-blue-400 bg-blue-50/60 text-blue-900"
-                  : "border-gray-200 bg-gray-50 text-gray-800"
-              }`}
+              className={`w-full appearance-none pl-7 pr-7 py-1.5 border rounded-md focus:ring-1 focus:ring-[#03254c]/20 text-xs font-semibold transition-colors ${deliveryFilter !== "all"
+                ? "border-blue-400 bg-blue-50/60 text-blue-900"
+                : "border-gray-200 bg-gray-50 text-gray-800"
+                }`}
             >
               {DELIVERY_FILTER_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -2484,9 +2508,8 @@ export default function RequestsPage() {
                   <div
                     key={`${request.id}-${index}`}
                     onClick={() => openRequestDetail(request)}
-                    className={`p-2.5 bg-white transition-all active:bg-blue-50/50 cursor-pointer ${
-                      canAct ? "bg-blue-50/20 border-l-2 border-l-[#03254c]" : ""
-                    }`}
+                    className={`p-2.5 bg-white transition-all active:bg-blue-50/50 cursor-pointer ${canAct ? "bg-blue-50/20 border-l-2 border-l-[#03254c]" : ""
+                      }`}
                   >
                     {/* Header Row: Ref Number + Action Badge + Status Pill */}
                     <div className="flex items-center justify-between gap-2 mb-2">
@@ -2510,7 +2533,7 @@ export default function RequestsPage() {
                             request.status,
                             request.certificate_type,
                             currentStep?.name ||
-                              request.workflow_assignment?.step_name,
+                            request.workflow_assignment?.step_name,
                           )}
                         </span>
                         {isAdminUser && (
@@ -2620,9 +2643,8 @@ export default function RequestsPage() {
                       <tr
                         key={`${request.id}-${index}`}
                         onClick={() => openRequestDetail(request)}
-                        className={`hover:bg-gray-50 transition-colors cursor-pointer ${
-                          canAct ? "bg-blue-50/30" : ""
-                        }`}
+                        className={`hover:bg-gray-50 transition-colors cursor-pointer ${canAct ? "bg-blue-50/30" : ""
+                          }`}
                       >
                         <td className="px-2.5 py-1.5">
                           <Link
@@ -2691,7 +2713,7 @@ export default function RequestsPage() {
                               request.status,
                               request.certificate_type,
                               currentStep?.name ||
-                                request.workflow_assignment?.step_name,
+                              request.workflow_assignment?.step_name,
                             )}
                           </span>
                         </td>
@@ -3510,25 +3532,16 @@ function RequestDetailsModal({
   };
 
   const handleInspectionChange = (area, field, value) => {
-    setInspectionData((prev) => {
-      if (field === "date") {
-        const areas = { ...prev.areas };
-        Object.keys(areas).forEach((key) => {
-          areas[key] = { ...areas[key], date: value };
-        });
-        return { ...prev, areas };
-      }
-      return {
-        ...prev,
-        areas: {
-          ...prev.areas,
-          [area]: {
-            ...prev.areas[area],
-            [field]: value,
-          },
+    setInspectionData((prev) => ({
+      ...prev,
+      areas: {
+        ...prev.areas,
+        [area]: {
+          ...prev.areas[area],
+          [field]: value,
         },
-      };
-    });
+      },
+    }));
   };
 
   const handleInspectionMetaChange = (field, value) => {
@@ -3538,10 +3551,13 @@ function RequestDetailsModal({
       if (!dateOnly) return { ...prev, visitDateTime: value };
       const areas = { ...prev.areas };
       Object.keys(areas).forEach((key) => {
-        areas[key] = { ...areas[key], date: dateOnly };
+        if (!areas[key]?.date) {
+          areas[key] = { ...areas[key], date: dateOnly };
+        }
       });
       return { ...prev, visitDateTime: value, areas };
     });
+    setInspectionData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleRecommendationChange = (committee, field, value) => {
@@ -3721,15 +3737,15 @@ function RequestDetailsModal({
         ...prevDetails,
         ...(sinceYearFromForm
           ? {
-              since_year: sinceYearFromForm,
-              sinceYear: sinceYearFromForm,
-              resident_since_year: sinceYearFromForm,
-            }
+            since_year: sinceYearFromForm,
+            sinceYear: sinceYearFromForm,
+            resident_since_year: sinceYearFromForm,
+          }
           : {
-              since_year: null,
-              sinceYear: null,
-              resident_since_year: null,
-            }),
+            since_year: null,
+            sinceYear: null,
+            resident_since_year: null,
+          }),
       };
     }
 
@@ -3843,7 +3859,13 @@ function RequestDetailsModal({
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 relative">
-            {!isEditing && canAct && !["oic_review", "ready", "ready_for_pickup"].includes(request.status) && (
+            {!isEditing &&
+              canAct &&
+              !isFinanceReview &&
+              (["admin", "superadmin", "super_admin"].includes(
+                String(currentUser?.role || "").toLowerCase(),
+              ) ||
+                !["oic_review", "ready", "ready_for_pickup"].includes(request.status)) && (
               <button
                 onClick={() => void handleStartEditing()}
                 disabled={detailLoading}
@@ -3915,22 +3937,20 @@ function RequestDetailsModal({
         <div className="flex border-b border-slate-200 bg-white px-4 shrink-0">
           <button
             onClick={() => setActiveTab("details")}
-            className={`py-2 px-2.5 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
-              activeTab === "details"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+            className={`py-2 px-2.5 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === "details"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
           >
             <FileText className="w-3.5 h-3.5" />
             Request Details
           </button>
           <button
             onClick={() => setActiveTab("history")}
-            className={`py-2 px-2.5 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
-              activeTab === "history"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+            className={`py-2 px-2.5 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === "history"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
           >
             <MessageCircle className="w-3.5 h-3.5" />
             <span>History & Comments</span>
@@ -4051,10 +4071,10 @@ function RequestDetailsModal({
                 const stepLabel = isBusinessPermitPreparationStage
                   ? "Business Permit Preparation"
                   : String(currentStep?.name || "").replace(/:\s*$/, "") ||
-                    formatRequestStatus(
-                      request.status,
-                      request.certificate_type,
-                    );
+                  formatRequestStatus(
+                    request.status,
+                    request.certificate_type,
+                  );
                 const purposeText = Array.isArray(request.purpose)
                   ? request.purpose.filter(Boolean).join("\n")
                   : request.purpose || "";
@@ -4062,8 +4082,8 @@ function RequestDetailsModal({
                   request.date_of_birth ||
                   (request.residents?.date_of_birth
                     ? new Date(request.residents.date_of_birth)
-                        .toISOString()
-                        .split("T")[0]
+                      .toISOString()
+                      .split("T")[0]
                     : "");
                 const deliveryLabel =
                   request.pickup_method === "online"
@@ -4099,16 +4119,16 @@ function RequestDetailsModal({
                   },
                   ...(deliveryLabel
                     ? [
-                        {
-                          icon: request.pickup_method === "online" ? Mail : MapPin,
-                          iconWrap:
-                            request.pickup_method === "online"
-                              ? "bg-blue-50 text-blue-600"
-                              : "bg-slate-100 text-slate-700",
-                          label: "Delivery",
-                          value: deliveryLabel,
-                        },
-                      ]
+                      {
+                        icon: request.pickup_method === "online" ? Mail : MapPin,
+                        iconWrap:
+                          request.pickup_method === "online"
+                            ? "bg-blue-50 text-blue-600"
+                            : "bg-slate-100 text-slate-700",
+                        label: "Delivery",
+                        value: deliveryLabel,
+                      },
+                    ]
                     : []),
                 ];
                 return (
@@ -4167,7 +4187,7 @@ function RequestDetailsModal({
                                     if (data.success && data.data) {
                                       setSelectedRequest((prev) => ({ ...prev, ...data.data }));
                                     }
-                                  } catch (err) {}
+                                  } catch (err) { }
                                   setShowResidentDb(true);
                                 }}
                                 className="ml-auto p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg"
@@ -4222,25 +4242,25 @@ function RequestDetailsModal({
                           )}
                           {showMismatch && (
                             <div className="mt-auto pt-3">
-                            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-2">
-                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[11px] font-semibold text-amber-900">Information Mismatch Detected</p>
-                                <p className="text-[10px] text-amber-800 leading-snug">
-                                  Request data differs from record for:{" "}
-                                  <span className="font-bold">{mismatches.join(", ").toUpperCase()}</span>.
-                                </p>
+                              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-2">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[11px] font-semibold text-amber-900">Information Mismatch Detected</p>
+                                  <p className="text-[10px] text-amber-800 leading-snug">
+                                    Request data differs from record for:{" "}
+                                    <span className="font-bold">{mismatches.join(", ").toUpperCase()}</span>.
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleSyncToResident}
+                                  disabled={isSyncing}
+                                  className="shrink-0 px-2.5 py-1 rounded-full border border-amber-300 bg-white text-amber-800 text-[10px] font-semibold inline-flex items-center gap-1 hover:bg-amber-100 disabled:opacity-50"
+                                >
+                                  <RefreshCw className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
+                                  {isSyncing ? "Syncing…" : "Sync to Resident"}
+                                </button>
                               </div>
-                              <button
-                                type="button"
-                                onClick={handleSyncToResident}
-                                disabled={isSyncing}
-                                className="shrink-0 px-2.5 py-1 rounded-full border border-amber-300 bg-white text-amber-800 text-[10px] font-semibold inline-flex items-center gap-1 hover:bg-amber-100 disabled:opacity-50"
-                              >
-                                <RefreshCw className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
-                                {isSyncing ? "Syncing…" : "Sync to Resident"}
-                              </button>
-                            </div>
                             </div>
                           )}
                         </div>
@@ -4343,480 +4363,480 @@ function RequestDetailsModal({
 
               {/* Applicant Info — edit mode */}
               {isEditing && (
-              <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200/90 shadow-sm">
-                <div className="flex justify-between items-center mb-4 border-l-[3px] border-blue-600 pl-3">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2 text-xs uppercase tracking-wider">
-                    <User className="w-4 h-4 text-blue-600" />
-                    Applicant Information
-                  </h3>
-                  {isEditing && (
-                    <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 italic flex items-center gap-1">
-                      <Info className="w-3 h-3" />
-                      Master DB sync required after save
-                    </span>
-                  )}
-                </div>
-
-                {request.residents?.pending_case && (
-                  <div className="mb-4 bg-red-600 border border-red-400 rounded-xl p-3 shadow-sm ring-2 ring-red-600/20">
-                    <div className="flex items-start gap-3">
-                      <div className="bg-white/20 p-1.5 rounded-lg border border-white/20">
-                        <ShieldAlert className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-white font-black uppercase text-sm leading-tight tracking-wider">
-                            RESTRICTED APPLICANT RECORD
-                          </h4>
-                          <span className="bg-black/40 text-white text-[9px] font-black px-2 py-1 rounded-lg border border-white/20 uppercase tracking-widest">
-                            Legal Hold Active
-                          </span>
-                        </div>
-                        <p className="text-red-100 text-[10px] font-bold uppercase mt-1 leading-relaxed">
-                          This resident has a PENDING CASE in the Master Database. Requires immediate administrative attention.
-                        </p>
-                        <div className="mt-2 bg-black/30 p-2.5 rounded-lg border border-white/10 backdrop-blur-sm">
-                          <p className="text-[9px] font-black text-red-200 uppercase tracking-widest mb-1">
-                            OFFICIAL CASE REMARKS:
-                          </p>
-                          <p className="text-xs font-bold text-white italic leading-relaxed">
-                            "{request.residents?.case_record_history || "No specific case details provided in record."}"
-                          </p>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <p className="text-[10px] font-black text-white bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 inline-flex items-center gap-2">
-                            <XCircle className="w-3 h-3 text-red-400" />
-                            BARANGAY CLEARANCE ISSUANCE IS STRONGLY PROHIBITED
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 md:gap-8">
-                  {/* LEFT COLUMN */}
-                  <div className="space-y-4">
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
-                            First Name
-                          </p>
-                          <input
-                            type="text"
-                            name="first_name"
-                            value={editFormData.first_name}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
-                            Middle Name
-                          </p>
-                          <input
-                            type="text"
-                            name="middle_name"
-                            value={editFormData.middle_name}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
-                            Last Name
-                          </p>
-                          <input
-                            type="text"
-                            name="last_name"
-                            value={editFormData.last_name}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
-                            Suffix
-                          </p>
-                          <input
-                            type="text"
-                            name="suffix"
-                            value={editFormData.suffix}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">
-                            Full Name
-                          </p>
-                          {request.residents && !isEditing && (
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                  const token = getAuthToken();
-                                  const res = await fetch(
-                                    `${API_URL}/certificates/${request.id}`,
-                                    {
-                                      headers: {
-                                        Authorization: `Bearer ${token}`,
-                                      },
-                                    },
-                                  );
-                                  const data = await res.json();
-                                  if (data.success && data.data) {
-                                    setSelectedRequest((prev) => ({
-                                      ...prev,
-                                      ...data.data,
-                                    }));
-                                  }
-                                } catch (err) { }
-                                setShowResidentDb(true);
-                              }}
-                              className="p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-100/50 active:scale-90"
-                              title="View Master Record"
-                            >
-                              <Database className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                        <p className="font-bold text-slate-900 text-sm sm:text-base leading-snug tracking-tight uppercase">
-                          {request.applicant_name ||
-                            request.full_name ||
-                            "NOT RECORDED"}
-                        </p>
-                        {request.certificate_type ===
-                          "certification_same_person" && (
-                            <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm mt-2 w-fit">
-                              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest border-r border-blue-200 pr-2">
-                                AKA / SECOND NAME
-                              </span>
-                              <span className="font-black text-blue-700 uppercase text-sm tracking-tight">
-                                {(() => {
-                                  // Check alias_name column first
-                                  if (request.alias_name) {
-                                    return request.alias_name;
-                                  }
-                                  // Fallback to details JSON
-                                  try {
-                                    const d =
-                                      typeof request.details === "string"
-                                        ? JSON.parse(request.details || "{}")
-                                        : request.details || {};
-                                    return (
-                                      d.alias_name ||
-                                      d.aliasName ||
-                                      d.fullName2 ||
-                                      d.name_2 ||
-                                      d.name2 ||
-                                      "NOT RECORDED"
-                                    );
-                                  } catch (e) {
-                                    return "NOT RECORDED";
-                                  }
-                                })()}
-                              </span>
-                            </div>
-                          )}
-                      </div>
+                <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200/90 shadow-sm">
+                  <div className="flex justify-between items-center mb-4 border-l-[3px] border-blue-600 pl-3">
+                    <h3 className="font-bold text-slate-900 flex items-center gap-2 text-xs uppercase tracking-wider">
+                      <User className="w-4 h-4 text-blue-600" />
+                      Applicant Information
+                    </h3>
+                    {isEditing && (
+                      <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 italic flex items-center gap-1">
+                        <Info className="w-3 h-3" />
+                        Master DB sync required after save
+                      </span>
                     )}
+                  </div>
 
-                    {/* Key fields row */}
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-4 pt-4 border-t border-slate-100">
-                      <div>
-                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                          Date of Birth
-                        </p>
-                        {isEditing ? (
-                          <input
-                            type="date"
-                            name="date_of_birth"
-                            value={editFormData.date_of_birth}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
-                          />
-                        ) : (
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans">
-                            {request.date_of_birth ||
-                              (request.residents?.date_of_birth
-                                ? new Date(request.residents.date_of_birth)
-                                  .toISOString()
-                                  .split("T")[0]
-                                : "NOT RECORDED")}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                          Civil Status
-                        </p>
-                        {isEditing ? (
-                          <select
-                            name="civil_status"
-                            value={editFormData.civil_status}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
-                          >
-                            <option value="SINGLE">SINGLE</option>
-                            <option value="MARRIED">MARRIED</option>
-                            <option value="WIDOWED">WIDOWED</option>
-                            <option value="SEPARATED">SEPARATED</option>
-                          </select>
-                        ) : (
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
-                            {request.civil_status || "NOT RECORDED"}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                          Age / Sex
-                        </p>
-                        {isEditing ? (
-                          <div className="flex gap-2">
-                            <input
-                              type="number"
-                              name="age"
-                              value={editFormData.age || ""}
-                              onChange={handleInputChange}
-                              placeholder="Age"
-                              className="w-20 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
-                            />
-                            <select
-                              name="sex"
-                              value={editFormData.sex || ""}
-                              onChange={handleInputChange}
-                              className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
-                            >
-                              <option value="">SELECT</option>
-                              <option value="MALE">MALE</option>
-                              <option value="FEMALE">FEMALE</option>
-                            </select>
+                  {request.residents?.pending_case && (
+                    <div className="mb-4 bg-red-600 border border-red-400 rounded-xl p-3 shadow-sm ring-2 ring-red-600/20">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-white/20 p-1.5 rounded-lg border border-white/20">
+                          <ShieldAlert className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-white font-black uppercase text-sm leading-tight tracking-wider">
+                              RESTRICTED APPLICANT RECORD
+                            </h4>
+                            <span className="bg-black/40 text-white text-[9px] font-black px-2 py-1 rounded-lg border border-white/20 uppercase tracking-widest">
+                              Legal Hold Active
+                            </span>
                           </div>
-                        ) : (
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
-                            {displayAge || "-"} / {request.sex || "-"}
+                          <p className="text-red-100 text-[10px] font-bold uppercase mt-1 leading-relaxed">
+                            This resident has a PENDING CASE in the Master Database. Requires immediate administrative attention.
                           </p>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                          Contact No.
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans tracking-tight">
-                            {request.contact_number || "NOT RECORDED"}
-                          </p>
+                          <div className="mt-2 bg-black/30 p-2.5 rounded-lg border border-white/10 backdrop-blur-sm">
+                            <p className="text-[9px] font-black text-red-200 uppercase tracking-widest mb-1">
+                              OFFICIAL CASE REMARKS:
+                            </p>
+                            <p className="text-xs font-bold text-white italic leading-relaxed">
+                              "{request.residents?.case_record_history || "No specific case details provided in record."}"
+                            </p>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <p className="text-[10px] font-black text-white bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 inline-flex items-center gap-2">
+                              <XCircle className="w-3 h-3 text-red-400" />
+                              BARANGAY CLEARANCE ISSUANCE IS STRONGLY PROHIBITED
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                        Place of Birth
-                      </p>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          name="place_of_birth"
-                          value={editFormData.place_of_birth}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
-                        />
-                      ) : (
-                        <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
-                          {request.place_of_birth || "NOT RECORDED"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
-                  {/* RIGHT COLUMN */}
-                  <div className="space-y-4 md:border-l md:border-slate-100 md:pl-6">
-                    <div>
-                      <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                        Residential Address
-                      </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 md:gap-8">
+                    {/* LEFT COLUMN */}
+                    <div className="space-y-4">
                       {isEditing ? (
-                        <textarea
-                          name="address"
-                          value={editFormData.address}
-                          onChange={handleInputChange}
-                          className="w-full min-h-[5.5rem] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm leading-relaxed resize-y"
-                          rows={4}
-                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                              First Name
+                            </p>
+                            <input
+                              type="text"
+                              name="first_name"
+                              value={editFormData.first_name}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                              Middle Name
+                            </p>
+                            <input
+                              type="text"
+                              name="middle_name"
+                              value={editFormData.middle_name}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                              Last Name
+                            </p>
+                            <input
+                              type="text"
+                              name="last_name"
+                              value={editFormData.last_name}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                              Suffix
+                            </p>
+                            <input
+                              type="text"
+                              name="suffix"
+                              value={editFormData.suffix}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            />
+                          </div>
+                        </div>
                       ) : (
-                        <p className="font-medium text-slate-800 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
-                          {resolveRequestResidentialAddress(request) || "NOT RECORDED"}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                        Email Address
-                      </p>
-                      {isEditing ? (
-                        <input
-                          type="email"
-                          name="email"
-                          value={editFormData.email || ""}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm normal-case"
-                        />
-                      ) : (
-                        <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans tracking-tight normal-case">
-                          {request.email || "NOT RECORDED"}
-                        </p>
-                      )}
-                    </div>
-
-                    {request.certificate_type === "first_time_job_seeker" && (
-                      <div>
-                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                          Resident Since (Year)
-                        </p>
-                        {isEditing ? (
-                          <select
-                            name="resident_since_year"
-                            value={editFormData.resident_since_year || ""}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
-                          >
-                            <option value="">Select year</option>
-                            {buildResidentSinceYearOptions(
-                              editFormData.resident_since_year,
-                            ).map((year) => (
-                              <option key={year} value={String(year)}>
-                                {year}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <p className="font-semibold text-slate-800 text-xs sm:text-sm">
-                            {resolveResidentSinceYearFromRequest(request) ||
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">
+                              Full Name
+                            </p>
+                            {request.residents && !isEditing && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    const token = getAuthToken();
+                                    const res = await fetch(
+                                      `${API_URL}/certificates/${request.id}`,
+                                      {
+                                        headers: {
+                                          Authorization: `Bearer ${token}`,
+                                        },
+                                      },
+                                    );
+                                    const data = await res.json();
+                                    if (data.success && data.data) {
+                                      setSelectedRequest((prev) => ({
+                                        ...prev,
+                                        ...data.data,
+                                      }));
+                                    }
+                                  } catch (err) { }
+                                  setShowResidentDb(true);
+                                }}
+                                className="p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-100/50 active:scale-90"
+                                title="View Master Record"
+                              >
+                                <Database className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                          <p className="font-bold text-slate-900 text-sm sm:text-base leading-snug tracking-tight uppercase">
+                            {request.applicant_name ||
+                              request.full_name ||
                               "NOT RECORDED"}
                           </p>
-                        )}
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          Shown on certificate after the address (since YYYY).
-                        </p>
-                      </div>
-                    )}
-
-                    {[
-                      "barangay_clearance",
-                      "first_time_job_seeker",
-                      "certificate_of_indigency",
-                      "barangay_residency",
-                    ].includes(request.certificate_type) && (
-                        <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
-                            Purpose of Request
-                          </p>
-                          {isEditing ? (
-                            <>
-                              <textarea
-                                name="purpose"
-                                value={editFormData.purpose}
-                                onChange={handleInputChange}
-                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm mb-2 transition-all resize-none"
-                                rows="3"
-                                placeholder="ENTER PURPOSE HERE..."
-                              />
-                              {request.certificate_type === "first_time_job_seeker" ? (
-                                <div className="grid grid-cols-1 gap-2">
-                                  <select
-                                    onChange={handlePurposeSelect}
-                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
-                                  >
-                                    <option value="">-- SELECT FIRST TIME JOB SEEKER REQUIREMENT (RA 11261) --</option>
-                                    {FIRST_TIME_JOB_SEEKER_PURPOSES.map((p, i) => (
-                                      <option key={i} value={p}>
-                                        {p}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              ) : request.certificate_type === "barangay_clearance" ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  <select
-                                    onChange={handlePurposeSelect}
-                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
-                                  >
-                                    <option value="">-- MAIN PURPOSE --</option>
-                                    {BARANGAY_CLEARANCE_MAIN_PURPOSES.map((p) => (
-                                      <option key={p} value={p}>
-                                        {p}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <select
-                                    onChange={handlePurposeSelect}
-                                    className="w-full text-[11px] p-2 bg-white border border-sky-200 rounded-lg font-black text-sky-700 focus:ring-2 focus:ring-sky-500 shadow-sm outline-none cursor-pointer uppercase"
-                                  >
-                                    <option value="">-- SUB CATEGORY (UTILITY / MERALCO) --</option>
-                                    {BARANGAY_CLEARANCE_UTILITY_SUB.map((p) => (
-                                      <option key={p} value={p}>
-                                        {p}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                  <select
-                                    onChange={handlePurposeSelect}
-                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
-                                  >
-                                    <option value="">-- PURPOSE 1 --</option>
-                                    {PURPOSE_LIST_1.map((p, i) => (
-                                      <option key={i} value={p}>
-                                        {p}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <select
-                                    onChange={handlePurposeSelect}
-                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-sm outline-none cursor-pointer uppercase"
-                                  >
-                                    <option value="">-- PURPOSE 2 --</option>
-                                    {PURPOSE_LIST_2.map((p, i) => (
-                                      <option key={i} value={p}>
-                                        {p}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <select
-                                    onChange={handlePurposeSelect}
-                                    className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
-                                  >
-                                    <option value="">-- PURPOSE 3 --</option>
-                                    {PURPOSE_LIST_3.map((p, i) => (
-                                      <option key={i} value={p}>
-                                        {p}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="bg-slate-50 p-3 sm:p-3.5 rounded-lg border border-slate-100">
-                              <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase leading-relaxed whitespace-pre-wrap">
-                                {request.purpose || "NOT SPECIFIED"}
-                              </p>
-                            </div>
-                          )}
+                          {request.certificate_type ===
+                            "certification_same_person" && (
+                              <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm mt-2 w-fit">
+                                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest border-r border-blue-200 pr-2">
+                                  AKA / SECOND NAME
+                                </span>
+                                <span className="font-black text-blue-700 uppercase text-sm tracking-tight">
+                                  {(() => {
+                                    // Check alias_name column first
+                                    if (request.alias_name) {
+                                      return request.alias_name;
+                                    }
+                                    // Fallback to details JSON
+                                    try {
+                                      const d =
+                                        typeof request.details === "string"
+                                          ? JSON.parse(request.details || "{}")
+                                          : request.details || {};
+                                      return (
+                                        d.alias_name ||
+                                        d.aliasName ||
+                                        d.fullName2 ||
+                                        d.name_2 ||
+                                        d.name2 ||
+                                        "NOT RECORDED"
+                                      );
+                                    } catch (e) {
+                                      return "NOT RECORDED";
+                                    }
+                                  })()}
+                                </span>
+                              </div>
+                            )}
                         </div>
                       )}
+
+                      {/* Key fields row */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-4 pt-4 border-t border-slate-100">
+                        <div>
+                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                            Date of Birth
+                          </p>
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              name="date_of_birth"
+                              value={editFormData.date_of_birth}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                            />
+                          ) : (
+                            <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans">
+                              {request.date_of_birth ||
+                                (request.residents?.date_of_birth
+                                  ? new Date(request.residents.date_of_birth)
+                                    .toISOString()
+                                    .split("T")[0]
+                                  : "NOT RECORDED")}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                            Civil Status
+                          </p>
+                          {isEditing ? (
+                            <select
+                              name="civil_status"
+                              value={editFormData.civil_status}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            >
+                              <option value="SINGLE">SINGLE</option>
+                              <option value="MARRIED">MARRIED</option>
+                              <option value="WIDOWED">WIDOWED</option>
+                              <option value="SEPARATED">SEPARATED</option>
+                            </select>
+                          ) : (
+                            <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
+                              {request.civil_status || "NOT RECORDED"}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                            Age / Sex
+                          </p>
+                          {isEditing ? (
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                name="age"
+                                value={editFormData.age || ""}
+                                onChange={handleInputChange}
+                                placeholder="Age"
+                                className="w-20 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                              />
+                              <select
+                                name="sex"
+                                value={editFormData.sex || ""}
+                                onChange={handleInputChange}
+                                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                              >
+                                <option value="">SELECT</option>
+                                <option value="MALE">MALE</option>
+                                <option value="FEMALE">FEMALE</option>
+                              </select>
+                            </div>
+                          ) : (
+                            <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
+                              {displayAge || "-"} / {request.sex || "-"}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                            Contact No.
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans tracking-tight">
+                              {request.contact_number || "NOT RECORDED"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                          Place of Birth
+                        </p>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="place_of_birth"
+                            value={editFormData.place_of_birth}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                          />
+                        ) : (
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
+                            {request.place_of_birth || "NOT RECORDED"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* RIGHT COLUMN */}
+                    <div className="space-y-4 md:border-l md:border-slate-100 md:pl-6">
+                      <div>
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                          Residential Address
+                        </p>
+                        {isEditing ? (
+                          <textarea
+                            name="address"
+                            value={editFormData.address}
+                            onChange={handleInputChange}
+                            className="w-full min-h-[5.5rem] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm leading-relaxed resize-y"
+                            rows={4}
+                          />
+                        ) : (
+                          <p className="font-medium text-slate-800 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                            {resolveRequestResidentialAddress(request) || "NOT RECORDED"}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                          Email Address
+                        </p>
+                        {isEditing ? (
+                          <input
+                            type="email"
+                            name="email"
+                            value={editFormData.email || ""}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm normal-case"
+                          />
+                        ) : (
+                          <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans tracking-tight normal-case">
+                            {request.email || "NOT RECORDED"}
+                          </p>
+                        )}
+                      </div>
+
+                      {request.certificate_type === "first_time_job_seeker" && (
+                        <div>
+                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                            Resident Since (Year)
+                          </p>
+                          {isEditing ? (
+                            <select
+                              name="resident_since_year"
+                              value={editFormData.resident_since_year || ""}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                            >
+                              <option value="">Select year</option>
+                              {buildResidentSinceYearOptions(
+                                editFormData.resident_since_year,
+                              ).map((year) => (
+                                <option key={year} value={String(year)}>
+                                  {year}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <p className="font-semibold text-slate-800 text-xs sm:text-sm">
+                              {resolveResidentSinceYearFromRequest(request) ||
+                                "NOT RECORDED"}
+                            </p>
+                          )}
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            Shown on certificate after the address (since YYYY).
+                          </p>
+                        </div>
+                      )}
+
+                      {[
+                        "barangay_clearance",
+                        "first_time_job_seeker",
+                        "certificate_of_indigency",
+                        "barangay_residency",
+                      ].includes(request.certificate_type) && (
+                          <div>
+                            <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                              Purpose of Request
+                            </p>
+                            {isEditing ? (
+                              <>
+                                <textarea
+                                  name="purpose"
+                                  value={editFormData.purpose}
+                                  onChange={handleInputChange}
+                                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 uppercase text-xs sm:text-sm mb-2 transition-all resize-none"
+                                  rows="3"
+                                  placeholder="ENTER PURPOSE HERE..."
+                                />
+                                {request.certificate_type === "first_time_job_seeker" ? (
+                                  <div className="grid grid-cols-1 gap-2">
+                                    <select
+                                      onChange={handlePurposeSelect}
+                                      className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
+                                    >
+                                      <option value="">-- SELECT FIRST TIME JOB SEEKER REQUIREMENT (RA 11261) --</option>
+                                      {FIRST_TIME_JOB_SEEKER_PURPOSES.map((p, i) => (
+                                        <option key={i} value={p}>
+                                          {p}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                ) : request.certificate_type === "barangay_clearance" ? (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <select
+                                      onChange={handlePurposeSelect}
+                                      className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
+                                    >
+                                      <option value="">-- MAIN PURPOSE --</option>
+                                      {BARANGAY_CLEARANCE_MAIN_PURPOSES.map((p) => (
+                                        <option key={p} value={p}>
+                                          {p}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <select
+                                      onChange={handlePurposeSelect}
+                                      className="w-full text-[11px] p-2 bg-white border border-sky-200 rounded-lg font-black text-sky-700 focus:ring-2 focus:ring-sky-500 shadow-sm outline-none cursor-pointer uppercase"
+                                    >
+                                      <option value="">-- SUB CATEGORY (UTILITY / MERALCO) --</option>
+                                      {BARANGAY_CLEARANCE_UTILITY_SUB.map((p) => (
+                                        <option key={p} value={p}>
+                                          {p}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <select
+                                      onChange={handlePurposeSelect}
+                                      className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-blue-600 focus:ring-2 focus:ring-blue-500 shadow-sm outline-none cursor-pointer uppercase"
+                                    >
+                                      <option value="">-- PURPOSE 1 --</option>
+                                      {PURPOSE_LIST_1.map((p, i) => (
+                                        <option key={i} value={p}>
+                                          {p}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <select
+                                      onChange={handlePurposeSelect}
+                                      className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-sm outline-none cursor-pointer uppercase"
+                                    >
+                                      <option value="">-- PURPOSE 2 --</option>
+                                      {PURPOSE_LIST_2.map((p, i) => (
+                                        <option key={i} value={p}>
+                                          {p}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <select
+                                      onChange={handlePurposeSelect}
+                                      className="w-full text-[11px] p-2 bg-white border border-gray-200 rounded-lg font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none cursor-pointer uppercase"
+                                    >
+                                      <option value="">-- PURPOSE 3 --</option>
+                                      {PURPOSE_LIST_3.map((p, i) => (
+                                        <option key={i} value={p}>
+                                          {p}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-lg border border-slate-100">
+                                <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase leading-relaxed whitespace-pre-wrap">
+                                  {request.purpose || "NOT SPECIFIED"}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                    </div>
                   </div>
                 </div>
-              </div>
               )}
 
               {request.certificate_type === "barangay_cohabitation" && (
@@ -5077,8 +5097,7 @@ function RequestDetailsModal({
                   >
                     {isBusinessPermit &&
                       (request.status === "physical_inspection" ||
-                        request.status === "secretary_approval" ||
-                        isFinanceReview) && (
+                        request.status === "secretary_approval") && (
                         <div className="col-span-full">
                           <div className="bg-amber-600 px-4 py-3 rounded-t-2xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -5097,15 +5116,15 @@ function RequestDetailsModal({
                               </div>
                             </div>
                             {!isFinanceReview && (
-                            <button
-                              onClick={() => handleSaveInspectionResults(false)}
-                              disabled={isUpdatingInspection}
-                              className="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-white/20"
-                            >
-                              {isUpdatingInspection
-                                ? "Saving..."
-                                : "Save Draft Findings"}
-                            </button>
+                              <button
+                                onClick={() => handleSaveInspectionResults(false)}
+                                disabled={isUpdatingInspection}
+                                className="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-white/20"
+                              >
+                                {isUpdatingInspection
+                                  ? "Saving..."
+                                  : "Save Draft Findings"}
+                              </button>
                             )}
                           </div>
                           <div className={`bg-white rounded-b-2xl border-x border-b border-gray-100 shadow-xl p-4 ${isFinanceReview ? "pointer-events-none select-none" : ""}`}>
@@ -5141,20 +5160,19 @@ function RequestDetailsModal({
                                         </td>
                                         <td className="py-3 px-2">
                                           <select
-                                            className={`w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-amber-500 transition-all ${
-                                              ["PASSED", "YES"].includes(
+                                            className={`w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-amber-500 transition-all ${["PASSED", "YES"].includes(
+                                              inspectionData.areas[area].findings,
+                                            )
+                                              ? "text-emerald-700"
+                                              : ["FAILED", "NO"].includes(
                                                 inspectionData.areas[area].findings,
                                               )
-                                                ? "text-emerald-700"
-                                                : ["FAILED", "NO"].includes(
-                                                      inspectionData.areas[area].findings,
-                                                    )
-                                                  ? "text-red-700"
-                                                  : inspectionData.areas[area].findings ===
-                                                      "NOT APPLICABLE"
-                                                    ? "text-blue-700"
-                                                    : "text-gray-500"
-                                            }`}
+                                                ? "text-red-700"
+                                                : inspectionData.areas[area].findings ===
+                                                  "NOT APPLICABLE"
+                                                  ? "text-blue-700"
+                                                  : "text-gray-500"
+                                              }`}
                                             value={
                                               inspectionData.areas[area].findings || ""
                                             }
@@ -5203,12 +5221,11 @@ function RequestDetailsModal({
                                             required={
                                               inspectionData.areas[area].findings === "FAILED"
                                             }
-                                            className={`w-full bg-white border rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 font-bold ${
-                                              inspectionData.areas[area].findings === "FAILED" &&
+                                            className={`w-full bg-white border rounded-lg py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-amber-500 font-bold ${inspectionData.areas[area].findings === "FAILED" &&
                                               !String(inspectionData.areas[area].remarks || "").trim()
-                                                ? "border-red-400 placeholder:text-red-400"
-                                                : "border-gray-200"
-                                            }`}
+                                              ? "border-red-400 placeholder:text-red-400"
+                                              : "border-gray-200"
+                                              }`}
                                             value={
                                               inspectionData.areas[area].remarks
                                             }
@@ -5984,8 +6001,8 @@ function RequestDetailsModal({
                       </p>
                       <div
                         className={`inline-flex items-center px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${request.residents.pending_case
-                            ? "bg-rose-600 text-white border-rose-500 shadow-rose-200 animate-pulse"
-                            : "bg-emerald-600 text-white border-emerald-500 shadow-emerald-200"
+                          ? "bg-rose-600 text-white border-rose-500 shadow-rose-200 animate-pulse"
+                          : "bg-emerald-600 text-white border-emerald-500 shadow-emerald-200"
                           }`}
                       >
                         {request.residents.pending_case
@@ -6000,8 +6017,8 @@ function RequestDetailsModal({
                       </p>
                       <div
                         className={`p-4 rounded-xl border-2 text-[12px] font-extrabold leading-relaxed min-h-[80px] shadow-inner ${request.residents.pending_case
-                            ? "bg-white border-rose-100 text-rose-900 italic"
-                            : "bg-gray-50 border-gray-100 text-gray-400 border-dashed"
+                          ? "bg-white border-rose-100 text-rose-900 italic"
+                          : "bg-gray-50 border-gray-100 text-gray-400 border-dashed"
                           }`}
                       >
                         {request.residents.case_record_history ||
@@ -6719,43 +6736,43 @@ function RequestDetailsModal({
                     </p>
                   )}
                   <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center sm:justify-end">
-                  <button
-                    onClick={() => onAction(request, "reject")}
-                    disabled={isEditing}
-                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:bg-red-50 active:scale-95"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => onAction(request, "return")}
-                    disabled={isEditing}
-                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-orange-200 text-orange-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:bg-orange-50"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    Send Back
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!hasOfficialReceipt) {
-                        toast.error(
-                          "Assign the OR number, amount, and BC control number above before forwarding.",
-                        );
-                        return;
+                    <button
+                      onClick={() => onAction(request, "reject")}
+                      disabled={isEditing}
+                      className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:bg-red-50 active:scale-95"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Reject
+                    </button>
+                    <button
+                      onClick={() => onAction(request, "return")}
+                      disabled={isEditing}
+                      className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white border border-orange-200 text-orange-600 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:bg-orange-50"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Send Back
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!hasOfficialReceipt) {
+                          toast.error(
+                            "Assign the OR number, amount, and BC control number above before forwarding.",
+                          );
+                          return;
+                        }
+                        onAction(request, "approve");
+                      }}
+                      disabled={isEditing || !hasOfficialReceipt}
+                      title={
+                        !hasOfficialReceipt
+                          ? "Assign OR above first"
+                          : undefined
                       }
-                      onAction(request, "approve");
-                    }}
-                    disabled={isEditing || !hasOfficialReceipt}
-                    title={
-                      !hasOfficialReceipt
-                        ? "Assign OR above first"
-                        : undefined
-                    }
-                    className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-green-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing || !hasOfficialReceipt ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 hover:shadow-green-300"}`}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Mark as Paid & Forward
-                  </button>
+                      className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-green-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${isEditing || !hasOfficialReceipt ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 hover:shadow-green-300"}`}
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Mark as Paid & Forward
+                    </button>
                   </div>
                 </div>
               ) : currentStep?.status === "Treasury" ||
@@ -6882,104 +6899,168 @@ function RequestDetailsModal({
 
         {/* Physical Inspection Start Modal */}
         {showInspectionStartModal && (
-          <Modal
-            isOpen={showInspectionStartModal}
-            onClose={() => setShowInspectionStartModal(false)}
-            title="Initiate Physical Inspection"
-            maxWidth="max-w-2xl"
-            presentation="side-slide"
-            zIndexClass="z-[60]"
-          >
-            <div className="p-6">
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-6">
-                <div className="flex items-start gap-4">
-                  <div className="bg-amber-100 p-3 rounded-xl text-amber-600">
-                    <Printer className="w-6 h-6" />
+          <div className="fixed inset-0 z-[60]">
+            <div
+              className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+              onClick={() => {
+                setShowInspectionStartModal(false);
+                setInspectionStartComment("");
+              }}
+            />
+            <div className="fixed inset-y-0 right-0 z-10 w-full sm:w-[min(94vw,40rem)] max-w-[100vw] h-full bg-[#f7f9fc] shadow-[-8px_0_28px_rgba(0,0,0,0.16)] border-l border-slate-200/90 flex flex-col overflow-hidden">
+              {/* Header */}
+              <div className="bg-white border-b border-slate-200 px-5 py-3.5 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                    <ClipboardCheck className="w-5 h-5" />
                   </div>
-                  <div>
-                    <h4 className="text-amber-900 font-black uppercase tracking-widest text-sm mb-2">
-                      Print Required Documents
-                    </h4>
-                    <p className="text-amber-800 text-xs font-bold leading-relaxed">
-                      To proceed, you must first print the{" "}
-                      <span className="underline">
-                        Business Permit Application and Inspection Form
-                      </span>
-                      . Give these to the inspection committee to record their
-                      findings on-site.
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide leading-tight">
+                      Initiate Physical Inspection
+                    </h3>
+                    <p className="text-[11px] font-medium text-slate-500 mt-0.5 truncate">
+                      Print required forms and forward to the Inspection Team.
                     </p>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInspectionStartModal(false);
+                    setInspectionStartComment("");
+                  }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <div className="flex flex-col gap-4">
-                <button
-                  onClick={() => setShowPdfPreview(true)}
-                  className="w-full flex items-center justify-between p-4 bg-white border-2 border-gray-100 hover:border-blue-500 rounded-2xl transition-all group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-gray-50 rounded-lg group-hover:bg-blue-50 text-gray-400 group-hover:text-blue-600 transition-colors">
-                      <Printer className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs font-black text-gray-900 uppercase tracking-widest leading-none mb-1">
-                        Preview & Print PDF
-                      </p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">
-                        View the official form before printing
-                      </p>
-                    </div>
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                {/* Request Summary Strip */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Reference No.
+                    </p>
+                    <p className="text-xs font-extrabold text-blue-600 mt-0.5">
+                      {request.reference_number}
+                    </p>
                   </div>
-                  <ChevronDown className="w-5 h-5 text-gray-300 -rotate-90" />
-                </button>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Applicant
+                    </p>
+                    <p className="text-xs font-bold text-slate-900 uppercase mt-0.5 truncate">
+                      {request.applicant_name || request.full_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Business Name
+                    </p>
+                    <p className="text-xs font-bold text-slate-800 uppercase mt-0.5 truncate">
+                      {additionalDetails?.businessName || "—"}
+                    </p>
+                  </div>
+                </div>
 
-                <div className="h-px bg-gray-100 my-2"></div>
+                {/* Step 1: Print Official Forms */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center shrink-0">
+                      1
+                    </span>
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      Print Required Documents
+                    </h4>
+                  </div>
+                  <div className="rounded-xl bg-amber-50/90 border border-amber-200/80 px-3.5 py-2.5 flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-900 leading-relaxed">
+                      Print the{" "}
+                      <span className="font-semibold">
+                        Business Permit Application &amp; Inspection Form
+                      </span>{" "}
+                      first so the inspection committee can record their on-site findings.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPdfPreview(true)}
+                    className="w-full flex items-center justify-between p-3.5 bg-slate-50 hover:bg-blue-50/70 border border-slate-200 hover:border-blue-400 rounded-xl transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 group-hover:border-blue-200 group-hover:bg-blue-600 text-slate-600 group-hover:text-white flex items-center justify-center transition-colors">
+                        <Printer className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                          Preview &amp; Print PDF
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Open the official application &amp; inspection forms
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </div>
 
-                <div>
-                  <label className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">
-                    Add Comment (Optional)
-                  </label>
+                {/* Step 2: Optional Notes */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold flex items-center justify-center shrink-0">
+                      2
+                    </span>
+                    <label className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      Notes for Inspection Team{" "}
+                      <span className="text-slate-400 font-semibold">(Optional)</span>
+                    </label>
+                  </div>
                   <textarea
                     value={inspectionStartComment}
                     onChange={(e) => setInspectionStartComment(e.target.value)}
-                    placeholder="Add any notes or instructions for the inspection team..."
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm font-medium resize-none"
-                    rows="3"
+                    placeholder="Add any notes, landmarks, or instructions for the inspection team..."
+                    className="w-full px-3.5 py-2.5 bg-slate-50/60 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 text-xs sm:text-sm font-medium text-slate-800 outline-none resize-none transition-colors"
+                    rows="4"
                   />
                 </div>
+              </div>
 
-                <p className="text-[10px] font-black text-gray-400 uppercase text-center tracking-[0.2em] mb-2">
-                  After printing, proceed to status change
-                </p>
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => {
-                      setShowInspectionStartModal(false);
-                      setInspectionStartComment("");
-                    }}
-                    className="flex-1 px-6 py-4 border-2 border-gray-100 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-gray-50 transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => handleStartInspection(request)}
-                    disabled={isUpdatingInspection}
-                    className="flex-[2] px-6 py-4 bg-amber-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-amber-700 shadow-xl shadow-amber-200 transition-all flex items-center justify-center gap-2"
-                  >
-                    {isUpdatingInspection ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ClipboardCheck className="w-4 h-4" />
-                    )}
+              {/* Sticky Footer */}
+              <div className="px-5 py-3 bg-white border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInspectionStartModal(false);
+                    setInspectionStartComment("");
+                  }}
+                  className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 uppercase tracking-wider hover:bg-slate-100 transition-colors text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStartInspection(request)}
+                  disabled={isUpdatingInspection}
+                  className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isUpdatingInspection ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ClipboardCheck className="w-4 h-4" />
+                  )}
+                  <span>
                     {isUpdatingInspection
-                      ? "UPDATING STATUS..."
-                      : "I HAVE PRINTED, START INSPECTION"}
-                  </button>
-                </div>
+                      ? "Updating Status..."
+                      : "I Have Printed, Start Inspection"}
+                  </span>
+                </button>
               </div>
             </div>
-          </Modal>
+          </div>
         )}
 
       </div>
@@ -7027,16 +7108,16 @@ function ActionModal({
     try {
       if (typeof request.details === "string") return JSON.parse(request.details);
       if (request.details && typeof request.details === "object") return request.details;
-    } catch {}
+    } catch { }
     return {};
   })();
   const isOnlineDelivery =
     String(
       request.pickup_method ||
-        parsedDetails.pickup_method ||
-        parsedDetails.pickupMethod ||
-        request.pickupMethod ||
-        "pickup",
+      parsedDetails.pickup_method ||
+      parsedDetails.pickupMethod ||
+      request.pickupMethod ||
+      "pickup",
     )
       .toLowerCase()
       .trim() === "online";
@@ -7054,7 +7135,7 @@ function ActionModal({
         buttonText: "Submit",
       }
       : isReviewStep
-      ? {
+        ? {
           title: "Verify & Forward Request",
           description:
             "I confirm that the resident is legitimate and the request is valid.",
@@ -7064,64 +7145,64 @@ function ActionModal({
           buttonBg: "bg-blue-600 hover:bg-blue-700",
           buttonText: "Verify",
         }
-      : request.status === "oic_review"
-        ? {
-          title: "Ready for Pickup",
-          description:
-            "Mark this certificate as ready for the resident to collect.",
-          icon: CheckCircle,
-          iconBg: "bg-indigo-100",
-          iconColor: "text-indigo-600",
-          buttonBg: "bg-indigo-600 hover:bg-indigo-700",
-          buttonText: "Ready to Pickup",
-        }
-        : ["ready", "ready_for_pickup"].includes(request.status)
+        : request.status === "oic_review"
           ? {
-            title: "Release Certificate",
+            title: "Ready for Pickup",
             description:
-              "Confirm that this certificate has been officially released to the resident.",
+              "Mark this certificate as ready for the resident to collect.",
             icon: CheckCircle,
-            iconBg: "bg-green-100",
-            iconColor: "text-green-600",
-            buttonBg: "bg-green-600 hover:bg-green-700",
-            buttonText: "Confirm Release",
+            iconBg: "bg-indigo-100",
+            iconColor: "text-indigo-600",
+            buttonBg: "bg-indigo-600 hover:bg-indigo-700",
+            buttonText: "Ready to Pickup",
           }
-          : {
-            title:
-              String(request.status || "").toLowerCase() === "verifying"
-                ? "Verify Inspection"
-                : (String(request.status || "").toLowerCase().includes("witness") ||
-                   String(currentStep?.name || "").toLowerCase().includes("witness") ||
-                   String(request.workflow_assignment?.step_name || "").toLowerCase().includes("witness"))
-                  ? "Witness & Sign Request"
-                  : "Approve Request",
-            description:
-              String(request.status || "").toLowerCase() === "verifying"
-                ? "Confirm the physical inspection result and sign to forward this request."
-                : (String(request.status || "").toLowerCase().includes("witness") ||
-                   String(currentStep?.name || "").toLowerCase().includes("witness") ||
-                   String(request.workflow_assignment?.step_name || "").toLowerCase().includes("witness"))
-                  ? "Confirm you witnessed the Oath of Undertaking and sign to forward this request to the Barangay Chairman."
-                  : "Are you sure you want to approve this certificate request?",
-            icon: CheckCircle,
-            iconBg: "bg-green-100",
-            iconColor: "text-green-600",
-            buttonBg: "bg-green-600 hover:bg-green-700",
-            buttonText:
-              String(request.status || "").toLowerCase() === "verifying"
-                ? "Verified"
-                : (String(request.status || "").toLowerCase().includes("witness") ||
-                   String(currentStep?.name || "").toLowerCase().includes("witness") ||
-                   String(request.workflow_assignment?.step_name || "").toLowerCase().includes("witness"))
-                  ? "Witness"
-                  : currentStep?.status === "Treasury" ||
-                request.status === "Treasury"
-                ? "Mark as Paid & Generate OR"
-                : currentStep?.status === "captain_approval" ||
-                  request.status === "captain_approval"
-                  ? "Approve Request"
-                  : "Forward Request",
-          },
+          : ["ready", "ready_for_pickup"].includes(request.status)
+            ? {
+              title: "Release Certificate",
+              description:
+                "Confirm that this certificate has been officially released to the resident.",
+              icon: CheckCircle,
+              iconBg: "bg-green-100",
+              iconColor: "text-green-600",
+              buttonBg: "bg-green-600 hover:bg-green-700",
+              buttonText: "Confirm Release",
+            }
+            : {
+              title:
+                String(request.status || "").toLowerCase() === "verifying"
+                  ? "Verify Inspection"
+                  : (String(request.status || "").toLowerCase().includes("witness") ||
+                    String(currentStep?.name || "").toLowerCase().includes("witness") ||
+                    String(request.workflow_assignment?.step_name || "").toLowerCase().includes("witness"))
+                    ? "Witness & Sign Request"
+                    : "Approve Request",
+              description:
+                String(request.status || "").toLowerCase() === "verifying"
+                  ? "Confirm the physical inspection result and sign to forward this request."
+                  : (String(request.status || "").toLowerCase().includes("witness") ||
+                    String(currentStep?.name || "").toLowerCase().includes("witness") ||
+                    String(request.workflow_assignment?.step_name || "").toLowerCase().includes("witness"))
+                    ? "Confirm you witnessed the Oath of Undertaking and sign to forward this request to the Barangay Chairman."
+                    : "Are you sure you want to approve this certificate request?",
+              icon: CheckCircle,
+              iconBg: "bg-green-100",
+              iconColor: "text-green-600",
+              buttonBg: "bg-green-600 hover:bg-green-700",
+              buttonText:
+                String(request.status || "").toLowerCase() === "verifying"
+                  ? "Verified"
+                  : (String(request.status || "").toLowerCase().includes("witness") ||
+                    String(currentStep?.name || "").toLowerCase().includes("witness") ||
+                    String(request.workflow_assignment?.step_name || "").toLowerCase().includes("witness"))
+                    ? "Witness"
+                    : currentStep?.status === "Treasury" ||
+                      request.status === "Treasury"
+                      ? "Mark as Paid & Generate OR"
+                      : currentStep?.status === "captain_approval" ||
+                        request.status === "captain_approval"
+                        ? "Approve Request"
+                        : "Forward Request",
+            },
     reject: isReviewStep
       ? {
         title: "Mark as Not Legitimate",
@@ -7268,7 +7349,7 @@ function ActionModal({
                         request.status,
                         request.certificate_type,
                         currentStep?.name ||
-                          request.workflow_assignment?.step_name,
+                        request.workflow_assignment?.step_name,
                       )}
                     </span>
                   </div>
@@ -7381,9 +7462,8 @@ function ActionModal({
                       onSubmit(userSignature, null, null, comment);
                     }}
                     disabled={processing || !userSignature}
-                    className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2 ${
-                      !userSignature ? "opacity-30 cursor-not-allowed grayscale" : ""
-                    }`}
+                    className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2 ${!userSignature ? "opacity-30 cursor-not-allowed grayscale" : ""
+                      }`}
                   >
                     {processing ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -7788,7 +7868,7 @@ async function buildCertificatePdfFromElement(
       Array.from(sheet.cssRules || []).forEach((rule) => {
         allCSS += rule.cssText + "\n";
       });
-    } catch (_e) {}
+    } catch (_e) { }
   });
 
   const linkHrefs = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
@@ -8191,7 +8271,7 @@ function CertificatePreviewModal({
     try {
       const saved = localStorage.getItem("barangayOfficials");
       if (saved) return mergeOfficialsConfig(defaultOfficials, JSON.parse(saved));
-    } catch {}
+    } catch { }
     return defaultOfficials;
   });
   const [isDownloading, setIsDownloading] = useState(false);
@@ -8305,11 +8385,11 @@ function CertificatePreviewModal({
           includeHistory: true,
         }),
         {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         },
-      },
       );
       if (!response.ok) return;
       const data = await response.json();
@@ -8320,7 +8400,7 @@ function CertificatePreviewModal({
         const rows = data.workflowHistory.history || [];
         setHistory(rows);
         setWorkflowAssignments(data.workflowHistory.assignments || []);
-        await healCaptainSignatureOnRequest(rows);
+        await healCaptainSignatureOnRequest(rows, data.data);
         setHistoryLoaded(true);
       } else {
         await fetchHistory();
@@ -8350,7 +8430,7 @@ function CertificatePreviewModal({
         const rows = data.history || [];
         setHistory(rows);
         setWorkflowAssignments(data.assignments || []);
-        await healCaptainSignatureOnRequest(rows);
+        await healCaptainSignatureOnRequest(rows, data.data);
       }
     } catch (error) {
       console.error("Error fetching history:", error);
@@ -8359,12 +8439,15 @@ function CertificatePreviewModal({
     }
   };
 
-  const healCaptainSignatureOnRequest = async (historyRows) => {
+  const healCaptainSignatureOnRequest = async (historyRows, latestRow = null) => {
     const lastReturnTime = computeLastReturnTimeFromHistory(historyRows);
     const sig = pickCaptainSignatureFromHistory(historyRows, lastReturnTime);
     if (!sig) return;
 
-    let details = previewRequest?.details ?? request?.details;
+    const rawDetails =
+      latestRow?.details ?? previewRequest?.details ?? request?.details;
+    if (rawDetails === undefined) return;
+    let details = rawDetails;
     if (typeof details === "string") {
       try {
         details = JSON.parse(details);
@@ -8670,7 +8753,7 @@ function CertificatePreviewModal({
         try {
           printWindow.focus();
           printWindow.print();
-        } catch (_e) {}
+        } catch (_e) { }
       };
       printWindow.onload = triggerPrint;
       setTimeout(triggerPrint, 1200);
@@ -8853,10 +8936,10 @@ function CertificatePreviewModal({
         style={
           isSideSlide
             ? {
-                transform: sideSlideOpen ? "translate3d(0,0,0)" : "translate3d(100%,0,0)",
-                transition: `transform ${SIDESLIDE_ANIM_MS}ms ${sideSlideEasing}`,
-                willChange: "transform",
-              }
+              transform: sideSlideOpen ? "translate3d(0,0,0)" : "translate3d(100%,0,0)",
+              transition: `transform ${SIDESLIDE_ANIM_MS}ms ${sideSlideEasing}`,
+              willChange: "transform",
+            }
             : undefined
         }
       >
@@ -8867,490 +8950,480 @@ function CertificatePreviewModal({
               : "relative bg-white rounded-2xl shadow-2xl w-full flex flex-col overflow-hidden max-h-[96dvh] sm:max-h-[96vh] h-[96dvh] sm:h-[96vh]"
           }
         >
-        {/* Header */}
-        <div className="bg-slate-900 border-b border-slate-800 px-3.5 sm:px-5 py-2 flex items-center justify-between shrink-0 z-10 font-sans uppercase [&_.font-mono]:font-sans">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <button
-              onClick={handlePreviewBack}
-              className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg shrink-0 transition-colors"
-              title="Back"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <div className="bg-white/10 p-1.5 rounded-lg border border-white/10 shrink-0">
-              <FileText className="w-4 h-4 text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold text-white tracking-tight leading-none truncate">
-                {isBusinessPermitRequest
-                  ? businessPreviewTab === "permit"
-                    ? "Business Clearance Preview"
-                    : "Inspection & Preparation Preview"
-                  : isJobSeekerRequest
-                    ? jobSeekerPreviewTab === "JOB SEEKER B"
-                      ? "JOB SEEKER B (Oath of Undertaking)"
-                      : jobSeekerPreviewTab === "JOB SEEKER A"
-                        ? "JOB SEEKER A (Barangay Certification)"
-                        : selectedJobSeekerPurposeIndex === "all"
-                          ? `Barangay Clearance (All ${jobSeekerPurposes.length} Clearances)`
-                          : `Barangay Clearance (Clearance ${Number(selectedJobSeekerPurposeIndex) + 1} of ${jobSeekerPurposes.length})`
-                    : "Certificate Preview"}
-              </h2>
-              <p className="text-slate-400 font-mono text-[10px] sm:text-xs font-bold truncate mt-0.5">
-                {request.reference_number}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {isChairmanApproved ? (
-              <>
-                {/* Print button — opens print window (perfect fidelity) */}
-                <button
-                  onClick={handlePrintPDF}
-                  disabled={isPrinting || isDownloading}
-                  className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-slate-800 text-slate-200 hover:text-white rounded-lg hover:bg-slate-700 transition-all font-semibold text-xs border border-slate-700 disabled:opacity-50"
-                >
-                  {isPrinting ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Printer className="w-3.5 h-3.5 text-blue-400" />
-                  )}
-                  <span className="hidden sm:inline">{isPrinting ? "Preparing…" : "Print"}</span>
-                </button>
-                {/* Download button — saves PDF directly */}
-                <button
-                  onClick={handleDownloadPDF}
-                  disabled={isDownloading || isPrinting || isPublishingDelivery}
-                  className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
-                >
-                  {isDownloading ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5" />
-                  )}
-                  <span className="hidden sm:inline">Download PDF</span>
-                  <span className="sm:hidden">PDF</span>
-                </button>
-              </>
-            ) : (
-              <span
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-semibold"
-                title="Print and Download PDF are available once approved by the Barangay Chairman"
-              >
-                <Clock className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">Pending Chairman Approval</span>
-                <span className="sm:hidden">Pending Approval</span>
-              </span>
-            )}
-            {enableDeliveryPublish ? (
+          {/* Header */}
+          <div className="bg-slate-900 border-b border-slate-800 px-3.5 sm:px-5 py-2 flex items-center justify-between shrink-0 z-10 font-sans uppercase [&_.font-mono]:font-sans">
+            <div className="flex items-center gap-2.5 min-w-0">
               <button
-                type="button"
-                onClick={handlePublishAndSendDelivery}
-                disabled={
-                  isPublishingDelivery || isDownloading || isPrinting
-                }
-                className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
-                title="Save PDF to storage and email a secure download link"
+                onClick={handlePreviewBack}
+                className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg shrink-0 transition-colors"
+                title="Back"
               >
-                {isPublishingDelivery ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Mail className="w-3.5 h-3.5" />
-                )}
-                <span className="hidden lg:inline">
-                  {isPublishingDelivery ? "Publishing…" : "Publish & send link"}
-                </span>
-                <span className="lg:hidden">Send link</span>
+                <RotateCcw className="w-4 h-4" />
               </button>
-            ) : null}
-            <button
-              onClick={isSideSlide ? dismissPreview : onClose}
-              className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg transition-colors ml-0.5"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          </div>
-        </div>
-
-        {isBusinessPermitRequest && (
-          <div className="flex border-b border-slate-200 bg-slate-50 px-3 sm:px-6 shrink-0">
-            <button
-              type="button"
-              onClick={() => setBusinessPreviewTab("inspection")}
-              className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${
-                businessPreviewTab === "inspection"
-                  ? "border-indigo-600 text-indigo-700"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Physical Inspection Form
-            </button>
-            <button
-              type="button"
-              onClick={() => setBusinessPreviewTab("permit")}
-              className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${
-                businessPreviewTab === "permit"
-                  ? "border-indigo-600 text-indigo-700"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Business Clearance
-            </button>
-          </div>
-        )}
-
-        {isJobSeekerRequest && (
-          <div className="flex border-b border-slate-200 bg-slate-50 px-3 sm:px-6 shrink-0">
-            <button
-              type="button"
-              onClick={() => setJobSeekerPreviewTab("FIRST TIME JOB SEEKER")}
-              className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5 ${
-                jobSeekerPreviewTab === "FIRST TIME JOB SEEKER"
-                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <span>BARANGAY CLEARANCE</span>
-              {jobSeekerPurposes.length > 1 && (
+              <div className="bg-white/10 p-1.5 rounded-lg border border-white/10 shrink-0">
+                <FileText className="w-4 h-4 text-blue-400" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xs sm:text-base font-bold text-white tracking-tight leading-none truncate">
+                  {isBusinessPermitRequest
+                    ? businessPreviewTab === "permit"
+                      ? "Business Clearance Preview"
+                      : "Inspection & Preparation Preview"
+                    : isJobSeekerRequest
+                      ? jobSeekerPreviewTab === "JOB SEEKER B"
+                        ? "JOB SEEKER B (Oath of Undertaking)"
+                        : jobSeekerPreviewTab === "JOB SEEKER A"
+                          ? "JOB SEEKER A (Barangay Certification)"
+                          : selectedJobSeekerPurposeIndex === "all"
+                            ? `Barangay Clearance (All ${jobSeekerPurposes.length} Clearances)`
+                            : `Barangay Clearance (Clearance ${Number(selectedJobSeekerPurposeIndex) + 1} of ${jobSeekerPurposes.length})`
+                      : "Certificate Preview"}
+                </h2>
+                <p className="text-slate-400 font-mono text-[10px] sm:text-xs font-bold truncate mt-0.5">
+                  {request.reference_number}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {isChairmanApproved ? (
+                <>
+                  {/* Print button — opens print window (perfect fidelity) */}
+                  <button
+                    onClick={handlePrintPDF}
+                    disabled={isPrinting || isDownloading}
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-slate-800 text-slate-200 hover:text-white rounded-lg hover:bg-slate-700 transition-all font-semibold text-xs border border-slate-700 disabled:opacity-50"
+                  >
+                    {isPrinting ? (
+                      <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Printer className="w-3.5 h-3.5 text-blue-400" />
+                    )}
+                    <span className="hidden sm:inline">{isPrinting ? "Preparing…" : "Print"}</span>
+                  </button>
+                  {/* Download button — saves PDF directly */}
+                  <button
+                    onClick={handleDownloadPDF}
+                    disabled={isDownloading || isPrinting || isPublishingDelivery}
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
+                  >
+                    {isDownloading ? (
+                      <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    <span className="hidden sm:inline">Download PDF</span>
+                    <span className="sm:hidden">PDF</span>
+                  </button>
+                </>
+              ) : (
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    jobSeekerPreviewTab === "FIRST TIME JOB SEEKER"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-slate-200 text-slate-600"
-                  }`}
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-semibold"
+                  title="Print and Download PDF are available once approved by the Barangay Chairman"
                 >
-                  {jobSeekerPurposes.length}
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Pending Chairman Approval</span>
+                  <span className="sm:hidden">Pending Approval</span>
                 </span>
               )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setJobSeekerPreviewTab("JOB SEEKER A")}
-              className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${
-                jobSeekerPreviewTab === "JOB SEEKER A"
-                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              JOB SEEKER A (Certification)
-            </button>
-            <button
-              type="button"
-              onClick={() => setJobSeekerPreviewTab("JOB SEEKER B")}
-              className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${
-                jobSeekerPreviewTab === "JOB SEEKER B"
-                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              JOB SEEKER B (Oath)
-            </button>
-          </div>
-        )}
-
-        {isJobSeekerRequest && jobSeekerPreviewTab === "FIRST TIME JOB SEEKER" && jobSeekerPurposes.length > 1 && (
-          <div className="bg-slate-100/95 border-b border-slate-200 px-3.5 sm:px-6 py-2 shrink-0">
-            <div className="flex flex-wrap items-center justify-between gap-2.5">
-              {/* Left Side: Segmented Quick Navigation */}
-              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                  Clearance:
-                </span>
-
-                {/* All Clearances Button */}
+              {enableDeliveryPublish ? (
                 <button
                   type="button"
-                  onClick={() => setSelectedJobSeekerPurposeIndex("all")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${
-                    selectedJobSeekerPurposeIndex === "all"
-                      ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600"
-                      : "bg-white text-slate-700 hover:bg-slate-200 border border-slate-300"
-                  }`}
-                  title={`View all ${jobSeekerPurposes.length} clearances in continuous scroll`}
+                  onClick={handlePublishAndSendDelivery}
+                  disabled={
+                    isPublishingDelivery || isDownloading || isPrinting
+                  }
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all font-semibold text-xs disabled:opacity-50"
+                  title="Save PDF to storage and email a secure download link"
                 >
-                  <span>All Pages</span>
+                  {isPublishingDelivery ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Mail className="w-3.5 h-3.5" />
+                  )}
+                  <span className="hidden lg:inline">
+                    {isPublishingDelivery ? "Publishing…" : "Publish & send link"}
+                  </span>
+                  <span className="lg:hidden">Send link</span>
+                </button>
+              ) : null}
+              <button
+                onClick={isSideSlide ? dismissPreview : onClose}
+                className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-lg transition-colors ml-0.5"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+          </div>
+
+          {isBusinessPermitRequest && (
+            <div className="flex border-b border-slate-200 bg-slate-50 px-3 sm:px-6 shrink-0">
+              <button
+                type="button"
+                onClick={() => setBusinessPreviewTab("inspection")}
+                className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${businessPreviewTab === "inspection"
+                  ? "border-indigo-600 text-indigo-700"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+                  }`}
+              >
+                Physical Inspection Form
+              </button>
+              <button
+                type="button"
+                onClick={() => setBusinessPreviewTab("permit")}
+                className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${businessPreviewTab === "permit"
+                  ? "border-indigo-600 text-indigo-700"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+                  }`}
+              >
+                Business Clearance
+              </button>
+            </div>
+          )}
+
+          {isJobSeekerRequest && (
+            <div className="flex border-b border-slate-200 bg-slate-50 px-3 sm:px-6 shrink-0">
+              <button
+                type="button"
+                onClick={() => setJobSeekerPreviewTab("FIRST TIME JOB SEEKER")}
+                className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5 ${jobSeekerPreviewTab === "FIRST TIME JOB SEEKER"
+                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+                  }`}
+              >
+                <span>BARANGAY CLEARANCE</span>
+                {jobSeekerPurposes.length > 1 && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      selectedJobSeekerPurposeIndex === "all"
-                        ? "bg-emerald-700 text-white"
-                        : "bg-slate-200 text-slate-700"
-                    }`}
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${jobSeekerPreviewTab === "FIRST TIME JOB SEEKER"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-slate-200 text-slate-600"
+                      }`}
                   >
                     {jobSeekerPurposes.length}
                   </span>
-                </button>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setJobSeekerPreviewTab("JOB SEEKER A")}
+                className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${jobSeekerPreviewTab === "JOB SEEKER A"
+                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+                  }`}
+              >
+                JOB SEEKER A (Certification)
+              </button>
+              <button
+                type="button"
+                onClick={() => setJobSeekerPreviewTab("JOB SEEKER B")}
+                className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-bold border-b-2 transition-colors ${jobSeekerPreviewTab === "JOB SEEKER B"
+                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+                  }`}
+              >
+                JOB SEEKER B (Oath)
+              </button>
+            </div>
+          )}
 
-                <div className="h-4 w-px bg-slate-300 mx-0.5" />
+          {isJobSeekerRequest && jobSeekerPreviewTab === "FIRST TIME JOB SEEKER" && jobSeekerPurposes.length > 1 && (
+            <div className="bg-slate-100/95 border-b border-slate-200 px-3.5 sm:px-6 py-2 shrink-0">
+              <div className="flex flex-wrap items-center justify-between gap-2.5">
+                {/* Left Side: Segmented Quick Navigation */}
+                <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                    Clearance:
+                  </span>
 
-                {/* Previous Clearance Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (selectedJobSeekerPurposeIndex === "all") {
-                      setSelectedJobSeekerPurposeIndex(0);
-                    } else {
-                      const prev = Number(selectedJobSeekerPurposeIndex) - 1;
-                      setSelectedJobSeekerPurposeIndex(prev >= 0 ? prev : jobSeekerPurposes.length - 1);
-                    }
-                  }}
-                  title="Previous clearance"
-                  className="w-7 h-7 rounded-md text-xs font-bold bg-white text-slate-700 hover:bg-slate-200 border border-slate-300 flex items-center justify-center transition-colors shadow-sm"
-                >
-                  ‹
-                </button>
-
-                {/* Compact Numbered Pills (#1, #2, #3, ...) */}
-                {jobSeekerPurposes.map((p, idx) => (
+                  {/* All Clearances Button */}
                   <button
-                    key={idx}
                     type="button"
-                    onClick={() => setSelectedJobSeekerPurposeIndex(idx)}
-                    className={`w-7 h-7 rounded-md text-[11px] font-bold transition-all flex items-center justify-center ${
-                      selectedJobSeekerPurposeIndex === idx
+                    onClick={() => setSelectedJobSeekerPurposeIndex("all")}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${selectedJobSeekerPurposeIndex === "all"
+                      ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600"
+                      : "bg-white text-slate-700 hover:bg-slate-200 border border-slate-300"
+                      }`}
+                    title={`View all ${jobSeekerPurposes.length} clearances in continuous scroll`}
+                  >
+                    <span>All Pages</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedJobSeekerPurposeIndex === "all"
+                        ? "bg-emerald-700 text-white"
+                        : "bg-slate-200 text-slate-700"
+                        }`}
+                    >
+                      {jobSeekerPurposes.length}
+                    </span>
+                  </button>
+
+                  <div className="h-4 w-px bg-slate-300 mx-0.5" />
+
+                  {/* Previous Clearance Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedJobSeekerPurposeIndex === "all") {
+                        setSelectedJobSeekerPurposeIndex(0);
+                      } else {
+                        const prev = Number(selectedJobSeekerPurposeIndex) - 1;
+                        setSelectedJobSeekerPurposeIndex(prev >= 0 ? prev : jobSeekerPurposes.length - 1);
+                      }
+                    }}
+                    title="Previous clearance"
+                    className="w-7 h-7 rounded-md text-xs font-bold bg-white text-slate-700 hover:bg-slate-200 border border-slate-300 flex items-center justify-center transition-colors shadow-sm"
+                  >
+                    ‹
+                  </button>
+
+                  {/* Compact Numbered Pills (#1, #2, #3, ...) */}
+                  {jobSeekerPurposes.map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedJobSeekerPurposeIndex(idx)}
+                      className={`w-7 h-7 rounded-md text-[11px] font-bold transition-all flex items-center justify-center ${selectedJobSeekerPurposeIndex === idx
                         ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600 scale-105"
                         : "bg-white text-slate-700 hover:bg-slate-200 border border-slate-300"
-                    }`}
-                    title={`Clearance #${idx + 1}: ${p}`}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-
-                {/* Next Clearance Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (selectedJobSeekerPurposeIndex === "all") {
-                      setSelectedJobSeekerPurposeIndex(0);
-                    } else {
-                      const next = Number(selectedJobSeekerPurposeIndex) + 1;
-                      setSelectedJobSeekerPurposeIndex(next < jobSeekerPurposes.length ? next : 0);
-                    }
-                  }}
-                  title="Next clearance"
-                  className="w-7 h-7 rounded-md text-xs font-bold bg-white text-slate-700 hover:bg-slate-200 border border-slate-300 flex items-center justify-center transition-colors shadow-sm"
-                >
-                  ›
-                </button>
-              </div>
-
-              {/* Right Side: Purpose Dropdown Selector */}
-              <div className="flex items-center gap-1.5 min-w-[220px] max-w-full sm:max-w-md">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 hidden sm:inline">
-                  Purpose:
-                </span>
-                <select
-                  value={selectedJobSeekerPurposeIndex}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSelectedJobSeekerPurposeIndex(val === "all" ? "all" : Number(val));
-                  }}
-                  className="w-full text-[11px] font-medium bg-white border border-slate-300 text-slate-800 rounded-md px-2.5 py-1 shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer truncate"
-                  title={
-                    selectedJobSeekerPurposeIndex === "all"
-                      ? `All Clearances (${jobSeekerPurposes.length} Pages)`
-                      : `Clearance #${Number(selectedJobSeekerPurposeIndex) + 1}: ${jobSeekerPurposes[selectedJobSeekerPurposeIndex]}`
-                  }
-                >
-                  <option value="all">
-                    📄 All Clearances ({jobSeekerPurposes.length} Pages)
-                  </option>
-                  {jobSeekerPurposes.map((p, idx) => (
-                    <option key={idx} value={idx}>
-                      #{idx + 1}: {p}
-                    </option>
+                        }`}
+                      title={`Clearance #${idx + 1}: ${p}`}
+                    >
+                      {idx + 1}
+                    </button>
                   ))}
-                </select>
-              </div>
-            </div>
 
-            {/* Active Purpose Banner for the Selected Clearance */}
-            {selectedJobSeekerPurposeIndex !== "all" && jobSeekerPurposes[selectedJobSeekerPurposeIndex] && (
-              <div className="mt-1.5 pt-1.5 border-t border-slate-200/80 flex items-center gap-2 text-[11px]">
-                <span className="bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded text-[10px] shrink-0">
-                  Clearance {Number(selectedJobSeekerPurposeIndex) + 1} of {jobSeekerPurposes.length}
-                </span>
-                <span className="font-semibold text-slate-700 truncate">
-                  {jobSeekerPurposes[selectedJobSeekerPurposeIndex]}
-                </span>
+                  {/* Next Clearance Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedJobSeekerPurposeIndex === "all") {
+                        setSelectedJobSeekerPurposeIndex(0);
+                      } else {
+                        const next = Number(selectedJobSeekerPurposeIndex) + 1;
+                        setSelectedJobSeekerPurposeIndex(next < jobSeekerPurposes.length ? next : 0);
+                      }
+                    }}
+                    title="Next clearance"
+                    className="w-7 h-7 rounded-md text-xs font-bold bg-white text-slate-700 hover:bg-slate-200 border border-slate-300 flex items-center justify-center transition-colors shadow-sm"
+                  >
+                    ›
+                  </button>
+                </div>
+
+                {/* Right Side: Purpose Dropdown Selector */}
+                <div className="flex items-center gap-1.5 min-w-[220px] max-w-full sm:max-w-md">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 hidden sm:inline">
+                    Purpose:
+                  </span>
+                  <select
+                    value={selectedJobSeekerPurposeIndex}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedJobSeekerPurposeIndex(val === "all" ? "all" : Number(val));
+                    }}
+                    className="w-full text-[11px] font-medium bg-white border border-slate-300 text-slate-800 rounded-md px-2.5 py-1 shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer truncate"
+                    title={
+                      selectedJobSeekerPurposeIndex === "all"
+                        ? `All Clearances (${jobSeekerPurposes.length} Pages)`
+                        : `Clearance #${Number(selectedJobSeekerPurposeIndex) + 1}: ${jobSeekerPurposes[selectedJobSeekerPurposeIndex]}`
+                    }
+                  >
+                    <option value="all">
+                      📄 All Clearances ({jobSeekerPurposes.length} Pages)
+                    </option>
+                    {jobSeekerPurposes.map((p, idx) => (
+                      <option key={idx} value={idx}>
+                        #{idx + 1}: {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Active Purpose Banner for the Selected Clearance */}
+              {selectedJobSeekerPurposeIndex !== "all" && jobSeekerPurposes[selectedJobSeekerPurposeIndex] && (
+                <div className="mt-1.5 pt-1.5 border-t border-slate-200/80 flex items-center gap-2 text-[11px]">
+                  <span className="bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                    Clearance {Number(selectedJobSeekerPurposeIndex) + 1} of {jobSeekerPurposes.length}
+                  </span>
+                  <span className="font-semibold text-slate-700 truncate">
+                    {jobSeekerPurposes[selectedJobSeekerPurposeIndex]}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Certificate Preview — auto-fit width */}
+          <div
+            ref={containerRef}
+            className={`flex-1 overflow-auto bg-slate-900/5 flex flex-col items-center relative ${isBusinessPermitRequest && businessPreviewTab === "permit"
+              ? "p-4 sm:p-6 md:p-8"
+              : "p-2 sm:p-4"
+              }`}
+          >
+            {!officials ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm font-medium text-gray-500">Loading certificate template...</p>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="flex justify-center transition-all duration-150 ease-out"
+                style={{
+                  width: `${PREVIEW_WIDTH_PX * currentScale}px`,
+                  height: `${docHeight * currentScale}px`,
+                  position: "relative",
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{
+                    transform: `scale(${currentScale})`,
+                    transformOrigin: "top left",
+                    width: `${previewPageSpec.widthMm}mm`,
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                  }}
+                >
+                  {isBusinessPermitRequest && businessPreviewTab === "permit" ? (
+                    <ClearancePreviewForRequests
+                      request={previewRequest}
+                      currentDate={currentDate}
+                      officials={officials}
+                      certificateRef={businessPermitCertRef}
+                      history={history}
+                      inspectionData={inspectionData}
+                      orData={orData}
+                      currentUser={currentUser}
+                      userSignature={userSignature}
+                      tenantUsers={tenantUsers}
+                      workflowAssignments={workflowAssignments}
+                      financeTeamUsers={financeTeamUsers}
+                      businessPreviewVariant="permit"
+                    />
+                  ) : isJobSeekerRequest && jobSeekerPreviewTab === "JOB SEEKER A" ? (
+                    <ClearancePreviewForRequests
+                      request={previewRequest}
+                      currentDate={currentDate}
+                      officials={officials}
+                      certificateRef={jobSeekerACertRef}
+                      history={history}
+                      inspectionData={inspectionData}
+                      orData={orData}
+                      currentUser={currentUser}
+                      userSignature={userSignature}
+                      tenantUsers={tenantUsers}
+                      workflowAssignments={workflowAssignments}
+                      financeTeamUsers={financeTeamUsers}
+                      jobSeekerVariant="JOB SEEKER A"
+                    />
+                  ) : isJobSeekerRequest && jobSeekerPreviewTab === "JOB SEEKER B" ? (
+                    <ClearancePreviewForRequests
+                      request={previewRequest}
+                      currentDate={currentDate}
+                      officials={officials}
+                      certificateRef={jobSeekerBCertRef}
+                      history={history}
+                      inspectionData={inspectionData}
+                      orData={orData}
+                      currentUser={currentUser}
+                      userSignature={userSignature}
+                      tenantUsers={tenantUsers}
+                      workflowAssignments={workflowAssignments}
+                      financeTeamUsers={financeTeamUsers}
+                      jobSeekerVariant="JOB SEEKER B"
+                    />
+                  ) : (
+                    <div ref={certificateRef} className="flex flex-col items-center w-full">
+                      {isJobSeekerRequest && jobSeekerPurposes.length > 1 ? (
+                        selectedJobSeekerPurposeIndex === "all" ? (
+                          <div className="flex flex-col gap-10 items-center w-full">
+                            {jobSeekerPurposes.map((singlePurpose, idx) => (
+                              <div key={idx} className="flex flex-col items-center w-full">
+                                <div className="w-full max-w-[816px] mb-2 px-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                  <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-[10px]">
+                                    Clearance {idx + 1} of {jobSeekerPurposes.length}
+                                  </span>
+                                  <span className="text-slate-600 truncate max-w-[450px]">
+                                    {singlePurpose}
+                                  </span>
+                                </div>
+                                <ClearancePreviewForRequests
+                                  request={previewRequest}
+                                  currentDate={currentDate}
+                                  officials={officials}
+                                  history={history}
+                                  inspectionData={inspectionData}
+                                  orData={orData}
+                                  currentUser={currentUser}
+                                  userSignature={userSignature}
+                                  tenantUsers={tenantUsers}
+                                  workflowAssignments={workflowAssignments}
+                                  financeTeamUsers={financeTeamUsers}
+                                  jobSeekerVariant="FIRST TIME JOB SEEKER"
+                                  specificPurpose={singlePurpose}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center w-full">
+                            <div className="w-full max-w-[816px] mb-2 px-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                              <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-[10px]">
+                                Clearance {Number(selectedJobSeekerPurposeIndex) + 1} of {jobSeekerPurposes.length}
+                              </span>
+                              <span className="text-slate-600 truncate max-w-[450px]">
+                                {jobSeekerPurposes[selectedJobSeekerPurposeIndex]}
+                              </span>
+                            </div>
+                            <ClearancePreviewForRequests
+                              request={previewRequest}
+                              currentDate={currentDate}
+                              officials={officials}
+                              history={history}
+                              inspectionData={inspectionData}
+                              orData={orData}
+                              currentUser={currentUser}
+                              userSignature={userSignature}
+                              tenantUsers={tenantUsers}
+                              workflowAssignments={workflowAssignments}
+                              financeTeamUsers={financeTeamUsers}
+                              jobSeekerVariant="FIRST TIME JOB SEEKER"
+                              specificPurpose={jobSeekerPurposes[selectedJobSeekerPurposeIndex]}
+                            />
+                          </div>
+                        )
+                      ) : (
+                        <ClearancePreviewForRequests
+                          request={previewRequest}
+                          currentDate={currentDate}
+                          officials={officials}
+                          history={history}
+                          inspectionData={inspectionData}
+                          orData={orData}
+                          currentUser={currentUser}
+                          userSignature={userSignature}
+                          tenantUsers={tenantUsers}
+                          workflowAssignments={workflowAssignments}
+                          financeTeamUsers={financeTeamUsers}
+                          businessPreviewVariant={
+                            isBusinessPermitRequest ? "inspection" : "default"
+                          }
+                          jobSeekerVariant={
+                            isJobSeekerRequest ? "FIRST TIME JOB SEEKER" : null
+                          }
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        )}
-
-        {/* Certificate Preview — auto-fit width */}
-        <div 
-          ref={containerRef}
-          className={`flex-1 overflow-auto bg-slate-900/5 flex flex-col items-center relative ${
-            isBusinessPermitRequest && businessPreviewTab === "permit"
-              ? "p-4 sm:p-6 md:p-8"
-              : "p-2 sm:p-4"
-          }`}
-        >
-          {!officials ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm font-medium text-gray-500">Loading certificate template...</p>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="flex justify-center transition-all duration-150 ease-out"
-              style={{
-                width: `${PREVIEW_WIDTH_PX * currentScale}px`,
-                height: `${docHeight * currentScale}px`,
-                position: "relative",
-                flexShrink: 0,
-              }}
-            >
-              <div
-                style={{
-                  transform: `scale(${currentScale})`,
-                  transformOrigin: "top left",
-                  width: `${previewPageSpec.widthMm}mm`,
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                }}
-              >
-                {isBusinessPermitRequest && businessPreviewTab === "permit" ? (
-                  <ClearancePreviewForRequests
-                    request={previewRequest}
-                    currentDate={currentDate}
-                    officials={officials}
-                    certificateRef={businessPermitCertRef}
-                    history={history}
-                    inspectionData={inspectionData}
-                    orData={orData}
-                    currentUser={currentUser}
-                    userSignature={userSignature}
-                    tenantUsers={tenantUsers}
-                    workflowAssignments={workflowAssignments}
-                    financeTeamUsers={financeTeamUsers}
-                    businessPreviewVariant="permit"
-                  />
-                ) : isJobSeekerRequest && jobSeekerPreviewTab === "JOB SEEKER A" ? (
-                  <ClearancePreviewForRequests
-                    request={previewRequest}
-                    currentDate={currentDate}
-                    officials={officials}
-                    certificateRef={jobSeekerACertRef}
-                    history={history}
-                    inspectionData={inspectionData}
-                    orData={orData}
-                    currentUser={currentUser}
-                    userSignature={userSignature}
-                    tenantUsers={tenantUsers}
-                    workflowAssignments={workflowAssignments}
-                    financeTeamUsers={financeTeamUsers}
-                    jobSeekerVariant="JOB SEEKER A"
-                  />
-                ) : isJobSeekerRequest && jobSeekerPreviewTab === "JOB SEEKER B" ? (
-                  <ClearancePreviewForRequests
-                    request={previewRequest}
-                    currentDate={currentDate}
-                    officials={officials}
-                    certificateRef={jobSeekerBCertRef}
-                    history={history}
-                    inspectionData={inspectionData}
-                    orData={orData}
-                    currentUser={currentUser}
-                    userSignature={userSignature}
-                    tenantUsers={tenantUsers}
-                    workflowAssignments={workflowAssignments}
-                    financeTeamUsers={financeTeamUsers}
-                    jobSeekerVariant="JOB SEEKER B"
-                  />
-                ) : (
-                  <div ref={certificateRef} className="flex flex-col items-center w-full">
-                    {isJobSeekerRequest && jobSeekerPurposes.length > 1 ? (
-                      selectedJobSeekerPurposeIndex === "all" ? (
-                        <div className="flex flex-col gap-10 items-center w-full">
-                          {jobSeekerPurposes.map((singlePurpose, idx) => (
-                            <div key={idx} className="flex flex-col items-center w-full">
-                              <div className="w-full max-w-[816px] mb-2 px-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-[10px]">
-                                  Clearance {idx + 1} of {jobSeekerPurposes.length}
-                                </span>
-                                <span className="text-slate-600 truncate max-w-[450px]">
-                                  {singlePurpose}
-                                </span>
-                              </div>
-                              <ClearancePreviewForRequests
-                                request={previewRequest}
-                                currentDate={currentDate}
-                                officials={officials}
-                                history={history}
-                                inspectionData={inspectionData}
-                                orData={orData}
-                                currentUser={currentUser}
-                                userSignature={userSignature}
-                                tenantUsers={tenantUsers}
-                                workflowAssignments={workflowAssignments}
-                                financeTeamUsers={financeTeamUsers}
-                                jobSeekerVariant="FIRST TIME JOB SEEKER"
-                                specificPurpose={singlePurpose}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center w-full">
-                          <div className="w-full max-w-[816px] mb-2 px-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                            <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-[10px]">
-                              Clearance {Number(selectedJobSeekerPurposeIndex) + 1} of {jobSeekerPurposes.length}
-                            </span>
-                            <span className="text-slate-600 truncate max-w-[450px]">
-                              {jobSeekerPurposes[selectedJobSeekerPurposeIndex]}
-                            </span>
-                          </div>
-                          <ClearancePreviewForRequests
-                            request={previewRequest}
-                            currentDate={currentDate}
-                            officials={officials}
-                            history={history}
-                            inspectionData={inspectionData}
-                            orData={orData}
-                            currentUser={currentUser}
-                            userSignature={userSignature}
-                            tenantUsers={tenantUsers}
-                            workflowAssignments={workflowAssignments}
-                            financeTeamUsers={financeTeamUsers}
-                            jobSeekerVariant="FIRST TIME JOB SEEKER"
-                            specificPurpose={jobSeekerPurposes[selectedJobSeekerPurposeIndex]}
-                          />
-                        </div>
-                      )
-                    ) : (
-                      <ClearancePreviewForRequests
-                        request={previewRequest}
-                        currentDate={currentDate}
-                        officials={officials}
-                        history={history}
-                        inspectionData={inspectionData}
-                        orData={orData}
-                        currentUser={currentUser}
-                        userSignature={userSignature}
-                        tenantUsers={tenantUsers}
-                        workflowAssignments={workflowAssignments}
-                        financeTeamUsers={financeTeamUsers}
-                        businessPreviewVariant={
-                          isBusinessPermitRequest ? "inspection" : "default"
-                        }
-                        jobSeekerVariant={
-                          isJobSeekerRequest ? "FIRST TIME JOB SEEKER" : null
-                        }
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
         </div>
       </div>
     </div>
@@ -9592,10 +9665,10 @@ function ClearancePreviewForRequests({
   const displaySinceYear = residentYears
     ? currentCalendarYear - parseInt(residentYears, 10)
     : additionalDetails.since_year ||
-      additionalDetails.sinceYear ||
-      (request.age
-        ? currentCalendarYear - Math.min(parseInt(request.age, 10) || 1, 15)
-        : currentCalendarYear);
+    additionalDetails.sinceYear ||
+    (request.age
+      ? currentCalendarYear - Math.min(parseInt(request.age, 10) || 1, 15)
+      : currentCalendarYear);
   const displayYearsOfResidency =
     residentYears ||
     (displaySinceYear
@@ -9637,25 +9710,25 @@ function ClearancePreviewForRequests({
     .filter(h => {
       const hasAction = h.action === 'approve' || h.action === 'forward' || h.action === 'create';
       if (!hasAction || !h.signature_data) return false;
-      
+
       // Ignore anything explicitly marked as secretary
       const sName = (h.step_name || '').toUpperCase();
       const hRole = (h.officialRole || h.official_role || h.privilegeRole || h.privilege_role || '').toUpperCase();
       const uRole = (h.users?.role || '').toUpperCase();
       if (sName.includes('SECRETARY') || hRole.includes('SECRETARY') || uRole.includes('SECRETARY')) return false;
-      
+
       // Check timing
       if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-      
+
       // Check Step Name
       if (sName.includes('CAPTAIN') || sName.includes('CHAIRMAN') || sName.includes('PUNONG')) return true;
-      
+
       // Check official role / privilege role
       if (CAPTAIN_ROLES.some(r => hRole.includes(r))) return true;
-      
+
       // Check user role from joined users table
       if (CAPTAIN_ROLES.some(r => uRole.includes(r))) return true;
-      
+
       // Check Status — captain approve moves request to OIC / treasury
       const prevStatus = (h.previous_status || '').toLowerCase();
       const newStatus = (h.new_status || '').toLowerCase();
@@ -9672,12 +9745,12 @@ function ClearancePreviewForRequests({
       ) {
         return true;
       }
-      
+
       // Check name match with configured chairman
       const pName = h.users ? `${h.users.first_name || ''} ${h.users.last_name || ''}`.trim().toUpperCase() : (h.performed_by_name || '').toUpperCase();
       const cName = (officials?.chairman || '').toUpperCase();
       if (pName && cName && (pName.includes(cName) || cName.includes(pName))) return true;
-      
+
       return false;
     })
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
@@ -9694,26 +9767,26 @@ function ClearancePreviewForRequests({
       !((h.users?.role || '').toUpperCase().includes('SECRETARY')) &&
       !((h.users?.role || '').toUpperCase().includes('WITNESS')))
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
-  
+
   const effectiveCaptain = captainApproval || fallbackCaptain;
 
   const secretaryApproval = !history
     ? null
     : [...history]
-        .filter((h) => {
-          const hasAction = h.action === "approve" || h.action === "forward";
-          if (!hasAction || !h.signature_data) return false;
-          if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-          return isSecretaryApprovalHistoryEntry(h, request.certificate_type);
-        })
-        .sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )[0] || null;
+      .filter((h) => {
+        const hasAction = h.action === "approve" || h.action === "forward";
+        if (!hasAction || !h.signature_data) return false;
+        if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+        return isSecretaryApprovalHistoryEntry(h, request.certificate_type);
+      })
+      .sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )[0] || null;
 
   const currentUserFullName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : '';
   const isCurrentUserCaptain = currentUserFullName && officials?.chairman &&
     (currentUserFullName.toUpperCase() === (officials.chairman).toUpperCase() ||
-     (officials.chairman).toUpperCase().includes(currentUserFullName.toUpperCase()));
+      (officials.chairman).toUpperCase().includes(currentUserFullName.toUpperCase()));
 
   const storedSignedAtMs = additionalDetails.captain_signed_at
     ? new Date(additionalDetails.captain_signed_at).getTime()
@@ -9754,8 +9827,8 @@ function ClearancePreviewForRequests({
   );
   const businessClearanceChairmanSignature = hasBusinessPermitClearanceChairmanApproval
     ? businessPermitFinalCaptainApproval?.signature_data ||
-      storedCaptainSignature ||
-      null
+    storedCaptainSignature ||
+    null
     : null;
   const signatureOnBusinessClearance = isBusinessClearanceDoc
     ? businessClearanceChairmanSignature
@@ -9771,8 +9844,8 @@ function ClearancePreviewForRequests({
   // Printed certificates show the configured Punong Barangay / Chairman name.
   const captainName =
     String(officials?.chairman || "").trim() || captainSignerFromHistory || "";
-    
-  const secretaryName = secretaryApproval?.users 
+
+  const secretaryName = secretaryApproval?.users
     ? `${secretaryApproval.users.first_name || ''} ${secretaryApproval.users.last_name || ''}`.trim()
     : secretaryApproval?.performed_by_name || officials?.secretary || '';
 
@@ -9781,14 +9854,14 @@ function ClearancePreviewForRequests({
   const financeApproval = !history
     ? null
     : [...history]
-        .filter((h) => {
-          if (!(h.action === "approve" || h.action === "forward")) return false;
-          if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-          return isFinanceVerificationEntry(h);
-        })
-        .sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )[0] || null;
+      .filter((h) => {
+        if (!(h.action === "approve" || h.action === "forward")) return false;
+        if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+        return isFinanceVerificationEntry(h);
+      })
+      .sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )[0] || null;
 
   const financeName = financeApproval?.users
     ? `${financeApproval.users.first_name || ""} ${financeApproval.users.last_name || ""}`.trim()
@@ -9803,7 +9876,7 @@ function ClearancePreviewForRequests({
     null;
   const storedFinanceSignature =
     storedFinanceSignatureRaw &&
-    (!lastReturnTime || storedFinanceSignedAtMs > lastReturnTime)
+      (!lastReturnTime || storedFinanceSignedAtMs > lastReturnTime)
       ? storedFinanceSignatureRaw
       : null;
 
@@ -9823,19 +9896,19 @@ function ClearancePreviewForRequests({
     storedFinanceSignature ||
     financeSignatureFromHistory ||
     null;
-    
+
   const witnessApproval = !history
     ? null
     : [...history]
-        .filter((h) => {
-          if (!(h.action === "approve" || h.action === "forward")) return false;
-          if (!h.signature_data) return false;
-          if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
-          return isWitnessVerificationHistoryEntry(h, request.certificate_type);
-        })
-        .sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )[0] || null;
+      .filter((h) => {
+        if (!(h.action === "approve" || h.action === "forward")) return false;
+        if (!h.signature_data) return false;
+        if (new Date(h.created_at).getTime() <= lastReturnTime) return false;
+        return isWitnessVerificationHistoryEntry(h, request.certificate_type);
+      })
+      .sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )[0] || null;
 
   const isCurrentUserWitness =
     currentUserFullName &&
@@ -9853,7 +9926,7 @@ function ClearancePreviewForRequests({
     null;
   const storedWitnessSignature =
     storedWitnessSignatureRaw &&
-    (!lastReturnTime || storedWitnessSignedAtMs > lastReturnTime)
+      (!lastReturnTime || storedWitnessSignedAtMs > lastReturnTime)
       ? storedWitnessSignatureRaw
       : null;
 
@@ -9901,7 +9974,7 @@ function ClearancePreviewForRequests({
     (financeApproval?.users
       ? userDisplayName(financeApproval.users)
       : financeApproval?.performed_by_name ||
-        userDisplayName(effectiveFinanceUser)) ||
+      userDisplayName(effectiveFinanceUser)) ||
     officials?.treasurer ||
     "";
 
@@ -10031,114 +10104,113 @@ function ClearancePreviewForRequests({
       >
         {/* Header Section */}
         {!isJobSeekerDocB && (
-        <div
-          className={`cert-header-section w-full border-b-2 flex justify-center items-center flex-shrink-0 ${getFontClass(headerStyle.fontFamily)} ${
-            isInspectionForm
+          <div
+            className={`cert-header-section w-full border-b-2 flex justify-center items-center flex-shrink-0 ${getFontClass(headerStyle.fontFamily)} ${isInspectionForm
               ? "pt-1 pb-1 px-6"
               : isBusinessClearanceDoc
-              ? "pt-3 pb-4 px-10 sm:px-12"
-              : isIndigencyCert
-                ? "pt-2 pb-4 px-7"
-                : isLetterPage
-                  ? "pt-3 pb-4 px-7"
-                  : "pt-4 pb-6 px-8"
-          }`}
-          style={{
-            backgroundColor: headerStyle.bgColor,
-            borderColor: headerStyle.borderColor || "#111827",
-            borderBottom: "2px solid #111827",
-          }}
-        >
-          {/* Left Logo */}
-          <div
+                ? "pt-3 pb-4 px-10 sm:px-12"
+                : isIndigencyCert
+                  ? "pt-2 pb-4 px-7"
+                  : isLetterPage
+                    ? "pt-3 pb-4 px-7"
+                    : "pt-4 pb-6 px-8"
+              }`}
             style={{
-              width: `${isInspectionForm ? 72 : logos.logoSize && logos.logoSize > 80 ? logos.logoSize : 130}px`,
-              height: `${isInspectionForm ? 72 : logos.logoSize && logos.logoSize > 80 ? logos.logoSize : 130}px`,
-              marginRight: `${headerStyle.logoSpacing || 0}px`,
+              backgroundColor: headerStyle.bgColor,
+              borderColor: headerStyle.borderColor || "#111827",
+              borderBottom: "2px solid #111827",
             }}
-            className="flex-shrink-0"
           >
-            {logos.leftLogo && (
-              <img
-                src={logos.leftLogo}
-                className="w-full h-full object-contain"
-                alt="Left"
-              />
-            )}
-          </div>
+            {/* Left Logo */}
+            <div
+              style={{
+                width: `${isInspectionForm ? 72 : logos.logoSize && logos.logoSize > 80 ? logos.logoSize : 130}px`,
+                height: `${isInspectionForm ? 72 : logos.logoSize && logos.logoSize > 80 ? logos.logoSize : 130}px`,
+                marginRight: `${headerStyle.logoSpacing || 0}px`,
+              }}
+              className="flex-shrink-0"
+            >
+              {logos.leftLogo && (
+                <img
+                  src={logos.leftLogo}
+                  className="w-full h-full object-contain"
+                  alt="Left"
+                />
+              )}
+            </div>
 
-          {/* Text Content */}
-          <div className="text-center flex flex-col justify-center">
-            <p
-              className={getFontClass(countryStyle.fontFamily)}
-              style={{
-                color: countryStyle.color,
-                fontSize: isInspectionForm ? "10px" : certHeaderLinePx,
-                fontWeight: countryStyle.fontWeight,
-                lineHeight: "1.2",
-              }}
-            >
-              {officials.headerInfo?.country || "Republic of the Philippines"}
-            </p>
-            <p
-              className={getFontClass(provinceStyle.fontFamily)}
-              style={{
-                color: provinceStyle.color,
-                fontSize: isInspectionForm ? "10px" : certHeaderLinePx,
-                fontWeight: provinceStyle.fontWeight,
-                lineHeight: "1.2",
-              }}
-            >
-              {officials.headerInfo?.province || "Province of Bulacan"}
-            </p>
-            <p
-              className={getFontClass(municipalityStyle.fontFamily)}
-              style={{
-                color: municipalityStyle.color,
-                fontSize: isInspectionForm ? "10px" : certHeaderLinePx,
-                fontWeight: municipalityStyle.fontWeight,
-                lineHeight: "1.2",
-              }}
-            >
-              {officials.headerInfo?.municipality || "Municipality of Calumpit"}
-            </p>
-            <p
-              className="mt-1 uppercase"
-              style={{
-                color: barangayNameStyle.color || "#1e40af",
-                fontSize: isInspectionForm ? "13px" : certBarangayNamePx,
-                fontWeight: "bold",
-                lineHeight: "1.2",
-              }}
-            >
-              {officials.headerInfo?.barangayName || "BARANGAY IBA O' ESTE"}
-            </p>
-            <p
-              className="mt-2 text-red-700 font-bold uppercase tracking-wider"
-              style={{ fontSize: isInspectionForm ? "11px" : certOfficeLinePx }}
-            >
-              OFFICE OF THE BARANGAY CHAIRMAN
-            </p>
-          </div>
+            {/* Text Content */}
+            <div className="text-center flex flex-col justify-center">
+              <p
+                className={getFontClass(countryStyle.fontFamily)}
+                style={{
+                  color: countryStyle.color,
+                  fontSize: isInspectionForm ? "10px" : certHeaderLinePx,
+                  fontWeight: countryStyle.fontWeight,
+                  lineHeight: "1.2",
+                }}
+              >
+                {officials.headerInfo?.country || "Republic of the Philippines"}
+              </p>
+              <p
+                className={getFontClass(provinceStyle.fontFamily)}
+                style={{
+                  color: provinceStyle.color,
+                  fontSize: isInspectionForm ? "10px" : certHeaderLinePx,
+                  fontWeight: provinceStyle.fontWeight,
+                  lineHeight: "1.2",
+                }}
+              >
+                {officials.headerInfo?.province || "Province of Bulacan"}
+              </p>
+              <p
+                className={getFontClass(municipalityStyle.fontFamily)}
+                style={{
+                  color: municipalityStyle.color,
+                  fontSize: isInspectionForm ? "10px" : certHeaderLinePx,
+                  fontWeight: municipalityStyle.fontWeight,
+                  lineHeight: "1.2",
+                }}
+              >
+                {officials.headerInfo?.municipality || "Municipality of Calumpit"}
+              </p>
+              <p
+                className="mt-1 uppercase"
+                style={{
+                  color: barangayNameStyle.color || "#1e40af",
+                  fontSize: isInspectionForm ? "13px" : certBarangayNamePx,
+                  fontWeight: "bold",
+                  lineHeight: "1.2",
+                }}
+              >
+                {officials.headerInfo?.barangayName || "BARANGAY IBA O' ESTE"}
+              </p>
+              <p
+                className="mt-2 text-red-700 font-bold uppercase tracking-wider"
+                style={{ fontSize: isInspectionForm ? "11px" : certOfficeLinePx }}
+              >
+                OFFICE OF THE BARANGAY CHAIRMAN
+              </p>
+            </div>
 
-          {/* Right Logo */}
-          <div
-            style={{
-              width: `${isInspectionForm ? 72 : logos.logoSize && logos.logoSize > 80 ? logos.logoSize : 130}px`,
-              height: `${isInspectionForm ? 72 : logos.logoSize && logos.logoSize > 80 ? logos.logoSize : 130}px`,
-              marginLeft: `${headerStyle.logoSpacing || 0}px`,
-            }}
-            className="flex-shrink-0"
-          >
-            {logos.rightLogo && (
-              <img
-                src={logos.rightLogo}
-                className="w-full h-full object-contain"
-                alt="Right"
-              />
-            )}
+            {/* Right Logo */}
+            <div
+              style={{
+                width: `${isInspectionForm ? 72 : logos.logoSize && logos.logoSize > 80 ? logos.logoSize : 130}px`,
+                height: `${isInspectionForm ? 72 : logos.logoSize && logos.logoSize > 80 ? logos.logoSize : 130}px`,
+                marginLeft: `${headerStyle.logoSpacing || 0}px`,
+              }}
+              className="flex-shrink-0"
+            >
+              {logos.rightLogo && (
+                <img
+                  src={logos.rightLogo}
+                  className="w-full h-full object-contain"
+                  alt="Right"
+                />
+              )}
+            </div>
           </div>
-        </div>
         )}
 
         {/* Main Content Area */}
@@ -10209,10 +10281,9 @@ function ClearancePreviewForRequests({
 
           {/* Document Body */}
           <div
-            className={`cert-doc-body flex-1 relative flex flex-col w-full ${
-              isInspectionForm
-                ? "px-5 pt-1 pb-2 justify-start min-h-0 flex-1"
-                : isBusinessClearanceDoc
+            className={`cert-doc-body flex-1 relative flex flex-col w-full ${isInspectionForm
+              ? "px-5 pt-1 pb-2 justify-start min-h-0 flex-1"
+              : isBusinessClearanceDoc
                 ? "px-12 sm:px-14 pt-4 pb-6"
                 : isJobSeekerDocB
                   ? "p-0"
@@ -10221,7 +10292,7 @@ function ClearancePreviewForRequests({
                     : isLetterPage
                       ? "px-14 pt-3 pb-6"
                       : "px-20 pt-6 pb-3"
-            }`}
+              }`}
             style={{
               backgroundColor: bodyStyle.bgColor || "#ffffff",
               color: bodyStyle.textColor || "#000000",
@@ -10241,13 +10312,12 @@ function ClearancePreviewForRequests({
             )}
 
             <div
-              className={`relative z-10 flex flex-col w-full ${
-                isInspectionForm
-                  ? "flex-1 min-h-0 justify-start items-stretch"
-                  : isBusinessClearanceDoc || isJobSeekerDocA || isJobSeekerDocB
-                    ? "flex-1 h-full min-h-0 items-stretch"
-                    : "flex-1 h-full min-h-0 items-stretch justify-between"
-              }`}
+              className={`relative z-10 flex flex-col w-full ${isInspectionForm
+                ? "flex-1 min-h-0 justify-start items-stretch"
+                : isBusinessClearanceDoc || isJobSeekerDocA || isJobSeekerDocB
+                  ? "flex-1 h-full min-h-0 items-stretch"
+                  : "flex-1 h-full min-h-0 items-stretch justify-between"
+                }`}
             >
               {!isBusinessPermit && !isJobSeekerDocA && !isJobSeekerDocB && (
                 <h2
@@ -10278,10 +10348,10 @@ function ClearancePreviewForRequests({
                           : isMedicoLegal
                             ? "REQUEST FOR MEDICO LEGAL (COPY)"
                             : request.certificate_type === "first_time_job_seeker" ||
-                                request.certificate_type === "barangay_clearance"
+                              request.certificate_type === "barangay_clearance"
                               ? "BARANGAY CLEARANCE CERTIFICATE"
                               : request.certificate_type ===
-                                  "certificate_of_indigency"
+                                "certificate_of_indigency"
                                 ? "CERTIFICATE OF INDIGENCY"
                                 : request.certificate_type ===
                                   "barangay_residency"
@@ -10334,32 +10404,32 @@ function ClearancePreviewForRequests({
                       [
                         "Name of Owner",
                         request.ownerFullName ||
-                          additionalDetails.ownerFullName ||
-                          formData.fullName,
+                        additionalDetails.ownerFullName ||
+                        formData.fullName,
                       ],
                       [
                         "Owner's Address",
                         request.ownerAddress ||
-                          additionalDetails.ownerAddress ||
-                          stripProvinceOf(formData.address),
+                        additionalDetails.ownerAddress ||
+                        stripProvinceOf(formData.address),
                       ],
                       [
                         "Business / Trade Name",
                         request.businessName ||
-                          additionalDetails.businessName ||
-                          "N/A",
+                        additionalDetails.businessName ||
+                        "N/A",
                       ],
                       [
                         "Business Address",
                         request.businessAddress ||
-                          additionalDetails.businessAddress ||
-                          "N/A",
+                        additionalDetails.businessAddress ||
+                        "N/A",
                       ],
                       [
                         "Nature of Business",
                         request.natureOfBusiness ||
-                          additionalDetails.natureOfBusiness ||
-                          "N/A",
+                        additionalDetails.natureOfBusiness ||
+                        "N/A",
                       ],
                     ].map(([label, value], idx) => (
                       <div key={idx} className="flex items-start">
@@ -10431,15 +10501,15 @@ function ClearancePreviewForRequests({
                                   <span>
                                     {new Date(
                                       businessPermitFinalCaptainApproval?.created_at ||
-                                        effectiveCaptain?.created_at ||
-                                        Date.now(),
+                                      effectiveCaptain?.created_at ||
+                                      Date.now(),
                                     ).toLocaleDateString("en-US")}
                                   </span>
                                   <span>
                                     {new Date(
                                       businessPermitFinalCaptainApproval?.created_at ||
-                                        effectiveCaptain?.created_at ||
-                                        Date.now(),
+                                      effectiveCaptain?.created_at ||
+                                      Date.now(),
                                     ).toLocaleTimeString("en-US", {
                                       hour: "2-digit",
                                       minute: "2-digit",
@@ -10493,12 +10563,12 @@ function ClearancePreviewForRequests({
                         <span className="text-left pl-2 font-bold">
                           {orData?.amount != null && orData?.amount !== ""
                             ? `₱${Number(orData.amount).toLocaleString(
-                                undefined,
-                                {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                },
-                              )}`
+                              undefined,
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              },
+                            )}`
                             : ""}
                         </span>
 
@@ -10514,370 +10584,371 @@ function ClearancePreviewForRequests({
                   </div>
                 </div>
               ) : isBusinessPermit ? (
-                  <div className="inspection-legal-sheet w-full text-[11px] leading-snug">
-                    <h2
-                      className="text-center font-bold uppercase mb-1 tracking-wide"
-                      style={{
-                        color: "#880000",
-                        fontSize: "13px",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      PHYSICAL INSPECTION &amp; PREPARATION FORM
-                    </h2>
+                <div className="inspection-legal-sheet w-full text-[11px] leading-snug">
+                  <h2
+                    className="text-center font-bold uppercase mb-1 tracking-wide"
+                    style={{
+                      color: "#880000",
+                      fontSize: "13px",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    PHYSICAL INSPECTION &amp; PREPARATION FORM
+                  </h2>
 
-                    {/* Application Info Table */}
-                    <table className="w-full border-collapse border border-black mb-4 font-bold">
-                      <tbody>
-                        <tr>
-                          <td className="border border-black p-1.5 w-[35%]">
-                            TYPE OF PERMIT
-                          </td>
-                          <td
-                            className="border border-black p-1.5 text-center font-bold text-red-700 uppercase"
-                            colSpan="2"
-                          >
-                            {additionalDetails?.clearanceType === "renewal"
-                              ? "RENEWAL"
-                              : "NEW PERMIT"}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-black p-1.5 w-[35%]">
-                            DATE OF APPLICATION AND NO.
-                          </td>
-                          <td className="border border-black p-1.5 w-[35%] font-normal">
-                            {request.applicationDate
+                  {/* Application Info Table */}
+                  <table className="w-full border-collapse border border-black mb-4 font-bold">
+                    <tbody>
+                      <tr>
+                        <td className="border border-black p-1.5 w-[35%]">
+                          TYPE OF PERMIT
+                        </td>
+                        <td
+                          className="border border-black p-1.5 text-center font-bold text-red-700 uppercase"
+                          colSpan="2"
+                        >
+                          {additionalDetails?.clearanceType === "renewal"
+                            ? "RENEWAL"
+                            : "NEW PERMIT"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 w-[35%]">
+                          DATE OF APPLICATION AND NO.
+                        </td>
+                        <td className="border border-black p-1.5 w-[35%] font-normal">
+                          {request.applicationDate
+                            ? new Date(
+                              request.applicationDate,
+                            ).toLocaleDateString("en-US")
+                            : request.created_at
                               ? new Date(
-                                request.applicationDate,
+                                request.created_at,
                               ).toLocaleDateString("en-US")
-                              : request.created_at
-                                ? new Date(
-                                  request.created_at,
-                                ).toLocaleDateString("en-US")
-                                : ""}
-                          </td>
-                          <td className="border border-black p-1.5 w-[30%] text-center text-red-700 font-bold">
-                            {request.applicationNo ||
-                              additionalDetails?.applicationNo ||
-                              ""}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-black p-1.5" colSpan="3">
-                            OWNER'S DETAILS
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-black p-1.5 font-normal">
-                            FULL NAME
-                          </td>
-                          <td
-                            className="border border-black p-1.5 font-bold"
-                            colSpan="2"
-                          >
-                            {request.ownerFullName ||
-                              additionalDetails.ownerFullName ||
-                              formData.fullName}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-black p-1.5 font-normal">
-                            COMPLETE ADDRESS
-                          </td>
-                          <td
-                            className="border border-black p-1.5 font-bold"
-                            colSpan="2"
-                          >
-                            {request.ownerAddress ||
-                              additionalDetails.ownerAddress ||
-                              stripProvinceOf(formData.address)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-black p-1.5 font-normal">
-                            BUSINESS NAME
-                          </td>
-                          <td
-                            className="border border-black p-1.5 font-bold"
-                            colSpan="2"
-                          >
-                            {request.businessName ||
-                              additionalDetails.businessName ||
-                              ""}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-black p-1.5 font-normal">
-                            NATURE OF BUSINESS
-                          </td>
-                          <td
-                            className="border border-black p-1.5 font-bold"
-                            colSpan="2"
-                          >
-                            {request.natureOfBusiness ||
-                              additionalDetails.natureOfBusiness ||
-                              ""}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-black p-1.5 font-normal">
-                            BUSINESS COMPLETE ADDRESS
-                          </td>
-                          <td
-                            className="border border-black p-1.5 font-bold"
-                            colSpan="2"
-                          >
-                            {request.businessAddress ||
-                              additionalDetails.businessAddress ||
-                              ""}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-black p-1.5 font-normal">
-                            CONTACT PERSON / NUMBER
-                          </td>
-                          <td
-                            className="border border-black p-1.5 font-bold"
-                            colSpan="2"
-                          >
-                            {request.contactPerson ||
-                              additionalDetails.contactPerson ||
-                              request.ownerFullName ||
-                              additionalDetails.ownerFullName ||
-                              formData.fullName}{" "}
-                            /{" "}
-                            {request.contactNumber ||
-                              additionalDetails.contactNumber ||
-                              request.contact_number ||
-                              ""}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    <p className="font-bold mb-1">
-                      A. ACTIONS TAKEN BY INSPECTION COMMITTEE:
-                    </p>
-                    <table className="w-full border-collapse border border-black text-center mb-4">
-                      <thead>
-                        <tr className="font-bold">
-                          <td className="border border-black p-1.5 w-[25%]">
-                            AREAS
-                          </td>
-                          <td className="border border-black p-1.5 w-[35%]">
-                            FINDINGS AND RECOMMENDATIONS
-                          </td>
-                          <td className="border border-black p-1.5 w-[20%]">
-                            DATE OF INSPECTION
-                          </td>
-                          <td className="border border-black p-1.5 w-[20%]">
-                            REMARKS
-                          </td>
-                        </tr>
-                      </thead>
-                      <tbody className="font-bold text-left">
-                        {[
-                          "HEALTH AND SAFETY",
-                          "SANITATION",
-                          "HEALTH HAZARD",
-                          "BUILDING PERMIT",
-                          "FIRE EXIT / HAZARD",
-                          "ENVIRONMENT",
-                          "WASTE MANAGEMENT",
-                          "HAZARDOUS WASTE",
-                          "OTHERS",
-                          "COMPLAINTS, ETC.",
-                        ].map((area, idx) => (
-                          <tr key={idx} className="h-6">
-                            <td className="border border-black p-1 pl-2 text-[10px]">
-                              {area}
-                            </td>
-                            <td className="border border-black p-1 text-[10px] font-normal uppercase">
-                              {inspectionData?.areas?.[area]?.findings || ""}
-                            </td>
-                            <td className="border border-black p-1 text-[10px] font-normal">
-                              {inspectionData?.areas?.[area]?.date || ""}
-                            </td>
-                            <td className="border border-black p-1 text-[10px] font-normal uppercase">
-                              {inspectionData?.areas?.[area]?.remarks || ""}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    <table className="w-full border-collapse border border-black mb-4 font-bold">
-                      <tbody>
-                        <tr>
-                          <td className="border border-black p-2 w-[40%] align-middle leading-snug">
-                            DATE AND TIME OF VISIT:
-                          </td>
-                          <td className="border border-black p-2 font-normal align-middle">
-                            {inspectionData?.visitDateTime
-                              ? new Date(
-                                  inspectionData.visitDateTime,
-                                ).toLocaleString("en-US", {
-                                  month: "2-digit",
-                                  day: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                })
                               : ""}
+                        </td>
+                        <td className="border border-black p-1.5 w-[30%] text-center text-red-700 font-bold">
+                          {request.reference_number ||
+                            request.applicationNo ||
+                            additionalDetails?.applicationNo ||
+                            ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5" colSpan="3">
+                          OWNER'S DETAILS
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">
+                          FULL NAME
+                        </td>
+                        <td
+                          className="border border-black p-1.5 font-bold"
+                          colSpan="2"
+                        >
+                          {request.ownerFullName ||
+                            additionalDetails.ownerFullName ||
+                            formData.fullName}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">
+                          COMPLETE ADDRESS
+                        </td>
+                        <td
+                          className="border border-black p-1.5 font-bold"
+                          colSpan="2"
+                        >
+                          {request.ownerAddress ||
+                            additionalDetails.ownerAddress ||
+                            stripProvinceOf(formData.address)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">
+                          BUSINESS NAME
+                        </td>
+                        <td
+                          className="border border-black p-1.5 font-bold"
+                          colSpan="2"
+                        >
+                          {request.businessName ||
+                            additionalDetails.businessName ||
+                            ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">
+                          NATURE OF BUSINESS
+                        </td>
+                        <td
+                          className="border border-black p-1.5 font-bold"
+                          colSpan="2"
+                        >
+                          {request.natureOfBusiness ||
+                            additionalDetails.natureOfBusiness ||
+                            ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">
+                          BUSINESS COMPLETE ADDRESS
+                        </td>
+                        <td
+                          className="border border-black p-1.5 font-bold"
+                          colSpan="2"
+                        >
+                          {request.businessAddress ||
+                            additionalDetails.businessAddress ||
+                            ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-1.5 font-normal">
+                          CONTACT PERSON / NUMBER
+                        </td>
+                        <td
+                          className="border border-black p-1.5 font-bold"
+                          colSpan="2"
+                        >
+                          {request.contactPerson ||
+                            additionalDetails.contactPerson ||
+                            request.ownerFullName ||
+                            additionalDetails.ownerFullName ||
+                            formData.fullName}{" "}
+                          /{" "}
+                          {request.contactNumber ||
+                            additionalDetails.contactNumber ||
+                            request.contact_number ||
+                            ""}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <p className="font-bold mb-1">
+                    A. ACTIONS TAKEN BY INSPECTION COMMITTEE:
+                  </p>
+                  <table className="w-full border-collapse border border-black text-center mb-4">
+                    <thead>
+                      <tr className="font-bold">
+                        <td className="border border-black p-1.5 w-[25%]">
+                          AREAS
+                        </td>
+                        <td className="border border-black p-1.5 w-[35%]">
+                          FINDINGS AND RECOMMENDATIONS
+                        </td>
+                        <td className="border border-black p-1.5 w-[20%]">
+                          DATE OF INSPECTION
+                        </td>
+                        <td className="border border-black p-1.5 w-[20%]">
+                          REMARKS
+                        </td>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold text-left">
+                      {[
+                        "HEALTH AND SAFETY",
+                        "SANITATION",
+                        "HEALTH HAZARD",
+                        "BUILDING PERMIT",
+                        "FIRE EXIT / HAZARD",
+                        "ENVIRONMENT",
+                        "WASTE MANAGEMENT",
+                        "HAZARDOUS WASTE",
+                        "OTHERS",
+                        "COMPLAINTS, ETC.",
+                      ].map((area, idx) => (
+                        <tr key={idx} className="h-6">
+                          <td className="border border-black p-1 pl-2 text-[10px]">
+                            {area}
+                          </td>
+                          <td className="border border-black p-1 text-[10px] font-normal uppercase">
+                            {inspectionData?.areas?.[area]?.findings || ""}
+                          </td>
+                          <td className="border border-black p-1 text-[10px] font-normal">
+                            {inspectionData?.areas?.[area]?.date || ""}
+                          </td>
+                          <td className="border border-black p-1 text-[10px] font-normal uppercase">
+                            {inspectionData?.areas?.[area]?.remarks || ""}
                           </td>
                         </tr>
-                        <tr>
-                          <td className="border border-black p-2 align-top leading-snug">
-                            NAME OF OWNER / REPRESENTATIVE AND SIGNATURE:
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <table className="w-full border-collapse border border-black mb-4 font-bold">
+                    <tbody>
+                      <tr>
+                        <td className="border border-black p-2 w-[40%] align-middle leading-snug">
+                          DATE AND TIME OF VISIT:
+                        </td>
+                        <td className="border border-black p-2 font-normal align-middle">
+                          {inspectionData?.visitDateTime
+                            ? new Date(
+                              inspectionData.visitDateTime,
+                            ).toLocaleString("en-US", {
+                              month: "2-digit",
+                              day: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })
+                            : ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black p-2 align-top leading-snug">
+                          NAME OF OWNER / REPRESENTATIVE AND SIGNATURE:
+                        </td>
+                        <td className="border border-black p-2 min-h-[2.25rem] align-middle font-normal uppercase">
+                          {inspectionData?.ownerRepresentative || ""}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <p className="font-bold mb-1">B. RECOMMENDING APPROVAL</p>
+                  <table className="w-full border-collapse border border-black text-center mb-8">
+                    <thead>
+                      <tr className="font-bold">
+                        <td className="border border-black p-1.5 w-[30%]">
+                          NAME
+                        </td>
+                        <td className="border border-black p-1.5 w-[30%]">
+                          COMMITTEE
+                        </td>
+                        <td className="border border-black p-1.5 w-[15%]">
+                          DATE
+                        </td>
+                        <td className="border border-black p-1.5 w-[25%]">
+                          SIGNATURE
+                        </td>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold">
+                      {[
+                        "HEALTH",
+                        "ENVIRONMENT",
+                        "INFRASTRUCTURE",
+                        "PEACE & ORDER",
+                      ].map((committee, idx) => (
+                        <tr key={idx} className="h-8">
+                          <td className="border border-black p-1 text-left pl-2 text-[10px] font-normal">
+                            {inspectionData?.recommendations?.[committee]
+                              ?.name || ""}
                           </td>
-                          <td className="border border-black p-2 min-h-[2.25rem] align-middle font-normal uppercase">
-                            {inspectionData?.ownerRepresentative || ""}
+                          <td className="border border-black p-1 text-[10px]">
+                            {committee}
+                          </td>
+                          <td className="border border-black p-1 text-[10px] font-normal">
+                            {inspectionData?.recommendations?.[committee]
+                              ?.date || ""}
+                          </td>
+                          <td className="border border-black p-1 align-middle">
+                            <div
+                              className="min-h-[1.75rem] w-full"
+                              aria-label="Manual signature"
+                            />
                           </td>
                         </tr>
-                      </tbody>
-                    </table>
+                      ))}
+                    </tbody>
+                  </table>
 
-                    <p className="font-bold mb-1">B. RECOMMENDING APPROVAL</p>
-                    <table className="w-full border-collapse border border-black text-center mb-8">
-                      <thead>
-                        <tr className="font-bold">
-                          <td className="border border-black p-1.5 w-[30%]">
-                            NAME
-                          </td>
-                          <td className="border border-black p-1.5 w-[30%]">
-                            COMMITTEE
-                          </td>
-                          <td className="border border-black p-1.5 w-[15%]">
-                            DATE
-                          </td>
-                          <td className="border border-black p-1.5 w-[25%]">
-                            SIGNATURE
-                          </td>
-                        </tr>
-                      </thead>
-                      <tbody className="font-bold">
-                        {[
-                          "HEALTH",
-                          "ENVIRONMENT",
-                          "INFRASTRUCTURE",
-                          "PEACE & ORDER",
-                        ].map((committee, idx) => (
-                          <tr key={idx} className="h-8">
-                            <td className="border border-black p-1 text-left pl-2 text-[10px] font-normal">
-                              {inspectionData?.recommendations?.[committee]
-                                ?.name || ""}
-                            </td>
-                            <td className="border border-black p-1 text-[10px]">
-                              {committee}
-                            </td>
-                            <td className="border border-black p-1 text-[10px] font-normal">
-                              {inspectionData?.recommendations?.[committee]
-                                ?.date || ""}
-                            </td>
-                            <td className="border border-black p-1 align-middle">
-                              <div
-                                className="min-h-[1.75rem] w-full"
-                                aria-label="Manual signature"
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="inspection-gap-after-b" aria-hidden />
 
-                    <div className="inspection-gap-after-b" aria-hidden />
-
-                    <div className="inspection-approval-receipt-section shrink-0">
+                  <div className="inspection-approval-receipt-section shrink-0">
                     <p className="font-bold mb-1">C. APPROVAL</p>
                     <div className="inspection-gap-after-c-heading" aria-hidden />
                     <div className="inspection-signatory-receipt-block">
-                    <div className="text-left mb-1 ml-2">
-                      <div className="flex flex-wrap items-end gap-10 relative z-10">
-                        <div className="relative inline-block min-w-[12rem]">
-                          {effectiveSignature && (
-                            <>
-                              <div
-                                className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[70%] w-48 h-14 pointer-events-none flex items-center justify-center z-20"
-                                style={{ mixBlendMode: "multiply" }}
-                              >
-                                <img
-                                  src={effectiveSignature}
-                                  className="w-full h-full object-contain"
-                                  alt="Chairman signature"
-                                />
-                              </div>
-                              <div className="absolute left-[70%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
-                                <span className="font-bold text-gray-500">{captainName}</span>
-                                <span>
-                                  {new Date(
-                                    effectiveCaptain?.created_at || Date.now(),
-                                  ).toLocaleDateString("en-US")}
-                                </span>
-                                <span>
-                                  {new Date(
-                                    effectiveCaptain?.created_at || Date.now(),
-                                  ).toLocaleTimeString("en-US", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: true,
-                                  })}
-                                </span>
-                              </div>
-                            </>
-                          )}
-                          <p
-                            className="uppercase font-bold mb-0 whitespace-nowrap relative z-10"
-                            style={{ fontSize: "15px" }}
-                          >
-                            {captainName}
-                          </p>
-                          <p
-                            className="font-bold leading-tight relative z-10 mt-0.5"
-                            style={{ fontSize: "12px" }}
-                          >
-                            {detectedRole || "BARANGAY CHAIRMAN"}
-                          </p>
-                          {uniqueProcessorCodes && (
-                            <p className="text-[9px] font-bold text-gray-500 mt-0.5 leading-tight">
-                              {uniqueProcessorCodes}
+                      <div className="text-left mb-1 ml-2">
+                        <div className="flex flex-wrap items-end gap-10 relative z-10">
+                          <div className="relative inline-block min-w-[12rem]">
+                            {effectiveSignature && (
+                              <>
+                                <div
+                                  className="absolute left-1/2 top-0 -translate-x-[58%] -translate-y-[65%] w-48 h-14 pointer-events-none flex items-center justify-center z-20"
+                                  style={{ mixBlendMode: "multiply" }}
+                                >
+                                  <img
+                                    src={effectiveSignature}
+                                    className="w-full h-full object-contain"
+                                    alt="Chairman signature"
+                                  />
+                                </div>
+                                <div className="absolute left-[78%] top-0 -translate-y-[125%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
+                                  <span className="font-bold text-gray-500">{captainName}</span>
+                                  <span>
+                                    {new Date(
+                                      effectiveCaptain?.created_at || Date.now(),
+                                    ).toLocaleDateString("en-US")}
+                                  </span>
+                                  <span>
+                                    {new Date(
+                                      effectiveCaptain?.created_at || Date.now(),
+                                    ).toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            <p
+                              className="uppercase font-bold mb-0 whitespace-nowrap relative z-10"
+                              style={{ fontSize: "15px" }}
+                            >
+                              {captainName}
                             </p>
-                          )}
+                            <p
+                              className="font-bold leading-tight relative z-10 mt-0.5"
+                              style={{ fontSize: "12px" }}
+                            >
+                              {detectedRole || "BARANGAY CHAIRMAN"}
+                            </p>
+                            {uniqueProcessorCodes && (
+                              <p className="text-[9px] font-bold text-gray-500 mt-0.5 leading-tight">
+                                {uniqueProcessorCodes}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="inspection-gap-before-d-receipt" aria-hidden />
+                      <div className="inspection-gap-before-d-receipt" aria-hidden />
 
-                    <p className="font-bold mb-1 mt-3 inspection-receipt-heading">
-                      D. OFFICIAL RECEIPT
-                    </p>
-                    <table className="w-full border-collapse border border-black mb-0 inspection-official-receipt-table">
-                      <tbody>
-                        <tr>
-                          <td className="border border-black p-1.5 w-[18%] font-bold whitespace-nowrap">
-                            OR NO.
-                          </td>
-                          <td className="border border-black p-1.5 w-[27%] font-bold text-red-700">
-                            {orData?.or_number ||
-                              additionalDetails?.or_number ||
-                              "_____________"}
-                          </td>
-                          <td className="border border-black p-1.5 w-[32%] font-bold leading-tight">
-                            REFERENCE / CONTROL NO.
-                          </td>
-                          <td className="border border-black p-1.5 font-bold">
-                            {orData?.control_number ||
-                              additionalDetails?.bc_control_number ||
-                              "_____________"}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    </div>
+                      <p className="font-bold mb-1 mt-3 inspection-receipt-heading">
+                        D. OFFICIAL RECEIPT
+                      </p>
+                      <table className="w-full border-collapse border border-black mb-0 inspection-official-receipt-table">
+                        <tbody>
+                          <tr>
+                            <td className="border border-black p-1.5 w-[18%] font-bold whitespace-nowrap">
+                              OR NO.
+                            </td>
+                            <td className="border border-black p-1.5 w-[27%] font-bold text-red-700">
+                              {orData?.or_number ||
+                                additionalDetails?.or_number ||
+                                "_____________"}
+                            </td>
+                            <td className="border border-black p-1.5 w-[32%] font-bold leading-tight">
+                              REFERENCE / CONTROL NO.
+                            </td>
+                            <td className="border border-black p-1.5 font-bold">
+                              {orData?.control_number ||
+                                additionalDetails?.bc_control_number ||
+                                "_____________"}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
+                </div>
               ) : isJobSeekerDocA ? (
                 <div
                   className={`w-full max-w-full text-left px-2 sm:px-4 flex flex-col flex-1 justify-between text-gray-900 leading-relaxed ${getFontClass(bodyStyle.fontFamily)}`}
@@ -10936,34 +11007,34 @@ function ClearancePreviewForRequests({
                             </div>
                             {secretaryApproval?.signature_data &&
                               secretaryApproval.signature_data !==
-                                effectiveWitnessSignature && (
-                              <div className="h-12 w-28 pointer-events-none mb-1 -ml-3 flex items-center gap-1">
-                                <img
-                                  src={secretaryApproval.signature_data}
-                                  className="h-full w-full object-contain mix-blend-multiply"
-                                  alt="Secretary signature"
-                                />
-                                <div className="text-[5px] text-gray-400 whitespace-nowrap leading-tight flex flex-col self-end mb-2 opacity-70 font-medium border-l border-gray-300 pl-1">
-                                  <span className="font-bold text-gray-500">
-                                    {secretaryName}
-                                  </span>
-                                  <span>
-                                    {new Date(
-                                      secretaryApproval.created_at,
-                                    ).toLocaleDateString("en-US")}
-                                  </span>
-                                  <span>
-                                    {new Date(
-                                      secretaryApproval.created_at,
-                                    ).toLocaleTimeString("en-US", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    })}
-                                  </span>
+                              effectiveWitnessSignature && (
+                                <div className="h-12 w-28 pointer-events-none mb-1 -ml-3 flex items-center gap-1">
+                                  <img
+                                    src={secretaryApproval.signature_data}
+                                    className="h-full w-full object-contain mix-blend-multiply"
+                                    alt="Secretary signature"
+                                  />
+                                  <div className="text-[5px] text-gray-400 whitespace-nowrap leading-tight flex flex-col self-end mb-2 opacity-70 font-medium border-l border-gray-300 pl-1">
+                                    <span className="font-bold text-gray-500">
+                                      {secretaryName}
+                                    </span>
+                                    <span>
+                                      {new Date(
+                                        secretaryApproval.created_at,
+                                      ).toLocaleDateString("en-US")}
+                                    </span>
+                                    <span>
+                                      {new Date(
+                                        secretaryApproval.created_at,
+                                      ).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      })}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
                           </div>
                           <div className="relative flex items-center z-10 w-full mb-2 -mt-1.5">
                             <p className="text-[14px] font-bold shrink-0 leading-tight uppercase text-gray-900">
@@ -11136,7 +11207,7 @@ function ClearancePreviewForRequests({
                       ) : (
                         <p>
                           {request.certificate_type === "barangay_clearance" ||
-                          request.certificate_type === "first_time_job_seeker"
+                            request.certificate_type === "first_time_job_seeker"
                             ? "This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:"
                             : request.certificate_type ===
                               "certificate_of_indigency"
@@ -11222,12 +11293,12 @@ function ClearancePreviewForRequests({
                           const formatCohabDob = (dob) =>
                             dob
                               ? new Date(dob)
-                                  .toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })
-                                  .toUpperCase()
+                                .toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })
+                                .toUpperCase()
                               : "";
                           const cohabPersonA = {
                             name: formData.fullName?.toUpperCase(),
@@ -11254,24 +11325,24 @@ function ClearancePreviewForRequests({
 
                           let baseLabels = isCohabitation
                             ? [
-                                ["NAME", firstCohabPerson.name],
-                                ["AGE", firstCohabPerson.age],
-                                ["SEX", firstCohabPerson.sex],
-                                ["DATE OF BIRTH", firstCohabPerson.dob],
-                              ]
+                              ["NAME", firstCohabPerson.name],
+                              ["AGE", firstCohabPerson.age],
+                              ["SEX", firstCohabPerson.sex],
+                              ["DATE OF BIRTH", firstCohabPerson.dob],
+                            ]
                             : [
-                                ["NAME", formData.fullName?.toUpperCase()],
-                                ["AGE", formData.age],
-                                ["SEX", formatSexFull(formData.sex)],
-                                [
-                                  "CIVIL STATUS",
-                                  formatCivilStatusFull(formData.civilStatus),
-                                ],
-                                [
-                                  "RESIDENTIAL ADDRESS",
-                                  stripProvinceOf(formData.address)?.toUpperCase(),
-                                ],
-                              ];
+                              ["NAME", formData.fullName?.toUpperCase()],
+                              ["AGE", formData.age],
+                              ["SEX", formatSexFull(formData.sex)],
+                              [
+                                "CIVIL STATUS",
+                                formatCivilStatusFull(formData.civilStatus),
+                              ],
+                              [
+                                "RESIDENTIAL ADDRESS",
+                                stripProvinceOf(formData.address)?.toUpperCase(),
+                              ],
+                            ];
 
                           let extraLabels = [];
                           if (isNaturalDeath) {
@@ -11506,42 +11577,42 @@ function ClearancePreviewForRequests({
                         </p>
                         {request.residents?.pending_case && (
                           <div className="flex justify-end mb-8">
-                          <table className="border-collapse text-left text-[14px] leading-snug text-red-700 w-1/2">
-                            <thead>
-                              <tr>
-                                <th className="border border-red-700 px-2 py-1 font-bold w-[72px]">
-                                  Item
-                                </th>
-                                <th className="border border-red-700 px-2 py-1 font-bold w-[150px]">
-                                  Usaping Barangay Blg.
-                                </th>
-                                <th className="border border-red-700 px-2 py-1 font-bold">
-                                  Case Description
-                                </th>
-                                <th className="border border-red-700 px-2 py-1 font-bold w-[100px]">
-                                  Status
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {pendingCaseRows(request.residents.case_record_history).map((row) => (
-                                <tr key={row.sn}>
-                                  <td className="border border-red-700 px-2 py-1 align-top whitespace-nowrap">
-                                    {row.sn}
-                                  </td>
-                                  <td className="border border-red-700 px-2 py-1 align-top whitespace-nowrap">
-                                    {row.caseNo}
-                                  </td>
-                                  <td className="border border-red-700 px-2 py-1 align-top">
-                                    {row.description}
-                                  </td>
-                                  <td className="border border-red-700 px-2 py-1 align-top font-bold whitespace-nowrap">
-                                    {row.status}
-                                  </td>
+                            <table className="border-collapse text-left text-[14px] leading-snug text-red-700 w-1/2">
+                              <thead>
+                                <tr>
+                                  <th className="border border-red-700 px-2 py-1 font-bold w-[72px]">
+                                    Item
+                                  </th>
+                                  <th className="border border-red-700 px-2 py-1 font-bold w-[150px]">
+                                    Usaping Barangay Blg.
+                                  </th>
+                                  <th className="border border-red-700 px-2 py-1 font-bold">
+                                    Case Description
+                                  </th>
+                                  <th className="border border-red-700 px-2 py-1 font-bold w-[100px]">
+                                    Status
+                                  </th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {pendingCaseRows(request.residents.case_record_history).map((row) => (
+                                  <tr key={row.sn}>
+                                    <td className="border border-red-700 px-2 py-1 align-top whitespace-nowrap">
+                                      {row.sn}
+                                    </td>
+                                    <td className="border border-red-700 px-2 py-1 align-top whitespace-nowrap">
+                                      {row.caseNo}
+                                    </td>
+                                    <td className="border border-red-700 px-2 py-1 align-top">
+                                      {row.description}
+                                    </td>
+                                    <td className="border border-red-700 px-2 py-1 align-top font-bold whitespace-nowrap">
+                                      {row.status}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                         )}
                       </>
@@ -11564,10 +11635,10 @@ function ClearancePreviewForRequests({
                         // One line (~14px) higher than default clearance layout.
                         top:
                           isSamePerson ||
-                          isGuardianship ||
-                          isCohabitation ||
-                          isMedicoLegal ||
-                          request.certificate_type === "certificate_of_indigency"
+                            isGuardianship ||
+                            isCohabitation ||
+                            isMedicoLegal ||
+                            request.certificate_type === "certificate_of_indigency"
                             ? undefined
                             : "26px",
                       }}
@@ -11611,9 +11682,9 @@ function ClearancePreviewForRequests({
                               <p className="text-[14px] text-gray-900 leading-snug mt-0 font-normal whitespace-nowrap">
                                 {formData.guardianRelationship
                                   ? labelForGuardianRelationshipToApplicant(
-                                      formData.guardianRelationship,
-                                      "en",
-                                    )
+                                    formData.guardianRelationship,
+                                    "en",
+                                  )
                                   : "____________"}{" "}
                                 / Guardian&apos;s Signature
                               </p>
@@ -11664,32 +11735,32 @@ function ClearancePreviewForRequests({
                             </div>
                             {secretaryApproval?.signature_data &&
                               secretaryApproval.signature_data !==
-                                effectiveWitnessSignature && (
-                              <div className="h-12 w-28 pointer-events-none mb-1 -ml-3 flex items-center gap-1">
-                                <img
-                                  src={secretaryApproval.signature_data}
-                                  className="h-full w-full object-contain mix-blend-multiply"
-                                  alt="Sec Sig"
-                                />
-                                <div className="text-[5px] text-gray-400 whitespace-nowrap leading-tight flex flex-col self-end mb-2 opacity-70 font-medium border-l border-gray-300 pl-1">
-                                  <span className="font-bold text-gray-500">{secretaryName}</span>
-                                  <span>
-                                    {new Date(
-                                      secretaryApproval.created_at,
-                                    ).toLocaleDateString("en-US")}
-                                  </span>
-                                  <span>
-                                    {new Date(
-                                      secretaryApproval.created_at,
-                                    ).toLocaleTimeString("en-US", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    })}
-                                  </span>
+                              effectiveWitnessSignature && (
+                                <div className="h-12 w-28 pointer-events-none mb-1 -ml-3 flex items-center gap-1">
+                                  <img
+                                    src={secretaryApproval.signature_data}
+                                    className="h-full w-full object-contain mix-blend-multiply"
+                                    alt="Sec Sig"
+                                  />
+                                  <div className="text-[5px] text-gray-400 whitespace-nowrap leading-tight flex flex-col self-end mb-2 opacity-70 font-medium border-l border-gray-300 pl-1">
+                                    <span className="font-bold text-gray-500">{secretaryName}</span>
+                                    <span>
+                                      {new Date(
+                                        secretaryApproval.created_at,
+                                      ).toLocaleDateString("en-US")}
+                                    </span>
+                                    <span>
+                                      {new Date(
+                                        secretaryApproval.created_at,
+                                      ).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      })}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
                           </div>
 
                           <div className="relative flex items-center z-10 w-full mb-2 -mt-1.5">
@@ -11720,14 +11791,12 @@ function ClearancePreviewForRequests({
 
               {/* Bottom Anchored Footer Block (QR Code on right, Address/Contact at bottom) */}
               <div
-                className={`cert-footer-anchor w-full shrink-0 pt-0 ${
-                  isInspectionForm ? "mt-auto inspection-cert-footer" : "mt-auto"
-                }`}
+                className={`cert-footer-anchor w-full shrink-0 pt-0 ${isInspectionForm ? "mt-auto inspection-cert-footer" : "mt-auto"
+                  }`}
               >
                 <div
-                  className={`w-full flex items-end gap-4 mb-1 ${
-                    isInspectionForm ? "" : "justify-between"
-                  }`}
+                  className={`w-full flex items-end gap-4 mb-1 ${isInspectionForm ? "" : "justify-between"
+                    }`}
                 >
                   <div className="text-left flex-1 min-w-0">
                     {isOnlineDelivery && !isInspectionForm && (
@@ -11748,9 +11817,8 @@ function ClearancePreviewForRequests({
 
                 {/* Footer Divider and info */}
                 <div
-                  className={`w-full border-t border-gray-400 pt-1 leading-tight pb-0.5 shrink-0 ${
-                    isInspectionForm ? "text-[10px]" : "text-[11px]"
-                  }`}
+                  className={`w-full border-t border-gray-400 pt-1 leading-tight pb-0.5 shrink-0 ${isInspectionForm ? "text-[10px]" : "text-[11px]"
+                    }`}
                 >
                   <div className="flex flex-col items-start text-gray-700 gap-0.5">
                     <p>
@@ -12347,6 +12415,7 @@ function ORPreviewSection({
   const [amountInput, setAmountInput] = useState(isFinanceVariant ? "100" : "");
   const [bcControlInput, setBcControlInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [isEditingOR, setIsEditingOR] = useState(false);
   const [showFullOR, setShowFullOR] = useState(false);
 
   const loadOrContent = async (record) => {
@@ -12494,6 +12563,7 @@ function ORPreviewSection({
           reportedHasOrRef.current = true;
           onORChange?.(true);
         }
+        setIsEditingOR(false);
         onOrAssigned?.();
       }
     } catch (err) {
@@ -12544,7 +12614,7 @@ function ORPreviewSection({
     );
   }
 
-  if (!loading && !orData) {
+  if (!loading && (!orData || isEditingOR)) {
     const shell = isFinanceVariant
       ? "bg-slate-50 border border-slate-200"
       : "bg-amber-50 border border-amber-200";
@@ -12633,6 +12703,16 @@ function ORPreviewSection({
         </div>
 
         <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
+          {isEditingOR && (
+            <button
+              type="button"
+              onClick={() => setIsEditingOR(false)}
+              disabled={saving}
+              className="w-full sm:w-auto px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-100 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          )}
           <button
             type="button"
             onClick={handleAssignOr}
@@ -12644,7 +12724,7 @@ function ORPreviewSection({
             ) : (
               <Receipt className="w-4 h-4" />
             )}
-            Assign OR Number
+            {isEditingOR ? "Save OR Changes" : "Assign OR Number"}
           </button>
         </div>
       </div>
@@ -12658,9 +12738,9 @@ function ORPreviewSection({
   const amountDisplay =
     orData.amount != null && orData.amount !== ""
       ? Number(orData.amount).toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
       : "—";
 
   return (
@@ -12693,6 +12773,25 @@ function ORPreviewSection({
               </div>
             </div>
             <div className="flex flex-wrap gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setOrNumberInput(orData.or_number || "");
+                  setAmountInput(
+                    orData.amount != null && orData.amount !== ""
+                      ? String(orData.amount)
+                      : "100",
+                  );
+                  setBcControlInput(
+                    orData.control_number || request.reference_number || "",
+                  );
+                  setIsEditingOR(true);
+                }}
+                className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-1.5 text-xs font-bold"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                Edit
+              </button>
               <button
                 type="button"
                 onClick={() => setShowFullOR(true)}
@@ -12731,6 +12830,25 @@ function ORPreviewSection({
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setOrNumberInput(orData.or_number || "");
+                  setAmountInput(
+                    orData.amount != null && orData.amount !== ""
+                      ? String(orData.amount)
+                      : "",
+                  );
+                  setBcControlInput(
+                    orData.control_number || request.reference_number || "",
+                  );
+                  setIsEditingOR(true);
+                }}
+                className="px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2 text-sm font-medium"
+              >
+                <Edit className="w-4 h-4" />
+                Edit OR
+              </button>
               <button
                 onClick={() => setShowFullOR(true)}
                 disabled={!orContent}

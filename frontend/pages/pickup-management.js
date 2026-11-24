@@ -10,7 +10,7 @@ import {
 import {
   FileCheck, Search, Eye, Calendar, User, Phone, MapPin,
   Shield, Clock, CheckCircle, AlertTriangle, QrCode,
-  ExternalLink, RefreshCw, Package, History, XCircle, X, ChevronDown, ShieldCheck, Heart, FileText, Skull, Activity, Mail
+  ExternalLink, RefreshCw, Package, History, XCircle, X, ChevronDown, ShieldCheck, Heart, FileText, Skull, Activity, Mail, Edit, Save
 } from 'lucide-react';
 import { getAuthToken, getUserData } from '@/lib/auth';
 import useScrollLock from '@/lib/useScrollLock';
@@ -761,7 +761,14 @@ export default function PickupManagementPage() {
       {selectedCertificate && (
         <CertificateDetailsModal
           certificate={selectedCertificate}
+          currentUser={currentUser}
           onClose={() => setSelectedCertificate(null)}
+          onUpdated={(updated) => {
+            setSelectedCertificate(updated);
+            setCertificates((prev) =>
+              prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)),
+            );
+          }}
           getStatusColor={getStatusColor}
           getTypeLabel={getTypeLabel}
           formatDate={formatDate}
@@ -828,12 +835,131 @@ PickupManagementPage.getLayout = (page) => (
 );
 
 // Certificate Details Modal Component
-function CertificateDetailsModal({ certificate, onClose, getStatusColor, getTypeLabel, formatDate, openPickupVerification, handleManualRelease }) {
+function CertificateDetailsModal({ certificate, currentUser, onClose, onUpdated, getStatusColor, getTypeLabel, formatDate, openPickupVerification, handleManualRelease }) {
   useScrollLock(true);
   const SLIDE_MS = 280;
   const SLIDE_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
   const [slideIn, setSlideIn] = useState(false);
   const closingRef = useState({ current: false })[0];
+  const isAdmin = ["admin", "superadmin", "super_admin"].includes(
+    String(currentUser?.role || "").toLowerCase(),
+  );
+  const [isEditing, setIsEditing] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editData, setEditData] = useState({
+    full_name: "",
+    contact_number: "",
+    email: "",
+    address: "",
+    age: "",
+    sex: "",
+    civil_status: "",
+    date_of_birth: "",
+    place_of_birth: "",
+    purpose: "",
+    businessName: "",
+    natureOfBusiness: "",
+    businessAddress: "",
+  });
+  const [loadedDetails, setLoadedDetails] = useState({});
+
+  const handleStartEdit = async () => {
+    setLoadingEdit(true);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${API_URL}/certificates/${certificate.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      const full = (json.success && json.data) || certificate;
+      let parsedDetails = {};
+      try {
+        parsedDetails =
+          typeof full.details === "string"
+            ? JSON.parse(full.details)
+            : full.details || {};
+      } catch {
+        parsedDetails = {};
+      }
+      setLoadedDetails(parsedDetails);
+      setEditData({
+        full_name: full.full_name || full.applicant_name || "",
+        contact_number: full.contact_number || "",
+        email: full.email || "",
+        address: full.address || "",
+        age: full.age ?? "",
+        sex: full.sex || "",
+        civil_status: full.civil_status || "",
+        date_of_birth: full.date_of_birth
+          ? String(full.date_of_birth).slice(0, 10)
+          : "",
+        place_of_birth: full.place_of_birth || "",
+        purpose: Array.isArray(full.purpose)
+          ? full.purpose.join("\n")
+          : full.purpose || "",
+        businessName: parsedDetails.businessName || "",
+        natureOfBusiness: parsedDetails.natureOfBusiness || "",
+        businessAddress: parsedDetails.businessAddress || "",
+      });
+      setIsEditing(true);
+    } catch {
+      toast.error("Failed to load certificate details for editing");
+    } finally {
+      setLoadingEdit(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    setSavingEdit(true);
+    try {
+      const token = getAuthToken();
+      const payload = {
+        full_name: editData.full_name,
+        contact_number: editData.contact_number,
+        email: editData.email,
+        address: editData.address,
+        age: editData.age !== "" ? Number(editData.age) || editData.age : null,
+        sex: editData.sex,
+        civil_status: editData.civil_status,
+        date_of_birth: editData.date_of_birth || null,
+        place_of_birth: editData.place_of_birth,
+        purpose: editData.purpose,
+      };
+      if (certificate.certificate_type === "business_permit") {
+        payload.details = {
+          ...loadedDetails,
+          businessName: editData.businessName,
+          natureOfBusiness: editData.natureOfBusiness,
+          businessAddress: editData.businessAddress,
+        };
+      }
+      const res = await fetch(`${API_URL}/certificates/${certificate.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        toast.error(json.message || "Failed to update request");
+        return;
+      }
+      toast.success("Request updated successfully");
+      setIsEditing(false);
+      onUpdated?.({
+        ...certificate,
+        ...json.data,
+        applicant_name: json.data?.full_name || editData.full_name,
+      });
+    } catch {
+      toast.error("Failed to update request");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const handleSmoothClose = () => {
     if (closingRef.current) return;
@@ -893,9 +1019,43 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
                 <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-tight leading-none">Certificate Details</h2>
               </div>
             </div>
-            <button onClick={handleSmoothClose} className="text-white/70 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all">
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {isAdmin && !isEditing && (
+                <button
+                  type="button"
+                  onClick={() => void handleStartEdit()}
+                  disabled={loadingEdit}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 border border-white/20 transition-all disabled:opacity-50"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span>{loadingEdit ? "Loading…" : "Edit"}</span>
+                </button>
+              )}
+              {isAdmin && isEditing && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveEdit()}
+                    disabled={savingEdit}
+                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-50"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{savingEdit ? "Saving…" : "Save"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    disabled={savingEdit}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold border border-white/20 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+              <button onClick={handleSmoothClose} className="text-white/70 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6">
@@ -932,30 +1092,149 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
                     Applicant Information
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                  <div className="col-span-1 sm:col-span-2">
-                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Full Name</p>
-                    <p className="font-bold text-slate-900 uppercase text-sm sm:text-base tracking-tight">{certificate.applicant_name || certificate.full_name || 'NOT RECORDED'}</p>
-                  </div>
-                  <div className="col-span-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Contact Number</p>
-                    <p className="font-semibold text-slate-900 text-xs sm:text-sm font-sans">{certificate.contact_number || 'NOT RECORDED'}</p>
-                  </div>
-                  <div className="col-span-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Age / Sex</p>
-                    <p className="font-semibold text-slate-900 text-xs sm:text-sm uppercase">{certificate.age || '-'} / {certificate.sex || '-'}</p>
-                  </div>
-                  {(certificate.email || certificate.residents?.email) && (
-                    <div className="col-span-1 sm:col-span-2">
-                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Email Address</p>
-                      <p className="font-semibold text-slate-900 text-xs sm:text-sm">{certificate.email || certificate.residents?.email}</p>
+                {isEditing ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={editData.full_name}
+                        onChange={(e) => setEditData((p) => ({ ...p, full_name: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold uppercase"
+                      />
                     </div>
-                  )}
-                  <div className="col-span-1 sm:col-span-2">
-                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Residential Address</p>
-                    <p className="font-medium text-slate-800 text-xs sm:text-sm uppercase leading-relaxed">{certificate.address || 'NOT RECORDED'}</p>
+                    <div>
+                      <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Contact Number</label>
+                      <input
+                        type="text"
+                        value={editData.contact_number}
+                        onChange={(e) => setEditData((p) => ({ ...p, contact_number: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Email Address</label>
+                      <input
+                        type="email"
+                        value={editData.email}
+                        onChange={(e) => setEditData((p) => ({ ...p, email: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Date of Birth</label>
+                      <input
+                        type="date"
+                        value={editData.date_of_birth}
+                        onChange={(e) => setEditData((p) => ({ ...p, date_of_birth: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Age</label>
+                        <input
+                          type="number"
+                          value={editData.age}
+                          onChange={(e) => setEditData((p) => ({ ...p, age: e.target.value }))}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Sex</label>
+                        <input
+                          type="text"
+                          value={editData.sex}
+                          onChange={(e) => setEditData((p) => ({ ...p, sex: e.target.value }))}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold uppercase"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Civil Status</label>
+                      <input
+                        type="text"
+                        value={editData.civil_status}
+                        onChange={(e) => setEditData((p) => ({ ...p, civil_status: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Place of Birth</label>
+                      <input
+                        type="text"
+                        value={editData.place_of_birth}
+                        onChange={(e) => setEditData((p) => ({ ...p, place_of_birth: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold uppercase"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Residential Address</label>
+                      <input
+                        type="text"
+                        value={editData.address}
+                        onChange={(e) => setEditData((p) => ({ ...p, address: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold uppercase"
+                      />
+                    </div>
+                    {certificate.certificate_type === "business_permit" && (
+                      <>
+                        <div className="sm:col-span-2">
+                          <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Business / Trade Name</label>
+                          <input
+                            type="text"
+                            value={editData.businessName}
+                            onChange={(e) => setEditData((p) => ({ ...p, businessName: e.target.value }))}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold uppercase"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Nature of Business</label>
+                          <input
+                            type="text"
+                            value={editData.natureOfBusiness}
+                            onChange={(e) => setEditData((p) => ({ ...p, natureOfBusiness: e.target.value }))}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold uppercase"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Business Address</label>
+                          <input
+                            type="text"
+                            value={editData.businessAddress}
+                            onChange={(e) => setEditData((p) => ({ ...p, businessAddress: e.target.value }))}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold uppercase"
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                    <div className="col-span-1 sm:col-span-2">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Full Name</p>
+                      <p className="font-bold text-slate-900 uppercase text-sm sm:text-base tracking-tight">{certificate.applicant_name || certificate.full_name || 'NOT RECORDED'}</p>
+                    </div>
+                    <div className="col-span-1">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Contact Number</p>
+                      <p className="font-semibold text-slate-900 text-xs sm:text-sm font-sans">{certificate.contact_number || 'NOT RECORDED'}</p>
+                    </div>
+                    <div className="col-span-1">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Age / Sex</p>
+                      <p className="font-semibold text-slate-900 text-xs sm:text-sm uppercase">{certificate.age || '-'} / {certificate.sex || '-'}</p>
+                    </div>
+                    {(certificate.email || certificate.residents?.email) && (
+                      <div className="col-span-1 sm:col-span-2">
+                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Email Address</p>
+                        <p className="font-semibold text-slate-900 text-xs sm:text-sm">{certificate.email || certificate.residents?.email}</p>
+                      </div>
+                    )}
+                    <div className="col-span-1 sm:col-span-2">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Residential Address</p>
+                      <p className="font-medium text-slate-800 text-xs sm:text-sm uppercase leading-relaxed">{certificate.address || 'NOT RECORDED'}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4 sm:space-y-6">
@@ -968,9 +1247,18 @@ function CertificateDetailsModal({ certificate, onClose, getStatusColor, getType
                     </h3>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs sm:text-sm text-slate-800 font-medium uppercase leading-relaxed border-l-2 border-slate-200 pl-3 py-1.5 italic bg-slate-50 rounded-r-lg">
-                      {certificate.purpose || 'NOT SPECIFIED'}
-                    </p>
+                    {isEditing ? (
+                      <textarea
+                        rows={4}
+                        value={editData.purpose}
+                        onChange={(e) => setEditData((p) => ({ ...p, purpose: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-medium uppercase"
+                      />
+                    ) : (
+                      <p className="text-xs sm:text-sm text-slate-800 font-medium uppercase leading-relaxed border-l-2 border-slate-200 pl-3 py-1.5 italic bg-slate-50 rounded-r-lg">
+                        {certificate.purpose || 'NOT SPECIFIED'}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
