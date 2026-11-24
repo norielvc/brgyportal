@@ -60,6 +60,14 @@ export function isValidPhMobile(raw) {
   return /^09\d{9}$/.test(phMobileDigits(raw));
 }
 
+/** Mask a PH mobile number as *********67 (last 2 digits visible). */
+export function maskPhMobile(raw) {
+  const digits = phMobileDigits(raw);
+  if (!digits) return "";
+  if (digits.length <= 2) return digits;
+  return `${"*".repeat(digits.length - 2)}${digits.slice(-2)}`;
+}
+
 function caretForDigitCount(formatted, count) {
   if (count <= 0) return 0;
   let seen = 0;
@@ -79,26 +87,32 @@ export default function MobileNumberInput({
   onChange,
   error = false,
   className = "",
+  isMasked = false,
+  onUnmask,
 }) {
   const inputRef = useRef(null);
   const caretDigits = useRef(null);
   const rest = formatPhMobileRest(value);
+  const maskedDisplay = isMasked ? maskPhMobile(value) : "";
+  const showMasked = Boolean(isMasked && maskedDisplay);
 
   useEffect(() => {
-    if (caretDigits.current == null) return;
+    if (showMasked || caretDigits.current == null) return;
     const node = inputRef.current;
     if (!node) return;
     const pos = caretForDigitCount(node.value, caretDigits.current);
     node.setSelectionRange(pos, pos);
     caretDigits.current = null;
-  }, [rest]);
+  }, [rest, showMasked]);
 
   return (
     <div className="relative">
       <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-      <span className="absolute left-10 top-1/2 -translate-y-1/2 text-[15px] font-semibold tracking-wide text-gray-900 pointer-events-none">
-        09
-      </span>
+      {!showMasked && (
+        <span className="absolute left-10 top-1/2 -translate-y-1/2 text-[15px] font-semibold tracking-wide text-gray-900 pointer-events-none">
+          09
+        </span>
+      )}
       <input
         ref={inputRef}
         id={id}
@@ -110,8 +124,17 @@ export default function MobileNumberInput({
         spellCheck={false}
         maxLength={18}
         placeholder="17 123 4567"
-        value={rest}
+        value={showMasked ? maskedDisplay : rest}
+        onFocus={() => {
+          if (showMasked) {
+            onUnmask?.();
+          }
+        }}
         onChange={(e) => {
+          if (showMasked) {
+            onUnmask?.();
+            return;
+          }
           const raw = e.target.value;
           const caret = e.target.selectionStart ?? raw.length;
           const prevDigits = phMobileRest(value);
@@ -139,7 +162,7 @@ export default function MobileNumberInput({
         }}
         className={
           className ||
-          `w-full pl-[4.25rem] pr-4 py-3 bg-white border rounded-lg text-[15px] tracking-wide text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-offset-0 ${
+          `w-full ${showMasked ? "pl-10" : "pl-[4.25rem]"} pr-4 py-3 bg-white border rounded-lg text-[15px] tracking-wide text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-offset-0 ${
             error
               ? "border-red-400 focus:ring-red-100"
               : "border-gray-300 focus:ring-gray-200"

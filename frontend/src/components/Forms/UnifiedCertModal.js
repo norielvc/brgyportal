@@ -12,7 +12,7 @@ import CertSearchableDropdown from './CertSearchableDropdown';
 import { getStrings } from '../../lib/certLang';
 import LanguageGate from './LanguageGate';
 import PickupMethodSelector from './PickupMethodSelector';
-import MobileNumberInput, { isValidPhMobile, phMobileDigits } from './MobileNumberInput';
+import MobileNumberInput, { formatPhMobile, isValidPhMobile, maskPhMobile, phMobileDigits } from './MobileNumberInput';
 import {
   formatResidentPurokForPortal,
   generateFullAddress,
@@ -97,6 +97,7 @@ export default function UnifiedCertModal({
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [lang, setLang] = useState(null);
+  const [contactMasked, setContactMasked] = useState(false);
   const t = getStrings(lang || "tl");
 
   const [formData, setFormData] = useState({
@@ -129,6 +130,7 @@ export default function UnifiedCertModal({
       setErrors({}); setNotification(null); setConsentChecked(false); setConsentExpanded(false); setShowPrivacyModal(false);
       setFormData({ fullName: '', residentId: null, age: '', sex: '', civilStatus: '', address: '', purok: '', subdivision: '', dateOfBirth: '', placeOfBirth: '', contactNumber: '', email: '', purpose: '', pickupMethod: 'pickup', guardianFirstName: '', guardianMiddleName: '', guardianLastName: '', guardianSuffix: '', guardianName: '', guardianRelationship: '' });
       setPickupError('');
+      setContactMasked(false);
     }
   }, [isOpen]);
 
@@ -162,7 +164,9 @@ export default function UnifiedCertModal({
       subdivision: resident.subdivision || '',
       dateOfBirth: resident.date_of_birth || '',
       placeOfBirth: resident.place_of_birth || '',
+      contactNumber: resident.contact_number ? formatPhMobile(resident.contact_number) : prev.contactNumber,
     }));
+    setContactMasked(Boolean(resident.contact_number && phMobileDigits(resident.contact_number).length >= 4));
     setIsResidentModalOpen(false);
     setErrors(prev => ({ ...prev, fullName: false }));
     setNotification({
@@ -479,7 +483,11 @@ export default function UnifiedCertModal({
                           {labelForGuardianRelationshipToApplicant(v, lang)}
                         </span>
                       ) : (
-                        <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">{v.toString()}</span>
+                        <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
+                          {k === 'contactNumber' && contactMasked
+                            ? maskPhMobile(v)
+                            : v.toString()}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -715,6 +723,11 @@ export default function UnifiedCertModal({
                       value={formData.contactNumber}
                       onChange={handleInputChange}
                       error={errors.contactNumber}
+                      isMasked={contactMasked}
+                      onUnmask={() => {
+                        setContactMasked(false);
+                        setFormData(prev => ({ ...prev, contactNumber: '' }));
+                      }}
                     />
                     {errors.contactNumber ? (
                       <p className="text-xs text-red-600 mt-1.5">{t.errMobile}</p>

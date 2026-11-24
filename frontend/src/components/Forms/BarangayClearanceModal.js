@@ -43,7 +43,7 @@ import LanguageGate from "./LanguageGate";
 import CertSearchableDropdown from "./CertSearchableDropdown";
 import CertificateVerifyQR from "@/components/UI/CertificateVerifyQR";
 import PickupMethodSelector from "./PickupMethodSelector";
-import MobileNumberInput, { isValidPhMobile, phMobileDigits } from "./MobileNumberInput";
+import MobileNumberInput, { formatPhMobile, isValidPhMobile, maskPhMobile, phMobileDigits } from "./MobileNumberInput";
 import {
   formatResidentPurokForPortal,
   generateFullAddress,
@@ -263,6 +263,7 @@ export default function BarangayClearanceModal({
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [contactMasked, setContactMasked] = useState(false);
 
   const accentColor = tenantConfig.primaryColor || '#059669';
   const [lang, setLang] = useState(null);
@@ -329,13 +330,13 @@ export default function BarangayClearanceModal({
         ? new Date(resident.date_of_birth).toISOString().split("T")[0]
         : "",
       placeOfBirth: resident.place_of_birth || "",
-      // Contact is entered by the requester on step 2 (not from census record).
-      contactNumber: "",
+      contactNumber: resident.contact_number ? formatPhMobile(resident.contact_number) : "",
       email: "",
       residentId: resident.id,
       pending_case: resident.pending_case || false,
       case_record_history: resident.case_record_history || "",
     }));
+    setContactMasked(Boolean(resident.contact_number && phMobileDigits(resident.contact_number).length >= 4));
     setIsResidentModalOpen(false);
 
     if (resident.pending_case) {
@@ -382,6 +383,7 @@ export default function BarangayClearanceModal({
       guardianRelationship: "",
     });
     setPickupError("");
+    setContactMasked(false);
     setCurrentStep(1);
     setShowConfirmationPopup(false);
     setShowSuccessModal(false);
@@ -894,6 +896,11 @@ export default function BarangayClearanceModal({
                               value={formData.contactNumber}
                               onChange={handleInputChange}
                               error={errors.contactNumber}
+                              isMasked={contactMasked}
+                              onUnmask={() => {
+                                setContactMasked(false);
+                                setFormData((prev) => ({ ...prev, contactNumber: "" }));
+                              }}
                             />
                           </div>
                           {errors.contactNumber ? (
@@ -1437,7 +1444,9 @@ export default function BarangayClearanceModal({
                               </span>
                             ) : (
                               <span className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
-                                {v.toString()}
+                                {k === "contactNumber" && contactMasked
+                                  ? maskPhMobile(v)
+                                  : v.toString()}
                               </span>
                             )}
                           </div>

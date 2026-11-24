@@ -7023,6 +7023,24 @@ function ActionModal({
       "verifying",
     ].includes(request.status);
 
+  const parsedDetails = (() => {
+    try {
+      if (typeof request.details === "string") return JSON.parse(request.details);
+      if (request.details && typeof request.details === "object") return request.details;
+    } catch {}
+    return {};
+  })();
+  const isOnlineDelivery =
+    String(
+      request.pickup_method ||
+        parsedDetails.pickup_method ||
+        parsedDetails.pickupMethod ||
+        request.pickupMethod ||
+        "pickup",
+    )
+      .toLowerCase()
+      .trim() === "online";
+
   const config = {
     approve: request.status === "physical_inspection"
       ? {
@@ -7044,7 +7062,7 @@ function ActionModal({
           iconBg: "bg-blue-100",
           iconColor: "text-blue-600",
           buttonBg: "bg-blue-600 hover:bg-blue-700",
-          buttonText: "Verify & Forward Without Signature",
+          buttonText: "Verify",
         }
       : request.status === "oic_review"
         ? {
@@ -7343,13 +7361,15 @@ function ActionModal({
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             {actionType === "approve" && canUseEsign ? (
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                <button
-                  onClick={() => onSubmit(null, null, null, comment)}
-                  disabled={processing}
-                  className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50/50 transition-all disabled:opacity-50 text-center"
-                >
-                  {cfg.buttonText} Without Signature
-                </button>
+                {!isOnlineDelivery && (
+                  <button
+                    onClick={() => onSubmit(null, null, null, comment)}
+                    disabled={processing}
+                    className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50/50 transition-all disabled:opacity-50 text-center"
+                  >
+                    {cfg.buttonText} Without Signature
+                  </button>
+                )}
 
                 <div className="relative group w-full sm:w-auto">
                   <button
@@ -8827,9 +8847,7 @@ function CertificatePreviewModal({
       <div
         className={
           isSideSlide
-            ? isCompactSideSlide
-              ? "fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(96vw,42rem)] md:w-[min(84vw,50rem)] lg:w-[min(72vw,56rem)] xl:w-[min(66vw,60rem)] max-w-[100vw]"
-              : "fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(90vw,36rem)] md:w-[min(70vw,40rem)] lg:w-[min(52vw,42rem)] max-w-[100vw]"
+            ? "fixed inset-y-0 right-0 z-10 h-full w-full sm:w-[min(94vw,48rem)] lg:w-[min(78vw,58rem)] xl:w-[min(70vw,62rem)] max-w-[100vw]"
             : "relative w-full max-w-5xl"
         }
         style={
@@ -9436,10 +9454,10 @@ function ClearancePreviewForRequests({
     fullName: requestRow.applicant_name || requestRow.full_name || "",
     age:
       pickDefinedValue(
+        computeAgeFromDob(resolvedApplicantDob),
         requestRow.age,
         additionalDetails.age,
         request.residents?.age,
-        computeAgeFromDob(resolvedApplicantDob),
       ) || "",
     sex: formatSexFull(requestRow.sex || ""),
     civilStatus: formatCivilStatusFull(requestRow.civil_status || ""),
@@ -9473,10 +9491,10 @@ function ClearancePreviewForRequests({
     partnerFullName: request.partner_full_name || additionalDetails.partnerFullName || additionalDetails.partner_name || "",
     partnerAge:
       pickDefinedValue(
+        computeAgeFromDob(resolvedPartnerDob),
         request.partner_age,
         additionalDetails.partnerAge,
         additionalDetails.partner_age,
-        computeAgeFromDob(resolvedPartnerDob),
       ) || "",
     partnerSex: formatSexFull(request.partner_sex || additionalDetails.partnerSex || additionalDetails.partner_sex || ""),
     partnerDateOfBirth: resolvedPartnerDob,

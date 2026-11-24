@@ -4,7 +4,7 @@ import ResidentSearchModal from '../Modals/ResidentSearchModal';
 import { getStrings } from '../../lib/certLang';
 import LanguageGate from './LanguageGate';
 import { formatResidentPurokForPortal } from '@/lib/addressHelper';
-import MobileNumberInput, { isValidPhMobile, phMobileDigits } from './MobileNumberInput';
+import MobileNumberInput, { formatPhMobile, isValidPhMobile, maskPhMobile, phMobileDigits } from './MobileNumberInput';
 import useScrollLock from '@/lib/useScrollLock';
 import useMobileModalViewport, {
   certModalOverlayClass,
@@ -39,6 +39,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   const [consentExpanded, setConsentExpanded] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [lang, setLang] = useState(null);
+  const [contactMasked, setContactMasked] = useState(false);
   const t = getStrings(lang || "tl");
 
   const [formData, setFormData] = useState({
@@ -76,6 +77,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
         pickupMethod: 'pickup',
       });
       setPickupError('');
+      setContactMasked(false);
     }
   }, [isOpen]);
 
@@ -109,7 +111,9 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
       subdivision: resident.subdivision || '',
       dateOfBirth: resident.date_of_birth || '',
       placeOfBirth: resident.place_of_birth || '',
+      contactNumber: resident.contact_number ? formatPhMobile(resident.contact_number) : prev.contactNumber,
     }));
+    setContactMasked(Boolean(resident.contact_number && phMobileDigits(resident.contact_number).length >= 4));
     setIsResidentModalOpen(false);
     setErrors(prev => ({ ...prev, ownerFullName: false }));
     setNotification({ type: 'success', title: 'Profile Found', message: `${resident.full_name}'s details have been auto-filled.` });
@@ -253,7 +257,7 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
   if (showConfirmation) {
     const fields = [
       { key: 'owner', label: lang === 'tl' ? 'Pangalan ng May-ari' : 'Owner Name', value: formData.ownerFullName },
-      { key: 'contact', label: t.mobileLabel, value: formData.contactNumber },
+      { key: 'contact', label: t.mobileLabel, value: contactMasked ? maskPhMobile(formData.contactNumber) : formData.contactNumber },
       { key: 'email', label: t.emailLabel, value: formData.email, wide: true },
       { key: 'bizName', label: t.businessNameLabel, value: formData.businessName },
       { key: 'nature', label: t.natureLabel, value: formData.natureOfBusiness },
@@ -504,6 +508,11 @@ export default function BusinessPermitModal({ isOpen, onClose, isDemo = false, t
                           value={formData.contactNumber}
                           onChange={handleInputChange}
                           error={errors.contactNumber}
+                          isMasked={contactMasked}
+                          onUnmask={() => {
+                            setContactMasked(false);
+                            setFormData(prev => ({ ...prev, contactNumber: '' }));
+                          }}
                         />
                         {errors.contactNumber && (
                           <p className="text-xs text-red-600 mt-1.5">{t.errMobile}</p>
