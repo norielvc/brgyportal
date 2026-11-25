@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import Layout from "@/components/Layout/Layout";
+import Pagination from "@/components/UI/Pagination";
 import {
   deriveInitialsFromOfficialName,
   resolveEmployeeCodeForName,
@@ -665,6 +666,8 @@ export default function RequestsPage() {
   const [timeRange, setTimeRange] = useState("all"); // 'all', 'daily', 'weekly', 'monthly', 'yearly', 'custom'
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [viewMode, setViewMode] = useState("assigned"); // 'assigned' or 'all'
+  const [currentPage, setCurrentPage] = useState(1);
+  const REQUESTS_PER_PAGE = 20;
   const [totalCount, setTotalCount] = useState(0);
   const [assignedCount, setAssignedCount] = useState(0);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -2132,6 +2135,31 @@ export default function RequestsPage() {
       return arr.findIndex((r) => r.id === req.id) === index;
     });
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    viewMode,
+    searchTerm,
+    statusFilter,
+    typeFilter,
+    stepFilter,
+    deliveryFilter,
+    historyGroup,
+    timeRange,
+    dateRange.start,
+    dateRange.end,
+  ]);
+
+  const totalRequestPages = Math.max(
+    1,
+    Math.ceil(filteredRequests.length / REQUESTS_PER_PAGE),
+  );
+  const safeCurrentPage = Math.min(currentPage, totalRequestPages);
+  const paginatedRequests = filteredRequests.slice(
+    (safeCurrentPage - 1) * REQUESTS_PER_PAGE,
+    safeCurrentPage * REQUESTS_PER_PAGE,
+  );
+
   // Fetch assignment counts for the floating orange badge
   useEffect(() => {
     const visibleAssigned = requests.filter((r) => isUserAssignedToRequest(r));
@@ -2520,7 +2548,7 @@ export default function RequestsPage() {
           <>
             {/* MOBILE VIEW: Dedicated Touch-Friendly Cards (block md:hidden) */}
             <div className="block md:hidden divide-y divide-gray-100">
-              {filteredRequests.map((request, index) => {
+              {paginatedRequests.map((request, index) => {
                 const currentStep = getCurrentWorkflowStep(request);
                 const canAct = canUserTakeAction(request);
 
@@ -2655,7 +2683,7 @@ export default function RequestsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredRequests.map((request, index) => {
+                  {paginatedRequests.map((request, index) => {
                     const currentStep = getCurrentWorkflowStep(request);
                     const canAct = canUserTakeAction(request);
 
@@ -2776,6 +2804,13 @@ export default function RequestsPage() {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={safeCurrentPage}
+              totalPages={totalRequestPages}
+              onPageChange={(page) => setCurrentPage(page)}
+              totalItems={filteredRequests.length}
+              itemsPerPage={REQUESTS_PER_PAGE}
+            />
           </>
         )}
       </div>
