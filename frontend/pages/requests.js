@@ -877,10 +877,18 @@ export default function RequestsPage() {
       const data = await res.json();
       if (data.success && (data.certificate || data.data)) {
         const full = data.certificate || data.data;
+        const uid = String(currentUser?._id || currentUser?.id || "");
+        const pendingList = Array.isArray(full.workflow_assignments)
+          ? full.workflow_assignments.filter((a) => a.status === "pending")
+          : [];
+        const myPendingAssignment = uid
+          ? pendingList.find((a) => String(a.assigned_user_id) === uid)
+          : null;
         return {
           ...full,
           _detailLoaded: true,
           workflow_assignment:
+            myPendingAssignment ||
             full.workflow_assignment ||
             request.workflow_assignment ||
             null,
@@ -1156,12 +1164,24 @@ export default function RequestsPage() {
     const bypassRoles = ["superadmin", "super_admin", "admin"];
     if (bypassRoles.includes(activeUser.role?.toLowerCase())) return true;
 
+    const currentUserId = activeUser._id || activeUser.id;
+    if (
+      Array.isArray(request.workflow_assignments) &&
+      request.workflow_assignments.length > 0
+    ) {
+      const hasPendingForUser = request.workflow_assignments.some(
+        (a) =>
+          a.status === "pending" &&
+          String(a.assigned_user_id || a.userId) === String(currentUserId),
+      );
+      if (hasPendingForUser) return true;
+    }
+
     // Use the workflow_assignment data attached by the backend if available
     if (request.workflow_assignment) {
       const assignedId =
         request.workflow_assignment.assigned_user_id ||
         request.workflow_assignment.userId;
-      const currentUserId = activeUser._id || activeUser.id;
       return String(assignedId) === String(currentUserId);
     }
 
