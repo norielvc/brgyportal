@@ -273,16 +273,31 @@ export function isPhysicalInspectionCaptainStep(step) {
 }
 
 export function workflowHistoryAfterLastReset(history = []) {
+  const rows = history || [];
   let cutoff = 0;
-  for (const row of history || []) {
+  for (const row of rows) {
     const action = String(row.action || "").toLowerCase();
-    if (action === "return" || action === "send_back_to_start") {
-      cutoff = Math.max(cutoff, new Date(row.created_at || 0).getTime());
+    const prev = normalizeStepStatusKey(row.previous_status);
+    const next = normalizeStepStatusKey(row.new_status);
+    if (
+      action === "return" ||
+      action === "send_back_to_start" ||
+      action === "physical_inspection" ||
+      prev === "returned" ||
+      next === "returned"
+    ) {
+      const ts = row.created_at ? new Date(row.created_at).getTime() : 0;
+      if (Number.isFinite(ts) && ts > cutoff) cutoff = ts;
     }
   }
-  return (history || []).filter(
-    (row) => new Date(row.created_at || 0).getTime() > cutoff,
-  );
+  if (cutoff > 0) {
+    return rows.filter((row) => {
+      if (!row.created_at) return true;
+      const ts = new Date(row.created_at).getTime();
+      return Number.isFinite(ts) ? ts > cutoff : true;
+    });
+  }
+  return rows;
 }
 
 export function physicalInspectionTeamApproved(history = []) {

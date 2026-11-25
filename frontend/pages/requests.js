@@ -7810,7 +7810,7 @@ function splitPurposesList(purpose) {
     .filter(Boolean);
 }
 
-/** Letter for standard certs. A4 for business clearance. Legal for the physical inspection form and Job Seeker B. */
+/** Letter for standard certs & business clearance. Legal for the physical inspection form and Job Seeker B. */
 const CERT_PAGE_SIZES = {
   a4: {
     id: "a4",
@@ -7848,7 +7848,7 @@ function getCertificatePageSpec({
     if (businessPreviewVariant === "inspection") {
       return CERT_PAGE_SIZES.legal;
     }
-    return CERT_PAGE_SIZES.a4;
+    return CERT_PAGE_SIZES.letter;
   }
   if (type === "first_time_job_seeker") {
     if (jobSeekerVariant === "JOB SEEKER B") {
@@ -10128,7 +10128,7 @@ function ClearancePreviewForRequests({
             className={`cert-header-section w-full border-b-2 flex justify-center items-center flex-shrink-0 ${getFontClass(headerStyle.fontFamily)} ${isInspectionForm
               ? "pt-1 pb-1 px-6"
               : isBusinessClearanceDoc
-                ? "pt-3 pb-4 px-10 sm:px-12"
+                ? "pt-2 pb-3 px-10 sm:px-12"
                 : isIndigencyCert
                   ? "pt-2 pb-4 px-7"
                   : isLetterPage
@@ -10304,7 +10304,7 @@ function ClearancePreviewForRequests({
             className={`cert-doc-body flex-1 relative flex flex-col w-full ${isInspectionForm
               ? "px-5 pt-1 pb-2 justify-start min-h-0 flex-1"
               : isBusinessClearanceDoc
-                ? "px-12 sm:px-14 pt-4 pb-6"
+                ? "px-12 sm:px-14 pt-3 pb-4"
                 : isJobSeekerDocB
                   ? "p-0"
                   : isJobSeekerDocA
@@ -10381,45 +10381,65 @@ function ClearancePreviewForRequests({
               )}
 
               {isBusinessClearanceDoc ? (
-                <div className="w-full max-w-full text-[14px] text-left leading-snug px-1 sm:px-2">
+                <div className="w-full max-w-full text-[13px] text-left leading-snug px-1 sm:px-2">
                   <h2
-                    className="text-center font-bold uppercase mb-5 tracking-tight"
-                    style={{ color: "#000000", fontSize: "26px" }}
+                    className="text-center font-bold uppercase mb-3.5 tracking-tight"
+                    style={{ color: "#000000", fontSize: "23px" }}
                   >
                     <span>BARANGAY BUSINESS CLEARANCE</span>
                   </h2>
 
-                  <div className={`mb-6 font-bold text-gray-900 uppercase ${certToWhomClass}`}>
+                  <div className="mb-4 font-bold text-gray-900 uppercase text-[14px]">
                     TO WHOM IT MAY CONCERN:
                   </div>
 
-                  <div className="mb-8 leading-relaxed text-gray-800">
+                  <div className="mb-5 leading-relaxed text-gray-800">
                     This is to certify that below business / trade name as
                     described herein applying for:
                   </div>
 
-                  <div className="flex gap-16 justify-start mb-8 font-bold">
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 border-2 border-black flex items-center justify-center text-black text-xl font-black">
-                        {additionalDetails.clearanceType !== "renewal"
-                          ? "✓"
-                          : ""}
+                  <div className="flex gap-14 justify-start mb-5 font-bold">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-5 h-5 border-2 border-black flex items-center justify-center shrink-0 text-black">
+                        {additionalDetails.clearanceType !== "renewal" ? (
+                          <svg
+                            viewBox="0 0 24 24"
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : null}
                       </span>
-                      <span className="text-[14px]">New Business Clearance</span>
+                      <span className="text-[13px]">New Business Clearance</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 border-2 border-black flex items-center justify-center text-black text-xl font-black">
-                        {additionalDetails.clearanceType === "renewal"
-                          ? "✓"
-                          : ""}
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-5 h-5 border-2 border-black flex items-center justify-center shrink-0 text-black">
+                        {additionalDetails.clearanceType === "renewal" ? (
+                          <svg
+                            viewBox="0 0 24 24"
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : null}
                       </span>
-                      <span className="text-[14px]">
+                      <span className="text-[13px]">
                         Renewal of Existing Business Clearance
                       </span>
                     </div>
                   </div>
 
-                  <div className="space-y-3 mb-10">
+                  <div className="space-y-2 mb-6">
                     {[
                       [
                         "Name of Owner",
@@ -10453,15 +10473,8 @@ function ClearancePreviewForRequests({
                       ],
                     ].map(([label, value], idx) => (
                       <div key={idx} className="flex items-start">
-                        <div className="w-48 font-bold text-gray-900 flex flex-col">
-                          {label === "Business / Trade Name" ? (
-                            <>
-                              <span>Business / Trade</span>
-                              <span>Name</span>
-                            </>
-                          ) : (
-                            label
-                          )}
+                        <div className="w-48 shrink-0 font-bold text-gray-900 whitespace-nowrap">
+                          {label}
                         </div>
                         <span className="font-bold mr-4">:</span>
                         <span className="flex-1 font-bold uppercase text-black">
@@ -10471,7 +10484,7 @@ function ClearancePreviewForRequests({
                     ))}
                   </div>
 
-                  <div className="mb-8 leading-relaxed text-black font-normal text-[14px] text-justify">
+                  <div className="mb-5 leading-relaxed text-black font-normal text-[13px] text-justify">
                     The subject business establishment upon occular visit /
                     inspection conducted by this office jointly with Sangguniang
                     Barangay Committees on Health, Environment and Finance and
@@ -10481,21 +10494,21 @@ function ClearancePreviewForRequests({
                     clearance.
                   </div>
 
-                  <div className="mb-8 leading-relaxed text-black font-normal text-[14px] text-justify">
+                  <div className="mb-5 leading-relaxed text-black font-normal text-[13px] text-justify">
                     In view of the above, this office poses no objection for the
                     issuance of further permits as necessary for the conduct of
                     above business activity including Mayor&apos;s Permit, etc.
                   </div>
 
-                  <div className="mb-6 leading-relaxed text-black font-normal text-[14px]">
+                  <div className="mb-4 leading-relaxed text-black font-normal text-[13px]">
                     Issued this {issuedDate} at Barangay Iba O&apos; Este,
                     Calumpit, Bulacan.
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 mt-10 sm:mt-12 items-start">
+                  <div className="grid grid-cols-2 gap-6 mt-6 items-start">
                     <div className="text-left pt-2 cert-captain-signature-block">
-                      <div className="relative flex items-start justify-between gap-4 mb-32">
-                        <p className="font-bold text-[15px] shrink-0 relative top-[3em] text-gray-900">
+                      <div className="relative flex items-start justify-between gap-4 mb-24">
+                        <p className="font-bold text-[14px] shrink-0 relative top-[2.5em] text-gray-900">
                           TRULY YOURS,
                         </p>
                       </div>
@@ -10505,7 +10518,7 @@ function ClearancePreviewForRequests({
                             {signatureOnBusinessClearance && (
                               <>
                                 <div
-                                  className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[64%] w-[30rem] h-64 pointer-events-none flex items-center justify-center z-20"
+                                  className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[64%] w-[26rem] h-56 pointer-events-none flex items-center justify-center z-20"
                                   style={{ mixBlendMode: "multiply" }}
                                 >
                                   <img
@@ -10541,15 +10554,15 @@ function ClearancePreviewForRequests({
                             )}
                             <p
                               className="uppercase font-bold mb-0 whitespace-nowrap relative z-10 text-black"
-                              style={{ fontSize: "20px" }}
+                              style={{ fontSize: "18px" }}
                             >
                               {captainName}
                             </p>
                           </div>
                         </div>
-                        <div className="relative flex items-center z-10 w-full mb-2 -mt-1.5">
+                        <div className="relative flex items-center z-10 w-full mb-2 mt-1">
                           <div className="flex flex-col">
-                            <p className="text-[14px] font-bold shrink-0 leading-tight text-gray-900 uppercase tracking-tight">
+                            <p className="text-[13px] font-bold shrink-0 leading-tight text-gray-900 uppercase tracking-tight">
                               {detectedRole || "BARANGAY CHAIRMAN"}
                             </p>
                             {hasBusinessPermitClearanceChairmanApproval &&
@@ -10564,12 +10577,13 @@ function ClearancePreviewForRequests({
                     </div>
 
                     <div className="text-right flex flex-col items-end">
-                      <p className="font-bold mb-4 text-black uppercase tracking-tight text-[15px]">
-                        <span className="border-b-2 border-black pb-0.5">
-                          DETAILS OF PAYMENT
+                      <p className="font-bold mb-3 text-black uppercase tracking-tight text-[14px]">
+                        <span className="inline-flex flex-col items-end">
+                          <span>DETAILS OF PAYMENT</span>
+                          <span className="h-[2px] w-full bg-black mt-1" />
                         </span>
                       </p>
-                      <div className="grid grid-cols-[140px_10px_120px] gap-x-1 gap-y-2 text-right text-black font-normal">
+                      <div className="grid grid-cols-[135px_10px_115px] gap-x-1 gap-y-1.5 text-right text-black font-normal text-[13px]">
                         <span>OR NO.</span>
                         <span>:</span>
                         <span className="text-left pl-2 font-bold">
