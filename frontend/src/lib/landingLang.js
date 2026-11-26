@@ -59,7 +59,6 @@ const CERTS_TL = [
   "Sertipiko ng Co-habitation",
   "Sertipiko ng Parehong Tao",
   "Pagsasara ng Negosyo",
-  "Tulong Pang-edukasyon",
 ];
 
 const FEATURE_TEXTS_TL = [
@@ -98,7 +97,6 @@ export function getLandingCerts(lang = DEFAULT_LANDING_LANG) {
       "Co-habitation Certificate",
       "Certification of Same Person",
       "Business Closure",
-      "Educational Assistance",
     ];
   }
   return CERTS_TL;

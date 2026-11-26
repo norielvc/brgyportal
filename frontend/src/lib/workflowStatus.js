@@ -32,7 +32,7 @@ export function normalizeCertificateStatus(status, options = {}) {
   const name = String(stepName || "").toLowerCase();
 
   if (key === "verifying") return "verifying";
-  if (key === "treasury") return "Treasury";
+  if (key === "treasury" || key === "treasury_approval") return "Treasury";
   if (key === "physical_inspection") return "physical_inspection";
   if (key === "captain_approval") return "captain_approval";
   if (key === "staff_review") return "staff_review";
@@ -489,7 +489,7 @@ export function resolveBusinessPermitApproveTarget(
       const afterFinal =
         finalCaptainIdx >= 0
           ? steps.slice(finalCaptainIdx + 1).find(isReleasingTeamStep) ||
-            steps[finalCaptainIdx + 1]
+          steps[finalCaptainIdx + 1]
           : steps.find(isReleasingTeamStep);
       if (afterFinal) {
         return {
@@ -498,9 +498,9 @@ export function resolveBusinessPermitApproveTarget(
           status: isReleasingTeamStep(afterFinal)
             ? "ready"
             : normalizeCertificateStatus(afterFinal.status, {
-                stepName: afterFinal.name,
-                certificateType: "business_permit",
-              }),
+              stepName: afterFinal.name,
+              certificateType: "business_permit",
+            }),
         };
       }
     }
@@ -591,9 +591,9 @@ export function resolveBusinessPermitApproveTarget(
         status: isReleasingTeamStep(releasing)
           ? "ready"
           : normalizeCertificateStatus(releasing.status, {
-              stepName: releasing.name,
-              certificateType: "business_permit",
-            }),
+            stepName: releasing.name,
+            certificateType: "business_permit",
+          }),
       };
     }
   }

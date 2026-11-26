@@ -185,7 +185,9 @@ export default function PickupManagementPage() {
       'barangay_medico_legal': 'Medico-Legal Request',
       'barangay_cohabitation': 'Cohabitation Certificate',
       'barangay_death': 'Death Certification',
-      'barangay_guardianship': 'Guardianship Certificate'
+      'barangay_guardianship': 'Guardianship Certificate',
+      'business_permit': 'Business Permit',
+      'business_closure': 'Business Closure',
     };
     return labels[type] || type?.replace(/_/g, ' ').toUpperCase();
   };

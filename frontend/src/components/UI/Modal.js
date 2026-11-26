@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useScrollLock from "@/lib/useScrollLock";
@@ -114,7 +115,7 @@ export default function Modal({
 
   if (isSideSlide ? !(isOpen || rendered) : !isOpen) return null;
 
-  return (
+  const modalContent = (
     <div
       className={cn(
         "fixed inset-0",
@@ -232,6 +233,10 @@ export default function Modal({
       </div>
     </div>
   );
+
+  return typeof document !== "undefined"
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 }
 
 export function ConfirmModal({

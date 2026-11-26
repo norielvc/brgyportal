@@ -787,7 +787,6 @@ const FORM_ORDER = [
   "certification_same_person",
   "barangay_guardianship",
   "natural_death",
-  "educational_assistance",
 ];
 
 export function getPortalStrings(lang = DEFAULT_PORTAL_LANG) {

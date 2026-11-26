@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 export function businessPermitAllowsOrAssignment(request) {
-  if (!request || request.certificate_type !== "business_permit") return false;
+  if (!request || !["business_permit", "business_closure"].includes(request.certificate_type)) return false;
   const status = String(request.status || "").toLowerCase();
   return (
     status === "verifying" ||

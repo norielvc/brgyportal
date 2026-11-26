@@ -55,7 +55,7 @@ export default async function handler(req, res) {
   let query = supabase
     .from("certificate_requests")
     .select(
-      "id, certificate_type, status, created_at, updated_at, full_name, reference_number",
+      "id, certificate_type, status, created_at, updated_at, full_name, reference_number, pickup_method",
     )
     .eq("tenant_id", tenantId);
 
@@ -136,12 +136,73 @@ export default async function handler(req, res) {
     return d >= lastMonthStart && d < currentMonthStart;
   }).length;
 
+  const ALL_CERTIFICATE_TYPES = [
+    "barangay_clearance",
+    "first_time_job_seeker",
+    "certificate_of_indigency",
+    "barangay_residency",
+    "natural_death",
+    "barangay_guardianship",
+    "barangay_cohabitation",
+    "business_permit",
+    "business_closure",
+    "certification_same_person",
+    "medico_legal",
+  ];
+
   const typeMap = {},
+    monthTypeMap = {},
     statusMap = {},
     stepMap = {};
+  const initTypeEntry = () => ({ count: 0, onlineCount: 0, pickupCount: 0 });
+  if (!certificateType) {
+    ALL_CERTIFICATE_TYPES.forEach((t) => {
+      typeMap[t] = initTypeEntry();
+    });
+  }
+  const availableMonths = [];
+  for (let i = 0; i < 12; i++) {
+    const mDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthKey = `${mDate.getFullYear()}-${String(mDate.getMonth() + 1).padStart(2, "0")}`;
+    const monthLabel = mDate.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+    availableMonths.push({ key: monthKey, label: monthLabel });
+    monthTypeMap[monthKey] = {};
+    if (!certificateType) {
+      ALL_CERTIFICATE_TYPES.forEach((t) => {
+        monthTypeMap[monthKey][t] = initTypeEntry();
+      });
+    }
+  }
+
   all.forEach((r) => {
     const t = r.certificate_type || "unknown";
-    typeMap[t] = (typeMap[t] || 0) + 1;
+    const isOnline = String(r.pickup_method || "").toLowerCase() === "online";
+    if (!typeMap[t]) typeMap[t] = initTypeEntry();
+    typeMap[t].count += 1;
+    if (isOnline) typeMap[t].onlineCount += 1;
+    else typeMap[t].pickupCount += 1;
+
+    if (r.created_at) {
+      const mKey = new Date(r.created_at)
+        .toLocaleDateString("en-CA", { timeZone: "Asia/Manila" })
+        .slice(0, 7);
+      if (!monthTypeMap[mKey]) {
+        monthTypeMap[mKey] = {};
+        if (!certificateType) {
+          ALL_CERTIFICATE_TYPES.forEach((ct) => {
+            monthTypeMap[mKey][ct] = initTypeEntry();
+          });
+        }
+      }
+      if (!monthTypeMap[mKey][t]) monthTypeMap[mKey][t] = initTypeEntry();
+      monthTypeMap[mKey][t].count += 1;
+      if (isOnline) monthTypeMap[mKey][t].onlineCount += 1;
+      else monthTypeMap[mKey][t].pickupCount += 1;
+    }
+
     const s = r.status || "pending";
     statusMap[s] = (statusMap[s] || 0) + 1;
     if (!["approved", "released", "rejected", "cancelled"].includes(r.status)) {
@@ -444,8 +505,27 @@ export default async function handler(req, res) {
         total: helpDeskEsumbong + helpDeskAssistance + helpDeskKapchat,
       },
       byType: Object.entries(typeMap)
-        .sort((a, b) => b[1] - a[1])
-        .map(([type, count]) => ({ type, count })),
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([type, stats]) => ({
+          type,
+          count: stats.count,
+          onlineCount: stats.onlineCount,
+          pickupCount: stats.pickupCount,
+        })),
+      byTypeByMonth: Object.fromEntries(
+        Object.entries(monthTypeMap).map(([mKey, mMap]) => [
+          mKey,
+          Object.entries(mMap)
+            .sort((a, b) => b[1].count - a[1].count)
+            .map(([type, stats]) => ({
+              type,
+              count: stats.count,
+              onlineCount: stats.onlineCount,
+              pickupCount: stats.pickupCount,
+            })),
+        ]),
+      ),
+      availableMonths,
       byStatus: Object.entries(statusMap).map(([status, count]) => ({
         status,
         count,

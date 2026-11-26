@@ -47,6 +47,7 @@ const certTypes = [
   "barangay_cohabitation",
   "medico_legal",
   "business_permit",
+  "business_closure",
   "certification_same_person",
   "educational_assistance",
 ];
@@ -167,7 +168,15 @@ export default async function handler(req, res) {
         ),
       );
 
-    await Promise.all(promises);
+    const results = await Promise.all(promises);
+    const failed = results.find((r) => r?.error);
+    if (failed?.error) {
+      return res.status(500).json({
+        success: false,
+        message: failed.error.message || "Failed to save workflow configuration",
+        details: failed.error.details || failed.error.code,
+      });
+    }
     return res
       .status(200)
       .json({ success: true, message: "Workflows saved successfully" });

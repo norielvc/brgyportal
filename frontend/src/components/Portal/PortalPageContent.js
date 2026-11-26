@@ -68,6 +68,7 @@ import FirstTimeJobSeekerModal from "@/components/Forms/FirstTimeJobSeekerModal"
 import IndigencyCertificateModal from "@/components/Forms/IndigencyCertificateModal";
 import ResidencyCertificateModal from "@/components/Forms/ResidencyCertificateModal";
 import BusinessPermitModal from "@/components/Forms/BusinessPermitModal";
+import BusinessClosureModal from "@/components/Forms/BusinessClosureModal";
 import EducationalAssistanceModal from "@/components/Forms/EducationalAssistanceModal";
 import NaturalDeathCertificateModal from "@/components/Forms/NaturalDeathCertificateModal";
 import GuardianshipCertificateModal from "@/components/Forms/GuardianshipCertificateModal";
@@ -362,6 +363,7 @@ export default function PortalPageContent({ initialTenantId }) {
   const [showIndigencyModal, setShowIndigencyModal] = useState(false);
   const [showResidencyModal, setShowResidencyModal] = useState(false);
   const [showBusinessPermitModal, setShowBusinessPermitModal] = useState(false);
+  const [showBusinessClosureModal, setShowBusinessClosureModal] = useState(false);
   const [showEducationalAssistanceModal, setShowEducationalAssistanceModal] =
     useState(false);
   const [showNaturalDeathModal, setShowNaturalDeathModal] = useState(false);
@@ -411,6 +413,7 @@ export default function PortalPageContent({ initialTenantId }) {
     showIndigencyModal ||
     showResidencyModal ||
     showBusinessPermitModal ||
+    showBusinessClosureModal ||
     showEducationalAssistanceModal ||
     showNaturalDeathModal ||
     showGuardianshipModal ||
@@ -534,9 +537,9 @@ export default function PortalPageContent({ initialTenantId }) {
         ...pick("business_closure"),
         icon: Briefcase,
         color: "blue",
-        locked: isFeatureLocked("business_permit"),
+        locked: isFeatureLocked("business_closure"),
         onClick: () =>
-          handleFeatureClick("business_permit", pick("business_closure").title, setShowComingSoonModal),
+          handleFeatureClick("business_closure", pick("business_closure").title, setShowBusinessClosureModal),
       },
       {
         ...pick("barangay_cohabitation"),
@@ -581,18 +584,6 @@ export default function PortalPageContent({ initialTenantId }) {
         locked: isFeatureLocked("natural_death"),
         onClick: () =>
           handleFeatureClick("natural_death", pick("natural_death").title, setShowNaturalDeathModal),
-      },
-      {
-        ...pick("educational_assistance"),
-        icon: GraduationCap,
-        color: "blue",
-        locked: isFeatureLocked("educational_assistance"),
-        onClick: () =>
-          handleFeatureClick(
-            "educational_assistance",
-            pick("educational_assistance").title,
-      setShowEducationalAssistanceModal,
-          ),
       },
     ];
   }, [
@@ -4043,6 +4034,14 @@ export default function PortalPageContent({ initialTenantId }) {
       <BusinessPermitModal
         isOpen={showBusinessPermitModal}
         onClose={() => setShowBusinessPermitModal(false)}
+        isDemo={tenantId === "demo"}
+        tenantConfig={{ ...tenantConfig, tenant_id: tenantId }}
+      />
+
+      {/* Business Closure Modal */}
+      <BusinessClosureModal
+        isOpen={showBusinessClosureModal}
+        onClose={() => setShowBusinessClosureModal(false)}
         isDemo={tenantId === "demo"}
         tenantConfig={{ ...tenantConfig, tenant_id: tenantId }}
       />

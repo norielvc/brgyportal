@@ -128,6 +128,7 @@ export default async function handler(req, res) {
     barangay_guardianship: "GD",
     medico_legal: "ML",
     business_permit: "BP",
+    business_closure: "BCL",
     educational_assistance: "EA",
     certification_same_person: "SP",
     barangay_cohabitation: "CH",
@@ -321,7 +322,11 @@ export default async function handler(req, res) {
       email: formData.email || "",
       purpose:
         formData.purpose?.toUpperCase() ||
-        (canonicalType === "business_permit" ? "BUSINESS PERMIT / CLEARANCE" : ""),
+        (canonicalType === "business_permit"
+          ? "BUSINESS PERMIT / CLEARANCE"
+          : canonicalType === "business_closure"
+            ? "BUSINESS CLOSURE"
+            : ""),
       date_of_birth: formData.dateOfBirth || null,
       place_of_birth: formData.placeOfBirth?.toUpperCase() || "",
       resident_id: formData.residentId || null,
@@ -364,12 +369,16 @@ export default async function handler(req, res) {
       details: {
         brgydesk_no: brgydeskNo,
         // Business Fields
+        ownerFullName: formData.ownerFullName?.toUpperCase(),
+        ownerAddress: formData.ownerAddress?.toUpperCase(),
         businessName: formData.businessName?.toUpperCase(),
         natureOfBusiness: formData.natureOfBusiness?.toUpperCase(),
         businessAddress: formData.businessAddress?.toUpperCase(),
         contactPerson: formData.contactPerson?.toUpperCase(),
         applicationDate: formData.applicationDate,
         clearanceType: formData.clearanceType,
+        closureDate: formData.closureDate || null,
+        closureReason: formData.closureReason || "",
         // Natural Death Fields
         date_of_death: formData.dateOfDeath,
         cause_of_death: formData.causeOfDeath?.toUpperCase(),

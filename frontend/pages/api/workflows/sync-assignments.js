@@ -22,6 +22,7 @@ const certTypes = [
   "barangay_cohabitation",
   "medico_legal",
   "business_permit",
+  "business_closure",
   "certification_same_person",
   "educational_assistance",
 ];

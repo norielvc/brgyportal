@@ -75,6 +75,8 @@ import {
   Briefcase,
   ArrowRight,
   Target,
+  Camera,
+  Upload,
 } from "lucide-react";
 import { getAuthToken, getUserData } from "@/lib/auth";
 import { mergeOfficialsConfig } from "@/lib/officialsConfig";
@@ -218,6 +220,16 @@ function buildCertificateEditFormState(request) {
       "first_time_job_seeker"
       ? {
         resident_since_year: resolveResidentSinceYearFromRequest(request),
+      }
+      : {}),
+    ...(String(request?.certificate_type || "").toLowerCase() ===
+      "business_closure"
+      ? {
+        businessName: details.businessName || "",
+        natureOfBusiness: details.natureOfBusiness || "",
+        businessAddress: details.businessAddress || "",
+        closureDate: formatDateForInput(details.closureDate) || "",
+        closureReason: details.closureReason || "",
       }
       : {}),
   };
@@ -500,9 +512,9 @@ const TYPE_OPTIONS = [
   { value: "barangay_guardianship", label: "Guardianship" },
   { value: "barangay_cohabitation", label: "Co-habitation" },
   { value: "business_permit", label: "Business Permit" },
+  { value: "business_closure", label: "Business Closure" },
   { value: "certification_same_person", label: "Same Person" },
   { value: "medico_legal", label: "Medico Legal" },
-  { value: "educational_assistance", label: "Educational Assistance" },
 ];
 
 const STEP_OPTIONS = [
@@ -1400,6 +1412,7 @@ export default function RequestsPage() {
     if (s.includes("same_person") || s.includes("same person"))
       return "Certification of Same Person";
     if (s.includes("business_permit")) return "Business Permit";
+    if (s.includes("business_closure")) return "Business Closure";
 
     // Fallback: remove all underscores/dashes and capitalize
     return String(type)
@@ -2964,6 +2977,315 @@ function AddCommentBox({ requestId, onCommentAdded }) {
 
 // Request Details Modal Component
 // RequestDetailsModal Component
+function ResidencyPhotoPanel({ request, additionalDetails, canEditPhoto, onSavePhoto }) {
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const [savingPhoto, setSavingPhoto] = useState(false);
+  const [mirrored, setMirrored] = useState(true);
+  const [countdown, setCountdown] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const cameraBoxRef = useRef(null);
+  const countdownTimerRef = useRef(null);
+
+  const currentPhoto =
+    additionalDetails?.resident_photo || request?.resident_photo || null;
+
+  const stopCamera = useCallback(() => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    setCountdown(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setCameraOpen(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+    };
+  }, []);
+
+  const startCamera = async () => {
+    setCameraError("");
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setCameraError("Camera is not supported in this browser.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } },
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play?.().catch(() => {});
+        }
+        cameraBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    } catch (err) {
+      setCameraError("Unable to access camera. Please allow camera permission or upload an image.");
+    }
+  };
+
+  const persistPhoto = async (dataUrl) => {
+    setSavingPhoto(true);
+    try {
+      await onSavePhoto(dataUrl);
+    } finally {
+      setSavingPhoto(false);
+    }
+  };
+
+  const captureFrameNow = async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) return;
+    const size = Math.min(video.videoWidth, video.videoHeight);
+    const sx = Math.floor((video.videoWidth - size) / 2);
+    const sy = Math.floor((video.videoHeight - size) / 2);
+    const canvas = document.createElement("canvas");
+    canvas.width = 400;
+    canvas.height = 400;
+    const ctx = canvas.getContext("2d");
+    if (mirrored) {
+      ctx.translate(400, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, sx, sy, size, size, 0, 0, 400, 400);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    stopCamera();
+    await persistPhoto(dataUrl);
+  };
+
+  const handleTimedCapture = () => {
+    if (countdown !== null) return;
+    let remaining = 3;
+    setCountdown(remaining);
+    countdownTimerRef.current = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+        setCountdown(null);
+        captureFrameNow();
+      } else {
+        setCountdown(remaining);
+      }
+    }, 1000);
+  };
+
+  const processImageFile = (file) => {
+    if (!file || !file.type?.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = async () => {
+        const maxSide = 480;
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        await persistPhoto(dataUrl);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    processImageFile(file);
+  };
+
+  if (!canEditPhoto && !currentPhoto) return null;
+
+  return (
+    <div
+      className={`bg-white rounded-2xl border shadow-sm p-3.5 transition-colors ${
+        isDragging ? "border-blue-500 bg-blue-50/40" : "border-slate-200"
+      }`}
+      onDragOver={(e) => {
+        if (!canEditPhoto) return;
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={(e) => {
+        if (!canEditPhoto) return;
+        e.preventDefault();
+        setIsDragging(false);
+        processImageFile(e.dataTransfer.files?.[0]);
+      }}
+    >
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Camera className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-semibold text-slate-900">
+                Resident Photo (Residency Certificate)
+              </h3>
+              {currentPhoto && (
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Attached
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-400">
+              Appears in the upper right below the certificate title
+            </p>
+          </div>
+        </div>
+        {canEditPhoto && currentPhoto && (
+          <button
+            type="button"
+            disabled={savingPhoto}
+            onClick={() => persistPhoto(null)}
+            className="px-2.5 py-1 text-[11px] font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors disabled:opacity-50"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+          {currentPhoto ? (
+            <img
+              src={currentPhoto}
+              alt="Resident"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="w-8 h-8 text-slate-300" />
+          )}
+        </div>
+
+        {canEditPhoto && (
+          <div className="flex flex-col gap-2 flex-1">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={savingPhoto}
+                onClick={cameraOpen ? stopCamera : startCamera}
+                className="px-3 py-1.5 bg-[#03254c] hover:bg-[#05366e] text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                {cameraOpen ? "Close Camera" : currentPhoto ? "Retake with Camera" : "Use Camera"}
+              </button>
+              <button
+                type="button"
+                disabled={savingPhoto}
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                {savingPhoto ? "Saving..." : "Upload Image"}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+            <p className="text-[10px] text-slate-400">
+              Tip: You can also drag and drop a photo anywhere on this card.
+            </p>
+            {cameraError && (
+              <p className="text-[11px] text-rose-600 font-medium">{cameraError}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {cameraOpen && (
+        <div
+          ref={cameraBoxRef}
+          className="mt-3 p-4 bg-slate-900 rounded-xl flex flex-col items-center gap-3"
+        >
+          <div className="relative w-full max-w-[280px] aspect-square rounded-xl overflow-hidden bg-black border border-white/15">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-cover ${mirrored ? "scale-x-[-1]" : ""}`}
+            />
+            {/* Subtle face-framing guide */}
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className="w-40 h-48 rounded-full border-2 border-dashed border-white/35" />
+            </div>
+            {countdown !== null && (
+              <div className="absolute inset-0 bg-black/45 flex items-center justify-center pointer-events-none">
+                <span className="text-5xl font-black text-white drop-shadow">
+                  {countdown}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              disabled={countdown !== null || savingPhoto}
+              onClick={captureFrameNow}
+              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              Capture Now
+            </button>
+            <button
+              type="button"
+              disabled={countdown !== null || savingPhoto}
+              onClick={handleTimedCapture}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+            >
+              3s Timer
+            </button>
+            <button
+              type="button"
+              onClick={() => setMirrored((m) => !m)}
+              className="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-xs font-semibold"
+            >
+              {mirrored ? "Mirror: On" : "Mirror: Off"}
+            </button>
+            <button
+              type="button"
+              onClick={stopCamera}
+              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/80 rounded-lg text-xs font-semibold"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RequestDetailsModal({
   request,
   onClose,
@@ -3157,8 +3479,8 @@ function RequestDetailsModal({
   const isClearanceWithInspection = false; // Physical inspection is business permit only
   const requiresPhysicalInspection = isBusinessPermit;
   const isFinanceReview =
-    isBusinessPermit &&
-    ["verifying", "finance", "finance_review"].includes(
+    (isBusinessPermit || request.certificate_type === "business_closure") &&
+    ["verifying", "finance", "finance_review", "treasury", "treasury_approval"].includes(
       String(request.status || "").toLowerCase(),
     );
 
@@ -3341,6 +3663,7 @@ function RequestDetailsModal({
       mismatches.push("Email");
     if (
       request.address &&
+      !["business_closure", "business_permit"].includes(request.certificate_type) &&
       addressKey(request.address) !== addressKey(resident.residential_address || "")
     )
       mismatches.push("Address");
@@ -3782,8 +4105,15 @@ function RequestDetailsModal({
 
     const sanitized = { ...editFormData, full_name: combinedName };
     const sinceYearFromForm = String(sanitized.resident_since_year || "").trim();
-    const { resident_since_year: _dropSinceYear, ...sanitizedWithoutSinceYear } =
-      sanitized;
+    const {
+      resident_since_year: _dropSinceYear,
+      businessName: businessNameFromForm,
+      natureOfBusiness: natureOfBusinessFromForm,
+      businessAddress: businessAddressFromForm,
+      closureDate: closureDateFromForm,
+      closureReason: closureReasonFromForm,
+      ...sanitizedWithoutSinceYear
+    } = sanitized;
 
     let payload = { ...sanitizedWithoutSinceYear };
     if (request.certificate_type === "first_time_job_seeker") {
@@ -3801,6 +4131,16 @@ function RequestDetailsModal({
             sinceYear: null,
             resident_since_year: null,
           }),
+      };
+    } else if (request.certificate_type === "business_closure") {
+      const prevDetails = parseRequestDetails(request);
+      payload.details = {
+        ...prevDetails,
+        businessName: String(businessNameFromForm || "").trim().toUpperCase(),
+        natureOfBusiness: String(natureOfBusinessFromForm || "").trim().toUpperCase(),
+        businessAddress: String(businessAddressFromForm || "").trim().toUpperCase(),
+        closureDate: closureDateFromForm || null,
+        closureReason: String(closureReasonFromForm || "").trim(),
       };
     }
 
@@ -4475,7 +4815,7 @@ function RequestDetailsModal({
                       {isEditing ? (
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                               First Name
                             </p>
                             <input
@@ -4483,11 +4823,11 @@ function RequestDetailsModal({
                               name="first_name"
                               value={editFormData.first_name}
                               onChange={handleInputChange}
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                              className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-bold text-gray-900 uppercase text-xs"
                             />
                           </div>
                           <div>
-                            <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                               Middle Name
                             </p>
                             <input
@@ -4495,11 +4835,11 @@ function RequestDetailsModal({
                               name="middle_name"
                               value={editFormData.middle_name}
                               onChange={handleInputChange}
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                              className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-bold text-gray-900 uppercase text-xs"
                             />
                           </div>
                           <div>
-                            <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                               Last Name
                             </p>
                             <input
@@ -4507,11 +4847,11 @@ function RequestDetailsModal({
                               name="last_name"
                               value={editFormData.last_name}
                               onChange={handleInputChange}
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                              className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-bold text-gray-900 uppercase text-xs"
                             />
                           </div>
                           <div>
-                            <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                               Suffix
                             </p>
                             <input
@@ -4519,7 +4859,7 @@ function RequestDetailsModal({
                               name="suffix"
                               value={editFormData.suffix}
                               onChange={handleInputChange}
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                              className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-bold text-gray-900 uppercase text-xs"
                             />
                           </div>
                         </div>
@@ -4604,7 +4944,7 @@ function RequestDetailsModal({
                       {/* Key fields row */}
                       <div className="grid grid-cols-2 gap-x-4 gap-y-4 pt-4 border-t border-slate-100">
                         <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                             Date of Birth
                           </p>
                           {isEditing ? (
@@ -4613,7 +4953,7 @@ function RequestDetailsModal({
                               name="date_of_birth"
                               value={editFormData.date_of_birth}
                               onChange={handleInputChange}
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                              className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-semibold text-gray-900 text-xs"
                             />
                           ) : (
                             <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans">
@@ -4627,7 +4967,7 @@ function RequestDetailsModal({
                           )}
                         </div>
                         <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                             Civil Status
                           </p>
                           {isEditing ? (
@@ -4635,7 +4975,7 @@ function RequestDetailsModal({
                               name="civil_status"
                               value={editFormData.civil_status}
                               onChange={handleInputChange}
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                              className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-bold text-gray-900 uppercase text-xs"
                             >
                               <option value="SINGLE">SINGLE</option>
                               <option value="MARRIED">MARRIED</option>
@@ -4649,7 +4989,7 @@ function RequestDetailsModal({
                           )}
                         </div>
                         <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                             Age / Sex
                           </p>
                           {isEditing ? (
@@ -4660,13 +5000,13 @@ function RequestDetailsModal({
                                 value={editFormData.age || ""}
                                 onChange={handleInputChange}
                                 placeholder="Age"
-                                className="w-20 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm"
+                                className="w-20 px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-bold text-gray-900 text-xs"
                               />
                               <select
                                 name="sex"
                                 value={editFormData.sex || ""}
                                 onChange={handleInputChange}
-                                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                                className="flex-1 px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-bold text-gray-900 uppercase text-xs"
                               >
                                 <option value="">SELECT</option>
                                 <option value="MALE">MALE</option>
@@ -4680,7 +5020,7 @@ function RequestDetailsModal({
                           )}
                         </div>
                         <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                             Contact No.
                           </p>
                           <div className="flex items-center gap-2">
@@ -4691,7 +5031,7 @@ function RequestDetailsModal({
                         </div>
                       </div>
                       <div>
-                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                           Place of Birth
                         </p>
                         {isEditing ? (
@@ -4700,7 +5040,7 @@ function RequestDetailsModal({
                             name="place_of_birth"
                             value={editFormData.place_of_birth}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm"
+                            className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-bold text-gray-900 uppercase text-xs"
                           />
                         ) : (
                           <p className="font-semibold text-slate-800 text-xs sm:text-sm uppercase">
@@ -4713,7 +5053,7 @@ function RequestDetailsModal({
                     {/* RIGHT COLUMN */}
                     <div className="space-y-4 md:border-l md:border-slate-100 md:pl-6">
                       <div>
-                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                           Residential Address
                         </p>
                         {isEditing ? (
@@ -4721,7 +5061,7 @@ function RequestDetailsModal({
                             name="address"
                             value={editFormData.address}
                             onChange={handleInputChange}
-                            className="w-full min-h-[5.5rem] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 uppercase text-sm leading-relaxed resize-y"
+                            className="w-full min-h-[5.5rem] px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-bold text-gray-900 uppercase text-xs leading-relaxed resize-y"
                             rows={4}
                           />
                         ) : (
@@ -4732,7 +5072,7 @@ function RequestDetailsModal({
                       </div>
 
                       <div>
-                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                           Email Address
                         </p>
                         {isEditing ? (
@@ -4741,7 +5081,7 @@ function RequestDetailsModal({
                             name="email"
                             value={editFormData.email || ""}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-extrabold text-gray-900 text-sm normal-case"
+                            className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c] font-semibold text-gray-900 text-xs normal-case"
                           />
                         ) : (
                           <p className="font-semibold text-slate-800 text-xs sm:text-sm font-sans tracking-tight normal-case">
@@ -5101,17 +5441,21 @@ function RequestDetailsModal({
                 </div>
               )}
 
-              {isBusinessPermit && !isEditing && (
+              {(isBusinessPermit || request.certificate_type === "business_closure") && !isEditing && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                       <Store className="w-3.5 h-3.5" />
                     </div>
-                    <h3 className="text-xs font-semibold text-slate-900">Business Details</h3>
+                    <h3 className="text-xs font-semibold text-slate-900">
+                      {request.certificate_type === "business_closure" ? "Business Closure Details" : "Business Details"}
+                    </h3>
                     <span className="ml-auto text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                      {additionalDetails?.clearanceType === "renewal"
-                        ? "Renewal"
-                        : "New Clearance"}
+                      {request.certificate_type === "business_closure"
+                        ? "Closure"
+                        : additionalDetails?.clearanceType === "renewal"
+                          ? "Renewal"
+                          : "New Clearance"}
                     </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -5133,14 +5477,147 @@ function RequestDetailsModal({
                         {additionalDetails?.businessAddress || "—"}
                       </p>
                     </div>
+                    {request.certificate_type === "business_closure" ? (
+                      <>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Effective Closure Date</p>
+                          <p className="text-xs font-semibold text-slate-800 mt-0.5 leading-snug">
+                            {additionalDetails?.closureDate || "—"}
+                          </p>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Reason for Closure</p>
+                          <p className="text-xs font-semibold text-slate-800 mt-0.5 leading-snug">
+                            {additionalDetails?.closureReason || "—"}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Contact Person</p>
+                        <p className="text-xs font-semibold text-slate-800 uppercase mt-0.5 leading-snug">
+                          {additionalDetails?.contactPerson || "—"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {request.certificate_type === "business_closure" && isEditing && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <Store className="w-3.5 h-3.5" />
+                    </div>
+                    <h3 className="text-xs font-semibold text-slate-900">
+                      Edit Business Closure Details
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Contact Person</p>
-                      <p className="text-xs font-semibold text-slate-800 uppercase mt-0.5 leading-snug">
-                        {additionalDetails?.contactPerson || "—"}
-                      </p>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                        Business Name
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.businessName || ""}
+                        onChange={(e) =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            businessName: e.target.value,
+                          }))
+                        }
+                        className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-bold uppercase focus:ring-2 focus:ring-[#03254c]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                        Nature of Business
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.natureOfBusiness || ""}
+                        onChange={(e) =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            natureOfBusiness: e.target.value,
+                          }))
+                        }
+                        className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-bold uppercase focus:ring-2 focus:ring-[#03254c]"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                        Business Address
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.businessAddress || ""}
+                        onChange={(e) =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            businessAddress: e.target.value,
+                          }))
+                        }
+                        className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-bold uppercase focus:ring-2 focus:ring-[#03254c]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                        Effective Closure Date
+                      </label>
+                      <input
+                        type="date"
+                        value={editFormData.closureDate || ""}
+                        onChange={(e) =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            closureDate: e.target.value,
+                          }))
+                        }
+                        className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-[#03254c]"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                        Reason for Closure
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={editFormData.closureReason || ""}
+                        onChange={(e) =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            closureReason: e.target.value,
+                          }))
+                        }
+                        className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-[#03254c]"
+                      />
                     </div>
                   </div>
                 </div>
+              )}
+
+              {String(request.certificate_type || "").toLowerCase() === "barangay_residency" && (
+                <ResidencyPhotoPanel
+                  request={request}
+                  additionalDetails={additionalDetails}
+                  canEditPhoto={String(request.status || "").toLowerCase() === "staff_review"}
+                  onSavePhoto={async (dataUrl) => {
+                    const prevDetails = parseRequestDetails(request);
+                    const nextDetails = {
+                      ...prevDetails,
+                      resident_photo: dataUrl || null,
+                    };
+                    const ok = await onUpdate(request.id, { details: nextDetails });
+                    if (ok) {
+                      toast.success(
+                        dataUrl ? "Resident photo saved" : "Resident photo removed",
+                      );
+                    }
+                  }}
+                />
               )}
 
               {/* Purpose & Timeline */}
@@ -9660,6 +10137,13 @@ function ClearancePreviewForRequests({
 
   const isBusinessPermit =
     String(request.certificate_type || "").toLowerCase() === "business_permit";
+  const isBusinessClosure =
+    String(request.certificate_type || "").toLowerCase() === "business_closure";
+  const isResidencyCert =
+    String(request.certificate_type || "").toLowerCase() === "barangay_residency";
+  const residencyPhoto = isResidencyCert
+    ? additionalDetails?.resident_photo || request.resident_photo || null
+    : null;
   const isIndigencyCert =
     String(request.certificate_type || "").toLowerCase() ===
     "certificate_of_indigency";
@@ -9673,7 +10157,7 @@ function ClearancePreviewForRequests({
   const isJobSeekerDocA = isJobSeeker && jobSeekerVariant === "JOB SEEKER A";
   const isJobSeekerDocB = isJobSeeker && jobSeekerVariant === "JOB SEEKER B";
 
-  const useCompactCertFonts = !isJobSeekerDocB && !isBusinessPermit;
+  const useCompactCertFonts = !isJobSeekerDocB && !isBusinessPermit && !isBusinessClosure;
   const certBodyFontPx = useCompactCertFonts ? "12px" : "14px";
   const certToWhomClass = useCompactCertFonts
     ? "font-bold text-[13px]"
@@ -10271,7 +10755,7 @@ function ClearancePreviewForRequests({
         {/* Main Content Area */}
         <div className="cert-main-content flex flex-1 relative min-h-0 w-full">
           {/* Sidebar (Conditional) - Only show if enabled AND content exists AND not Medico Legal AND not Business Permit AND not Job Seeker A/B */}
-          {sidebarStyle.showSidebar && !isMedicoLegal && !isBusinessPermit && !isJobSeekerDocA && !isJobSeekerDocB && (
+          {sidebarStyle.showSidebar && !isMedicoLegal && !isBusinessPermit && !isBusinessClosure && !isJobSeekerDocA && !isJobSeekerDocB && (
             <div
               className={`w-64 p-6 flex flex-col text-center flex-shrink-0 ${getFontClass(sidebarStyle.fontFamily)}`}
               style={{
@@ -10374,7 +10858,7 @@ function ClearancePreviewForRequests({
                   : "flex-1 h-full min-h-0 items-stretch justify-between"
                 }`}
             >
-              {!isBusinessPermit && !isJobSeekerDocA && !isJobSeekerDocB && (
+              {!isBusinessPermit && !isBusinessClosure && !isJobSeekerDocA && !isJobSeekerDocB && (
                 <h2
                   className={`text-center font-bold ${isLetterPage ? "mb-3" : isCohabitation ? "mb-5" : "mb-7"} w-full pb-1 px-4 uppercase leading-snug ${isSamePerson ? "block whitespace-nowrap" : "inline-block"}`}
                   style={{
@@ -10415,7 +10899,200 @@ function ClearancePreviewForRequests({
                 </h2>
               )}
 
-              {isBusinessClearanceDoc ? (
+              {isBusinessClosure ? (
+                <div className="w-full max-w-full text-[13px] text-left leading-snug px-1 sm:px-2">
+                  <h2
+                    className="text-center font-bold uppercase mb-5 tracking-tight"
+                    style={{ color: "#15803d", fontSize: "22px" }}
+                  >
+                    <span className="inline-flex flex-col items-center">
+                      <span>BARANGAY BUSINESS CLOSURE</span>
+                      <span className="h-[2px] w-full bg-[#15803d] mt-1" />
+                    </span>
+                  </h2>
+
+                  <div className="mb-5 font-bold text-gray-900 text-[14px]">
+                    To Whom It May Concern:
+                  </div>
+
+                  <div className="mb-4 leading-relaxed text-black font-normal text-[13px] text-justify">
+                    This is to certify that below business / trade name as
+                    described herein has ceased its business activity in this
+                    barangay with effect from{" "}
+                    <span className="font-semibold">
+                      {additionalDetails?.closureDate
+                        ? new Date(additionalDetails.closureDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : issuedDate}
+                    </span>{" "}
+                    due to following reason(s):
+                  </div>
+
+                  <div className="mb-7 font-bold text-gray-900 text-[13px]">
+                    1. {additionalDetails?.closureReason || "Financial Difficulty / Incapability (Bankruptcy)"}
+                  </div>
+
+                  <div className="space-y-2.5 mb-8">
+                    {[
+                      [
+                        "Name of Owner",
+                        request.ownerFullName ||
+                        additionalDetails.ownerFullName ||
+                        formData.fullName,
+                      ],
+                      [
+                        "Owner's Address",
+                        request.ownerAddress ||
+                        additionalDetails.ownerAddress ||
+                        stripProvinceOf(formData.address),
+                      ],
+                      [
+                        "Business / Trade Name",
+                        request.businessName ||
+                        additionalDetails.businessName ||
+                        "N/A",
+                      ],
+                      [
+                        "Business Address",
+                        request.businessAddress ||
+                        additionalDetails.businessAddress ||
+                        "N/A",
+                      ],
+                      [
+                        "Nature of Business",
+                        request.natureOfBusiness ||
+                        additionalDetails.natureOfBusiness ||
+                        "N/A",
+                      ],
+                    ].map(([label, value], idx) => (
+                      <div key={idx} className="flex items-start">
+                        <div className="w-48 shrink-0 font-bold text-gray-900 whitespace-nowrap">
+                          {label}
+                        </div>
+                        <span className="font-bold mr-4">:</span>
+                        <span
+                          className={`flex-1 ${
+                            idx === 0 || idx === 2
+                              ? "font-bold uppercase text-black"
+                              : "font-normal text-black"
+                          }`}
+                        >
+                          {idx === 0 || idx === 2
+                            ? String(value || "").toUpperCase()
+                            : String(value || "")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mb-8 leading-relaxed text-black font-normal text-[13px] text-justify">
+                    Issued upon the request of above business owner this{" "}
+                    {issuedDate} at Barangay Iba O&apos; Este, Calumpit, Bulacan
+                    for any legal purposes it may serve.
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6 mt-6 items-start">
+                    <div className="text-left pt-2 cert-captain-signature-block">
+                      <div className="relative flex items-start justify-between gap-4 mb-24">
+                        <p className="font-bold text-[14px] shrink-0 relative top-[2.5em] text-gray-900">
+                          TRULY YOURS,
+                        </p>
+                      </div>
+                      <div className="relative inline-block">
+                        <div className="flex items-center gap-1 relative z-10">
+                          <div className="relative">
+                            {effectiveSignature && (
+                              <>
+                                <div
+                                  className="absolute left-1/2 top-1/2 -translate-x-[58%] -translate-y-[64%] w-[26rem] h-56 pointer-events-none flex items-center justify-center z-20"
+                                  style={{ mixBlendMode: "multiply" }}
+                                >
+                                  <img
+                                    src={effectiveSignature}
+                                    className="w-full h-full object-contain"
+                                    alt="Chairman signature"
+                                  />
+                                </div>
+                                <div className="absolute left-[70%] top-0 -translate-y-[140%] text-[5px] text-gray-400 whitespace-nowrap opacity-70 font-medium z-30 flex flex-col leading-tight border-l border-gray-300 pl-1">
+                                  <span className="font-bold text-gray-500">
+                                    {captainName}
+                                  </span>
+                                  <span>
+                                    {new Date(
+                                      effectiveCaptain?.created_at || Date.now(),
+                                    ).toLocaleDateString("en-US")}
+                                  </span>
+                                  <span>
+                                    {new Date(
+                                      effectiveCaptain?.created_at || Date.now(),
+                                    ).toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            <p
+                              className="uppercase font-bold mb-0 whitespace-nowrap relative z-10 text-black"
+                              style={{ fontSize: "18px" }}
+                            >
+                              {captainName}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="relative flex items-center z-10 w-full mb-2 mt-1">
+                          <div className="flex flex-col">
+                            <p className="text-[13px] font-bold shrink-0 leading-tight text-gray-900 uppercase tracking-tight">
+                              {detectedRole || "BARANGAY CHAIRMAN"}
+                            </p>
+                            {uniqueProcessorCodes && (
+                              <p className="text-[9px] font-bold text-gray-500 mt-0.5 shrink-0 leading-tight">
+                                {uniqueProcessorCodes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right flex flex-col items-end mt-16">
+                      <div className="bg-gray-100 border border-gray-300 px-4 py-2.5 text-left min-w-[210px]">
+                        <p className="font-bold text-center text-gray-900 text-[12px] mb-1.5">
+                          Details of Payment:
+                        </p>
+                        <div className="grid grid-cols-[95px_10px_1fr] gap-y-1 text-[12px] text-black">
+                          <span>OR No.</span>
+                          <span>:</span>
+                          <span className="font-bold">
+                            {orData?.or_number || additionalDetails?.or_number || ""}
+                          </span>
+                          <span>Amount Paid</span>
+                          <span>:</span>
+                          <span className="font-bold">
+                            {orData?.amount != null && orData?.amount !== ""
+                              ? `Php. ${Number(orData.amount).toLocaleString(undefined, {
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 2,
+                                })}`
+                              : ""}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-1.5 text-[12px] text-black">
+                        <span>BC Control No.: </span>
+                        <span className="font-bold">
+                          {orData?.control_number || additionalDetails?.bc_control_number || ""}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : isBusinessClearanceDoc ? (
                 <div className="w-full max-w-full text-[13px] text-left leading-snug px-1 sm:px-2">
                   <h2
                     className="text-center font-bold uppercase mb-3.5 tracking-tight"
@@ -11214,7 +11891,7 @@ function ClearancePreviewForRequests({
                 </div>
               ) : (
                 <div
-                  className={`w-full ${isCohabitation ? "space-y-4" : "space-y-5"} text-justify leading-snug`}
+                  className={`w-full ${residencyPhoto ? "space-y-3" : isCohabitation ? "space-y-4" : "space-y-5"} text-justify leading-snug`}
                   style={{
                     fontSize: isCohabitation
                       ? "12px"
@@ -11223,11 +11900,34 @@ function ClearancePreviewForRequests({
                         : certBodyFontPx,
                   }}
                 >
-                  <div className="flex justify-between items-center mb-3">
-                    <p className={isCohabitation ? "font-bold text-[13px]" : certToWhomClass}>TO WHOM IT MAY CONCERN:</p>
-                  </div>{" "}
-                  {/* Date removed for Indigency as per new layout */}
+                  {residencyPhoto ? (
+                    <div className="relative mb-3">
+                      <div className="pr-[152px]">
+                        <p className={`${certToWhomClass} mb-2`}>
+                          TO WHOM IT MAY CONCERN:
+                        </p>
+                        <p className="text-left leading-relaxed">
+                          This is to certify that below mentioned person is a bona fide resident of this barangay as detailed below:
+                        </p>
+                      </div>
+                      <div className="absolute right-0 -top-5 w-[136px] h-[136px] rounded-sm overflow-hidden bg-white">
+                        <img
+                          src={residencyPhoto}
+                          alt="Resident"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center mb-3">
+                        <p className={isCohabitation ? "font-bold text-[13px]" : certToWhomClass}>TO WHOM IT MAY CONCERN:</p>
+                      </div>{" "}
+                      {/* Date removed for Indigency as per new layout */}
+                    </>
+                  )}
                   <>
+                    {!residencyPhoto && (
                     <div className="text-left mb-4 leading-relaxed">
                       {isNaturalDeath ? (
                         <p>
@@ -11285,8 +11985,9 @@ function ClearancePreviewForRequests({
                         </p>
                       )}
                     </div>
+                    )}
 
-                    <div className="mb-6 space-y-1">
+                    <div className={`${residencyPhoto ? "mb-3" : "mb-6"} space-y-1`}>
                       {(() => {
                         const getLabels = () => {
                           if (isMedicoLegal) {

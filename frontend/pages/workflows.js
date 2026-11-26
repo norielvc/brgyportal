@@ -92,10 +92,10 @@ const certificateTypes = [
     isUnified: true,
   },
   {
-    id: "educational_assistance",
-    name: "Educational Assistance",
-    color: "cyan",
-    isUnified: true,
+    id: "business_closure",
+    name: "Business Closure",
+    color: "indigo",
+    isUnified: false,
   },
 ];
 
@@ -173,6 +173,7 @@ export default function WorkflowsPage() {
   const [editingStep, setEditingStep] = useState(null);
   const [showAddStep, setShowAddStep] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [newStep, setNewStep] = useState({
     name: "",
     description: "",
@@ -390,6 +391,11 @@ export default function WorkflowsPage() {
               initial[MASTER_WORKFLOW_ID] ||
               defaultSteps;
           }
+          if (!initial["business_closure"]) {
+            initial["business_closure"] =
+              data_workflows["business_closure"] ||
+              JSON.parse(JSON.stringify(defaultSteps));
+          }
           setWorkflows(initial);
           localStorage.setItem(
             "certificateWorkflows",
@@ -412,6 +418,11 @@ export default function WorkflowsPage() {
               data_workflows["barangay_clearance"] ||
               initial[MASTER_WORKFLOW_ID] ||
               defaultSteps;
+          }
+          if (!initial["business_closure"]) {
+            initial["business_closure"] =
+              data_workflows["business_closure"] ||
+              JSON.parse(JSON.stringify(defaultSteps));
           }
           setWorkflows(initial);
           localStorage.setItem(
@@ -676,10 +687,16 @@ export default function WorkflowsPage() {
 
   const getCurrentSteps = () => workflows[selectedCertificate] || defaultSteps;
 
+  const isReleasingStep = (s) =>
+    s?.status === "oic_review" ||
+    (s?.status === "ready" &&
+      String(s?.name || "").toLowerCase().includes("releasing")) ||
+    String(s?.name || "").toLowerCase().trim() === "releasing team";
+
   // Filter out the automatic Releasing Team and Review Team steps from the main management list
   const getVisibleSteps = () =>
     getCurrentSteps().filter(
-      (s) => s.status !== "oic_review" && s.status !== "staff_review",
+      (s) => !isReleasingStep(s) && s.status !== "staff_review",
     );
 
   const handleAddStep = () => {
@@ -726,17 +743,13 @@ export default function WorkflowsPage() {
     let certSteps = workflows[certId] || [];
 
     // Check if the releasing step exists
-    const releasingStepIndex = certSteps.findIndex(
-      (s) => s.status === "oic_review",
-    );
+    const releasingStepIndex = certSteps.findIndex((s) => isReleasingStep(s));
 
     let updatedSteps;
     if (releasingStepIndex !== -1) {
       // Update existing step
       updatedSteps = certSteps.map((s) =>
-        s.status === "oic_review"
-          ? { ...s, assignedUsers: selectedUserIds }
-          : s,
+        isReleasingStep(s) ? { ...s, assignedUsers: selectedUserIds } : s,
       );
     } else {
       // Step missing (user might have deleted it), recreate it as the automatic last step
@@ -815,19 +828,26 @@ export default function WorkflowsPage() {
   };
 
   const handleDeleteStep = (stepId) => {
-    if (!confirm("Are you sure you want to delete this step?")) return;
-    const steps = getCurrentSteps();
-    const updated = {
-      ...workflows,
-      [selectedCertificate]: steps.filter((s) => s.id !== stepId),
-    };
-    saveWorkflows(updated);
+    const stepToDelete = getCurrentSteps().find((s) => s.id === stepId);
+    setConfirmDialog({
+      title: "Delete Workflow Step",
+      message: `Are you sure you want to delete "${stepToDelete?.name || "this step"}"?`,
+      confirmLabel: "Delete Step",
+      onConfirm: () => {
+        const steps = getCurrentSteps();
+        const updated = {
+          ...workflows,
+          [selectedCertificate]: steps.filter((s) => s.id !== stepId),
+        };
+        saveWorkflows(updated);
+      },
+    });
   };
 
   const handleMoveStep = (stepId, direction) => {
     const allSteps = [...getCurrentSteps()];
     const visibleSteps = allSteps.filter(
-      (s) => s.status !== "staff_review" && s.status !== "oic_review",
+      (s) => s.status !== "staff_review" && !isReleasingStep(s),
     );
     const index = visibleSteps.findIndex((s) => s.id === stepId);
 
@@ -846,7 +866,7 @@ export default function WorkflowsPage() {
 
     // Reconstruct allSteps with the new middle order
     const staffReview = allSteps.find((s) => s.status === "staff_review");
-    const oicReview = allSteps.find((s) => s.status === "oic_review");
+    const oicReview = allSteps.find((s) => isReleasingStep(s));
 
     const updatedSteps = [];
     if (staffReview) updatedSteps.push(staffReview);
@@ -858,17 +878,19 @@ export default function WorkflowsPage() {
   };
 
   const handleResetToDefault = () => {
-    if (
-      !confirm(
+    setConfirmDialog({
+      title: "Reset Workflow to Default",
+      message:
         "Reset workflow to default? This will remove all custom steps and assignments.",
-      )
-    )
-      return;
-    const updated = {
-      ...workflows,
-      [selectedCertificate]: JSON.parse(JSON.stringify(defaultSteps)),
-    };
-    saveWorkflows(updated);
+      confirmLabel: "Reset Workflow",
+      onConfirm: () => {
+        const updated = {
+          ...workflows,
+          [selectedCertificate]: JSON.parse(JSON.stringify(defaultSteps)),
+        };
+        saveWorkflows(updated);
+      },
+    });
   };
 
   if (loading) {
@@ -927,6 +949,16 @@ export default function WorkflowsPage() {
             }`}
           >
             Business Permit
+          </button>
+          <button
+            onClick={() => setSelectedCertificate("business_closure")}
+            className={`flex-1 sm:flex-none px-2.5 py-1.5 rounded-[5px] font-semibold text-[11px] transition-colors ${
+              selectedCertificate === "business_closure"
+                ? "bg-indigo-700 text-white"
+                : "text-gray-600 hover:text-gray-900 hover:bg-white/80"
+            }`}
+          >
+            Business Closure
           </button>
           <button
             onClick={() => setSelectedCertificate(ESUMBONG_SETTINGS_ID)}
@@ -1071,6 +1103,15 @@ export default function WorkflowsPage() {
             <span className="font-bold">First Time Job Seeker only</span>
             {" — "}
             independent workflow for First Time Job Seeker (RA 11261) certificate requests.
+          </p>
+        </div>
+      ) : selectedCertificate === "business_closure" ? (
+        <div className="flex items-start gap-2 px-2.5 py-2 rounded-md border border-indigo-200/80 bg-indigo-50/80">
+          <Briefcase className="w-3.5 h-3.5 text-indigo-700 shrink-0 mt-px" />
+          <p className="text-[10px] text-indigo-900 leading-snug">
+            <span className="font-bold">Business closure only</span>
+            {" — "}
+            does not affect other certificate types.
           </p>
         </div>
       ) : (
@@ -1264,7 +1305,9 @@ export default function WorkflowsPage() {
               ? "text-emerald-700"
               : selectedCertificate === "first_time_job_seeker"
                 ? "text-teal-700"
-                : "text-purple-700"
+                : selectedCertificate === "business_closure"
+                  ? "text-indigo-700"
+                  : "text-purple-700"
           }`} />
           <div className="min-w-0">
             <h2 className="text-[10px] font-bold text-gray-700 uppercase tracking-wide leading-none">
@@ -1280,7 +1323,9 @@ export default function WorkflowsPage() {
                 ? "all unified"
                 : selectedCertificate === "first_time_job_seeker"
                   ? "first time job seeker"
-                  : "business permit"}{" "}
+                  : selectedCertificate === "business_closure"
+                    ? "business closure"
+                    : "business permit"}{" "}
               requests.
             </p>
           </div>
@@ -1340,7 +1385,9 @@ export default function WorkflowsPage() {
                       ? "bg-emerald-600 hover:bg-emerald-700"
                       : selectedCertificate === "first_time_job_seeker"
                         ? "bg-teal-600 hover:bg-teal-700"
-                        : "bg-purple-600 hover:bg-purple-700"
+                        : selectedCertificate === "business_closure"
+                          ? "bg-indigo-600 hover:bg-indigo-700"
+                          : "bg-purple-600 hover:bg-purple-700"
                   }`}
                 >
                   Assign members
@@ -1362,7 +1409,9 @@ export default function WorkflowsPage() {
                   ? "Master workflow steps"
                   : selectedCertificate === "first_time_job_seeker"
                     ? "First time job seeker steps"
-                    : "Business permit steps"}
+                    : selectedCertificate === "business_closure"
+                      ? "Business closure steps"
+                      : "Business permit steps"}
               </h2>
               <p className="text-[9px] text-gray-400 mt-0.5">
                 Review + {visibleSteps.length} approval step{visibleSteps.length === 1 ? "" : "s"} + releasing
@@ -1557,7 +1606,9 @@ export default function WorkflowsPage() {
                 ? "unified"
                 : selectedCertificate === "first_time_job_seeker"
                   ? "first time job seeker"
-                  : "business permit"}{" "}
+                  : selectedCertificate === "business_closure"
+                    ? "business closure"
+                    : "business permit"}{" "}
               requests.
             </p>
           </div>
@@ -1688,6 +1739,50 @@ export default function WorkflowsPage() {
       )}
 
       {/* Assign Users Modal */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setConfirmDialog(null)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md p-6 z-10">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-gray-900">
+                  {confirmDialog.title}
+                </h3>
+                <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                  {confirmDialog.message}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => setConfirmDialog(null)}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const fn = confirmDialog.onConfirm;
+                  setConfirmDialog(null);
+                  fn?.();
+                }}
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                {confirmDialog.confirmLabel || "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAssignModal && (
         <AssignUsersModal
           step={

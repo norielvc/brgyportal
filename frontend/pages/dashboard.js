@@ -38,9 +38,10 @@ const TYPE_LABELS = {
   barangay_guardianship: "Certificate of Guardianship",
   barangay_cohabitation: "Certificate of Co-Habitation",
   business_permit: "Business Permit",
+  business_closure: "Business Closure",
+  certification_same_person: "Certificate of Same Person",
   same_person: "Certificate of Same Person",
   medico_legal: "Medico Legal Certification",
-  educational_assistance: "Educational Assistance Endorsement",
 };
 
 const STATUS_CONFIG = {
@@ -125,6 +126,7 @@ export default function Dashboard() {
     status: "",
   });
   const [analyticsMeta, setAnalyticsMeta] = useState(null);
+  const [breakdownMonth, setBreakdownMonth] = useState("all");
 
   // Live Philippine Standard Time (PST) Clock
   const [pstTime, setPstTime] = useState("");
@@ -1127,65 +1129,6 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-
-          {/* Certificate & Permit Category Distribution */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-gray-700" />
-                  Civil Registry & Certificate Issuance Mix
-                </h3>
-                <p className="text-xs text-gray-400 font-medium">
-                  Breakdown by document classification and requested volume
-                </p>
-              </div>
-              <span className="text-[10px] font-bold text-gray-500 uppercase">
-                {(data?.byType || []).length} Document Services
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              {(data?.byType || []).map((t, i) => {
-                const pct = Math.round((t.count / maxType) * 100);
-                const sharePct = Math.round(
-                  (t.count / (ov.totalRequests || 1)) * 100
-                );
-                return (
-                  <div
-                    key={i}
-                    onClick={() => router.push(`/requests?certificateType=${t.type}`)}
-                    className="p-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100"
-                  >
-                    <div className="flex items-center justify-between text-xs font-bold text-gray-800 mb-1.5">
-                      <span className="truncate pr-2">
-                        {TYPE_LABELS[t.type] || t.type}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400 text-[10px] font-semibold">
-                          {sharePct}%
-                        </span>
-                        <span className="text-gray-900 tabular-nums font-black bg-gray-100 px-2 py-0.5 rounded-md">
-                          {t.count}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#03254c] transition-all duration-700"
-                        style={{ width: `${Math.max(pct, 4)}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              {(data?.byType || []).length === 0 && (
-                <div className="col-span-2 text-center py-8 text-xs text-gray-400">
-                  No certificate records found for selected period
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* RIGHT 1 COL: ARTA WORKFLOW PIPELINE & ACTIONABLE OVERDUE QUEUE */}
@@ -1359,6 +1302,139 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Certificate & Permit Category Distribution (Full Width) */}
+      {(() => {
+        const breakdownList =
+          breakdownMonth !== "all" && data?.byTypeByMonth?.[breakdownMonth]
+            ? data.byTypeByMonth[breakdownMonth]
+            : data?.byType || [];
+        const totalOnline = breakdownList.reduce(
+          (sum, item) => sum + (item.onlineCount || 0),
+          0,
+        );
+        const totalPickup = breakdownList.reduce(
+          (sum, item) => sum + (item.pickupCount || 0),
+          0,
+        );
+        const totalVolume = breakdownList.reduce(
+          (sum, item) => sum + (item.count || 0),
+          0,
+        );
+        const breakdownMax = Math.max(
+          ...breakdownList.map((item) => item.count || 0),
+          1,
+        );
+        return (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-gray-700" />
+                  Civil Registry & Certificate Issuance Mix
+                </h3>
+                <p className="text-xs text-gray-400 font-medium">
+                  Breakdown by document classification, delivery mode, and requested volume
+                </p>
+              </div>
+              <select
+                value={breakdownMonth}
+                onChange={(e) => setBreakdownMonth(e.target.value)}
+                className="text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#03254c]/20 shadow-sm"
+                aria-label="Filter breakdown by month"
+              >
+                <option value="all">All Months (12M)</option>
+                {(data?.availableMonths || []).map((m) => (
+                  <option key={m.key} value={m.key}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#03254c] text-white shadow-sm">
+                <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                  Total Requests
+                </span>
+                <span className="text-xl font-black tabular-nums">
+                  {totalVolume}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-900">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                  Online Delivery
+                </span>
+                <span className="text-xl font-black tabular-nums">
+                  {totalOnline}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-900">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Pickup
+                </span>
+                <span className="text-xl font-black tabular-nums">
+                  {totalPickup}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              {breakdownList.map((t, i) => {
+                const pct = Math.round((t.count / breakdownMax) * 100);
+                const sharePct =
+                  totalVolume > 0
+                    ? Math.round((t.count / totalVolume) * 100)
+                    : 0;
+                return (
+                  <div
+                    key={t.type || i}
+                    onClick={() =>
+                      router.push(`/requests?certificateType=${t.type}`)
+                    }
+                    className="p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100/80 hover:border-gray-200"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-gray-800 mb-1.5">
+                      <span className="truncate pr-2">
+                        {TYPE_LABELS[t.type] || t.type}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 text-[10px] font-semibold">
+                          {sharePct}%
+                        </span>
+                        <span className="text-gray-900 tabular-nums font-black bg-gray-100 px-2 py-0.5 rounded-md">
+                          {t.count}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1.5">
+                      <div
+                        className="h-full rounded-full bg-[#03254c] transition-all duration-700"
+                        style={{
+                          width: `${t.count > 0 ? Math.max(pct, 4) : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-gray-500">
+                      <span className="text-blue-700">
+                        Online Delivery: {t.onlineCount ?? 0}
+                      </span>
+                      <span className="text-slate-600">
+                        Pickup: {t.pickupCount ?? 0}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+              {breakdownList.length === 0 && (
+                <div className="col-span-2 text-center py-8 text-xs text-gray-400">
+                  No certificate records found for selected period
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 5. LIVE CITIZEN TRANSACTIONS & CIVIL REGISTRY AUDIT LEDGER */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
