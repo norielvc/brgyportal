@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { getAuthToken } from "@/lib/auth";
 import {
@@ -300,6 +300,111 @@ function normalizeCivilStatusForForm(status) {
 function formatDateForInput(val) {
   if (!val) return "";
   return String(val).slice(0, 10);
+}
+
+const formatDobMmDdYyyy = (raw) => {
+  if (!raw) return "";
+  const str = String(raw).trim();
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[2]}/${isoMatch[3]}/${isoMatch[1]}`;
+  const d = new Date(str);
+  if (Number.isNaN(d.getTime())) return str;
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${mm}/${dd}/${yyyy}`;
+};
+
+function BirthDateMmDdYyyyInput({ value, onChange }) {
+  const [text, setText] = useState(() => formatDobMmDdYyyy(value));
+  const pickerRef = useRef(null);
+
+  useEffect(() => {
+    setText(formatDobMmDdYyyy(value));
+  }, [value]);
+
+  const handleTextChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+    let formatted = digits;
+    if (digits.length > 4) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    } else if (digits.length > 2) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    }
+    setText(formatted);
+
+    if (!digits.length) {
+      onChange("");
+      return;
+    }
+    if (digits.length === 8) {
+      const mm = Number(digits.slice(0, 2));
+      const dd = Number(digits.slice(2, 4));
+      const yyyy = Number(digits.slice(4, 8));
+      const d = new Date(yyyy, mm - 1, dd);
+      if (
+        mm >= 1 &&
+        mm <= 12 &&
+        dd >= 1 &&
+        dd <= 31 &&
+        yyyy >= 1900 &&
+        yyyy <= 2100 &&
+        d.getFullYear() === yyyy &&
+        d.getMonth() === mm - 1 &&
+        d.getDate() === dd
+      ) {
+        onChange(
+          `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`,
+        );
+      }
+    }
+  };
+
+  const openPicker = () => {
+    const el = pickerRef.current;
+    if (!el) return;
+    if (typeof el.showPicker === "function") {
+      try {
+        el.showPicker();
+        return;
+      } catch {
+        // fallback below
+      }
+    }
+    el.focus();
+    el.click();
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength={10}
+        placeholder="MM/DD/YYYY"
+        className="input pr-9 font-medium"
+        value={text}
+        onChange={handleTextChange}
+      />
+      <button
+        type="button"
+        onClick={openPicker}
+        aria-label="Open birth date calendar"
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 p-1 rounded transition-colors"
+      >
+        <Calendar className="w-4 h-4" />
+      </button>
+      <input
+        ref={pickerRef}
+        type="date"
+        tabIndex={-1}
+        aria-hidden="true"
+        className="sr-only"
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
 }
 
 const EMPTY_RESIDENT_FORM = {
@@ -1473,7 +1578,7 @@ export default function Residents() {
                 <p className="text-[10px] text-gray-600 leading-snug mt-0.5">
                   {selectedResident.gender || "—"} · {selectedResident.age ?? "—"} y/o ·{" "}
                   {formatCivilStatusLabel(selectedResident.civil_status)} · DOB{" "}
-                  {selectedResident.date_of_birth || "—"}
+                  {formatDobMmDdYyyy(selectedResident.date_of_birth) || "—"}
                   {selectedResident.place_of_birth ? (
                     <> · Born {selectedResident.place_of_birth}</>
                   ) : null}
@@ -1820,17 +1925,14 @@ export default function Residents() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">Birth Date</label>
-                  <input
-                    type="date"
-                    className="input"
+                  <BirthDateMmDdYyyyInput
                     value={formData.date_of_birth}
-                    onChange={(e) => {
-                      const birthDate = e.target.value;
-                      setFormData({
-                        ...formData,
+                    onChange={(birthDate) => {
+                      setFormData((prev) => ({
+                        ...prev,
                         date_of_birth: birthDate,
-                        age: birthDate ? calculateAge(birthDate) : '',
-                      });
+                        age: birthDate ? calculateAge(birthDate) : "",
+                      }));
                     }}
                   />
                 </div>
