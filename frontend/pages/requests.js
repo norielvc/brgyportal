@@ -9062,7 +9062,11 @@ function CertificatePreviewModal({
 
   const [orData, setOrData] = useState(null);
   const fetchORData = async () => {
-    if (request.certificate_type !== "business_permit") return;
+    if (
+      request.certificate_type !== "business_permit" &&
+      request.certificate_type !== "business_closure"
+    )
+      return;
     try {
       const token = getAuthToken();
       const response = await fetch(
@@ -11076,12 +11080,22 @@ function ClearancePreviewForRequests({
                           <span>Amount Paid</span>
                           <span>:</span>
                           <span className="font-medium">
-                            {orData?.amount != null && orData?.amount !== ""
-                              ? `Php. ${Number(orData.amount).toLocaleString(undefined, {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 2,
-                              })}`
-                              : ""}
+                            {(() => {
+                              const rawAmount =
+                                orData?.amount != null && orData?.amount !== ""
+                                  ? orData.amount
+                                  : additionalDetails?.or_amount ??
+                                    additionalDetails?.amount;
+                              return rawAmount != null && rawAmount !== ""
+                                ? `Php. ${Number(rawAmount).toLocaleString(
+                                    undefined,
+                                    {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 2,
+                                    },
+                                  )}`
+                                : "";
+                            })()}
                           </span>
                           <span>BC Control No.</span>
                           <span>:</span>
