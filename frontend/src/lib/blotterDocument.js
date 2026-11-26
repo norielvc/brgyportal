@@ -137,13 +137,21 @@ export function normalizeBlotterDocVariant(variant, report) {
 }
 
 function buildPartiesSectionHtml(report) {
+  const formatPartyNamesHtml = (raw) => {
+    const parts = String(raw || "")
+      .split(/\r?\n|,\s*/)
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+    return parts.length ? parts.map((p) => esc(p)).join("<br>") : "—";
+  };
+
   return `
       <section>
         <h2 class="section-heading">I. Mga partido <span>/ Parties</span></h2>
         <div class="parties">
           <div class="party-box">
             <p class="party-label">Nagsusumbong · Complainant</p>
-            <p class="party-name">${esc(String(report?.complainant_name || "—").toUpperCase())}</p>
+            <p class="party-name">${formatPartyNamesHtml(report?.complainant_name)}</p>
             <table class="kv-table">
               <tr><th>Cellphone</th><td>${esc(report?.contact_number || "—")}</td></tr>
               <tr><th>Email</th><td>${esc(report?.email || "—")}</td></tr>
@@ -151,7 +159,7 @@ function buildPartiesSectionHtml(report) {
           </div>
           <div class="party-box">
             <p class="party-label">Inirereklamo · Respondent</p>
-            <p class="party-name">${esc(String(report?.respondent_name || "—").toUpperCase())}</p>
+            <p class="party-name">${formatPartyNamesHtml(report?.respondent_name)}</p>
             <table class="kv-table">
               <tr><th>Petsa ng insidente</th><td>${esc(report?.incident_date || "—")}</td></tr>
               <tr><th>Oras</th><td>${formatIncidentTime(report?.incident_time)}</td></tr>
@@ -322,7 +330,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         max-width: 8.5in;
         margin: 0 auto;
         background: #fff;
-        padding: ${isSummons ? "0" : "0.45in 0.75in 0.45in 0.75in"};
+        padding: 0.45in 0.75in 0.45in 0.75in;
         box-shadow: ${embedded ? "none" : "0 8px 32px rgba(0,0,0,.12)"};
         min-height: 14in;
         display: flex;
@@ -334,7 +342,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         flex: 1 0 auto;
         display: flex;
         flex-direction: column;
-        padding: ${isSummons ? "0.45in 0.75in 0.25in" : "0"};
+        padding: ${isSummons ? "0.25in 0 0" : "0"};
         font-family: inherit;
         color: inherit;
       }
@@ -351,7 +359,8 @@ export function buildBlotterDocumentHtml(report, options = {}) {
       .kp-header-container {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
+        gap: 20px;
         width: 100%;
         margin-bottom: 4px;
       }
@@ -370,8 +379,8 @@ export function buildBlotterDocumentHtml(report, options = {}) {
       }
       .kp-header-center {
         text-align: center;
-        flex: 1;
-        padding: 0 12px;
+        flex: 0 1 auto;
+        padding: 0 6px;
       }
       .kp-geo-line {
         margin: 0;
@@ -611,7 +620,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         display: flex;
         justify-content: flex-end;
         width: 100%;
-        margin-top: 56px;
+        margin-top: 74px;
         margin-bottom: 24px;
         page-break-inside: avoid;
         break-inside: avoid;
@@ -798,7 +807,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
         display: flex;
         justify-content: flex-end;
         width: 100%;
-        margin-top: 46px;
+        margin-top: 64px;
         margin-bottom: 12px;
       }
       .patawag-pb-block {
@@ -970,7 +979,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                     <p class="kp-geo-line">${esc(provinceLine)}</p>
                     <p class="kp-geo-line">${esc(municipalityLine)}</p>
                     <p class="kp-geo-line">${esc(barangayLine)}</p>
-                    <h1 class="kp-office-heading kp-patawag-heading">TANGGAPAN NG LUPON NG TAGAPAMAYAPA</h1>
+                    <h1 class="kp-office-heading">TANGGAPAN NG LUPONG TAGAPAMAYAPA</h1>
                   </div>
                   <div class="kp-logo-box">
                     <img src="${esc(rightLogoUrl)}" alt="DILG Logo" class="kp-logo-img" />
@@ -1004,7 +1013,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                       </thead>
                       <tbody>
                         <tr>
-                          <td class="patawag-name-cell">${esc(complainantNameUpper || "—")}</td>
+                          <td class="patawag-name-cell">${String(complainantNameUpper || "").split(/\r?\n|,\s*/).map((s) => s.trim()).filter(Boolean).map((s) => esc(s)).join("<br>") || "—"}</td>
                           <td class="patawag-addr-cell">${esc(complainantAddress)}</td>
                         </tr>
                       </tbody>
@@ -1022,7 +1031,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                       </thead>
                       <tbody>
                         <tr>
-                          <td class="patawag-name-cell">${esc(respondentNameUpper || "—")}</td>
+                          <td class="patawag-name-cell">${String(respondentNameUpper || "").split(/\r?\n|,\s*/).map((s) => s.trim()).filter(Boolean).map((s) => esc(s)).join("<br>") || "—"}</td>
                           <td class="patawag-addr-cell">${esc(respondentAddress)}</td>
                         </tr>
                       </tbody>
@@ -1182,7 +1191,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                   <div class="kp-parties-row-item kp-row-top">
                     <div class="kp-parties-left">
                       <div class="kp-name-field">
-                        ${esc(complainantNameUpper || "")}${complainantNameUpper ? "," : "&nbsp;"}
+                        ${complainantNameUpper ? `${String(complainantNameUpper).split(/\r?\n|,\s*/).map((s) => s.trim()).filter(Boolean).map((s) => esc(s)).join("<br>")},` : "&nbsp;"}
                       </div>
                       <div class="kp-parties-label">Nagsusumbong,</div>
                     </div>
@@ -1207,7 +1216,7 @@ export function buildBlotterDocumentHtml(report, options = {}) {
                   <div class="kp-parties-row-item kp-row-bot">
                     <div class="kp-parties-left">
                       <div class="kp-name-field">
-                        ${esc(respondentNameUpper || "")}${respondentNameUpper ? "," : "&nbsp;"}
+                        ${respondentNameUpper ? `${String(respondentNameUpper).split(/\r?\n|,\s*/).map((s) => s.trim()).filter(Boolean).map((s) => esc(s)).join("<br>")},` : "&nbsp;"}
                       </div>
                       <div class="kp-parties-label">Ipinagreklamo</div>
                     </div>
@@ -1671,5 +1680,77 @@ export async function downloadBlotterDocumentPdf(report, { officials, variant } 
   }
 
   pdf.save(blotterPdfFilename(report, docVariant));
+  return { ok: true };
+}
+
+/**
+ * Render the blotter HTML to a high-resolution .jpg image and trigger browser download.
+ */
+export async function downloadBlotterDocumentJpg(report, { officials, variant } = {}) {
+  if (typeof document === "undefined") {
+    return { ok: false, error: "no_document" };
+  }
+
+  const docVariant = normalizeBlotterDocVariant(variant, report);
+  const html = buildBlotterDocumentHtml(report, {
+    autoPrint: false,
+    officials,
+    variant: docVariant,
+  });
+
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText =
+    "position:fixed;right:0;bottom:0;width:816px;height:1344px;visibility:hidden;border:0;z-index:-1;pointer-events:none";
+  document.body.appendChild(iframe);
+
+  const iframeWin = iframe.contentWindow;
+  const iframeDoc = iframeWin?.document;
+  if (!iframeDoc) {
+    document.body.removeChild(iframe);
+    return { ok: false, error: "iframe_failed" };
+  }
+
+  iframeDoc.open();
+  iframeDoc.write(html);
+  iframeDoc.close();
+
+  await new Promise((resolve) => {
+    iframe.onload = () => setTimeout(resolve, 400);
+    setTimeout(resolve, 2500);
+  });
+
+  const { default: html2canvas } = await import("html2canvas");
+  await waitForImages(iframeDoc.body);
+  try {
+    if (iframeDoc.fonts?.ready) await iframeDoc.fonts.ready;
+  } catch {
+    /* ignore */
+  }
+
+  const targetEl = iframeDoc.querySelector(".page") || iframeDoc.body;
+  let canvas;
+  try {
+    canvas = await html2canvas(targetEl, {
+      ...HTML2CANVAS_OPTS,
+      backgroundColor: "#ffffff",
+      windowWidth: 816,
+      windowHeight: Math.max(targetEl.scrollHeight || 1344, 1344),
+    });
+  } catch (err) {
+    document.body.removeChild(iframe);
+    return { ok: false, error: "capture_failed", detail: err?.message };
+  }
+
+  document.body.removeChild(iframe);
+
+  const jpgUrl = canvas.toDataURL("image/jpeg", 0.95);
+  const filename = blotterPdfFilename(report, docVariant).replace(/\.pdf$/i, ".jpg");
+  const link = document.createElement("a");
+  link.href = jpgUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
   return { ok: true };
 }
