@@ -1227,7 +1227,7 @@ export default function PortalPageContent({ initialTenantId }) {
     setChatStarted(false);
     setChatUserInfo({
       name: resident.full_name || "",
-      contact: resident.contact_number || "",
+      contact: "",
       residentId: resident.id,
       address: resident.residential_address || "",
     });
