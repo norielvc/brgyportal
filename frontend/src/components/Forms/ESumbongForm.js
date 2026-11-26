@@ -10,6 +10,8 @@ import {
   Clock,
   CheckCircle,
   ChevronRight,
+  Plus,
+  X,
 } from "lucide-react";
 import { blotterAPI } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -57,7 +59,11 @@ export default function ESumbongForm({
   });
 
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
-  const [complainantPurok, setComplainantPurok] = useState("");
+  const [residentModalTargetIndex, setResidentModalTargetIndex] = useState(null);
+  const [complainants, setComplainants] = useState(() =>
+    isStaffWalkIn ? [{ residentId: "", name: "", purok: "" }] : [],
+  );
+  const [respondentNames, setRespondentNames] = useState([""]);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const detailsRef = useRef(null);
@@ -101,31 +107,70 @@ export default function ESumbongForm({
       contact_number: "",
       email: "",
     });
-    setComplainantPurok("");
+    setComplainants(isStaffWalkIn ? [{ residentId: "", name: "", purok: "" }] : []);
+    setResidentModalTargetIndex(null);
+    setRespondentNames([""]);
     setErrors({});
   };
 
+  const openComplainantModal = (targetIndex = null) => {
+    setResidentModalTargetIndex(targetIndex);
+    setIsResidentModalOpen(true);
+  };
+
   const selectResident = (resident) => {
-    const name =
+    const name = (
       resident.full_name ||
       [resident.first_name, resident.middle_name, resident.last_name, resident.suffix]
         .filter(Boolean)
         .join(" ")
-        .trim();
+        .trim()
+    ).toUpperCase();
+    const purok = formatResidentPurokForPortal({
+      purok: resident.purok,
+      subdivision: resident.subdivision,
+    });
+    const entry = {
+      residentId: resident.id,
+      name,
+      purok,
+    };
+
+    const isDuplicate = complainants.some(
+      (c, idx) =>
+        idx !== residentModalTargetIndex &&
+        c.residentId &&
+        String(c.residentId) === String(resident.id),
+    );
+    if (isDuplicate) {
+      toast.error(
+        isStaffWalkIn
+          ? "This resident is already added as a complainant."
+          : "Nasa listahan na ang nagsusumbong na ito.",
+      );
+      setIsResidentModalOpen(false);
+      setResidentModalTargetIndex(null);
+      return;
+    }
+
+    setComplainants((prev) => {
+      if (
+        residentModalTargetIndex !== null &&
+        residentModalTargetIndex >= 0 &&
+        residentModalTargetIndex < prev.length
+      ) {
+        return prev.map((item, idx) => (idx === residentModalTargetIndex ? entry : item));
+      }
+      return [...prev, entry];
+    });
+
     setForm((prev) => ({
       ...prev,
-      complainant_resident_id: resident.id,
-      complainant_name: name.toUpperCase(),
-      contact_number: resident.contact_number || prev.contact_number,
-      email: resident.email || prev.email,
+      complainant_resident_id: prev.complainant_resident_id || resident.id,
+      complainant_name: name,
     }));
-    setComplainantPurok(
-      formatResidentPurokForPortal({
-        purok: resident.purok,
-        subdivision: resident.subdivision,
-      }),
-    );
     setIsResidentModalOpen(false);
+    setResidentModalTargetIndex(null);
     setErrors((prev) => ({
       ...prev,
       complainant_name: undefined,
@@ -133,19 +178,51 @@ export default function ESumbongForm({
     }));
   };
 
+  const handleComplainantNameChange = (index, value) => {
+    const upper = typeof value === "string" ? value.toUpperCase() : "";
+    setComplainants((prev) =>
+      prev.map((item, idx) => (idx === index ? { ...item, name: upper } : item)),
+    );
+    if (errors.complainant_name || errors.complainant_resident_id) {
+      setErrors((prev) => ({
+        ...prev,
+        complainant_name: undefined,
+        complainant_resident_id: undefined,
+      }));
+    }
+  };
+
+  const addWalkInComplainantField = () => {
+    setComplainants((prev) => [...prev, { residentId: "", name: "", purok: "" }]);
+  };
+
+  const removeComplainant = (index) => {
+    setComplainants((prev) => {
+      if (isStaffWalkIn && prev.length <= 1) return prev;
+      return prev.filter((_, idx) => idx !== index);
+    });
+  };
+
   const validate = () => {
     const newErrors = {};
+    const cleanedComplainants = complainants
+      .map((c) => ({ ...c, name: String(c.name || "").trim() }))
+      .filter((c) => c.name);
     if (isStaffWalkIn) {
-      if (!form.complainant_name.trim()) {
+      if (cleanedComplainants.length === 0) {
         newErrors.complainant_name = "Complainant name is required";
       }
-    } else if (!form.complainant_resident_id?.trim()) {
+    } else if (
+      cleanedComplainants.length === 0 ||
+      !cleanedComplainants[0]?.residentId
+    ) {
       newErrors.complainant_resident_id =
         "Pumili ng naka-rehistro sa census na residente bilang nagsusumbong";
-    } else if (!form.complainant_name.trim()) {
-      newErrors.complainant_name = "Kailangan ang pangalan ng nagsusumbong";
     }
-    if (!form.respondent_name.trim()) {
+    const cleanedRespondents = respondentNames
+      .map((n) => String(n || "").trim())
+      .filter(Boolean);
+    if (cleanedRespondents.length === 0) {
       newErrors.respondent_name = isStaffWalkIn
         ? "Respondent name is required"
         : "Kailangan ang pangalan ng inirereklamo";
@@ -179,12 +256,22 @@ export default function ESumbongForm({
 
     setSubmitting(true);
     try {
+      const joinedComplainants = complainants
+        .map((c) => String(c.name || "").trim().toUpperCase())
+        .filter(Boolean)
+        .join(", ");
+      const primaryResidentId =
+        complainants.find((c) => c.residentId)?.residentId || null;
+      const joinedRespondents = respondentNames
+        .map((n) => String(n || "").trim().toUpperCase())
+        .filter(Boolean)
+        .join(", ");
       const payload = {
         ...form,
-        complainant_name: String(form.complainant_name || "").toUpperCase(),
-        respondent_name: String(form.respondent_name || "").toUpperCase(),
+        complainant_name: joinedComplainants,
+        respondent_name: joinedRespondents,
         details: String(form.details || "").toUpperCase(),
-        complainant_resident_id: form.complainant_resident_id?.trim() || null,
+        complainant_resident_id: primaryResidentId,
         intake_source: isStaffWalkIn ? "walk_in" : "portal",
       };
       await blotterAPI.createReport(payload);
@@ -209,6 +296,22 @@ export default function ESumbongForm({
   };
 
   const UPPERCASE_FIELDS = new Set(["complainant_name", "respondent_name", "details"]);
+
+  const handleRespondentChange = (index, value) => {
+    const upper = typeof value === "string" ? value.toUpperCase() : "";
+    setRespondentNames((prev) => prev.map((item, idx) => (idx === index ? upper : item)));
+    if (errors.respondent_name) {
+      setErrors((prev) => ({ ...prev, respondent_name: undefined }));
+    }
+  };
+
+  const addRespondentField = () => {
+    setRespondentNames((prev) => [...prev, ""]);
+  };
+
+  const removeRespondentField = (index) => {
+    setRespondentNames((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== index) : prev));
+  };
 
   const handleChange = (field, value) => {
     const nextValue =
@@ -273,78 +376,129 @@ export default function ESumbongForm({
                 )}
               </FieldLabel>
               {!isStaffWalkIn && (
-                <p className="text-[11px] text-gray-500 leading-snug -mt-1 mb-2 min-h-[2.75rem] sm:min-h-[3rem]">
-                  Dapat kayo ay naka-rehistro sa census ng barangay. Hanapin ang iyong pangalan sa direktoryo.
+                <p className="text-[11px] text-gray-500 leading-snug -mt-1 mb-2.5 sm:min-h-[2.25rem]">
+                  Dapat kayo ay naka-rehistro sa census ng barangay. Hanapin ang iyong pangalan sa direktoryo (maaaring magdagdag ng higit sa isa).
                 </p>
               )}
               {isStaffWalkIn ? (
                 <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={form.complainant_name}
-                    onChange={(e) => handleChange("complainant_name", e.target.value)}
-                    placeholder="FULL NAME OF COMPLAINANT"
-                    className={`${inputClass} min-h-[2.5rem] py-2 text-sm font-bold uppercase`}
-                  />
-                  {form.complainant_resident_id && form.complainant_name ? (
-                    <div className="flex items-center gap-2 text-[10px] font-semibold text-emerald-700">
-                      <CheckCircle className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                      Linked to census record
-                      {complainantPurok ? ` · ${complainantPurok}` : ""}
+                  {complainants.map((c, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={c.name}
+                          onChange={(e) => handleComplainantNameChange(idx, e.target.value)}
+                          placeholder={
+                            complainants.length > 1
+                              ? `FULL NAME OF COMPLAINANT ${idx + 1}`
+                              : "FULL NAME OF COMPLAINANT"
+                          }
+                          className={`${inputClass} min-h-[2.5rem] py-2 text-sm font-bold uppercase flex-1`}
+                        />
+                        {complainants.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeComplainant(idx)}
+                            aria-label="Remove complainant"
+                            className="shrink-0 p-2 rounded-lg border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      {c.residentId && c.name ? (
+                        <div className="flex items-center gap-2 text-[10px] font-semibold text-emerald-700">
+                          <CheckCircle className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                          Linked to census record
+                          {c.purok ? ` · ${c.purok}` : ""}
+                        </div>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => openComplainantModal(idx)}
+                        className="text-[10px] font-bold uppercase tracking-wide text-[#03254c] hover:underline text-left"
+                      >
+                        {c.residentId
+                          ? "Change census link"
+                          : "Link census record (optional)"}
+                      </button>
                     </div>
-                  ) : null}
+                  ))}
                   <button
                     type="button"
-                    onClick={() => setIsResidentModalOpen(true)}
-                    className="text-[10px] font-bold uppercase tracking-wide text-[#03254c] hover:underline text-left"
+                    onClick={addWalkInComplainantField}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#03254c] hover:underline py-1"
                   >
-                    {form.complainant_resident_id
-                      ? "Change census link"
-                      : "Link census record (optional)"}
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add another complainant</span>
                   </button>
                   <FieldError
                     message={errors.complainant_name || errors.complainant_resident_id}
                   />
                 </div>
-              ) : form.complainant_name && form.complainant_resident_id ? (
-                <div
-                  className={`${inputClass} flex items-center gap-2 min-h-[2.75rem] h-auto py-2 border-red-100 bg-red-50/40`}
-                >
-                  <CheckCircle className="w-4 h-4 text-red-600 shrink-0" aria-hidden />
-                  <div className="min-w-0 flex-1 grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-0">
-                    <span className="text-sm font-bold text-gray-900 leading-snug min-w-0 break-words col-start-1">
-                      {form.complainant_name}
-                    </span>
-                    {complainantPurok ? (
-                      <span className="text-xs font-semibold text-gray-600 whitespace-nowrap col-start-2 row-start-1">
-                        {complainantPurok}
-                      </span>
-                    ) : null}
-                  </div>
+              ) : complainants.length > 0 ? (
+                <div className="space-y-2">
+                  {complainants.map((c, idx) => (
+                    <div
+                      key={`${c.residentId}-${idx}`}
+                      className={`${inputClass} flex items-center gap-2.5 min-h-[3.25rem] h-auto px-3 py-2 rounded-xl border-red-100 bg-red-50/40`}
+                    >
+                      <CheckCircle className="w-4 h-4 text-red-600 shrink-0" aria-hidden />
+                      <div className="min-w-0 flex-1 grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-0">
+                        <span className="text-sm font-bold text-gray-900 leading-snug min-w-0 break-words col-start-1">
+                          {c.name}
+                        </span>
+                        {c.purok ? (
+                          <span className="text-xs font-semibold text-gray-600 whitespace-nowrap col-start-2 row-start-1">
+                            {c.purok}
+                          </span>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openComplainantModal(idx)}
+                        className="text-[10px] font-bold uppercase tracking-wide text-red-700 hover:text-red-900 shrink-0 whitespace-nowrap"
+                      >
+                        Palitan
+                      </button>
+                      {complainants.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeComplainant(idx)}
+                          aria-label="Tanggalin ang nagsusumbong"
+                          className="shrink-0 p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-100/60 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                   <button
                     type="button"
-                    onClick={() => setIsResidentModalOpen(true)}
-                    className="text-[10px] font-bold uppercase tracking-wide text-red-700 hover:text-red-900 shrink-0 whitespace-nowrap"
+                    onClick={() => openComplainantModal(null)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors"
                   >
-                    Palitan
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Magdagdag ng nagsusumbong</span>
                   </button>
                 </div>
               ) : (
                 <button
                   type="button"
-                  onClick={() => setIsResidentModalOpen(true)}
-                  className="w-full flex items-center gap-3 p-3 bg-white border-2 border-dashed border-gray-300 rounded-lg text-left transition-colors hover:bg-gray-50 hover:border-red-300 min-h-[2.75rem]"
+                  onClick={() => openComplainantModal(null)}
+                  className="w-full flex items-center gap-3 px-3 py-2 bg-white border border-dashed border-gray-300 rounded-xl text-left transition-colors hover:bg-gray-50 hover:border-red-300 min-h-[3.25rem]"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center shrink-0 text-white">
+                  <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center shrink-0 text-white">
                     <Search className="w-4 h-4" aria-hidden />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-gray-900">Hanapin sa Direktoryo</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm font-bold text-gray-900 leading-tight">Hanapin sa Direktoryo</p>
+                    <p className="text-[11px] text-gray-500 leading-tight mt-0.5 truncate">
                       Hanapin ang pangalan mo sa talaan ng barangay
                     </p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" aria-hidden />
+                  <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" aria-hidden />
                 </button>
               )}
               {!isStaffWalkIn ? (
@@ -365,19 +519,51 @@ export default function ESumbongForm({
                 )}
               </FieldLabel>
               {!isStaffWalkIn && (
-                <p className="text-[11px] text-gray-500 leading-snug -mt-1 mb-2 min-h-[2.75rem] sm:min-h-[3rem]">
-                  Buong pangalan ng taong inirereklamo (hindi kailangang naka-rehistro sa census).
+                <p className="text-[11px] text-gray-500 leading-snug -mt-1 mb-2.5 sm:min-h-[2.25rem]">
+                  Buong pangalan ng taong inirereklamo (hindi kailangang naka-rehistro sa census). Maaaring magdagdag ng higit sa isa.
                 </p>
               )}
-              <input
-                type="text"
-                value={form.respondent_name}
-                onChange={(e) => handleChange("respondent_name", e.target.value)}
-                placeholder={
-                  isStaffWalkIn ? "NAME OF RESPONDENT" : "ILAGAY ANG PANGALAN NG INIREREKLAMO"
-                }
-                className={`${inputClass} ${isStaffWalkIn ? "min-h-[2.5rem] py-2" : "min-h-[2.75rem]"} text-sm uppercase`}
-              />
+              <div className="space-y-2">
+                {respondentNames.map((name, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => handleRespondentChange(idx, e.target.value)}
+                      placeholder={
+                        isStaffWalkIn
+                          ? respondentNames.length > 1
+                            ? `NAME OF RESPONDENT ${idx + 1}`
+                            : "NAME OF RESPONDENT"
+                          : respondentNames.length > 1
+                            ? `PANGALAN NG INIREREKLAMO ${idx + 1}`
+                            : "ILAGAY ANG PANGALAN NG INIREREKLAMO"
+                      }
+                      className={`${inputClass} ${isStaffWalkIn ? "min-h-[2.5rem] py-2" : "min-h-[3.25rem] px-3.5 rounded-xl"} text-sm uppercase flex-1`}
+                    />
+                    {respondentNames.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeRespondentField(idx)}
+                        aria-label={isStaffWalkIn ? "Remove respondent" : "Tanggalin ang inirereklamo"}
+                        className={`shrink-0 ${isStaffWalkIn ? "p-2 rounded-lg" : "h-[3.25rem] w-[3.25rem] flex items-center justify-center rounded-xl"} border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors`}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addRespondentField}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>
+                    {isStaffWalkIn ? "Add another respondent" : "Magdagdag ng inirereklamo"}
+                  </span>
+                </button>
+              </div>
               <FieldError message={errors.respondent_name} />
             </div>
           </div>

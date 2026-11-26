@@ -8370,26 +8370,14 @@ function getCertificatePageSpec({
   return CERT_PAGE_SIZES.letter;
 }
 
-/** Build certificate PDF from DOM (shared by Download + Print). */
-async function buildCertificatePdfFromElement(
+/** Capture certificate DOM into one canvas per page (shared by PDF + JPG export). */
+async function captureCertificateCanvasesFromElement(
   certificateEl,
   pageSpec = CERT_PAGE_SIZES.a4,
-  {
-    captureScale = 2,
-    imageMime = "image/png",
-    imageQuality = 1.0,
-  } = {},
+  captureScale = 2,
 ) {
-  const pdfImageFormat = imageMime === "image/jpeg" ? "JPEG" : "PNG";
-  const toImageData = (canvas) =>
-    imageMime === "image/jpeg"
-      ? canvas.toDataURL("image/jpeg", imageQuality)
-      : canvas.toDataURL("image/png", imageQuality);
   const spec = pageSpec?.widthMm ? pageSpec : CERT_PAGE_SIZES.a4;
-  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-    import("html2canvas"),
-    import("jspdf"),
-  ]);
+  const { default: html2canvas } = await import("html2canvas");
 
   const element = await cloneCertificateWithEmbeddedImages(certificateEl);
 
@@ -8507,6 +8495,64 @@ async function buildCertificatePdfFromElement(
     iframeDoc.querySelectorAll(".certificate-container"),
   );
 
+  const canvases = [];
+  const targets = containers.length > 1 ? containers : [containers[0] || iframeDoc.body];
+  for (const target of targets) {
+    await waitForDocumentImages(target);
+    normalizeCloneForCanvasCapture(iframeDoc);
+    const canvas = await html2canvas(target, {
+      scale: captureScale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      logging: false,
+      windowWidth: iframe.offsetWidth,
+      windowHeight: iframe.offsetHeight,
+      onclone: (_el, clonedDoc) => normalizeCloneForCanvasCapture(clonedDoc),
+    });
+    canvases.push(canvas);
+  }
+
+  document.body.removeChild(iframe);
+  return canvases;
+}
+
+/** Build certificate JPG data URLs from DOM (one per page). */
+async function buildCertificateJpgDataUrlsFromElement(
+  certificateEl,
+  pageSpec = CERT_PAGE_SIZES.a4,
+  { captureScale = 2, quality = 0.95 } = {},
+) {
+  const canvases = await captureCertificateCanvasesFromElement(
+    certificateEl,
+    pageSpec,
+    captureScale,
+  );
+  return canvases.map((canvas) => canvas.toDataURL("image/jpeg", quality));
+}
+
+/** Build certificate PDF from DOM (shared by Download + Print). */
+async function buildCertificatePdfFromElement(
+  certificateEl,
+  pageSpec = CERT_PAGE_SIZES.a4,
+  {
+    captureScale = 2,
+    imageMime = "image/png",
+    imageQuality = 1.0,
+  } = {},
+) {
+  const spec = pageSpec?.widthMm ? pageSpec : CERT_PAGE_SIZES.a4;
+  const pdfImageFormat = imageMime === "image/jpeg" ? "JPEG" : "PNG";
+  const toImageData = (canvas) =>
+    imageMime === "image/jpeg"
+      ? canvas.toDataURL("image/jpeg", imageQuality)
+      : canvas.toDataURL("image/png", imageQuality);
+
+  const [{ default: jsPDF }, canvases] = await Promise.all([
+    import("jspdf"),
+    captureCertificateCanvasesFromElement(certificateEl, spec, captureScale),
+  ]);
+
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -8517,72 +8563,23 @@ async function buildCertificatePdfFromElement(
   const pdfW = spec.widthMm;
   const pdfH = spec.heightMm;
 
-  if (containers.length > 1) {
-    for (let i = 0; i < containers.length; i++) {
-      if (i > 0) {
-        pdf.addPage(spec.jsPdfFormat, "portrait");
-      }
-      const pageEl = containers[i];
-      await waitForDocumentImages(pageEl);
-      normalizeCloneForCanvasCapture(iframeDoc);
-      const canvas = await html2canvas(pageEl, {
-        scale: captureScale,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: iframe.offsetWidth,
-        windowHeight: iframe.offsetHeight,
-        onclone: (_el, clonedDoc) => normalizeCloneForCanvasCapture(clonedDoc),
-      });
-
-      const imgData = toImageData(canvas);
-      const imgWidthMm = pdfW;
-      const imgHeightMm = (canvas.height * pdfW) / canvas.width;
-
-      if (imgHeightMm <= pdfH) {
-        pdf.addImage(imgData, pdfImageFormat, 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
-      } else {
-        const scale = pdfH / imgHeightMm;
-        const scaledWidth = imgWidthMm * scale;
-        const xOffset = (pdfW - scaledWidth) / 2;
-        pdf.addImage(imgData, pdfImageFormat, xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
-      }
+  canvases.forEach((canvas, idx) => {
+    if (idx > 0) {
+      pdf.addPage(spec.jsPdfFormat, "portrait");
     }
+    const imgData = toImageData(canvas);
+    const imgWidthMm = pdfW;
+    const imgHeightMm = (canvas.height * pdfW) / canvas.width;
 
-    document.body.removeChild(iframe);
-    return pdf;
-  }
-
-  const captureTarget = containers[0] || iframeDoc.body;
-  await waitForDocumentImages(captureTarget);
-  normalizeCloneForCanvasCapture(iframeDoc);
-
-  const canvas = await html2canvas(captureTarget, {
-    scale: captureScale,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: "#ffffff",
-    logging: false,
-    windowWidth: iframe.offsetWidth,
-    windowHeight: iframe.offsetHeight,
-    onclone: (_el, clonedDoc) => normalizeCloneForCanvasCapture(clonedDoc),
+    if (imgHeightMm <= pdfH) {
+      pdf.addImage(imgData, pdfImageFormat, 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
+    } else {
+      const scale = pdfH / imgHeightMm;
+      const scaledWidth = imgWidthMm * scale;
+      const xOffset = (pdfW - scaledWidth) / 2;
+      pdf.addImage(imgData, pdfImageFormat, xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
+    }
   });
-
-  document.body.removeChild(iframe);
-
-  const imgData = toImageData(canvas);
-  const imgWidthMm = pdfW;
-  const imgHeightMm = (canvas.height * pdfW) / canvas.width;
-
-  if (imgHeightMm <= pdfH) {
-    pdf.addImage(imgData, pdfImageFormat, 0, 0, imgWidthMm, imgHeightMm, undefined, "FAST");
-  } else {
-    const scale = pdfH / imgHeightMm;
-    const scaledWidth = imgWidthMm * scale;
-    const xOffset = (pdfW - scaledWidth) / 2;
-    pdf.addImage(imgData, pdfImageFormat, xOffset, 0, scaledWidth, pdfH, undefined, "FAST");
-  }
 
   return pdf;
 }
@@ -9300,6 +9297,23 @@ function CertificatePreviewModal({
     }
   };
 
+  const getCertificateDownloadBaseName = () => {
+    let baseName = `${request.reference_number}`;
+    if (isJobSeekerRequest) {
+      if (jobSeekerPreviewTab === "FIRST TIME JOB SEEKER") {
+        baseName =
+          jobSeekerPurposes.length > 1 && selectedJobSeekerPurposeIndex === "all"
+            ? `FIRST TIME JOB SEEKER (All ${jobSeekerPurposes.length} Clearances) - ${request.reference_number}`
+            : jobSeekerPurposes.length > 1
+              ? `FIRST TIME JOB SEEKER (Clearance ${Number(selectedJobSeekerPurposeIndex) + 1}) - ${request.reference_number}`
+              : `FIRST TIME JOB SEEKER - ${request.reference_number}`;
+      } else {
+        baseName = `${jobSeekerPreviewTab} - ${request.reference_number}`;
+      }
+    }
+    return baseName;
+  };
+
   const handleDownloadPDF = async () => {
     if (!isChairmanApproved) {
       toast.error("Cannot download until approved by the Barangay Chairman.");
@@ -9313,20 +9327,7 @@ function CertificatePreviewModal({
         activeCertificateRef.current,
         previewPageSpec,
       );
-      let downloadName = `${request.reference_number}.pdf`;
-      if (isJobSeekerRequest) {
-        if (jobSeekerPreviewTab === "FIRST TIME JOB SEEKER") {
-          downloadName =
-            jobSeekerPurposes.length > 1 && selectedJobSeekerPurposeIndex === "all"
-              ? `FIRST TIME JOB SEEKER (All ${jobSeekerPurposes.length} Clearances) - ${request.reference_number}.pdf`
-              : jobSeekerPurposes.length > 1
-                ? `FIRST TIME JOB SEEKER (Clearance ${Number(selectedJobSeekerPurposeIndex) + 1}) - ${request.reference_number}.pdf`
-                : `FIRST TIME JOB SEEKER - ${request.reference_number}.pdf`;
-        } else {
-          downloadName = `${jobSeekerPreviewTab} - ${request.reference_number}.pdf`;
-        }
-      }
-      pdf.save(downloadName);
+      pdf.save(`${getCertificateDownloadBaseName()}.pdf`);
     } catch (error) {
       console.error("PDF download error:", error);
       alert("Could not generate PDF. Please try again.");

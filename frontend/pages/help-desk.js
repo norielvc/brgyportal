@@ -53,6 +53,7 @@ import {
 import {
   BLOTTER_DOC_VARIANT,
   downloadBlotterDocumentPdf,
+  downloadBlotterDocumentJpg,
   printBlotterDocument,
 } from "@/lib/blotterDocument";
 import BlotterDocumentPreviewModal from "@/components/HelpDesk/BlotterDocumentPreviewModal";
@@ -160,6 +161,7 @@ export default function HelpDesk() {
   const [purposeDraft, setPurposeDraft] = useState("");
   const [isSavingPurpose, setIsSavingPurpose] = useState(false);
   const [isEditingEsumbong, setIsEditingEsumbong] = useState(false);
+  const [esumbongEditErrors, setEsumbongEditErrors] = useState({});
   const [esumbongEditDraft, setEsumbongEditDraft] = useState({
     complainant_name: "",
     complainant_address: "",
@@ -869,6 +871,44 @@ export default function HelpDesk() {
     }
   };
 
+  const handleDownloadJpgFromBlotterPreview = () => {
+    if (blotterPreviewReport) {
+      void handleDownloadBlotterJpg(
+        blotterPreviewReport,
+        blotterPreviewVariant,
+      );
+    }
+  };
+
+  const handleDownloadBlotterJpg = async (
+    report,
+    variant = BLOTTER_DOC_VARIANT.BLOTTER,
+  ) => {
+    if (!report?.id) return;
+    if (!isBlotterVerified(report)) {
+      toast.error("Please verify this E-Sumbong first before downloading.");
+      return;
+    }
+    const downloadKey = `${report.id}:${variant}:jpg`;
+    setBlotterPdfDownloadingKey(downloadKey);
+    try {
+      const result = await downloadBlotterDocumentJpg(report, {
+        officials: certificateOfficials,
+        variant,
+      });
+      if (!result.ok) {
+        toast.error("Could not generate JPG. Try Preview or Print instead.");
+        return;
+      }
+      toast.success("JPG downloaded");
+    } catch (err) {
+      console.error("Blotter JPG download error:", err);
+      toast.error("Failed to download JPG");
+    } finally {
+      setBlotterPdfDownloadingKey(null);
+    }
+  };
+
   const handleDownloadBlotterPdf = async (
     report,
     variant = BLOTTER_DOC_VARIANT.BLOTTER,
@@ -955,6 +995,15 @@ export default function HelpDesk() {
             ) : (
               <Download className="w-4 h-4" />
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleDownloadBlotterJpg(report, variant)}
+            disabled={blotterPdfDownloadingKey === `${downloadKey}:jpg`}
+            className="px-1.5 py-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/70 rounded-lg transition-colors disabled:opacity-40"
+            title={`Download JPG — ${compactLabel}`}
+          >
+            {blotterPdfDownloadingKey === `${downloadKey}:jpg` ? "…" : "JPG"}
           </button>
         </div>
       </div>
@@ -1077,12 +1126,24 @@ export default function HelpDesk() {
     }
   };
 
+  const splitPartyNames = (raw) => {
+    const parts = String(raw || "")
+      .split(/\r?\n|,\s*/)
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+    return parts.length ? parts : [""];
+  };
+
   const handleStartEditEsumbong = (item = selectedItem) => {
     if (!item) return;
+    const complainantNames = splitPartyNames(item.complainant_name);
+    const respondentNames = splitPartyNames(item.respondent_name);
     setEsumbongEditDraft({
       complainant_name: String(item.complainant_name || "").toUpperCase(),
+      complainant_names: complainantNames,
       complainant_address: String(item.complainant_address || "").toUpperCase(),
       respondent_name: String(item.respondent_name || "").toUpperCase(),
+      respondent_names: respondentNames,
       respondent_address: String(item.respondent_address || "").toUpperCase(),
       purpose: String(item.purpose || "").toUpperCase(),
       contact_number: item.contact_number || "",
@@ -1091,47 +1152,89 @@ export default function HelpDesk() {
       incident_time: item.incident_time ? String(item.incident_time).slice(0, 5) : "",
       details: String(item.details || "").toUpperCase(),
     });
+    setEsumbongEditErrors({});
     setIsEditingEsumbong(true);
   };
 
   const handleCancelEditEsumbong = () => {
+    setEsumbongEditErrors({});
     setIsEditingEsumbong(false);
   };
 
   const handleSaveEsumbong = async () => {
     if (!selectedItem?.id) return;
-    if (!esumbongEditDraft.complainant_name.trim()) {
-      toast.error("Kailangan ang pangalan ng nagsusumbong.");
-      return;
+    const joinedComplainants = (
+      Array.isArray(esumbongEditDraft.complainant_names)
+        ? esumbongEditDraft.complainant_names
+        : splitPartyNames(esumbongEditDraft.complainant_name)
+    )
+      .map((s) => String(s || "").trim().toUpperCase())
+      .filter(Boolean)
+      .join(", ");
+    const joinedRespondents = (
+      Array.isArray(esumbongEditDraft.respondent_names)
+        ? esumbongEditDraft.respondent_names
+        : splitPartyNames(esumbongEditDraft.respondent_name)
+    )
+      .map((s) => String(s || "").trim().toUpperCase())
+      .filter(Boolean)
+      .join(", ");
+
+    const nextErrors = {};
+    if (!joinedComplainants) {
+      nextErrors.complainant_name = "Kailangan ang pangalan ng nagsusumbong.";
     }
-    if (!esumbongEditDraft.respondent_name.trim()) {
-      toast.error("Kailangan ang pangalan ng inirereklamo.");
-      return;
+    if (!joinedRespondents) {
+      nextErrors.respondent_name = "Kailangan ang pangalan ng inirereklamo.";
     }
     if (!esumbongEditDraft.contact_number.trim()) {
-      toast.error("Kailangan ang contact number.");
-      return;
+      nextErrors.contact_number = "Kailangan ang contact number.";
     }
     if (!esumbongEditDraft.incident_date.trim()) {
-      toast.error("Kailangan ang petsa ng pangyayari.");
-      return;
-    }
-    if (!esumbongEditDraft.details.trim()) {
-      toast.error("Kailangan ang detalye ng sumbong.");
-      return;
+      nextErrors.incident_date = "Kailangan ang petsa ng pangyayari.";
     }
     if (!esumbongEditDraft.purpose?.trim()) {
-      toast.error("Kailangan ang 'Para sa:' (layunin o paksa ng sumbong).");
+      nextErrors.purpose = "Kailangan ang 'Para sa:' (layunin o paksa ng sumbong).";
+    }
+    if (!esumbongEditDraft.details.trim()) {
+      nextErrors.details = "Kailangan ang detalye ng sumbong.";
+    }
+
+    const errorKeys = Object.keys(nextErrors);
+    if (errorKeys.length > 0) {
+      setEsumbongEditErrors(nextErrors);
+      const firstKey = errorKeys[0];
+      if (typeof document !== "undefined") {
+        const el = document.querySelector(`[data-esumbong-field="${firstKey}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.focus?.();
+        }
+      }
+      toast.error(nextErrors[firstKey], {
+        style: {
+          background: "#FEF2F2",
+          color: "#991B1B",
+          border: "1px solid #FECACA",
+          fontWeight: 600,
+        },
+      });
       return;
     }
+    setEsumbongEditErrors({});
 
     try {
       setIsSavingEsumbong(true);
+      const {
+        complainant_names: _cn,
+        respondent_names: _rn,
+        ...restDraft
+      } = esumbongEditDraft;
       const uppercasedDraft = {
-        ...esumbongEditDraft,
-        complainant_name: String(esumbongEditDraft.complainant_name || "").toUpperCase(),
+        ...restDraft,
+        complainant_name: joinedComplainants,
         complainant_address: String(esumbongEditDraft.complainant_address || "").toUpperCase(),
-        respondent_name: String(esumbongEditDraft.respondent_name || "").toUpperCase(),
+        respondent_name: joinedRespondents,
         respondent_address: String(esumbongEditDraft.respondent_address || "").toUpperCase(),
         purpose: String(esumbongEditDraft.purpose || "").toUpperCase(),
         details: String(esumbongEditDraft.details || "").toUpperCase(),
@@ -2627,18 +2730,78 @@ export default function HelpDesk() {
                             <label className="text-[11px] font-semibold text-gray-700 block mb-1">
                               Pangalan <span className="text-red-500">*</span>
                             </label>
-                            <input
-                              type="text"
-                              value={esumbongEditDraft.complainant_name}
-                              onChange={(e) =>
-                                setEsumbongEditDraft((d) => ({
-                                  ...d,
-                                  complainant_name: e.target.value.toUpperCase(),
-                                }))
-                              }
-                              className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase"
-                              placeholder="PANGALAN NG NAGSUSUMBONG"
-                            />
+                            <div className="space-y-1.5">
+                              {(Array.isArray(esumbongEditDraft.complainant_names)
+                                ? esumbongEditDraft.complainant_names
+                                : splitPartyNames(esumbongEditDraft.complainant_name)
+                              ).map((name, idx, arr) => (
+                                <div key={idx} className="flex items-center gap-1.5">
+                                  <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => {
+                                      const val = e.target.value.toUpperCase();
+                                      setEsumbongEditDraft((d) => {
+                                        const list = Array.isArray(d.complainant_names)
+                                          ? [...d.complainant_names]
+                                          : splitPartyNames(d.complainant_name);
+                                        list[idx] = val;
+                                        return {
+                                          ...d,
+                                          complainant_names: list,
+                                          complainant_name: list.filter(Boolean).join(", "),
+                                        };
+                                      });
+                                    }}
+                                    className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase flex-1"
+                                    placeholder={
+                                      arr.length > 1
+                                        ? `PANGALAN NG NAGSUSUMBONG ${idx + 1}`
+                                        : "PANGALAN NG NAGSUSUMBONG"
+                                    }
+                                  />
+                                  {arr.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setEsumbongEditDraft((d) => {
+                                          const list = (
+                                            Array.isArray(d.complainant_names)
+                                              ? d.complainant_names
+                                              : splitPartyNames(d.complainant_name)
+                                          ).filter((_, i) => i !== idx);
+                                          const next = list.length ? list : [""];
+                                          return {
+                                            ...d,
+                                            complainant_names: next,
+                                            complainant_name: next.filter(Boolean).join(", "),
+                                          };
+                                        })
+                                      }
+                                      aria-label="Remove complainant"
+                                      className="shrink-0 p-1.5 rounded-lg border border-gray-300 bg-white text-gray-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEsumbongEditDraft((d) => {
+                                    const list = Array.isArray(d.complainant_names)
+                                      ? [...d.complainant_names, ""]
+                                      : [...splitPartyNames(d.complainant_name), ""];
+                                    return { ...d, complainant_names: list };
+                                  })
+                                }
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#03254c] hover:underline pt-0.5"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>Add complainant</span>
+                              </button>
+                            </div>
                           </div>
                           <div>
                             <label className="text-[11px] font-semibold text-gray-700 block mb-1">
@@ -2702,18 +2865,78 @@ export default function HelpDesk() {
                             <label className="text-[11px] font-semibold text-gray-700 block mb-1">
                               Pangalan <span className="text-red-500">*</span>
                             </label>
-                            <input
-                              type="text"
-                              value={esumbongEditDraft.respondent_name}
-                              onChange={(e) =>
-                                setEsumbongEditDraft((d) => ({
-                                  ...d,
-                                  respondent_name: e.target.value.toUpperCase(),
-                                }))
-                              }
-                              className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase"
-                              placeholder="PANGALAN NG INIREREKLAMO"
-                            />
+                            <div className="space-y-1.5">
+                              {(Array.isArray(esumbongEditDraft.respondent_names)
+                                ? esumbongEditDraft.respondent_names
+                                : splitPartyNames(esumbongEditDraft.respondent_name)
+                              ).map((name, idx, arr) => (
+                                <div key={idx} className="flex items-center gap-1.5">
+                                  <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => {
+                                      const val = e.target.value.toUpperCase();
+                                      setEsumbongEditDraft((d) => {
+                                        const list = Array.isArray(d.respondent_names)
+                                          ? [...d.respondent_names]
+                                          : splitPartyNames(d.respondent_name);
+                                        list[idx] = val;
+                                        return {
+                                          ...d,
+                                          respondent_names: list,
+                                          respondent_name: list.filter(Boolean).join(", "),
+                                        };
+                                      });
+                                    }}
+                                    className="w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase flex-1"
+                                    placeholder={
+                                      arr.length > 1
+                                        ? `PANGALAN NG INIREREKLAMO ${idx + 1}`
+                                        : "PANGALAN NG INIREREKLAMO"
+                                    }
+                                  />
+                                  {arr.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setEsumbongEditDraft((d) => {
+                                          const list = (
+                                            Array.isArray(d.respondent_names)
+                                              ? d.respondent_names
+                                              : splitPartyNames(d.respondent_name)
+                                          ).filter((_, i) => i !== idx);
+                                          const next = list.length ? list : [""];
+                                          return {
+                                            ...d,
+                                            respondent_names: next,
+                                            respondent_name: next.filter(Boolean).join(", "),
+                                          };
+                                        })
+                                      }
+                                      aria-label="Remove respondent"
+                                      className="shrink-0 p-1.5 rounded-lg border border-gray-300 bg-white text-gray-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEsumbongEditDraft((d) => {
+                                    const list = Array.isArray(d.respondent_names)
+                                      ? [...d.respondent_names, ""]
+                                      : [...splitPartyNames(d.respondent_name), ""];
+                                    return { ...d, respondent_names: list };
+                                  })
+                                }
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#03254c] hover:underline pt-0.5"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>Add respondent</span>
+                              </button>
+                            </div>
                           </div>
                           <div>
                             <label className="text-[11px] font-semibold text-gray-700 block mb-1">
@@ -2776,20 +2999,32 @@ export default function HelpDesk() {
                         <input
                           type="text"
                           required
+                          data-esumbong-field="purpose"
                           value={esumbongEditDraft.purpose || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setEsumbongEditDraft((d) => ({
                               ...d,
                               purpose: e.target.value.toUpperCase(),
-                            }))
-                          }
-                          className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none uppercase ${
-                            !esumbongEditDraft.purpose?.trim()
-                              ? "border-amber-300"
-                              : "border-gray-300"
+                            }));
+                            if (esumbongEditErrors.purpose) {
+                              setEsumbongEditErrors((prev) => ({ ...prev, purpose: undefined }));
+                            }
+                          }}
+                          className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:ring-2 outline-none uppercase ${
+                            esumbongEditErrors.purpose
+                              ? "border-red-500 ring-2 ring-red-500/20 bg-red-50/30 focus:border-red-500 focus:ring-red-500/25"
+                              : !esumbongEditDraft.purpose?.trim()
+                                ? "border-amber-300 focus:ring-[#03254c]/20 focus:border-[#03254c]"
+                                : "border-gray-300 focus:ring-[#03254c]/20 focus:border-[#03254c]"
                           }`}
                           placeholder="HALIMBAWA: PANINIRANG PURI, ALITAN SA BAKOD, PANANAKIT..."
                         />
+                        {esumbongEditErrors.purpose && (
+                          <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-red-600">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{esumbongEditErrors.purpose}</span>
+                          </p>
+                        )}
                       </div>
 
                       {/* Detalye ng Sumbong Section */}
@@ -2799,16 +3034,30 @@ export default function HelpDesk() {
                         </label>
                         <textarea
                           rows={6}
+                          data-esumbong-field="details"
                           value={esumbongEditDraft.details}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setEsumbongEditDraft((d) => ({
                               ...d,
                               details: e.target.value.toUpperCase(),
-                            }))
-                          }
-                          className="w-full p-3.5 text-xs sm:text-sm text-gray-800 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#03254c]/20 focus:border-[#03254c] outline-none leading-relaxed uppercase"
+                            }));
+                            if (esumbongEditErrors.details) {
+                              setEsumbongEditErrors((prev) => ({ ...prev, details: undefined }));
+                            }
+                          }}
+                          className={`w-full p-3.5 text-xs sm:text-sm text-gray-800 bg-white border rounded-xl focus:ring-2 outline-none leading-relaxed uppercase ${
+                            esumbongEditErrors.details
+                              ? "border-red-500 ring-2 ring-red-500/20 bg-red-50/30 focus:border-red-500 focus:ring-red-500/25"
+                              : "border-gray-300 focus:ring-[#03254c]/20 focus:border-[#03254c]"
+                          }`}
                           placeholder="ISALAYSAY ANG BUONG DETALYE NG SUMBONG..."
                         />
+                        {esumbongEditErrors.details && (
+                          <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-red-600">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{esumbongEditErrors.details}</span>
+                          </p>
+                        )}
                       </div>
 
                       {/* Save / Cancel action buttons */}
@@ -2852,9 +3101,15 @@ export default function HelpDesk() {
                               </span>
                             )}
                           </div>
-                          <p className="text-sm font-bold text-slate-900 leading-snug uppercase">
-                            {selectedItem.complainant_name}
-                          </p>
+                          <div className="space-y-0.5 text-sm font-bold text-slate-900 leading-snug uppercase">
+                            {String(selectedItem.complainant_name || "")
+                              .split(/\r?\n|,\s*/)
+                              .map((n) => n.trim())
+                              .filter(Boolean)
+                              .map((name, idx) => (
+                                <div key={idx}>{name}</div>
+                              ))}
+                          </div>
                           <p className="text-xs text-slate-600 flex items-start gap-1.5 uppercase">
                             <Building className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                             <span>
@@ -2892,9 +3147,15 @@ export default function HelpDesk() {
                               Inirereklamo (Respondent)
                             </span>
                           </div>
-                          <p className="text-sm font-bold text-slate-900 leading-snug uppercase">
-                            {selectedItem.respondent_name}
-                          </p>
+                          <div className="space-y-0.5 text-sm font-bold text-slate-900 leading-snug uppercase">
+                            {String(selectedItem.respondent_name || "")
+                              .split(/\r?\n|,\s*/)
+                              .map((n) => n.trim())
+                              .filter(Boolean)
+                              .map((name, idx) => (
+                                <div key={idx}>{name}</div>
+                              ))}
+                          </div>
                           <p className="text-xs text-slate-600 flex items-start gap-1.5 uppercase">
                             <Building className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                             <span>
@@ -3356,10 +3617,16 @@ export default function HelpDesk() {
           }}
           onPrint={handlePrintFromBlotterPreview}
           onDownload={handleDownloadFromBlotterPreview}
+          onDownloadJpg={handleDownloadJpgFromBlotterPreview}
           downloading={
             blotterPreviewReport?.id != null &&
             blotterPdfDownloadingKey ===
               `${blotterPreviewReport.id}:${blotterPreviewVariant}`
+          }
+          downloadingJpg={
+            blotterPreviewReport?.id != null &&
+            blotterPdfDownloadingKey ===
+              `${blotterPreviewReport.id}:${blotterPreviewVariant}:jpg`
           }
         />
       </div>

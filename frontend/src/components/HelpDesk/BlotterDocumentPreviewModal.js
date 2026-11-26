@@ -39,7 +39,9 @@ export default function BlotterDocumentPreviewModal({
   onClose,
   onPrint,
   onDownload,
+  onDownloadJpg,
   downloading = false,
+  downloadingJpg = false,
 }) {
   const iframeRef = useRef(null);
   const viewportRef = useRef(null);
@@ -146,7 +148,7 @@ export default function BlotterDocumentPreviewModal({
             <button
               type="button"
               onClick={onDownload}
-              disabled={downloading}
+              disabled={downloading || downloadingJpg}
               className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-white bg-[#03254c] rounded-lg hover:bg-[#021c38] disabled:opacity-50"
             >
               <Download className="w-4 h-4 shrink-0" />
@@ -154,6 +156,20 @@ export default function BlotterDocumentPreviewModal({
                 {downloading ? "Generating…" : "Download PDF"}
               </span>
             </button>
+            {onDownloadJpg && (
+              <button
+                type="button"
+                onClick={onDownloadJpg}
+                disabled={downloading || downloadingJpg}
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              >
+                <Download className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">
+                  {downloadingJpg ? "Generating…" : "Download JPG"}
+                </span>
+                <span className="sm:hidden">JPG</span>
+              </button>
+            )}
           </>
         ) : (
           <span
