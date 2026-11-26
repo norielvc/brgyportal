@@ -3033,7 +3033,7 @@ function ResidencyPhotoPanel({ request, additionalDetails, canEditPhoto, onSaveP
       requestAnimationFrame(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play?.().catch(() => {});
+          videoRef.current.play?.().catch(() => { });
         }
         cameraBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       });
@@ -3121,9 +3121,8 @@ function ResidencyPhotoPanel({ request, additionalDetails, canEditPhoto, onSaveP
 
   return (
     <div
-      className={`bg-white rounded-2xl border shadow-sm p-3.5 transition-colors ${
-        isDragging ? "border-blue-500 bg-blue-50/40" : "border-slate-200"
-      }`}
+      className={`bg-white rounded-2xl border shadow-sm p-3.5 transition-colors ${isDragging ? "border-blue-500 bg-blue-50/40" : "border-slate-200"
+        }`}
       onDragOver={(e) => {
         if (!canEditPhoto) return;
         e.preventDefault();
@@ -4261,18 +4260,18 @@ function RequestDetailsModal({
                 String(currentUser?.role || "").toLowerCase(),
               ) ||
                 !["oic_review", "ready", "ready_for_pickup"].includes(request.status)) && (
-              <button
-                onClick={() => void handleStartEditing()}
-                disabled={detailLoading}
-                className="px-2.5 py-1 bg-white/10 hover:bg-white/15 text-white rounded-full text-[11px] font-semibold flex items-center gap-1 transition-colors border border-white/15 disabled:opacity-50"
-                title="Edit Request"
-              >
-                <Edit className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">
-                  {detailLoading ? "Loading…" : "Edit"}
-                </span>
-              </button>
-            )}
+                <button
+                  onClick={() => void handleStartEditing()}
+                  disabled={detailLoading}
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/15 text-white rounded-full text-[11px] font-semibold flex items-center gap-1 transition-colors border border-white/15 disabled:opacity-50"
+                  title="Edit Request"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">
+                    {detailLoading ? "Loading…" : "Edit"}
+                  </span>
+                </button>
+              )}
             {isEditing && (
               <>
                 <button
@@ -10822,7 +10821,7 @@ function ClearancePreviewForRequests({
           <div
             className={`cert-doc-body flex-1 relative flex flex-col w-full ${isInspectionForm
               ? "px-5 pt-1 pb-2 justify-start min-h-0 flex-1"
-              : isBusinessClearanceDoc
+              : isBusinessClearanceDoc || isBusinessClosure
                 ? "px-12 sm:px-14 pt-3 pb-4"
                 : isJobSeekerDocB
                   ? "p-0"
@@ -10853,7 +10852,7 @@ function ClearancePreviewForRequests({
             <div
               className={`relative z-10 flex flex-col w-full ${isInspectionForm
                 ? "flex-1 min-h-0 justify-start items-stretch"
-                : isBusinessClearanceDoc || isJobSeekerDocA || isJobSeekerDocB
+                : isBusinessClearanceDoc || isBusinessClosure || isJobSeekerDocA || isJobSeekerDocB
                   ? "flex-1 h-full min-h-0 items-stretch"
                   : "flex-1 h-full min-h-0 items-stretch justify-between"
                 }`}
@@ -10903,15 +10902,15 @@ function ClearancePreviewForRequests({
                 <div className="w-full max-w-full text-[13px] text-left leading-snug px-1 sm:px-2">
                   <h2
                     className="text-center font-bold uppercase mb-5 tracking-tight"
-                    style={{ color: "#15803d", fontSize: "22px" }}
+                    style={{ color: "#008000", fontSize: "22px" }}
                   >
                     <span className="inline-flex flex-col items-center">
                       <span>BARANGAY BUSINESS CLOSURE</span>
-                      <span className="h-[2px] w-full bg-[#15803d] mt-1" />
+                      <span className="h-[2px] w-full bg-[#008000] mt-1" />
                     </span>
                   </h2>
 
-                  <div className="mb-5 font-bold text-gray-900 text-[14px]">
+                  <div className="mb-5 font-bold text-gray-900 text-[13.5px]">
                     To Whom It May Concern:
                   </div>
 
@@ -10919,68 +10918,71 @@ function ClearancePreviewForRequests({
                     This is to certify that below business / trade name as
                     described herein has ceased its business activity in this
                     barangay with effect from{" "}
-                    <span className="font-semibold">
-                      {additionalDetails?.closureDate
-                        ? new Date(additionalDetails.closureDate).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
-                        : issuedDate}
-                    </span>{" "}
+                    {additionalDetails?.closureDate
+                      ? new Date(additionalDetails.closureDate).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                      : issuedDate}{" "}
                     due to following reason(s):
                   </div>
 
-                  <div className="mb-7 font-bold text-gray-900 text-[13px]">
+                  <div className="mb-10 font-bold text-gray-900 text-[13px]">
                     1. {additionalDetails?.closureReason || "Financial Difficulty / Incapability (Bankruptcy)"}
                   </div>
 
-                  <div className="space-y-2.5 mb-8">
+                  <div className="space-y-2 mb-7">
                     {[
                       [
                         "Name of Owner",
                         request.ownerFullName ||
                         additionalDetails.ownerFullName ||
                         formData.fullName,
+                        true,
                       ],
                       [
                         "Owner's Address",
                         request.ownerAddress ||
                         additionalDetails.ownerAddress ||
                         stripProvinceOf(formData.address),
+                        false,
                       ],
                       [
                         "Business / Trade Name",
                         request.businessName ||
                         additionalDetails.businessName ||
                         "N/A",
+                        true,
                       ],
                       [
                         "Business Address",
                         request.businessAddress ||
                         additionalDetails.businessAddress ||
                         "N/A",
+                        false,
                       ],
                       [
                         "Nature of Business",
                         request.natureOfBusiness ||
                         additionalDetails.natureOfBusiness ||
                         "N/A",
+                        false,
                       ],
-                    ].map(([label, value], idx) => (
-                      <div key={idx} className="flex items-start">
-                        <div className="w-48 shrink-0 font-bold text-gray-900 whitespace-nowrap">
+                    ].map(([label, value, isBoldRow], idx) => (
+                      <div key={idx} className={`flex items-start ${idx === 2 ? "pt-2 pb-2" : ""}`}>
+                        <div className={`w-48 shrink-0 whitespace-nowrap ${isBoldRow ? "font-bold text-gray-900" : "font-normal text-gray-900"}`}>
                           {label}
                         </div>
                         <span className="font-bold mr-4">:</span>
                         <span
                           className={`flex-1 ${
-                            idx === 0 || idx === 2
+                            isBoldRow
                               ? "font-bold uppercase text-black"
                               : "font-normal text-black"
                           }`}
                         >
-                          {idx === 0 || idx === 2
+                          {isBoldRow
                             ? String(value || "").toUpperCase()
                             : String(value || "")}
                         </span>
@@ -10994,7 +10996,7 @@ function ClearancePreviewForRequests({
                     for any legal purposes it may serve.
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 mt-6 items-start">
+                  <div className="grid grid-cols-2 gap-6 mt-6 items-end">
                     <div className="text-left pt-2 cert-captain-signature-block">
                       <div className="relative flex items-start justify-between gap-4 mb-24">
                         <p className="font-bold text-[14px] shrink-0 relative top-[2.5em] text-gray-900">
@@ -11060,34 +11062,33 @@ function ClearancePreviewForRequests({
                       </div>
                     </div>
 
-                    <div className="text-right flex flex-col items-end mt-16">
-                      <div className="bg-gray-100 border border-gray-300 px-4 py-2.5 text-left min-w-[210px]">
-                        <p className="font-bold text-center text-gray-900 text-[12px] mb-1.5">
+                    <div className="text-right flex flex-col items-end pb-2">
+                      <div className="px-4 py-2 text-left min-w-[215px]">
+                        <p className="font-semibold text-center text-gray-900 text-[12px] mb-1">
                           Details of Payment:
                         </p>
-                        <div className="grid grid-cols-[95px_10px_1fr] gap-y-1 text-[12px] text-black">
+                        <div className="grid grid-cols-[95px_10px_1fr] gap-y-0.5 text-[12px] text-black">
                           <span>OR No.</span>
                           <span>:</span>
-                          <span className="font-bold">
+                          <span className="font-medium">
                             {orData?.or_number || additionalDetails?.or_number || ""}
                           </span>
                           <span>Amount Paid</span>
                           <span>:</span>
-                          <span className="font-bold">
+                          <span className="font-medium">
                             {orData?.amount != null && orData?.amount !== ""
                               ? `Php. ${Number(orData.amount).toLocaleString(undefined, {
-                                  minimumFractionDigits: 0,
-                                  maximumFractionDigits: 2,
-                                })}`
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 2,
+                              })}`
                               : ""}
                           </span>
+                          <span>BC Control No.</span>
+                          <span>:</span>
+                          <span className="font-medium">
+                            {orData?.control_number || additionalDetails?.bc_control_number || ""}
+                          </span>
                         </div>
-                      </div>
-                      <div className="mt-1.5 text-[12px] text-black">
-                        <span>BC Control No.: </span>
-                        <span className="font-bold">
-                          {orData?.control_number || additionalDetails?.bc_control_number || ""}
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -11928,63 +11929,63 @@ function ClearancePreviewForRequests({
                   )}
                   <>
                     {!residencyPhoto && (
-                    <div className="text-left mb-4 leading-relaxed">
-                      {isNaturalDeath ? (
-                        <p>
-                          This is to certify that below mentioned person, a bona
-                          fide resident of this barangay has died at his
-                          residence and classified as "Natural Death":
-                        </p>
-                      ) : isGuardianship ? (
-                        <p className="uppercase">
-                          THIS IS TO CERTIFY THAT BELOW PERSON IS UNDER THE
-                          GUARDIANSHIP OF{" "}
-                          <span className="font-bold">
-                            {formData.guardianName?.toUpperCase() ||
-                              "_________________________________"}
-                          </span>
-                          , BOTH BONA FIDE RESIDENTS OF THIS BARANGAY:
-                        </p>
-                      ) : isCohabitation ? (
-                        <p className="uppercase">
-                          THIS IS TO CERTIFY THAT BELOW MENTIONED PERSONS, BONA
-                          FIDE RESIDENTS OF THIS BARANGAY AT{" "}
-                          <span className="font-bold">
-                            {stripProvinceOf(formData.address)?.toUpperCase() ||
-                              "____________________"}
-                          </span>
-                          , ARE LIVING TOGETHER IN COMMON HOUSE (YET TO UNDERGO
-                          CHURCH / CIVIL WEDDING) AS DETAILED BELOW:
-                        </p>
-                      ) : isMedicoLegal ? (
-                        <div className="space-y-6">
-                          <p className="font-bold uppercase">GREETINGS!</p>
-                          <p className="uppercase">
-                            KINDLY REQUESTING YOUR GOOD OFFICE TO FURNISH US A
-                            COPY OF "MEDICO LEGAL" OF YOUR BELOW MENTIONED
-                            PATIENT IN AIDE OF RECONCILIATORY MEETING / HEARING
-                            OF INVOLVED INDIVIDUALS TO BE HELD IN THIS BARANGAY
-                            AS DETAILED BELOW:
+                      <div className="text-left mb-4 leading-relaxed">
+                        {isNaturalDeath ? (
+                          <p>
+                            This is to certify that below mentioned person, a bona
+                            fide resident of this barangay has died at his
+                            residence and classified as "Natural Death":
                           </p>
-                        </div>
-                      ) : isSamePerson ? (
-                        <p>
-                          This is to certify that below names belongs to one and
-                          the same person, bona fide resident of this barangay
-                          as described herein:
-                        </p>
-                      ) : (
-                        <p>
-                          {request.certificate_type === "barangay_clearance" ||
-                            request.certificate_type === "first_time_job_seeker"
-                            ? "This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:"
-                            : request.certificate_type ===
-                              "certificate_of_indigency"
-                              ? 'This is to certify that below mentioned person is a bona fide resident and their family belongs to the "Indigent Families" of this barangay as of date mentioned below. Further certifying that their income is not enough to sustain and support their basic needs:'
-                              : "This is to certify that below mentioned person is a bona fide resident of this barangay as detailed below:"}
-                        </p>
-                      )}
-                    </div>
+                        ) : isGuardianship ? (
+                          <p className="uppercase">
+                            THIS IS TO CERTIFY THAT BELOW PERSON IS UNDER THE
+                            GUARDIANSHIP OF{" "}
+                            <span className="font-bold">
+                              {formData.guardianName?.toUpperCase() ||
+                                "_________________________________"}
+                            </span>
+                            , BOTH BONA FIDE RESIDENTS OF THIS BARANGAY:
+                          </p>
+                        ) : isCohabitation ? (
+                          <p className="uppercase">
+                            THIS IS TO CERTIFY THAT BELOW MENTIONED PERSONS, BONA
+                            FIDE RESIDENTS OF THIS BARANGAY AT{" "}
+                            <span className="font-bold">
+                              {stripProvinceOf(formData.address)?.toUpperCase() ||
+                                "____________________"}
+                            </span>
+                            , ARE LIVING TOGETHER IN COMMON HOUSE (YET TO UNDERGO
+                            CHURCH / CIVIL WEDDING) AS DETAILED BELOW:
+                          </p>
+                        ) : isMedicoLegal ? (
+                          <div className="space-y-6">
+                            <p className="font-bold uppercase">GREETINGS!</p>
+                            <p className="uppercase">
+                              KINDLY REQUESTING YOUR GOOD OFFICE TO FURNISH US A
+                              COPY OF "MEDICO LEGAL" OF YOUR BELOW MENTIONED
+                              PATIENT IN AIDE OF RECONCILIATORY MEETING / HEARING
+                              OF INVOLVED INDIVIDUALS TO BE HELD IN THIS BARANGAY
+                              AS DETAILED BELOW:
+                            </p>
+                          </div>
+                        ) : isSamePerson ? (
+                          <p>
+                            This is to certify that below names belongs to one and
+                            the same person, bona fide resident of this barangay
+                            as described herein:
+                          </p>
+                        ) : (
+                          <p>
+                            {request.certificate_type === "barangay_clearance" ||
+                              request.certificate_type === "first_time_job_seeker"
+                              ? "This is to certify that below mentioned person is a bona fide resident of this barangay and has no derogatory record as of date mentioned below:"
+                              : request.certificate_type ===
+                                "certificate_of_indigency"
+                                ? 'This is to certify that below mentioned person is a bona fide resident and their family belongs to the "Indigent Families" of this barangay as of date mentioned below. Further certifying that their income is not enough to sustain and support their basic needs:'
+                                : "This is to certify that below mentioned person is a bona fide resident of this barangay as detailed below:"}
+                          </p>
+                        )}
+                      </div>
                     )}
 
                     <div className={`${residencyPhoto ? "mb-3" : "mb-6"} space-y-1`}>
