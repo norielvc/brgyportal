@@ -170,6 +170,18 @@ export default async function handler(req, res) {
                     st.status === "captain_approval" ||
                     isCaptainApprovalStep(st),
                 );
+        } else if (s === "processing") {
+          currentStep =
+            steps.find(
+              (st) =>
+                String(st.status || "").toLowerCase() === "witness_verification" ||
+                String(st.status || "").toLowerCase() === "processing" ||
+                String(st.name || "").toLowerCase().includes("witness"),
+            ) ||
+            steps.find(
+              (st) =>
+                certificateStatusForStep(st, certType) === "witness_verification",
+            );
         } else if (s === "oic_review" && certType === "business_permit") {
           currentStep =
             steps.find(isBusinessPermitPreparationStep) ||
